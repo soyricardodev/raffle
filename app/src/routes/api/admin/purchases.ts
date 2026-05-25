@@ -58,7 +58,7 @@ export const Route = createFileRoute("/api/admin/purchases")({
   },
 })
 
-export const PurchaseById = createFileRoute("/api/admin/purchases/$id")({
+export const PurchaseById = createFileRoute("/api/admin/purchases/$id" as never)({
   server: {
     handlers: {
       GET: async ({ request, params }) => {
@@ -69,7 +69,7 @@ export const PurchaseById = createFileRoute("/api/admin/purchases/$id")({
   },
 })
 
-export const PurchaseStatus = createFileRoute("/api/admin/purchases/$id/status")({
+export const PurchaseStatus = createFileRoute("/api/admin/purchases/$id/status" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {
@@ -82,7 +82,7 @@ export const PurchaseStatus = createFileRoute("/api/admin/purchases/$id/status")
   },
 })
 
-export const AddTickets = createFileRoute("/api/admin/purchases/$id/tickets/add")({
+export const AddTickets = createFileRoute("/api/admin/purchases/$id/tickets/add" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {
@@ -95,7 +95,7 @@ export const AddTickets = createFileRoute("/api/admin/purchases/$id/tickets/add"
   },
 })
 
-export const RemoveTickets = createFileRoute("/api/admin/purchases/$id/tickets/remove")({
+export const RemoveTickets = createFileRoute("/api/admin/purchases/$id/tickets/remove" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {
@@ -108,7 +108,7 @@ export const RemoveTickets = createFileRoute("/api/admin/purchases/$id/tickets/r
   },
 })
 
-export const Reassign = createFileRoute("/api/admin/purchases/$id/tickets/reassign")({
+export const Reassign = createFileRoute("/api/admin/purchases/$id/tickets/reassign" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {

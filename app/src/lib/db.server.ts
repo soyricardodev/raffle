@@ -42,9 +42,8 @@ export function getDb(): DrizzleDB {
 
 /** Pool raw para operaciones que necesitan transacciones manuales (FOR UPDATE, etc.) */
 export function getPool(): mysql.Pool {
-  const pool = _pool
-  if (!pool) throw new Error("DB not initialized. Call getDb() first.")
-  return pool
+  getDb() // ensure initialized
+  return _pool!
 }
 
 /** Acceso directo para scripts y tests. Preferir getDb() en server functions. */

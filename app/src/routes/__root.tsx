@@ -18,6 +18,16 @@ const queryClient = new QueryClient({
   },
 })
 
+// Script inline para evitar flash de modo oscuro — se ejecuta ANTES del render
+const themeScript = `
+(function() {
+  var theme = localStorage.getItem('theme');
+  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+})()
+`
+
 export const Route = createRootRoute({
   head: () => ({
     meta: [
@@ -26,6 +36,7 @@ export const Route = createRootRoute({
       { title: "Rifas" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
+    scripts: [{ children: themeScript }],
   }),
   notFoundComponent: () => (
     <main className="container mx-auto p-4 pt-16">
@@ -37,7 +48,16 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const { theme } = useTheme()
+  const { theme, setTheme } = useTheme()
+
+  useEffect(() => {
+    const stored = localStorage.getItem("theme")
+    if (stored === "dark" || stored === "light") {
+      setTheme(stored)
+    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+      setTheme("dark")
+    }
+  }, [setTheme])
 
   useEffect(() => {
     document.documentElement.classList.toggle("dark", theme === "dark")

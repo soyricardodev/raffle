@@ -25,7 +25,7 @@ export const Route = createFileRoute("/api/admin/raffles")({
   },
 })
 
-export const RaffleById = createFileRoute("/api/admin/raffles/$id")({
+export const RaffleById = createFileRoute("/api/admin/raffles/$id" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {
@@ -43,7 +43,7 @@ export const RaffleById = createFileRoute("/api/admin/raffles/$id")({
   },
 })
 
-export const Pause = createFileRoute("/api/admin/raffles/$id/pause")({
+export const Pause = createFileRoute("/api/admin/raffles/$id/pause" as never)({
   server: {
     handlers: {
       POST: async ({ request, params }) => {
@@ -55,7 +55,7 @@ export const Pause = createFileRoute("/api/admin/raffles/$id/pause")({
   },
 })
 
-export const Unpause = createFileRoute("/api/admin/raffles/$id/unpause")({
+export const Unpause = createFileRoute("/api/admin/raffles/$id/unpause" as never)({
   server: {
     handlers: {
       POST: async ({ request, params }) => {
@@ -67,7 +67,7 @@ export const Unpause = createFileRoute("/api/admin/raffles/$id/unpause")({
   },
 })
 
-export const AutoPause = createFileRoute("/api/admin/raffles/$id/auto-pause")({
+export const AutoPause = createFileRoute("/api/admin/raffles/$id/auto-pause" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {
@@ -84,7 +84,7 @@ export const AutoPause = createFileRoute("/api/admin/raffles/$id/auto-pause")({
   },
 })
 
-export const Publish = createFileRoute("/api/admin/raffles/$id/publish")({
+export const Publish = createFileRoute("/api/admin/raffles/$id/publish" as never)({
   server: {
     handlers: {
       PUT: async ({ request, params }) => {
