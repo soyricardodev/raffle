@@ -14,14 +14,26 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as AdminRifasRouteImport } from './routes/admin/rifas'
 import { Route as AdminEmailsRouteImport } from './routes/admin/emails'
 import { Route as AdminCrearRouteImport } from './routes/admin/crear'
 import { Route as AdminConfigRouteImport } from './routes/admin/config'
 import { Route as AdminBoletosRouteImport } from './routes/admin/boletos'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
+import { Route as ApiRafflesIndexRouteImport } from './routes/api/raffles/index'
+import { Route as ApiPurchasesIndexRouteImport } from './routes/api/purchases/index'
+import { Route as ApiTicketsVerifyRouteImport } from './routes/api/tickets.verify'
+import { Route as ApiRafflesPublishedRouteImport } from './routes/api/raffles/published'
+import { Route as ApiRafflesFirstActiveRouteImport } from './routes/api/raffles/first-active'
+import { Route as ApiRafflesIdRouteImport } from './routes/api/raffles/$id'
+import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchases.top-clients'
 import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAdminRafflesRouteImport } from './routes/api/admin/raffles'
+import { Route as ApiAdminPurchasesRouteImport } from './routes/api/admin/purchases'
+import { Route as ApiAdminDashboardRouteImport } from './routes/api/admin/dashboard'
+import { Route as ApiRafflesIdPauseInfoRouteImport } from './routes/api/raffles/$id.pause-info'
 
 const VerificarRoute = VerificarRouteImport.update({
   id: '/verificar',
@@ -47,6 +59,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const ApiConfigRoute = ApiConfigRouteImport.update({
+  id: '/api/config',
+  path: '/api/config',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const AdminRifasRoute = AdminRifasRouteImport.update({
   id: '/rifas',
@@ -78,6 +95,41 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const ApiRafflesIndexRoute = ApiRafflesIndexRouteImport.update({
+  id: '/api/raffles/',
+  path: '/api/raffles/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPurchasesIndexRoute = ApiPurchasesIndexRouteImport.update({
+  id: '/api/purchases/',
+  path: '/api/purchases/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiTicketsVerifyRoute = ApiTicketsVerifyRouteImport.update({
+  id: '/api/tickets/verify',
+  path: '/api/tickets/verify',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRafflesPublishedRoute = ApiRafflesPublishedRouteImport.update({
+  id: '/api/raffles/published',
+  path: '/api/raffles/published',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRafflesFirstActiveRoute = ApiRafflesFirstActiveRouteImport.update({
+  id: '/api/raffles/first-active',
+  path: '/api/raffles/first-active',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRafflesIdRoute = ApiRafflesIdRouteImport.update({
+  id: '/api/raffles/$id',
+  path: '/api/raffles/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPurchasesTopClientsRoute = ApiPurchasesTopClientsRouteImport.update({
+  id: '/api/purchases/top-clients',
+  path: '/api/purchases/top-clients',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthDbRoute = ApiHealthDbRouteImport.update({
   id: '/api/health/db',
   path: '/api/health/db',
@@ -87,6 +139,26 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
   getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminRafflesRoute = ApiAdminRafflesRouteImport.update({
+  id: '/api/admin/raffles',
+  path: '/api/admin/raffles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminPurchasesRoute = ApiAdminPurchasesRouteImport.update({
+  id: '/api/admin/purchases',
+  path: '/api/admin/purchases',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminDashboardRoute = ApiAdminDashboardRouteImport.update({
+  id: '/api/admin/dashboard',
+  path: '/api/admin/dashboard',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiRafflesIdPauseInfoRoute = ApiRafflesIdPauseInfoRouteImport.update({
+  id: '/pause-info',
+  path: '/pause-info',
+  getParentRoute: () => ApiRafflesIdRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
@@ -100,9 +172,21 @@ export interface FileRoutesByFullPath {
   '/admin/crear': typeof AdminCrearRoute
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
+  '/api/config': typeof ApiConfigRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/admin/purchases': typeof ApiAdminPurchasesRoute
+  '/api/admin/raffles': typeof ApiAdminRafflesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
+  '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
+  '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
+  '/api/raffles/published': typeof ApiRafflesPublishedRoute
+  '/api/tickets/verify': typeof ApiTicketsVerifyRoute
+  '/api/purchases/': typeof ApiPurchasesIndexRoute
+  '/api/raffles/': typeof ApiRafflesIndexRoute
+  '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -114,9 +198,21 @@ export interface FileRoutesByTo {
   '/admin/crear': typeof AdminCrearRoute
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
+  '/api/config': typeof ApiConfigRoute
   '/admin': typeof AdminIndexRoute
+  '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/admin/purchases': typeof ApiAdminPurchasesRoute
+  '/api/admin/raffles': typeof ApiAdminRafflesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
+  '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
+  '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
+  '/api/raffles/published': typeof ApiRafflesPublishedRoute
+  '/api/tickets/verify': typeof ApiTicketsVerifyRoute
+  '/api/purchases': typeof ApiPurchasesIndexRoute
+  '/api/raffles': typeof ApiRafflesIndexRoute
+  '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -130,9 +226,21 @@ export interface FileRoutesById {
   '/admin/crear': typeof AdminCrearRoute
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
+  '/api/config': typeof ApiConfigRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/admin/dashboard': typeof ApiAdminDashboardRoute
+  '/api/admin/purchases': typeof ApiAdminPurchasesRoute
+  '/api/admin/raffles': typeof ApiAdminRafflesRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
+  '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
+  '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
+  '/api/raffles/published': typeof ApiRafflesPublishedRoute
+  '/api/tickets/verify': typeof ApiTicketsVerifyRoute
+  '/api/purchases/': typeof ApiPurchasesIndexRoute
+  '/api/raffles/': typeof ApiRafflesIndexRoute
+  '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -147,9 +255,21 @@ export interface FileRouteTypes {
     | '/admin/crear'
     | '/admin/emails'
     | '/admin/rifas'
+    | '/api/config'
     | '/admin/'
+    | '/api/admin/dashboard'
+    | '/api/admin/purchases'
+    | '/api/admin/raffles'
     | '/api/auth/$'
     | '/api/health/db'
+    | '/api/purchases/top-clients'
+    | '/api/raffles/$id'
+    | '/api/raffles/first-active'
+    | '/api/raffles/published'
+    | '/api/tickets/verify'
+    | '/api/purchases/'
+    | '/api/raffles/'
+    | '/api/raffles/$id/pause-info'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -161,9 +281,21 @@ export interface FileRouteTypes {
     | '/admin/crear'
     | '/admin/emails'
     | '/admin/rifas'
+    | '/api/config'
     | '/admin'
+    | '/api/admin/dashboard'
+    | '/api/admin/purchases'
+    | '/api/admin/raffles'
     | '/api/auth/$'
     | '/api/health/db'
+    | '/api/purchases/top-clients'
+    | '/api/raffles/$id'
+    | '/api/raffles/first-active'
+    | '/api/raffles/published'
+    | '/api/tickets/verify'
+    | '/api/purchases'
+    | '/api/raffles'
+    | '/api/raffles/$id/pause-info'
   id:
     | '__root__'
     | '/'
@@ -176,9 +308,21 @@ export interface FileRouteTypes {
     | '/admin/crear'
     | '/admin/emails'
     | '/admin/rifas'
+    | '/api/config'
     | '/admin/'
+    | '/api/admin/dashboard'
+    | '/api/admin/purchases'
+    | '/api/admin/raffles'
     | '/api/auth/$'
     | '/api/health/db'
+    | '/api/purchases/top-clients'
+    | '/api/raffles/$id'
+    | '/api/raffles/first-active'
+    | '/api/raffles/published'
+    | '/api/tickets/verify'
+    | '/api/purchases/'
+    | '/api/raffles/'
+    | '/api/raffles/$id/pause-info'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -186,8 +330,19 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   VerificarRoute: typeof VerificarRoute
+  ApiConfigRoute: typeof ApiConfigRoute
+  ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
+  ApiAdminPurchasesRoute: typeof ApiAdminPurchasesRoute
+  ApiAdminRafflesRoute: typeof ApiAdminRafflesRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiHealthDbRoute: typeof ApiHealthDbRoute
+  ApiPurchasesTopClientsRoute: typeof ApiPurchasesTopClientsRoute
+  ApiRafflesIdRoute: typeof ApiRafflesIdRouteWithChildren
+  ApiRafflesFirstActiveRoute: typeof ApiRafflesFirstActiveRoute
+  ApiRafflesPublishedRoute: typeof ApiRafflesPublishedRoute
+  ApiTicketsVerifyRoute: typeof ApiTicketsVerifyRoute
+  ApiPurchasesIndexRoute: typeof ApiPurchasesIndexRoute
+  ApiRafflesIndexRoute: typeof ApiRafflesIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -226,6 +381,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/api/config': {
+      id: '/api/config'
+      path: '/api/config'
+      fullPath: '/api/config'
+      preLoaderRoute: typeof ApiConfigRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/admin/rifas': {
       id: '/admin/rifas'
@@ -269,6 +431,55 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/api/raffles/': {
+      id: '/api/raffles/'
+      path: '/api/raffles'
+      fullPath: '/api/raffles/'
+      preLoaderRoute: typeof ApiRafflesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/purchases/': {
+      id: '/api/purchases/'
+      path: '/api/purchases'
+      fullPath: '/api/purchases/'
+      preLoaderRoute: typeof ApiPurchasesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/tickets/verify': {
+      id: '/api/tickets/verify'
+      path: '/api/tickets/verify'
+      fullPath: '/api/tickets/verify'
+      preLoaderRoute: typeof ApiTicketsVerifyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/raffles/published': {
+      id: '/api/raffles/published'
+      path: '/api/raffles/published'
+      fullPath: '/api/raffles/published'
+      preLoaderRoute: typeof ApiRafflesPublishedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/raffles/first-active': {
+      id: '/api/raffles/first-active'
+      path: '/api/raffles/first-active'
+      fullPath: '/api/raffles/first-active'
+      preLoaderRoute: typeof ApiRafflesFirstActiveRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/raffles/$id': {
+      id: '/api/raffles/$id'
+      path: '/api/raffles/$id'
+      fullPath: '/api/raffles/$id'
+      preLoaderRoute: typeof ApiRafflesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/purchases/top-clients': {
+      id: '/api/purchases/top-clients'
+      path: '/api/purchases/top-clients'
+      fullPath: '/api/purchases/top-clients'
+      preLoaderRoute: typeof ApiPurchasesTopClientsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/health/db': {
       id: '/api/health/db'
       path: '/api/health/db'
@@ -282,6 +493,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/auth/$'
       preLoaderRoute: typeof ApiAuthSplatRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/raffles': {
+      id: '/api/admin/raffles'
+      path: '/api/admin/raffles'
+      fullPath: '/api/admin/raffles'
+      preLoaderRoute: typeof ApiAdminRafflesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/purchases': {
+      id: '/api/admin/purchases'
+      path: '/api/admin/purchases'
+      fullPath: '/api/admin/purchases'
+      preLoaderRoute: typeof ApiAdminPurchasesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/dashboard': {
+      id: '/api/admin/dashboard'
+      path: '/api/admin/dashboard'
+      fullPath: '/api/admin/dashboard'
+      preLoaderRoute: typeof ApiAdminDashboardRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/raffles/$id/pause-info': {
+      id: '/api/raffles/$id/pause-info'
+      path: '/pause-info'
+      fullPath: '/api/raffles/$id/pause-info'
+      preLoaderRoute: typeof ApiRafflesIdPauseInfoRouteImport
+      parentRoute: typeof ApiRafflesIdRoute
     }
   }
 }
@@ -310,13 +549,36 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
   AdminRouteRouteChildren,
 )
 
+interface ApiRafflesIdRouteChildren {
+  ApiRafflesIdPauseInfoRoute: typeof ApiRafflesIdPauseInfoRoute
+}
+
+const ApiRafflesIdRouteChildren: ApiRafflesIdRouteChildren = {
+  ApiRafflesIdPauseInfoRoute: ApiRafflesIdPauseInfoRoute,
+}
+
+const ApiRafflesIdRouteWithChildren = ApiRafflesIdRoute._addFileChildren(
+  ApiRafflesIdRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AdminRouteRoute: AdminRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   VerificarRoute: VerificarRoute,
+  ApiConfigRoute: ApiConfigRoute,
+  ApiAdminDashboardRoute: ApiAdminDashboardRoute,
+  ApiAdminPurchasesRoute: ApiAdminPurchasesRoute,
+  ApiAdminRafflesRoute: ApiAdminRafflesRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiHealthDbRoute: ApiHealthDbRoute,
+  ApiPurchasesTopClientsRoute: ApiPurchasesTopClientsRoute,
+  ApiRafflesIdRoute: ApiRafflesIdRouteWithChildren,
+  ApiRafflesFirstActiveRoute: ApiRafflesFirstActiveRoute,
+  ApiRafflesPublishedRoute: ApiRafflesPublishedRoute,
+  ApiTicketsVerifyRoute: ApiTicketsVerifyRoute,
+  ApiPurchasesIndexRoute: ApiPurchasesIndexRoute,
+  ApiRafflesIndexRoute: ApiRafflesIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
