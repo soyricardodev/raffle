@@ -22,14 +22,18 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 | T-003 | app/lib/db.ts | 🟣 | `blocked` | T-002 — **owner DeepSeek, path `app/src/lib/db.ts`** |
 | T-004 | Validators Zod | 🟣 | `blocked` | T-002 |
 | T-005 | Errores dominio | 🟣 | `ready` | `packages/shared/src/errors/` |
-| T-006 | env.ts Zod | 🔵 | `done` | `app/src/lib/env.ts` |
+| T-006 | env.ts Zod | 🔵 | `done` | optional DATABASE_URL en dev |
 | T-007 | logger Pino | 🔵 | `done` | `app/src/lib/logger.ts` |
-| T-008 | Better Auth | 🟣 | `blocked` | T-003 |
+| T-008 | Better Auth | 🟣 | `blocked` | T-003 · reemplazar auth-client stub |
 | T-009 | RBAC | 🟣 | `blocked` | T-008 |
 | T-010 | shadcn base | 🔵 | `done` | button, input, label, card, dialog |
-| T-011 | __root providers | 🤝 | `in_progress` | QueryClient OK · Better Auth pendiente T-008 |
-| T-012 | /login | 🔵 | `blocked` | T-008 |
-| T-013 | admin layout | 🔵 | `blocked` | T-012 |
+| T-011 | __root providers | 🔵 | `done` | QueryClient + Sonner |
+| T-012 | /login | 🔵 | `done` | UI + dev stub (Better Auth T-008 después) |
+| T-013 | admin layout | 🔵 | `done` | sidebar + rutas placeholder |
+| T-301 | site-config store | 🔵 | `done` | Zustand + CSS vars |
+| T-302 | layout público | 🔵 | `done` | header/footer |
+| T-303 | landing base | 🔵 | `in_progress` | hero placeholder, falta rifa activa |
+| T-308 | verificar | 🔵 | `in_progress` | ruta shell, falta form |
 | T-014 | Vitest smoke | 🔵 | `done` | env.test.ts |
 | T-015 | Docker | 🔵 | `done` | Dockerfile + compose skeleton |
 | T-016 | GitHub Actions CI | 🔵 | `done` | push GHCR comentado hasta D-03 |

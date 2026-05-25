@@ -8,59 +8,281 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from "./routes/__root"
-import { Route as IndexRouteImport } from "./routes/index"
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as VerificarRouteImport } from './routes/verificar'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as AdminRouteRouteImport } from './routes/admin/route'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as AdminRifasRouteImport } from './routes/admin/rifas'
+import { Route as AdminEmailsRouteImport } from './routes/admin/emails'
+import { Route as AdminCrearRouteImport } from './routes/admin/crear'
+import { Route as AdminConfigRouteImport } from './routes/admin/config'
+import { Route as AdminBoletosRouteImport } from './routes/admin/boletos'
+import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 
-const IndexRoute = IndexRouteImport.update({
-  id: "/",
-  path: "/",
+const VerificarRoute = VerificarRouteImport.update({
+  id: '/verificar',
+  path: '/verificar',
   getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminRouteRoute = AdminRouteRouteImport.update({
+  id: '/admin',
+  path: '/admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AdminIndexRoute = AdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminRifasRoute = AdminRifasRouteImport.update({
+  id: '/rifas',
+  path: '/rifas',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminEmailsRoute = AdminEmailsRouteImport.update({
+  id: '/emails',
+  path: '/emails',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCrearRoute = AdminCrearRouteImport.update({
+  id: '/crear',
+  path: '/crear',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminConfigRoute = AdminConfigRouteImport.update({
+  id: '/config',
+  path: '/config',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminBoletosRoute = AdminBoletosRouteImport.update({
+  id: '/boletos',
+  path: '/boletos',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AdminRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  "/": typeof IndexRoute
+  '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/login': typeof LoginRoute
+  '/verificar': typeof VerificarRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/boletos': typeof AdminBoletosRoute
+  '/admin/config': typeof AdminConfigRoute
+  '/admin/crear': typeof AdminCrearRoute
+  '/admin/emails': typeof AdminEmailsRoute
+  '/admin/rifas': typeof AdminRifasRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRoutesByTo {
-  "/": typeof IndexRoute
+  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/verificar': typeof VerificarRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/boletos': typeof AdminBoletosRoute
+  '/admin/config': typeof AdminConfigRoute
+  '/admin/crear': typeof AdminCrearRoute
+  '/admin/emails': typeof AdminEmailsRoute
+  '/admin/rifas': typeof AdminRifasRoute
+  '/admin': typeof AdminIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  "/": typeof IndexRoute
+  '/': typeof IndexRoute
+  '/admin': typeof AdminRouteRouteWithChildren
+  '/login': typeof LoginRoute
+  '/verificar': typeof VerificarRoute
+  '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/boletos': typeof AdminBoletosRoute
+  '/admin/config': typeof AdminConfigRoute
+  '/admin/crear': typeof AdminCrearRoute
+  '/admin/emails': typeof AdminEmailsRoute
+  '/admin/rifas': typeof AdminRifasRoute
+  '/admin/': typeof AdminIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: "/"
+  fullPaths:
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/verificar'
+    | '/admin/analytics'
+    | '/admin/boletos'
+    | '/admin/config'
+    | '/admin/crear'
+    | '/admin/emails'
+    | '/admin/rifas'
+    | '/admin/'
   fileRoutesByTo: FileRoutesByTo
-  to: "/"
-  id: "__root__" | "/"
+  to:
+    | '/'
+    | '/login'
+    | '/verificar'
+    | '/admin/analytics'
+    | '/admin/boletos'
+    | '/admin/config'
+    | '/admin/crear'
+    | '/admin/emails'
+    | '/admin/rifas'
+    | '/admin'
+  id:
+    | '__root__'
+    | '/'
+    | '/admin'
+    | '/login'
+    | '/verificar'
+    | '/admin/analytics'
+    | '/admin/boletos'
+    | '/admin/config'
+    | '/admin/crear'
+    | '/admin/emails'
+    | '/admin/rifas'
+    | '/admin/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AdminRouteRoute: typeof AdminRouteRouteWithChildren
+  LoginRoute: typeof LoginRoute
+  VerificarRoute: typeof VerificarRoute
 }
 
-declare module "@tanstack/react-router" {
+declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    "/": {
-      id: "/"
-      path: "/"
-      fullPath: "/"
+    '/verificar': {
+      id: '/verificar'
+      path: '/verificar'
+      fullPath: '/verificar'
+      preLoaderRoute: typeof VerificarRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/admin': {
+      id: '/admin'
+      path: '/admin'
+      fullPath: '/admin'
+      preLoaderRoute: typeof AdminRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/admin/': {
+      id: '/admin/'
+      path: '/'
+      fullPath: '/admin/'
+      preLoaderRoute: typeof AdminIndexRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/rifas': {
+      id: '/admin/rifas'
+      path: '/rifas'
+      fullPath: '/admin/rifas'
+      preLoaderRoute: typeof AdminRifasRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/emails': {
+      id: '/admin/emails'
+      path: '/emails'
+      fullPath: '/admin/emails'
+      preLoaderRoute: typeof AdminEmailsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/crear': {
+      id: '/admin/crear'
+      path: '/crear'
+      fullPath: '/admin/crear'
+      preLoaderRoute: typeof AdminCrearRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/config': {
+      id: '/admin/config'
+      path: '/config'
+      fullPath: '/admin/config'
+      preLoaderRoute: typeof AdminConfigRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/boletos': {
+      id: '/admin/boletos'
+      path: '/boletos'
+      fullPath: '/admin/boletos'
+      preLoaderRoute: typeof AdminBoletosRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/analytics': {
+      id: '/admin/analytics'
+      path: '/analytics'
+      fullPath: '/admin/analytics'
+      preLoaderRoute: typeof AdminAnalyticsRouteImport
+      parentRoute: typeof AdminRouteRoute
     }
   }
 }
 
+interface AdminRouteRouteChildren {
+  AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminBoletosRoute: typeof AdminBoletosRoute
+  AdminConfigRoute: typeof AdminConfigRoute
+  AdminCrearRoute: typeof AdminCrearRoute
+  AdminEmailsRoute: typeof AdminEmailsRoute
+  AdminRifasRoute: typeof AdminRifasRoute
+  AdminIndexRoute: typeof AdminIndexRoute
+}
+
+const AdminRouteRouteChildren: AdminRouteRouteChildren = {
+  AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminBoletosRoute: AdminBoletosRoute,
+  AdminConfigRoute: AdminConfigRoute,
+  AdminCrearRoute: AdminCrearRoute,
+  AdminEmailsRoute: AdminEmailsRoute,
+  AdminRifasRoute: AdminRifasRoute,
+  AdminIndexRoute: AdminIndexRoute,
+}
+
+const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
+  AdminRouteRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AdminRouteRoute: AdminRouteRouteWithChildren,
+  LoginRoute: LoginRoute,
+  VerificarRoute: VerificarRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
   ._addFileTypes<FileRouteTypes>()
 
-import type { getRouter } from "./router.tsx"
-import type { createStart } from "@tanstack/react-start"
-declare module "@tanstack/react-start" {
+import type { getRouter } from './router.tsx'
+import type { createStart } from '@tanstack/react-start'
+declare module '@tanstack/react-start' {
   interface Register {
     ssr: true
     router: Awaited<ReturnType<typeof getRouter>>

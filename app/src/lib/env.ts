@@ -1,8 +1,9 @@
 import { z } from "zod"
 
-const envSchema = z.object({
+const envSchema = z
+  .object({
   NODE_ENV: z.enum(["development", "production", "test"]).default("development"),
-  DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
+  DATABASE_URL: z.string().min(1).optional(),
   BETTER_AUTH_SECRET: z.string().min(32).optional(),
   BETTER_AUTH_URL: z.string().url().default("http://localhost:3000"),
   APP_URL: z.string().url().default("http://localhost:3000"),
@@ -14,6 +15,10 @@ const envSchema = z.object({
   INNGEST_SIGNING_KEY: z.string().optional(),
   LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error"]).default("info"),
 })
+  .refine(
+    (data) => data.NODE_ENV !== "production" || Boolean(data.DATABASE_URL),
+    { message: "DATABASE_URL is required in production", path: ["DATABASE_URL"] },
+  )
 
 export type ServerEnv = z.infer<typeof envSchema>
 
@@ -41,6 +46,17 @@ export function getEnv(): ServerEnv {
 /** @internal test helper */
 export function resetEnvCache(): void {
   cached = undefined
+}
+
+/** Use when opening a DB connection — fails if DATABASE_URL is missing. */
+export function requireDatabaseUrl(): string {
+  const url = getEnv().DATABASE_URL
+  if (!url) {
+    throw new Error(
+      "DATABASE_URL is not configured. Set it in .env when connecting to MySQL.",
+    )
+  }
+  return url
 }
 
 export { parseEnv, envSchema }

@@ -6,12 +6,23 @@ describe("getEnv", () => {
     resetEnvCache()
   })
 
-  it("throws when DATABASE_URL is missing", () => {
+  it("throws when DATABASE_URL is missing in production", () => {
     resetEnvCache()
-    const previous = process.env.DATABASE_URL
+    const previousUrl = process.env.DATABASE_URL
+    const previousEnv = process.env.NODE_ENV
     delete process.env.DATABASE_URL
+    process.env.NODE_ENV = "production"
     expect(() => getEnv()).toThrow(/DATABASE_URL/)
-    process.env.DATABASE_URL = previous
+    process.env.DATABASE_URL = previousUrl
+    process.env.NODE_ENV = previousEnv
+  })
+
+  it("allows missing DATABASE_URL outside production", () => {
+    resetEnvCache()
+    delete process.env.DATABASE_URL
+    process.env.NODE_ENV = "development"
+    const parsed = getEnv()
+    expect(parsed.DATABASE_URL).toBeUndefined()
   })
 
   it("parses valid minimal env", () => {
