@@ -1,0 +1,400 @@
+import { getPool } from "@/lib/db.server"
+import { getLogger } from "@/lib/logger"
+import {
+  RaffleNotFoundError,
+  RaffleHasPurchasesError,
+  RaffleNotActiveError,
+} from "@raffle/shared/errors"
+import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
+import { generateTicketNumbers, insertTicketPool } from "./ticket.service"
+import { checkTicketAvailability } from "./pause.service"
+
+const logger = getLogger()
+
+type SqlValue = string | number | boolean | null
+
+// ─── Queries ─────────────────────────────────────────────────
+
+export async function getAllRaffles(params: {
+  status?: string
+  limit?: number
+  page?: number
+}) {
+  const pool = getPool()
+  const { status, limit, page } = params
+
+  let query = "SELECT * FROM raffles"
+  const values: SqlValue[] = []
+
+  if (status && status !== "all") {
+    const statusList = status.split(",").map((s) => s.trim()).filter(Boolean)
+    if (statusList.length > 0) {
+      query += ` WHERE status IN (${statusList.map(() => "?").join(",")})`
+      for (const s of statusList) values.push(s)
+    }
+  }
+
+  query += " ORDER BY created_at DESC"
+
+  const safeLimit = limit && limit > 0 ? Math.min(limit, 100) : 10
+  const safePage = page && page > 0 ? page : 1
+  const offset = (safePage - 1) * safeLimit
+  query += " LIMIT ? OFFSET ?"
+  values.push(safeLimit, offset)
+
+  const [rows] = await pool.execute(query, values)
+
+  const raffleList = rows as Record<string, unknown>[]
+  const enriched = await Promise.all(
+    raffleList.map(async (r) => {
+      const av = await checkTicketAvailability(Number(r.id))
+      return {
+        ...r,
+        tickets_sold: av.sold,
+        tickets_available: av.available,
+        tickets_reserved: av.reserved,
+        sold_percentage: av.total > 0 ? ((av.sold / av.total) * 100).toFixed(2) : "0.00",
+      }
+    }),
+  )
+  return enriched
+}
+
+export async function getRaffleById(id: number) {
+  const pool = getPool()
+
+  const [raffleRows] = await pool.execute("SELECT * FROM raffles WHERE id = ?", [id])
+  const raffleRow = (raffleRows as Record<string, unknown>[])[0]
+  if (!raffleRow) throw new RaffleNotFoundError(id)
+
+  const [prizes] = await pool.execute("SELECT * FROM prizes WHERE raffle_id = ? ORDER BY position", [id])
+  const [payMethods] = await pool.execute(
+    "SELECT * FROM payment_methods WHERE raffle_id = ? AND is_active = true",
+    [id],
+  )
+
+  const av = await checkTicketAvailability(id)
+  const totalTickets = Number(raffleRow.total_tickets)
+
+  return {
+    ...raffleRow,
+    prizes,
+    payment_methods: payMethods,
+    tickets_sold: av.sold,
+    tickets_available: av.available,
+    tickets_reserved: av.reserved,
+    sold_percentage: totalTickets > 0 ? ((av.sold / totalTickets) * 100).toFixed(2) : "0.00",
+    days_remaining: raffleRow.draw_date
+      ? Math.ceil((new Date(raffleRow.draw_date as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null,
+  }
+}
+
+export async function getFirstActiveRaffle() {
+  const pool = getPool()
+
+  const [raffleRows] = await pool.execute(
+    "SELECT * FROM raffles WHERE status IN ('active', 'paused') ORDER BY created_at DESC LIMIT 1",
+  )
+
+  const raffleRow = (raffleRows as Record<string, unknown>[])[0]
+  if (!raffleRow) throw new RaffleNotFoundError("first-active")
+
+  const id = Number(raffleRow.id)
+  const [prizes] = await pool.execute("SELECT * FROM prizes WHERE raffle_id = ? ORDER BY position", [id])
+  const [payMethods] = await pool.execute(
+    "SELECT * FROM payment_methods WHERE raffle_id = ? AND is_active = true",
+    [id],
+  )
+
+  const av = await checkTicketAvailability(id)
+  const totalTickets = Number(raffleRow.total_tickets)
+
+  return {
+    ...raffleRow,
+    prizes,
+    payment_methods: payMethods,
+    tickets_sold: av.sold,
+    tickets_available: av.available,
+    tickets_reserved: av.reserved,
+    sold_percentage: totalTickets > 0 ? ((av.sold / totalTickets) * 100).toFixed(2) : "0.00",
+    days_remaining: raffleRow.draw_date
+      ? Math.ceil((new Date(raffleRow.draw_date as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      : null,
+  }
+}
+
+// ─── Mutations ───────────────────────────────────────────────
+
+export async function createRaffle(input: CreateRaffleInput) {
+  const pool = getPool()
+  const conn = await pool.getConnection()
+
+  try {
+    await conn.beginTransaction()
+
+    const [result] = await conn.execute(
+      `INSERT INTO raffles
+       (name, description, total_tickets, price_bs, price_usd,
+        min_purchase, max_purchase, draw_date, percentage_mode,
+        activation_percentage, days_for_draw, status, auto_pause_enabled)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        input.name,
+        input.description ?? null,
+        input.total_tickets,
+        input.price_bs,
+        input.price_usd,
+        input.min_purchase ?? 1,
+        input.max_purchase ?? 10,
+        input.draw_date ?? null,
+        input.percentage_mode ?? false,
+        input.activation_percentage ?? null,
+        input.days_for_draw ?? null,
+        input.status ?? "draft",
+        input.auto_pause_enabled ?? true,
+      ],
+    )
+
+    const raffleId = (result as { insertId: number }).insertId
+
+    if (input.total_tickets > 0) {
+      const numbers = generateTicketNumbers(input.total_tickets)
+      await insertTicketPool(raffleId, numbers)
+    }
+
+    if (input.prizes?.length) {
+      for (let i = 0; i < input.prizes.length; i++) {
+        const p = input.prizes[i]!
+        await conn.execute(
+          "INSERT INTO prizes (raffle_id, name, description, image_url, position) VALUES (?, ?, ?, ?, ?)",
+          [raffleId, p.name, p.description ?? "", p.image_url ?? null, p.position ?? i + 1],
+        )
+      }
+    }
+
+    if (input.payment_methods?.length) {
+      for (const pm of input.payment_methods) {
+        await conn.execute(
+          "INSERT INTO payment_methods (raffle_id, method_type, account_info, is_active, min_tickets) VALUES (?, ?, ?, ?, ?)",
+          [raffleId, pm.method_type, JSON.stringify(pm.account_info), true, pm.min_tickets ?? null],
+        )
+      }
+    }
+
+    await conn.commit()
+    logger.info({ raffleId, name: input.name }, "raffle:created")
+    return { raffleId }
+  } catch (error) {
+    await conn.rollback()
+    throw error
+  } finally {
+    conn.release()
+  }
+}
+
+export async function updateRaffle(id: number, input: UpdateRaffleInput) {
+  const pool = getPool()
+  const conn = await pool.getConnection()
+
+  try {
+    await conn.beginTransaction()
+
+    const fields: string[] = []
+    const values: SqlValue[] = []
+
+    const allowedFields: (keyof UpdateRaffleInput)[] = [
+      "name", "description", "price_bs", "price_usd",
+      "min_purchase", "max_purchase", "draw_date",
+      "status", "auto_pause_enabled",
+    ]
+
+    for (const field of allowedFields) {
+      if (input[field] !== undefined) {
+        fields.push(`${field} = ?`)
+        values.push(input[field] as SqlValue)
+      }
+    }
+
+    if (fields.length > 0) {
+      fields.push("updated_at = CURRENT_TIMESTAMP")
+      values.push(id)
+
+      const [result] = await conn.execute(
+        `UPDATE raffles SET ${fields.join(", ")} WHERE id = ?`,
+        values,
+      )
+
+      if ((result as { affectedRows: number }).affectedRows === 0) {
+        await conn.rollback()
+        throw new RaffleNotFoundError(id)
+      }
+    }
+
+    if (input.prizes) {
+      await conn.execute("DELETE FROM prizes WHERE raffle_id = ?", [id])
+      for (let i = 0; i < input.prizes.length; i++) {
+        const p = input.prizes[i]!
+        await conn.execute(
+          "INSERT INTO prizes (raffle_id, name, description, image_url, position) VALUES (?, ?, ?, ?, ?)",
+          [id, p.name, p.description ?? "", p.image_url ?? null, p.position ?? i + 1],
+        )
+      }
+    }
+
+    if (input.payment_methods) {
+      await conn.execute("DELETE FROM payment_methods WHERE raffle_id = ?", [id])
+      for (const pm of input.payment_methods) {
+        await conn.execute(
+          "INSERT INTO payment_methods (raffle_id, method_type, account_info, is_active, min_tickets) VALUES (?, ?, ?, ?, ?)",
+          [id, pm.method_type, JSON.stringify(pm.account_info), true, pm.min_tickets ?? null],
+        )
+      }
+    }
+
+    await conn.commit()
+    logger.info({ raffleId: id }, "raffle:updated")
+    return { raffleId: id }
+  } catch (error) {
+    await conn.rollback()
+    throw error
+  } finally {
+    conn.release()
+  }
+}
+
+export async function deleteRaffle(id: number) {
+  const pool = getPool()
+  const conn = await pool.getConnection()
+
+  try {
+    await conn.beginTransaction()
+
+    const [raffleRows] = await conn.execute("SELECT name FROM raffles WHERE id = ?", [id])
+    const raffle = (raffleRows as { name: string }[])[0]
+    if (!raffle) {
+      await conn.rollback()
+      throw new RaffleNotFoundError(id)
+    }
+
+    const [purchaseRows] = await conn.execute(
+      "SELECT COUNT(*) as count FROM purchases WHERE raffle_id = ?",
+      [id],
+    )
+    const count = (purchaseRows as { count: number }[])[0]!.count
+    if (count > 0) {
+      await conn.rollback()
+      throw new RaffleHasPurchasesError(id, count)
+    }
+
+    await conn.execute("DELETE FROM raffles WHERE id = ?", [id])
+    await conn.commit()
+
+    logger.info({ raffleId: id, name: raffle.name }, "raffle:deleted")
+    return { deletedId: id, name: raffle.name }
+  } catch (error) {
+    await conn.rollback()
+    throw error
+  } finally {
+    conn.release()
+  }
+}
+
+export async function publishRaffle(id: number, publish: boolean) {
+  const pool = getPool()
+
+  const [raffleRows] = await pool.execute("SELECT id, status, publish FROM raffles WHERE id = ?", [id])
+  const raffle = (raffleRows as { id: number; status: string; publish: boolean }[])[0]
+  if (!raffle) throw new RaffleNotFoundError(id)
+  if (raffle.status !== "finished") throw new RaffleNotActiveError(id, raffle.status)
+
+  if (raffle.publish === publish) {
+    return { message: `La rifa ya está ${publish ? "" : "des"}publicada`, raffleId: id }
+  }
+
+  await pool.execute("UPDATE raffles SET publish = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?", [
+    publish ? 1 : 0,
+    id,
+  ])
+
+  logger.info({ raffleId: id, publish }, "raffle:published")
+  return { message: `Rifa ${publish ? "" : "des"}publicada exitosamente`, raffleId: id }
+}
+
+export async function getPublishedRaffles(limit: number, page: number) {
+  const pool = getPool()
+  const safeLimit = Math.min(limit ?? 10, 100)
+  const safePage = Math.max(page ?? 1, 1)
+
+  const [rows] = await pool.execute(
+    "SELECT * FROM raffles WHERE publish = true AND status = 'finished' ORDER BY created_at DESC LIMIT ? OFFSET ?",
+    [safeLimit, (safePage - 1) * safeLimit],
+  )
+
+  const raffleList = rows as Record<string, unknown>[]
+  const enriched = await Promise.all(
+    raffleList.map(async (r) => {
+      const av = await checkTicketAvailability(Number(r.id))
+      const total = Number(r.total_tickets)
+      return {
+        ...r,
+        tickets_sold: av.sold,
+        sold_percentage: total > 0 ? ((av.sold / total) * 100).toFixed(2) : "0.00",
+      }
+    }),
+  )
+  return { raffles: enriched, totalRows: enriched.length }
+}
+
+export async function getDashboardStats() {
+  const pool = getPool()
+
+  const [raffleStats] = await pool.execute(
+    `SELECT
+       COUNT(*) as total_raffles,
+       SUM(CASE WHEN status = 'active' THEN 1 ELSE 0 END) as active_raffles,
+       SUM(CASE WHEN status = 'finished' THEN 1 ELSE 0 END) as finished_raffles
+     FROM raffles`,
+  )
+
+  const [ticketStats] = await pool.execute(
+    `SELECT
+       COUNT(t.id) as total_tickets,
+       SUM(CASE WHEN t.status = 'sold' THEN 1 ELSE 0 END) as sold_tickets,
+       SUM(CASE WHEN t.status = 'reserved' THEN 1 ELSE 0 END) as reserved_tickets
+     FROM tickets t
+     JOIN raffles r ON t.raffle_id = r.id
+     WHERE r.status = 'active'`,
+  )
+
+  const [salesStats] = await pool.execute(
+    `SELECT
+       COUNT(*) as total_sales,
+       SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_sales,
+       SUM(CASE WHEN status = 'approved' THEN 1 ELSE 0 END) as approved_sales,
+       COALESCE(SUM(CASE WHEN status = 'approved' THEN total_amount ELSE 0 END), 0) as total_revenue
+     FROM purchases`,
+  )
+
+  const [userStats] = await pool.execute(
+    `SELECT
+       COUNT(DISTINCT customer_phone) as total_customers,
+       COUNT(DISTINCT CASE WHEN DATE(created_at) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN customer_phone END) as new_customers
+     FROM purchases`,
+  )
+
+  const [recentSales] = await pool.execute(
+    `SELECT p.*, r.name as raffle_name
+     FROM purchases p
+     JOIN raffles r ON p.raffle_id = r.id
+     ORDER BY p.created_at DESC LIMIT 10`,
+  )
+
+  return {
+    raffles: (raffleStats as Record<string, number>[])[0] ?? {},
+    tickets: (ticketStats as Record<string, number>[])[0] ?? {},
+    sales: (salesStats as Record<string, number>[])[0] ?? {},
+    users: (userStats as Record<string, number>[])[0] ?? {},
+    recent_sales: recentSales,
+  }
+}
