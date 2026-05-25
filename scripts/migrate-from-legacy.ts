@@ -1,18 +1,10 @@
 /**
- * Script de migración de datos: legacy MySQL → nuevo schema Drizzle.
+ * Script de migración: legacy MySQL → nuevo schema.
+ *
+ * Solo migra compras con sus números de ticket (no inserts individuales por ticket).
  *
  * USO:
- *   env LEGACY_DATABASE_URL=mysql://... NEW_DATABASE_URL=mysql://... bun run scripts/migrate-from-legacy.ts
- *
- * Tablas migradas:
- *   users, raffles, prizes, payment_methods, purchases, tickets,
- *   site_config, email_logs
- *
- * Notas:
- *   - tickets.ticket_number se mantiene como VARCHAR(4) (padded "0000"–"9999")
- *   - ENUMs de MySQL se mapean 1:1 (Drizzle genera ENUMs en MySQL)
- *   - JSON columns se pasan tal cual
- *   - Better Auth tables (session, account, verification) se crean limpias
+ *   LEGACY_DATABASE_URL=mysql://... NEW_DATABASE_URL=mysql://... bun run scripts/migrate-from-legacy.ts
  */
 
 import mysql from "mysql2/promise"
@@ -60,16 +52,14 @@ async function main() {
     await newDb.execute(
       `INSERT IGNORE INTO raffles
        (id, name, description, image_url, total_tickets, price_bs, price_usd,
-        min_purchase, max_purchase, draw_date, percentage_mode,
-        activation_percentage, days_for_draw, status, pause_until, pause_reason,
+        min_purchase, max_purchase, draw_date, status, pause_until, pause_reason,
         auto_pause_enabled, publish, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         r.id, r.name, r.description, r.image_url, r.total_tickets,
         r.price_bs, r.price_usd, r.min_purchase, r.max_purchase,
-        r.draw_date, r.percentage_mode, r.activation_percentage, r.days_for_draw,
-        r.status, r.pause_until, r.pause_reason, r.auto_pause_enabled,
-        r.publish ?? false, r.created_at, r.updated_at,
+        r.draw_date, r.status, r.pause_until, r.pause_reason,
+        r.auto_pause_enabled ?? true, r.publish ?? false, r.created_at, r.updated_at,
       ],
     )
   }
@@ -97,9 +87,9 @@ async function main() {
     )
   }
 
-  // ─── 6. purchases ──────────────────────────────────────────
+  // ─── 6. purchases (light — sin tickets individuales) ──────
   const [purchaseRows] = await legacy.execute("SELECT * FROM purchases")
-  console.log(`🛒 Migrando ${(purchaseRows as unknown[]).length} compras...`)
+  console.log(`🛒 Migrando ${(purchaseRows as unknown[]).length} compras (sin tickets)...`)
   for (const p of purchaseRows as Record<string, unknown>[]) {
     await newDb.execute(
       `INSERT IGNORE INTO purchases
@@ -117,20 +107,7 @@ async function main() {
     )
   }
 
-  // ─── 7. tickets ────────────────────────────────────────────
-  const [ticketRows] = await legacy.execute("SELECT * FROM tickets")
-  console.log(`🎫 Migrando ${(ticketRows as unknown[]).length} boletos...`)
-  for (const t of ticketRows as Record<string, unknown>[]) {
-    // ticket_number: legacy puede ser INT o VARCHAR — forzamos VARCHAR(4) padded
-    const ticketNumber = String(t.ticket_number).padStart(4, "0")
-    await newDb.execute(
-      `INSERT IGNORE INTO tickets (id, raffle_id, purchase_id, ticket_number, status, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [t.id, t.raffle_id, t.purchase_id, ticketNumber, t.status, t.created_at, t.updated_at],
-    )
-  }
-
-  // ─── 8. email_logs ─────────────────────────────────────────
+  // ─── 7. email_logs ─────────────────────────────────────────
   const [emailRows] = await legacy.execute("SELECT * FROM email_logs")
   console.log(`📧 Migrando ${(emailRows as unknown[]).length} logs de email...`)
   for (const e of emailRows as Record<string, unknown>[]) {
@@ -147,12 +124,12 @@ async function main() {
     )
   }
 
-  console.log("✅ Migración completa")
+  console.log(`\n✅ Migración completa — las rifas nuevas generarán sus propios tickets via Drizzle`)
   await legacy.end()
   await newDb.end()
 }
 
 main().catch((err) => {
-  console.error("❌ Error en migración:", err)
+  console.error("❌ Error:", err)
   process.exit(1)
 })
