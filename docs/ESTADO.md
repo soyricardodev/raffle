@@ -1,6 +1,6 @@
 # ESTADO — Raffle v2
 
-**Última actualización:** 2026-05-24  
+**Última actualización:** 2026-05-25  
 **Fuente de verdad** para inventario técnico y qué funciona hoy.
 
 ---
@@ -13,8 +13,10 @@
 | `pnpm dev` (UI) | ✅ Corregido (ver bugfix abajo) |
 | `pnpm build` | ✅ Pasa |
 | MySQL / Drizzle | 🟡 Schema + código listos; requiere `DATABASE_URL` |
-| Better Auth | 🟡 Backend configurado; login UI aún usa stub dev |
-| Servicios dominio (Fase 1) | ⏳ Pendiente |
+| Better Auth | ✅ Login real funcionando. API handler + guards + middleware. |
+| Servicios dominio (Fase 1) | ✅ Completos |
+| API routes admin (Fase 1) | ✅ Conectados a servicios con auth middleware |
+| Email (Fase 2) | 🟡 Adapter pattern implementado (noop/resend/brevo). Templates React Email pendientes. |
 
 ---
 
@@ -39,7 +41,8 @@
 | `991b0d3` | Legacy + propuestas + bootstrap TanStack Start |
 | `381cea7` | Monorepo, env, logger, shadcn, Vitest, Docker/CI |
 | `243c455` | UI pública/admin (stub auth, sin DB) |
-| *(sin commit)* | Trabajo DeepSeek Fase 0 + fix dev + docs |
+| `5c641be` | Better Auth real login + fast-login + landing page + rifa detail |
+| `111a328` | Admin features completos + API routes + UI components + email adapter |
 
 ---
 
@@ -111,12 +114,13 @@ Better Auth: `session`, `account`, `verification`
 
 | Ruta | Estado |
 |------|--------|
-| `/` | Landing placeholder |
-| `/verificar` | Shell verificación |
-| `/login` | Formulario (stub `sessionStorage`) |
-| `/admin/*` | Sidebar + páginas placeholder |
+| `/` | Landing con rifa activa real, rifas publicadas, site config |
+| `/rifa/$id` | Detalle de rifa con PurchaseForm, PrizesSection, PauseBanner |
+| `/verificar` | TicketVerifier |
+| `/login` | LoginForm con Better Auth real + DevFastLogin |
+| `/admin/*` | Sidebar + páginas reales (Dashboard, Rifas, Boletos, Analytics, Emails, Config) |
 
-**Auth dev stub:** `app/src/features/auth/auth-client.ts` — cualquier credencial funciona. Reemplazar por `better-auth/react` (T-011).
+**Auth:** `app/src/features/auth/auth-client.ts` — Better Auth client real (`better-auth/react`). Sign-in vía `authClient.signIn.email()`. Session guard en admin layout.
 
 ---
 
@@ -149,10 +153,11 @@ Ver `.env.example` en root.
 
 ## Pendiente inmediato
 
-1. **T-011** — Better Auth provider en `__root.tsx` + wire login UI
-2. **Fase 1** — TicketService, PurchaseService, PauseService, RaffleService (DeepSeek)
-3. **👤 B-10** — Rotar secretos legacy
-4. **👤 D-01…D-03** — Decisiones negocio (ver `PROPUESTA_UNIFICADA_RAFFLE_V2.md`)
+1. **👤 B-10** — Rotar secretos legacy: revocar API key Resend hardcodeada en `backend-legacy/services/emailService.js`
+2. **👤 Configurar `DATABASE_URL`** en `.env` para desarrollo con MySQL
+3. **Fase 2** — Jobs Inngest, React Email templates, uploads, admin email routes
+4. **T-109** — Rate limiting en endpoints públicos (compra, verify)
+5. **T-110…T-113** — Tests de concurrencia, pausa, analytics, timezone utils
 
 ---
 

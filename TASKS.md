@@ -13,7 +13,7 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 | ID | Assignee | Estado | Notas |
 |----|----------|--------|-------|
 | B-01…B-09 | 👤 | `done` | Repo local + app TanStack Start |
-| B-10 | 👤 | `ready` | Rotar secretos legacy (urgente) |
+| B-10 | 👤 | `ready` | Rotar secretos legacy (urgente). Resend API key hardcodeada en `backend-legacy/services/emailService.js` — revocar y rotar. |
 
 ## Fase 0
 
@@ -29,8 +29,8 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 | T-008 | Better Auth | 🟣 | `done` | `auth.server.ts` + `/api/auth/*` Nitro |
 | T-009 | RBAC | 🟣 | `done` | `auth-utils.server.ts` |
 | T-010 | shadcn base | 🔵 | `done` | button, input, label, card, dialog |
-| T-011 | __root providers | 🤝 | `in_progress` | QueryClient OK · Better Auth UI pendiente |
-| T-012 | /login | 🔵 | `in_progress` | UI hecha con stub · wire a Better Auth |
+| T-011 | __root providers | 🤝 | `done` | QueryClient OK · Better Auth API handler en `/api/auth/*` · Session guard en admin layout · Auth middleware en API routes |
+| T-012 | /login | 🔵 | `done` | UI con LoginForm · Wire a Better Auth real vía `authClient.signIn.email()` · DevFastLogin |
 | T-013 | admin layout | 🔵 | `done` | Shell + sidebar + placeholders |
 | T-014 | Vitest smoke | 🔵 | `done` | env.test.ts (3 tests) |
 | T-015 | Docker | 🔵 | `done` | Dockerfile + compose |
@@ -58,7 +58,7 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 | T-105 | RaffleService | 🟣 | `done` | `app/server/raffle.service.ts` — CRUD completo, publish, getPublished, getDashboardStats, delete con validación de compras |
 | T-106 | PurchaseService.create | 🟣 | `done` | Transacción completa: lock raffle, validar estado, duplicados, allocate tickets atómico, insert purchase+assign |
 | T-107 | PurchaseService ops | 🟣 | `done` | `updatePurchaseStatus()`, `addTicketsToPurchase()`, `removeTicketsFromPurchase()`, `reassignTicketsToPurchase()` — paridad legacy |
-| T-108 | API routes | 🟣 | `pending` | Falta crear routes en `app/src/routes/api/` para purchases, raffles, tickets, config |
+| T-108 | API routes | 🟣 | `done` | Rutas creadas en `app/src/routes/api/admin/`: purchases (6), raffles (6), config (1), dashboard (1). Todas con `requireAdmin()` middleware. |
 | T-109 | Rate limit | 🔵 | `blocked` | T-108 |
 | T-110 | Tests concurrencia | 🟣 | `pending` | — |
 | T-111 | Tests pausa | 🟣 | `pending` | — |
@@ -66,15 +66,26 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 | T-113 | Timezone utils | 🔵 | `blocked` | — |
 | docs/ESTADO.md | `done` |
 
+## Fase 2 — Jobs / Email / Uploads (próxima)
+
+| ID | Tarea | Assignee | Estado | Notas |
+|----|-------|----------|--------|-------|
+| T-201 | Email adapter pattern | 🟣 | `done` | `app/src/server/email/` — Noop, Resend, Brevo adapters. Factory según `EMAIL_PROVIDER` env. |
+| T-202…T-213 | Jobs Inngest + templates React Email + uploads + admin email routes | 🟣 🔵 | `ready` | Pendiente iniciar |
+
+## Decisiones de negocio (USER)
+
+| ID | Decisión | Estado | Respuesta |
+|----|----------|--------|-----------|
+| D-01 | `percentage_mode` | `done` | **Eliminar** — código muerto, eliminado de schema/validators/servicio |
+| D-02 | Email provider | `done` | **Resend + abstracción** — adapter pattern con Resend, Brevo (skeleton), Noop. Provider-agnostic. |
+| D-03 | Imagen GHCR | `done` | `raffle-system-fullstack` |
+
 ## Git remotes
 
 | Item | Estado |
 |------|--------|
 | Remotes viejos | **Ninguno configurado** — listo para `git remote add origin <nuevo-url>` |
-
-## Trabajo sin commit (DeepSeek + fix dev)
-
-Schema, auth, db, API routes, validators, errors, `docs/ESTADO.md`, fix vite — pendiente de commit cuando 👤 lo pida.
 
 ---
 
