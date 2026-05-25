@@ -163,26 +163,26 @@ TZ=America/Caracas            # solo display; BD en UTC
 
 | ID | Tarea | Assignee | Depende | DoD | Estado |
 |----|-------|----------|---------|-----|--------|
-| B-01…B-09 | Bootstrap (sección 4) | 👤 | — | Checklist bootstrap | `blocked` |
-| **T-001** | `drizzle.config.ts` + `drizzle-kit pull` contra MySQL | 🟣 | B-09 | Schema generado en `packages/shared/src/db/schema/` | `blocked` |
-| **T-002** | Limpiar schema: ENUMs, JSON types (`account_info`, `site_config`), relations Drizzle | 🟣 | T-001 | `bun run db:studio` o query test OK | `blocked` |
-| **T-003** | `app/lib/db.ts` pool mysql2 + export `db` | 🟣 | T-002 | Server function test `SELECT 1` | `blocked` |
-| **T-004** | Validators Zod base: enums pago, estados rifa/compra/ticket | 🟣 | T-002 | Export en `@raffle/shared/validators` | `blocked` |
-| **T-005** | Errores dominio (`AppError`, `InsufficientTicketsError`, etc.) | 🟣 | — | `packages/shared/src/errors/` | `blocked` |
-| **T-006** | `app/lib/env.ts` Zod fail-fast | 🔵 | B-09 | App no arranca sin `DATABASE_URL` | `blocked` |
-| **T-007** | `app/lib/logger.ts` Pino | 🔵 | T-006 | JSON logs, sin PII | `blocked` |
-| **T-008** | Better Auth: login/logout/session, tabla `users` bcrypt compatible | 🟣 | T-003 | Login admin legacy funciona | `blocked` |
-| **T-009** | RBAC helper `requireRole('admin'|'super_admin')` | 🟣 | T-008 | Middleware usable en server fn | `blocked` |
-| **T-010** | shadcn init + Tailwind v4 + tema base | 🔵 | B-09 | Button, Input, Dialog instalados | `blocked` |
-| **T-011** | `__root.tsx` providers: QueryClient, theme, toast | 🤝 | T-008, T-010 | DevTools opcional | `blocked` |
-| **T-012** | Ruta `/login` + redirect admin | 🔵 | T-008, T-010 | Login UI funcional | `blocked` |
-| **T-013** | Admin layout shell `_layout.tsx` sidebar vacío | 🔵 | T-012 | `/admin` protegido | `blocked` |
-| **T-014** | Vitest setup + 1 test smoke | 🔵 | B-09 | `bun test` en CI | `blocked` |
-| **T-015** | Dockerfile multistage + docker-compose skeleton | 🔵 | B-09 | `docker build` OK local | `blocked` |
-| **T-016** | GitHub Actions: lint + typecheck + test | 🔵 | T-014, T-015 | Workflow verde en PR | `blocked` |
-| **T-017** | `nginx/raffle.conf.example` | 🔵 | — | `/uploads` alias + proxy :3000 | `blocked` |
+| B-01…B-09 | Bootstrap (sección 4) | 👤 | — | Checklist bootstrap | `done` |
+| **T-001** | `drizzle.config.ts` + schema Drizzle contra MySQL | 🟣 | B-09 | Schema generado en `packages/shared/src/db/schema/` | `done` |
+| **T-002** | Limpiar schema: ENUMs, JSON types (`account_info`, `site_config`), relations Drizzle | 🟣 | T-001 | `bun run db:studio` o query test OK | `done` |
+| **T-003** | `app/src/lib/db.ts` pool mysql2 + export `db` | 🟣 | T-002 | Server function test `SELECT 1` | `done` |
+| **T-004** | Validators Zod base: enums pago, estados rifa/compra/ticket | 🟣 | T-002 | Export en `@raffle/shared/validators` | `done` |
+| **T-005** | Errores dominio (`AppError`, `InsufficientTicketsError`, etc.) | 🟣 | — | `packages/shared/src/errors/` | `done` |
+| **T-006** | `app/lib/env.ts` Zod fail-fast | 🔵 | B-09 | App no arranca sin `DATABASE_URL` | `done` |
+| **T-007** | `app/lib/logger.ts` Pino | 🔵 | T-006 | JSON logs, sin PII | `done` |
+| **T-008** | Better Auth: login/logout/session, tabla `users` bcrypt compatible | 🟣 | T-003 | Login admin legacy funciona | `done` |
+| **T-009** | RBAC helper `requireRole('admin'|'super_admin')` | 🟣 | T-008 | Middleware usable en server fn | `done` |
+| **T-010** | shadcn init + Tailwind v4 + tema base | 🔵 | B-09 | Button, Input, Dialog instalados | `done` |
+| **T-011** | `__root.tsx` providers: QueryClient, theme, toast | 🤝 | T-008, T-010 | DevTools opcional | `in_progress` |
+| **T-012** | Ruta `/login` + redirect admin | 🔵 | T-008, T-010 | Login UI funcional | `ready` |
+| **T-013** | Admin layout shell `_layout.tsx` sidebar vacío | 🔵 | T-012 | `/admin` protegido | `ready` |
+| **T-014** | Vitest setup + 1 test smoke | 🔵 | B-09 | `bun test` en CI | `done` |
+| **T-015** | Dockerfile multistage + docker-compose skeleton | 🔵 | B-09 | `docker build` OK local | `done` |
+| **T-016** | GitHub Actions: lint + typecheck + test | 🔵 | T-014, T-015 | Workflow verde en PR | `done` |
+| **T-017** | `nginx/raffle.conf.example` | 🔵 | — | `/uploads` alias + proxy :3000 | `done` |
 
-**Entregable Fase 0:** `bun dev` + login admin + Drizzle conectado + CI verde + Docker build.
+**Entregable Fase 0:** 🟣 Backend listo · 🔵 Frontend shell listo · 🤝 `__root.tsx` AuthProvider pendiente.
 
 ---
 

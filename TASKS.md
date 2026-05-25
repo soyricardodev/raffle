@@ -4,6 +4,8 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 
 **Leyenda:** 👤 USER · 🟣 DeepSeek · 🔵 Composer · `ready` | `in_progress` | `done`
 
+**Inventario técnico:** [`docs/ESTADO.md`](docs/ESTADO.md)
+
 ---
 
 ## Bootstrap
@@ -17,27 +19,24 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 
 | ID | Tarea | Assignee | Estado | Notas |
 |----|-------|----------|--------|-------|
-| T-001 | drizzle pull | 🟣 | `ready` | `packages/shared` listo |
-| T-002 | Limpiar schema | 🟣 | `blocked` | T-001 |
-| T-003 | app/lib/db.ts | 🟣 | `blocked` | T-002 — **owner DeepSeek, path `app/src/lib/db.ts`** |
-| T-004 | Validators Zod | 🟣 | `blocked` | T-002 |
-| T-005 | Errores dominio | 🟣 | `ready` | `packages/shared/src/errors/` |
-| T-006 | env.ts Zod | 🔵 | `done` | optional DATABASE_URL en dev |
+| T-001 | drizzle pull | 🟣 | `done` | Schema manual desde legacy `database.sql` + tablas Better Auth |
+| T-002 | Limpiar schema | 🟣 | `done` | ENUMs, JSON, relaciones Drizzle completas |
+| T-003 | app/lib/db.ts | 🟣 | `done` | `db.server.ts` + `GET /api/health/db` |
+| T-004 | Validators Zod | 🟣 | `done` | `packages/shared/src/validators` |
+| T-005 | Errores dominio | 🟣 | `done` | 20+ errores tipados |
+| T-006 | env.ts Zod | 🔵 | `done` | `DATABASE_URL` opcional en dev |
 | T-007 | logger Pino | 🔵 | `done` | `app/src/lib/logger.ts` |
-| T-008 | Better Auth | 🟣 | `blocked` | T-003 · reemplazar auth-client stub |
-| T-009 | RBAC | 🟣 | `blocked` | T-008 |
+| T-008 | Better Auth | 🟣 | `done` | `auth.server.ts` + `/api/auth/*` Nitro |
+| T-009 | RBAC | 🟣 | `done` | `auth-utils.server.ts` |
 | T-010 | shadcn base | 🔵 | `done` | button, input, label, card, dialog |
-| T-011 | __root providers | 🔵 | `done` | QueryClient + Sonner |
-| T-012 | /login | 🔵 | `done` | UI + dev stub (Better Auth T-008 después) |
-| T-013 | admin layout | 🔵 | `done` | sidebar + rutas placeholder |
-| T-301 | site-config store | 🔵 | `done` | Zustand + CSS vars |
-| T-302 | layout público | 🔵 | `done` | header/footer |
-| T-303 | landing base | 🔵 | `in_progress` | hero placeholder, falta rifa activa |
-| T-308 | verificar | 🔵 | `in_progress` | ruta shell, falta form |
-| T-014 | Vitest smoke | 🔵 | `done` | env.test.ts |
-| T-015 | Docker | 🔵 | `done` | Dockerfile + compose skeleton |
+| T-011 | __root providers | 🤝 | `in_progress` | QueryClient OK · Better Auth UI pendiente |
+| T-012 | /login | 🔵 | `in_progress` | UI hecha con stub · wire a Better Auth |
+| T-013 | admin layout | 🔵 | `done` | Shell + sidebar + placeholders |
+| T-014 | Vitest smoke | 🔵 | `done` | env.test.ts (3 tests) |
+| T-015 | Docker | 🔵 | `done` | Dockerfile + compose |
 | T-016 | GitHub Actions CI | 🔵 | `done` | push GHCR comentado hasta D-03 |
 | T-017 | nginx example | 🔵 | `done` | `nginx/raffle.conf.example` |
+| T-018 | Fix `pnpm dev` | 🔵 | `done` | `server.ts` + stub virtual module + vite config Nitro |
 
 ## Infra monorepo (Composer)
 
@@ -48,11 +47,34 @@ Estado vivo del plan unificado. Actualizar al tomar/completar tareas.
 | .env.example root | `done` |
 | Carpetas features/server/inngest/scripts | `done` |
 
+## Fase 1 — Core transaccional
+
+| ID | Tarea | Assignee | Estado | Notas |
+|----|-------|----------|--------|-------|
+| T-101 | TicketService pool | 🟣 | `done` | `app/server/ticket.service.ts` — `generateTicketNumbers()`, `insertTicketPool()`, `allocateRandomTickets()` con FOR UPDATE |
+| T-102 | TicketService.allocate | 🟣 | `done` | Transacción atómica con `SELECT FOR UPDATE` + `ORDER BY RAND() LIMIT n` — race condition resuelta |
+| T-103 | TicketService.release | 🟣 | `done` | `releaseTickets()`, `releasePurchaseTickets()`, `getPurchaseTicketNumbers()` |
+| T-104 | PauseService | 🟣 | `done` | `app/server/pause.service.ts` — `checkTicketAvailability()`, `checkAutoPause()`, `pauseRaffle()`, `unpauseRaffle()`, `getPauseInfo()`, `processPausedRaffles()` |
+| T-105 | RaffleService | 🟣 | `done` | `app/server/raffle.service.ts` — CRUD completo, publish, getPublished, getDashboardStats, delete con validación de compras |
+| T-106 | PurchaseService.create | 🟣 | `done` | Transacción completa: lock raffle, validar estado, duplicados, allocate tickets atómico, insert purchase+assign |
+| T-107 | PurchaseService ops | 🟣 | `done` | `updatePurchaseStatus()`, `addTicketsToPurchase()`, `removeTicketsFromPurchase()`, `reassignTicketsToPurchase()` — paridad legacy |
+| T-108 | API routes | 🟣 | `pending` | Falta crear routes en `app/src/routes/api/` para purchases, raffles, tickets, config |
+| T-109 | Rate limit | 🔵 | `blocked` | T-108 |
+| T-110 | Tests concurrencia | 🟣 | `pending` | — |
+| T-111 | Tests pausa | 🟣 | `pending` | — |
+| T-112 | AnalyticsService | 🟣 | `pending` | — |
+| T-113 | Timezone utils | 🔵 | `blocked` | — |
+| docs/ESTADO.md | `done` |
+
 ## Git remotes
 
 | Item | Estado |
 |------|--------|
 | Remotes viejos | **Ninguno configurado** — listo para `git remote add origin <nuevo-url>` |
+
+## Trabajo sin commit (DeepSeek + fix dev)
+
+Schema, auth, db, API routes, validators, errors, `docs/ESTADO.md`, fix vite — pendiente de commit cuando 👤 lo pida.
 
 ---
 
