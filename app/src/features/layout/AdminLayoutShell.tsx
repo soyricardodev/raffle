@@ -3,7 +3,7 @@ import { LogOut, Menu, X } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { adminNavItems } from "@/features/admin/nav"
-import { clearClientSession } from "@/features/auth/auth-client"
+import { signOut } from "@/features/auth/auth-client"
 import type { AuthSession } from "@/features/auth/types"
 import { cn } from "@/lib/utils"
 import { useSiteConfig } from "@/stores/site-config"
@@ -24,7 +24,7 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
   }
 
   async function handleLogout() {
-    clearClientSession()
+    await signOut()
     window.location.href = "/login"
   }
 

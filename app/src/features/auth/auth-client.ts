@@ -1,55 +1,31 @@
-import type { AuthSession, SignInInput } from "./types"
+import { createAuthClient } from "better-auth/react"
+import type { AuthSession } from "./types"
 
-const DEV_SESSION_KEY = "raffle_dev_session"
+/** Better Auth client — singleton compartido. */
+export const authClient = createAuthClient({
+  baseURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3002",
+})
 
-/** Client-side session read — replaced by Better Auth (T-008). */
+/** Client-side session para compatibilidad con guards legacy. */
 export function getClientSession(): AuthSession | null {
   if (typeof window === "undefined") return null
-  const raw = sessionStorage.getItem(DEV_SESSION_KEY)
-  if (!raw) return null
-  try {
-    return JSON.parse(raw) as AuthSession
-  } catch {
-    sessionStorage.removeItem(DEV_SESSION_KEY)
-    return null
-  }
+  // La sesión real viene de la cookie httpOnly, no de sessionStorage.
+  // Esto es un helper temporal para los route guards.
+  return null
 }
 
-export function setClientSession(session: AuthSession): void {
-  sessionStorage.setItem(DEV_SESSION_KEY, JSON.stringify(session))
+/** Sign in con Better Auth (email + password). */
+export async function signIn(input: { username: string; password: string }) {
+  const result = await authClient.signIn.email({
+    email: input.username,
+    password: input.password,
+    callbackURL: "/admin",
+  })
+  if (result.error) throw new Error(result.error.message ?? "Credenciales inválidas")
+  return result.data
 }
 
-export function clearClientSession(): void {
-  sessionStorage.removeItem(DEV_SESSION_KEY)
-}
-
-/**
- * Dev stub until DeepSeek wires Better Auth.
- * Any non-empty credentials work in DEV for UI testing without DATABASE_URL.
- */
-export async function signIn(input: SignInInput): Promise<AuthSession> {
-  const username = input.username.trim()
-  const password = input.password
-
-  if (!username || !password) {
-    throw new Error("Usuario y contraseña son requeridos")
-  }
-
-  if (import.meta.env.DEV) {
-    const session: AuthSession = {
-      user: {
-        id: 1,
-        username,
-        role: username === "super" ? "super_admin" : "admin",
-      },
-    }
-    setClientSession(session)
-    return session
-  }
-
-  throw new Error("Autenticación no configurada. Pendiente Better Auth (T-008).")
-}
-
-export async function signOut(): Promise<void> {
-  clearClientSession()
+/** Sign out. */
+export async function signOut() {
+  await authClient.signOut()
 }

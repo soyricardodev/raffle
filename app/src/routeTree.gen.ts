@@ -14,6 +14,7 @@ import { Route as LoginRouteImport } from './routes/login'
 import { Route as AdminRouteRouteImport } from './routes/admin/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AdminIndexRouteImport } from './routes/admin/index'
+import { Route as RifaIdRouteImport } from './routes/rifa/$id'
 import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as AdminRifasRouteImport } from './routes/admin/rifas'
 import { Route as AdminEmailsRouteImport } from './routes/admin/emails'
@@ -59,6 +60,11 @@ const AdminIndexRoute = AdminIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => AdminRouteRoute,
+} as any)
+const RifaIdRoute = RifaIdRouteImport.update({
+  id: '/rifa/$id',
+  path: '/rifa/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiConfigRoute = ApiConfigRouteImport.update({
   id: '/api/config',
@@ -173,6 +179,7 @@ export interface FileRoutesByFullPath {
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
   '/api/config': typeof ApiConfigRoute
+  '/rifa/$id': typeof RifaIdRoute
   '/admin/': typeof AdminIndexRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/purchases': typeof ApiAdminPurchasesRoute
@@ -199,6 +206,7 @@ export interface FileRoutesByTo {
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
   '/api/config': typeof ApiConfigRoute
+  '/rifa/$id': typeof RifaIdRoute
   '/admin': typeof AdminIndexRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/purchases': typeof ApiAdminPurchasesRoute
@@ -227,6 +235,7 @@ export interface FileRoutesById {
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
   '/api/config': typeof ApiConfigRoute
+  '/rifa/$id': typeof RifaIdRoute
   '/admin/': typeof AdminIndexRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/purchases': typeof ApiAdminPurchasesRoute
@@ -256,6 +265,7 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/rifas'
     | '/api/config'
+    | '/rifa/$id'
     | '/admin/'
     | '/api/admin/dashboard'
     | '/api/admin/purchases'
@@ -282,6 +292,7 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/rifas'
     | '/api/config'
+    | '/rifa/$id'
     | '/admin'
     | '/api/admin/dashboard'
     | '/api/admin/purchases'
@@ -309,6 +320,7 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/rifas'
     | '/api/config'
+    | '/rifa/$id'
     | '/admin/'
     | '/api/admin/dashboard'
     | '/api/admin/purchases'
@@ -331,6 +343,7 @@ export interface RootRouteChildren {
   LoginRoute: typeof LoginRoute
   VerificarRoute: typeof VerificarRoute
   ApiConfigRoute: typeof ApiConfigRoute
+  RifaIdRoute: typeof RifaIdRoute
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
   ApiAdminPurchasesRoute: typeof ApiAdminPurchasesRoute
   ApiAdminRafflesRoute: typeof ApiAdminRafflesRoute
@@ -381,6 +394,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/admin/'
       preLoaderRoute: typeof AdminIndexRouteImport
       parentRoute: typeof AdminRouteRoute
+    }
+    '/rifa/$id': {
+      id: '/rifa/$id'
+      path: '/rifa/$id'
+      fullPath: '/rifa/$id'
+      preLoaderRoute: typeof RifaIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/config': {
       id: '/api/config'
@@ -567,6 +587,7 @@ const rootRouteChildren: RootRouteChildren = {
   LoginRoute: LoginRoute,
   VerificarRoute: VerificarRoute,
   ApiConfigRoute: ApiConfigRoute,
+  RifaIdRoute: RifaIdRoute,
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
   ApiAdminPurchasesRoute: ApiAdminPurchasesRoute,
   ApiAdminRafflesRoute: ApiAdminRafflesRoute,

@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { signIn } from "./auth-client"
+import { authClient } from "./auth-client"
+import { DevFastLogin } from "./DevFastLogin"
 
 type LoginFormProps = {
   redirectTo?: string
@@ -13,7 +14,7 @@ type LoginFormProps = {
 
 export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
   const navigate = useNavigate()
-  const [username, setUsername] = useState("")
+  const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [loading, setLoading] = useState(false)
 
@@ -21,7 +22,14 @@ export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
     event.preventDefault()
     setLoading(true)
     try {
-      await signIn({ username, password })
+      const result = await authClient.signIn.email({
+        email,
+        password,
+      })
+      if (result.error) {
+        toast.error(result.error.message ?? "Credenciales inválidas")
+        return
+      }
       toast.success("Sesión iniciada")
       await navigate({ to: redirectTo })
     } catch (error) {
@@ -30,6 +38,16 @@ export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleDevLogin(e: string, p: string) {
+    const result = await authClient.signIn.email({ email: e, password: p })
+    if (result.error) {
+      toast.error(result.error.message ?? "Credenciales inválidas")
+      return
+    }
+    toast.success("Fast login — sesión iniciada")
+    await navigate({ to: redirectTo })
   }
 
   return (
@@ -41,13 +59,14 @@ export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
       <CardContent>
         <form className="space-y-4" onSubmit={handleSubmit}>
           <div className="space-y-2">
-            <Label htmlFor="username">Usuario</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="username"
-              autoComplete="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="admin"
+              id="email"
+              type="email"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="admin@rifas.com"
               disabled={loading}
             />
           </div>
@@ -67,9 +86,12 @@ export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
           </Button>
         </form>
         {import.meta.env.DEV ? (
-          <p className="text-muted-foreground mt-4 text-center text-xs">
-            Modo dev: cualquier usuario/contraseña abre el panel. Better Auth reemplazará esto.
-          </p>
+          <div className="mt-3">
+            <p className="text-muted-foreground mb-2 text-center text-xs">
+              Dev: credenciales precargadas en seed. O usa fast login:
+            </p>
+            <DevFastLogin onSignIn={handleDevLogin} />
+          </div>
         ) : null}
       </CardContent>
     </Card>
