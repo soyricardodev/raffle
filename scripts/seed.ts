@@ -28,7 +28,7 @@ async function main() {
   const drawDate = new Date()
   drawDate.setDate(drawDate.getDate() + 15)
 
-  await pool.execute(
+  const [raffleResult] = await pool.execute(
     `INSERT INTO raffles
      (name, description, total_tickets, price_bs, price_usd,
       min_purchase, max_purchase, draw_date, status, auto_pause_enabled)
@@ -46,7 +46,8 @@ async function main() {
       true,
     ],
   )
-  console.log("🎯 Rifa activa: Combo Power 2026 (1000 tickets)")
+  const raffleId = (raffleResult as { insertId: number }).insertId
+  console.log(`🎯 Rifa activa: Combo Power 2026 (1000 tickets) [id=${raffleId}]`)
 
   // ─── Premios ───────────────────────────────────────────────
   const prizes = [
@@ -58,7 +59,7 @@ async function main() {
   for (let i = 0; i < prizes.length; i++) {
     await pool.execute(
       "INSERT INTO prizes (raffle_id, name, description, position) VALUES (?, ?, ?, ?)",
-      [1, prizes[i]![0], prizes[i]![1], i + 1],
+      [raffleId, prizes[i]![0], prizes[i]![1], i + 1],
     )
   }
   console.log(`🏆 ${prizes.length} premios creados`)
@@ -74,7 +75,7 @@ async function main() {
   for (const [type, info] of methods) {
     await pool.execute(
       "INSERT INTO payment_methods (raffle_id, method_type, account_info) VALUES (?, ?, ?)",
-      [1, type, info],
+      [raffleId, type, info],
     )
   }
   console.log(`💳 ${methods.length} métodos de pago creados`)
@@ -107,7 +108,7 @@ async function main() {
   for (let i = 0; i < totalTickets; i += batchSize) {
     const batch: (string | number)[][] = []
     for (let j = i; j < Math.min(i + batchSize, totalTickets); j++) {
-      batch.push([1, String(j).padStart(4, "0"), "available"])
+      batch.push([raffleId, String(j).padStart(4, "0"), "available"])
     }
     const placeholders = batch.map(() => "(?, ?, ?)").join(", ")
     const values = batch.flat()

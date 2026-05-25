@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { getPool } from "@/lib/db.server"
+import { rateLimit } from "@/lib/rate-limit"
 
 export const Route = createFileRoute("/api/tickets/verify")({
   server: {
     handlers: {
       POST: async ({ request }) => {
+        await rateLimit(request, { windowMs: 30_000, maxRequests: 10, keyPrefix: "verify" })
+
         const body = await request.json() as { phone?: string; ticketNumber?: string; cedula?: string; email?: string }
         const pool = getPool()
 

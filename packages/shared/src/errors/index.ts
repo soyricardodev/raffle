@@ -274,6 +274,17 @@ export class EmailSendError extends AppError {
   }
 }
 
+// ─── Rate Limiting ─────────────────────────────────────────────
+
+export class TooManyRequestsError extends AppError {
+  constructor(retryAfterSec = 60) {
+    super("Demasiadas solicitudes. Intenta de nuevo más tarde.", 429, "TOO_MANY_REQUESTS", {
+      retryAfterSec,
+    })
+    this.name = "TooManyRequestsError"
+  }
+}
+
 // ─── Genéricos ───────────────────────────────────────────────
 
 export class NotFoundError extends AppError {
