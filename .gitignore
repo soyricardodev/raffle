@@ -1,0 +1,21 @@
+# IDE / local
+.cursor/
+.env
+.env.*
+!.env.example
+
+# Dependencies
+node_modules/
+
+# Build / cache
+dist/
+.output/
+.tanstack/
+.nitro/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

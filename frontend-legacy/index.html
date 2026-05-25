@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Plataforma de rifas online - Tu oportunidad de ganar" />
+  <!-- El título será actualizado dinámicamente por React -->
+  <title>Cargando...</title>
+  <!-- Favicon (opcional, asegúrate de tener el archivo en public/) -->
+  <link rel="icon" type="image/png" href="./public/favicon.ico" />
+  <!-- Manifest para PWA (opcional) -->
+  <link rel="manifest" href="./public/manifest.json" />
+
+  <!-- Meta tags adicionales para SEO -->
+  <meta name="keywords" content="rifas, sorteos, premios, ganar, suerte" />
+  <meta name="author" content="Plataforma de Rifas" />
+
+  <!-- Open Graph para redes sociales -->
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Plataforma de Rifas" />
+  <meta property="og:description" content="Tu oportunidad de ganar increíbles premios" />
+  <meta property="og:image" content="./public/og-image.jpg" />
+
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content="Plataforma de Rifas" />
+  <meta name="twitter:description" content="Tu oportunidad de ganar increíbles premios" />
+</head>
+
+<body>
+  <!-- Elemento raíz donde React renderizará la aplicación -->
+  <div id="root">
+    <!-- Loading inicial mientras React carga -->
+    <div style="
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      height: 100vh; 
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      flex-direction: column;
+    ">
+      <div style="
+        width: 50px; 
+        height: 50px; 
+        border: 5px solid rgba(255,255,255,0.3); 
+        border-top: 5px solid white; 
+        border-radius: 50%; 
+        animation: spin 1s linear infinite;
+        margin-bottom: 20px;
+      "></div>
+      <h2 style="margin: 0; font-weight: normal;">Cargando Rifas...</h2>
+      <p style="margin: 10px 0 0 0; opacity: 0.8;">Tu oportunidad de ganar</p>
+    </div>
+    <style>
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </div>
+  <!--
+      Este archivo HTML es un template. Si abres este archivo directamente en el navegador,
+      verás una página de carga porque React inyectará el contenido dinámicamente.
+    -->
+  <script type="module" src="./src/main.jsx"></script>
+</body>
+
+</html>
