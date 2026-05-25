@@ -1,14 +1,24 @@
 import { Moon, Sun } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { cn } from "@/lib/utils"
 import { useTheme } from "@/stores/theme"
 
-export function ThemeToggle() {
-  const { theme, toggle } = useTheme()
+export function ThemeToggle({ className }: { className?: string }) {
+  const { resolved, setMode } = useTheme()
+  const isDark = resolved === "dark"
+  const label = isDark ? "Usar modo claro" : "Usar modo oscuro"
 
   return (
-    <Button variant="ghost" size="icon" onClick={toggle} title={theme === "dark" ? "Modo claro" : "Modo oscuro"}>
-      {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
-      <span className="sr-only">{theme === "dark" ? "Modo claro" : "Modo oscuro"}</span>
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      className={cn("shrink-0", className)}
+      title={label}
+      aria-label={label}
+      onClick={() => setMode(isDark ? "light" : "dark")}
+    >
+      {isDark ? <Sun className="size-5" /> : <Moon className="size-5" />}
     </Button>
   )
 }

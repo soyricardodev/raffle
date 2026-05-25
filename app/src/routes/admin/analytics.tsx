@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { AdminPlaceholderPage } from "@/features/admin/AdminPlaceholderPage"
+import { AdminAnalytics } from "@/features/admin/AdminAnalytics"
 
 export const Route = createFileRoute("/admin/analytics")({
-  component: () => (
-    <AdminPlaceholderPage
-      title="Análisis de ventas"
-      description="Gráficos Recharts y métricas — pendiente AnalyticsService (T-112)."
-    />
-  ),
+  component: AdminAnalytics,
 })

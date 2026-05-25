@@ -1,34 +1,27 @@
 import { TanStackDevtools } from "@tanstack/react-devtools"
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-import { createRootRoute, HeadContent, Scripts } from "@tanstack/react-router"
+import { QueryClientProvider } from "@tanstack/react-query"
+import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router"
+import type { QueryClient } from "@tanstack/react-query"
+import { queryClient } from "@/lib/query-client"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { Toaster } from "sonner"
 
-import { useEffect } from "react"
+import { useEffect, useLayoutEffect } from "react"
 import { useTheme } from "@/stores/theme"
 
 import appCss from "../styles.css?url"
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 30_000,
-      retry: 1,
-    },
-  },
-})
 
 // Script inline para evitar flash de modo oscuro — se ejecuta ANTES del render
 const themeScript = `
 (function() {
   var theme = localStorage.getItem('theme');
-  if (theme === 'dark' || (!theme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-  }
+  var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var dark = theme === 'dark' || ((theme === 'system' || !theme) && prefersDark);
+  if (dark) document.documentElement.classList.add('dark');
 })()
 `
 
-export const Route = createRootRoute({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -48,23 +41,26 @@ export const Route = createRootRoute({
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
-  const { theme, setTheme } = useTheme()
+  const { mode, setMode, syncSystem } = useTheme()
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const stored = localStorage.getItem("theme")
-    if (stored === "dark" || stored === "light") {
-      setTheme(stored)
-    } else if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-      setTheme("dark")
+    if (stored === "dark" || stored === "light" || stored === "system") {
+      setMode(stored)
+    } else {
+      setMode("system")
     }
-  }, [setTheme])
+  }, [setMode])
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark")
-  }, [theme])
+    const media = window.matchMedia("(prefers-color-scheme: dark)")
+    const onChange = () => syncSystem()
+    media.addEventListener("change", onChange)
+    return () => media.removeEventListener("change", onChange)
+  }, [mode, syncSystem])
 
   return (
-    <html lang="es" className={theme === "dark" ? "dark" : ""} suppressHydrationWarning>
+    <html lang="es" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>

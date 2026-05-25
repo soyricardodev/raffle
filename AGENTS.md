@@ -2,6 +2,15 @@
 
 ## Reglas para agentes
 
+### Mobile first
+
+El **99.9% de los usuarios usa teléfono**. Diseñar y optimizar siempre para móvil primero:
+
+- Priorizar layouts, touch targets y navegación en pantallas pequeñas
+- Evitar controles anchos o de 3+ opciones en headers/toolbars; preferir un botón compacto
+- Desktop es secundario: no agregar complejidad de UI solo por pantallas grandes
+- Probar mentalmente (y en E2E cuando aplique) en viewport móvil antes que desktop
+
 ### TypeScript: ignorar errores de createFileRoute
 
 Cuando TanStack Start no reconoce los tipos de rutas anidadas en `createFileRoute("/api/admin/purchases/$id"...)`, se debe usar cast `as never`:

@@ -150,8 +150,6 @@ export const CreateRaffleInput = z.object({
   min_purchase: z.number().int().min(1).default(1),
   max_purchase: z.number().int().min(1).default(10),
   draw_date: z.string().datetime().nullable().optional(),
-  percentage_mode: z.boolean().default(false),
-  activation_percentage: z.number().int().min(1).max(100).nullable().optional(),
   days_for_draw: z.number().int().positive().nullable().optional(),
   status: RaffleStatus.default("draft"),
   auto_pause_enabled: z.boolean().default(true),

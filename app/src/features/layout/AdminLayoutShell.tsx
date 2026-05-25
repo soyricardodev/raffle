@@ -1,8 +1,9 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { LogOut, Menu, X } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { adminNavItems } from "@/features/admin/nav"
+import { ThemeToggle } from "@/features/theme/ThemeToggle"
 import { signOut } from "@/features/auth/auth-client"
 import type { AuthSession } from "@/features/auth/types"
 import { cn } from "@/lib/utils"
@@ -17,6 +18,23 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const siteName = useSiteConfig((s) => s.siteInfo.site_name)
+  const loaded = useSiteConfig((s) => s.loaded)
+  const setFromApi = useSiteConfig((s) => s.setFromApi)
+
+  useEffect(() => {
+    if (loaded) return
+    fetch("/api/config")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!data) return
+        setFromApi({
+          site_colors: data.site_colors,
+          site_info: data.site_info,
+          contact_info: data.contact_info,
+        })
+      })
+      .catch(() => {})
+  }, [loaded, setFromApi])
 
   function isActive(href: string) {
     if (href === "/admin") return pathname === "/admin"
@@ -57,6 +75,9 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
         })}
       </nav>
       <div className="border-border/80 space-y-2 border-t p-3">
+        <div className="flex justify-center px-3">
+          <ThemeToggle />
+        </div>
         <div className="text-muted-foreground px-3 text-xs">
           {session.user.username} · {session.user.role}
         </div>
@@ -80,6 +101,9 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
           <Menu className="size-5" />
         </Button>
         <span className="font-medium">Admin</span>
+        <div className="ml-auto">
+          <ThemeToggle />
+        </div>
       </div>
 
       {mobileOpen ? (

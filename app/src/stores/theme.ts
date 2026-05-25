@@ -1,29 +1,61 @@
 import { create } from "zustand"
 
-type Theme = "light" | "dark"
+export type ThemeMode = "light" | "dark" | "system"
+export type ResolvedTheme = "light" | "dark"
 
-interface ThemeStore {
-  theme: Theme
-  setTheme: (t: Theme) => void
-  toggle: () => void
-}
-
-const getInitial = (): Theme => {
+function getSystemTheme(): ResolvedTheme {
   if (typeof window === "undefined") return "light"
-  const stored = localStorage.getItem("theme") as Theme | null
-  if (stored === "dark" || stored === "light") return stored
   return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
 }
 
+function resolveTheme(mode: ThemeMode): ResolvedTheme {
+  return mode === "system" ? getSystemTheme() : mode
+}
+
+function applyThemeClass(resolved: ResolvedTheme) {
+  if (typeof document === "undefined") return
+  document.documentElement.classList.toggle("dark", resolved === "dark")
+}
+
+function readStoredMode(): ThemeMode {
+  if (typeof window === "undefined") return "system"
+  const stored = localStorage.getItem("theme")
+  if (stored === "light" || stored === "dark" || stored === "system") return stored
+  return "system"
+}
+
+interface ThemeStore {
+  mode: ThemeMode
+  resolved: ResolvedTheme
+  setMode: (mode: ThemeMode) => void
+  syncSystem: () => void
+}
+
+// Always start with "system" so SSR and the first client render match.
+// RootDocument syncs from localStorage after hydration.
+const initialMode: ThemeMode = "system"
+const initialResolved: ResolvedTheme = "light"
+
 export const useTheme = create<ThemeStore>((set, get) => ({
-  theme: getInitial(),
-  setTheme: (theme) => {
-    localStorage.setItem("theme", theme)
-    document.documentElement.classList.toggle("dark", theme === "dark")
-    set({ theme })
+  mode: initialMode,
+  resolved: initialResolved,
+  setMode: (mode) => {
+    localStorage.setItem("theme", mode)
+    const resolved = resolveTheme(mode)
+    applyThemeClass(resolved)
+    set({ mode, resolved })
   },
-  toggle: () => {
-    const next = get().theme === "dark" ? "light" : "dark"
-    get().setTheme(next)
+  syncSystem: () => {
+    if (get().mode !== "system") return
+    const resolved = getSystemTheme()
+    applyThemeClass(resolved)
+    set({ resolved })
   },
 }))
+
+if (typeof window !== "undefined") {
+  applyThemeClass(resolveTheme(readStoredMode()))
+  window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => {
+    useTheme.getState().syncSystem()
+  })
+}

@@ -1,6 +1,7 @@
-import { createFileRoute, redirect } from "@tanstack/react-router"
+import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router"
+import { useEffect } from "react"
 import { z } from "zod"
-import { getClientSession } from "@/features/auth/auth-client"
+import { authClient } from "@/features/auth/auth-client"
 import { LoginForm } from "@/features/auth/LoginForm"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 
@@ -10,8 +11,9 @@ const loginSearchSchema = z.object({
 
 export const Route = createFileRoute("/login")({
   validateSearch: loginSearchSchema,
-  beforeLoad: () => {
-    if (getClientSession()) {
+  beforeLoad: async () => {
+    const session = await authClient.getSession()
+    if (session.data) {
       throw redirect({ to: "/admin" })
     }
   },
@@ -20,6 +22,14 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { redirect: redirectTo } = Route.useSearch()
+  const navigate = useNavigate()
+  const { data: session, isPending } = authClient.useSession()
+
+  useEffect(() => {
+    if (!isPending && session) {
+      void navigate({ to: redirectTo ?? "/admin" })
+    }
+  }, [isPending, session, navigate, redirectTo])
 
   return (
     <PublicLayout>

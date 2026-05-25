@@ -1,10 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getFirstActiveRaffle } from "@/server/raffle.service"
+import { findFirstActiveRaffle } from "@/server/raffle.service"
 
 export const Route = createFileRoute("/api/raffles/first-active")({
   server: {
     handlers: {
-      GET: async () => Response.json(await getFirstActiveRaffle()),
+      GET: async () => Response.json(await findFirstActiveRaffle()),
     },
   },
 })

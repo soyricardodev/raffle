@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { AdminPlaceholderPage } from "@/features/admin/AdminPlaceholderPage"
+import { AdminEmailsPanel } from "@/features/admin/AdminEmailsPanel"
 
 export const Route = createFileRoute("/admin/emails")({
-  component: () => (
-    <AdminPlaceholderPage
-      title="Logs de email"
-      description="Historial, reenvío y test — pendiente T-411 / T-212."
-    />
-  ),
+  component: AdminEmailsPanel,
 })

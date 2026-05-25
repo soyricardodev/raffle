@@ -21,8 +21,6 @@ export const raffles = mysqlTable("raffles", {
   minPurchase: int("min_purchase").default(1),
   maxPurchase: int("max_purchase").default(10),
   drawDate: datetime("draw_date"),
-  percentageMode: boolean("percentage_mode").default(false),
-  activationPercentage: int("activation_percentage"),
   daysForDraw: int("days_for_draw"),
   status: mysqlEnum("status", ["draft", "active", "paused", "finished", "cancelled"]).default(
     "draft",

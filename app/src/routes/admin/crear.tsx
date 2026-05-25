@@ -1,11 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { AdminPlaceholderPage } from "@/features/admin/AdminPlaceholderPage"
+import { CreateRaffleForm } from "@/features/admin/CreateRaffleForm"
 
 export const Route = createFileRoute("/admin/crear")({
-  component: () => (
-    <AdminPlaceholderPage
-      title="Nueva rifa"
-      description="Formulario de creación con uploads — pendiente T-406."
-    />
-  ),
+  component: CreateRaffleForm,
 })

@@ -606,6 +606,72 @@ export async function reassignTicketsToPurchase(purchaseId: number) {
 
 // ─── Queries ─────────────────────────────────────────────────
 
+export interface ListAdminPurchasesParams {
+  limit: number
+  page: number
+  status?: string
+  raffleId?: string | null
+  search?: string | null
+  searchType?: string
+  start?: string | null
+  end?: string | null
+}
+
+export async function listAdminPurchases(params: ListAdminPurchasesParams) {
+  const pool = getPool()
+  const { limit, page, status = "all", raffleId, search, searchType = "all", start, end } = params
+
+  let query = `
+    SELECT p.*, r.name as raffle_name,
+           GROUP_CONCAT(t.ticket_number ORDER BY CAST(t.ticket_number AS UNSIGNED)) as ticket_numbers
+    FROM purchases p
+    JOIN raffles r ON p.raffle_id = r.id
+    LEFT JOIN tickets t ON p.id = t.purchase_id
+    WHERE 1=1
+  `
+  const values: (string | number)[] = []
+
+  if (status !== "all") {
+    query += " AND p.status = ?"
+    values.push(status)
+  }
+  if (raffleId) {
+    query += " AND p.raffle_id = ?"
+    values.push(Number(raffleId))
+  }
+  if (search && searchType === "all") {
+    query +=
+      " AND CONCAT(p.customer_name, ' ', p.customer_phone, ' ', p.customer_email, ' ', p.customer_ci, ' ', p.payment_reference) LIKE ?"
+    values.push(`%${search}%`)
+  } else if (search && searchType) {
+    const cols: Record<string, string> = {
+      name: "p.customer_name",
+      phone: "p.customer_phone",
+      email: "p.customer_email",
+      ci: "p.customer_ci",
+      ticket: "t.ticket_number",
+    }
+    if (cols[searchType]) {
+      query += ` AND ${cols[searchType]} LIKE ?`
+      values.push(`%${search}%`)
+    }
+  }
+  if (start) {
+    query += " AND DATE(p.created_at) >= ?"
+    values.push(start)
+  }
+  if (end) {
+    query += " AND DATE(p.created_at) <= ?"
+    values.push(end)
+  }
+
+  query += " GROUP BY p.id ORDER BY p.created_at DESC LIMIT ? OFFSET ?"
+  values.push(limit, (page - 1) * limit)
+
+  const [rows] = await pool.execute(query, values)
+  return { data: rows }
+}
+
 export async function getPurchaseById(purchaseId: number) {
   const pool = getPool()
 

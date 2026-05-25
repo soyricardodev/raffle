@@ -3,7 +3,7 @@ import type { AuthSession } from "./types"
 
 /** Better Auth client — singleton compartido. */
 export const authClient = createAuthClient({
-  baseURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3002",
+  baseURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
 })
 
 /** Client-side session para compatibilidad con guards legacy. */

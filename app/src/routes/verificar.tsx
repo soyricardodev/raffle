@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { TicketVerifier } from "@/features/verify/TicketVerifier"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 
 export const Route = createFileRoute("/verificar")({
@@ -9,15 +10,16 @@ export const Route = createFileRoute("/verificar")({
 function VerifyPage() {
   return (
     <PublicLayout>
-      <div className="container mx-auto max-w-lg px-4 py-10">
+      <div className="container mx-auto max-w-3xl px-4 py-10">
         <Card>
           <CardHeader>
             <CardTitle>Verificar boletos</CardTitle>
+            <CardDescription>
+              Consulta si tus boletos están registrados en rifas activas.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <p className="text-muted-foreground text-sm">
-              Formulario de verificación — pendiente T-308 (TicketVerifier).
-            </p>
+            <TicketVerifier />
           </CardContent>
         </Card>
       </div>

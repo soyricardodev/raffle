@@ -1,4 +1,4 @@
-import * as schema from "@raffle/shared/db"
+import { schema } from "@raffle/shared/db"
 import { drizzle, type MySql2Database } from "drizzle-orm/mysql2"
 import mysql from "mysql2/promise"
 import { getEnv, requireDatabaseUrl } from "./env"

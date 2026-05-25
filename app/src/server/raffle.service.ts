@@ -5,13 +5,51 @@ import {
   RaffleHasPurchasesError,
   RaffleNotActiveError,
 } from "@raffle/shared/errors"
-import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
+import type { CreateRaffleInput, PaymentMethod, UpdateRaffleInput } from "@raffle/shared/validators"
 import { generateTicketNumbers, insertTicketPool } from "./ticket.service"
 import { checkTicketAvailability } from "./pause.service"
 
 const logger = getLogger()
 
 type SqlValue = string | number | boolean | null
+
+type RaffleRow = {
+  id: number
+  name: string
+  description: string | null
+  image_url: string | null
+  total_tickets: number
+  price_bs: string
+  price_usd: string
+  min_purchase: number
+  max_purchase: number
+  draw_date: string | null
+  days_for_draw: number | null
+  status: string
+  pause_until: string | null
+  pause_reason: string | null
+  auto_pause_enabled: number
+  publish: number
+  created_at: string
+  updated_at: string
+}
+
+type PrizeRow = {
+  name: string
+  description: string | null
+  image_url: string | null
+  position: number
+}
+
+export type EnrichedRaffle = RaffleRow & {
+  prizes: PrizeRow[]
+  payment_methods: { method_type: PaymentMethod; account_info: string; is_active: boolean; min_tickets: number | null }[]
+  tickets_sold: number
+  tickets_available: number
+  tickets_reserved: number
+  sold_percentage: string
+  days_remaining: number | null
+}
 
 // ─── Queries ─────────────────────────────────────────────────
 
@@ -44,7 +82,7 @@ export async function getAllRaffles(params: {
 
   const [rows] = await pool.execute(query, values)
 
-  const raffleList = rows as Record<string, unknown>[]
+  const raffleList = rows as RaffleRow[]
   const enriched = await Promise.all(
     raffleList.map(async (r) => {
       const av = await checkTicketAvailability(Number(r.id))
@@ -60,12 +98,9 @@ export async function getAllRaffles(params: {
   return enriched
 }
 
-export async function getRaffleById(id: number) {
+async function enrichRaffleDetail(raffleRow: RaffleRow): Promise<EnrichedRaffle> {
+  const id = raffleRow.id
   const pool = getPool()
-
-  const [raffleRows] = await pool.execute("SELECT * FROM raffles WHERE id = ?", [id])
-  const raffleRow = (raffleRows as Record<string, unknown>[])[0]
-  if (!raffleRow) throw new RaffleNotFoundError(id)
 
   const [prizes] = await pool.execute("SELECT * FROM prizes WHERE raffle_id = ? ORDER BY position", [id])
   const [payMethods] = await pool.execute(
@@ -74,54 +109,59 @@ export async function getRaffleById(id: number) {
   )
 
   const av = await checkTicketAvailability(id)
-  const totalTickets = Number(raffleRow.total_tickets)
+  const totalTickets = raffleRow.total_tickets
 
   return {
     ...raffleRow,
-    prizes,
-    payment_methods: payMethods,
+    prizes: (prizes as Record<string, unknown>[]).map((p) => ({
+      name: p.name as string,
+      description: p.description as string | null,
+      image_url: p.image_url as string | null,
+      position: p.position as number,
+    })),
+    payment_methods: (payMethods as Record<string, unknown>[]).map((pm) => ({
+      method_type: pm.method_type as PaymentMethod,
+      account_info: pm.account_info as string,
+      is_active: Boolean(pm.is_active),
+      min_tickets: pm.min_tickets as number | null,
+    })),
     tickets_sold: av.sold,
     tickets_available: av.available,
     tickets_reserved: av.reserved,
     sold_percentage: totalTickets > 0 ? ((av.sold / totalTickets) * 100).toFixed(2) : "0.00",
     days_remaining: raffleRow.draw_date
-      ? Math.ceil((new Date(raffleRow.draw_date as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
+      ? Math.ceil((new Date(raffleRow.draw_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       : null,
   }
 }
 
-export async function getFirstActiveRaffle() {
+export async function getRaffleById(id: number): Promise<EnrichedRaffle> {
+  const pool = getPool()
+
+  const [raffleRows] = await pool.execute("SELECT * FROM raffles WHERE id = ?", [id])
+  const raffleRow = (raffleRows as RaffleRow[])[0]
+  if (!raffleRow) throw new RaffleNotFoundError(id)
+
+  return enrichRaffleDetail(raffleRow)
+}
+
+export async function findFirstActiveRaffle(): Promise<EnrichedRaffle | null> {
   const pool = getPool()
 
   const [raffleRows] = await pool.execute(
     "SELECT * FROM raffles WHERE status IN ('active', 'paused') ORDER BY created_at DESC LIMIT 1",
   )
 
-  const raffleRow = (raffleRows as Record<string, unknown>[])[0]
-  if (!raffleRow) throw new RaffleNotFoundError("first-active")
+  const raffleRow = (raffleRows as RaffleRow[])[0]
+  if (!raffleRow) return null
 
-  const id = Number(raffleRow.id)
-  const [prizes] = await pool.execute("SELECT * FROM prizes WHERE raffle_id = ? ORDER BY position", [id])
-  const [payMethods] = await pool.execute(
-    "SELECT * FROM payment_methods WHERE raffle_id = ? AND is_active = true",
-    [id],
-  )
+  return enrichRaffleDetail(raffleRow)
+}
 
-  const av = await checkTicketAvailability(id)
-  const totalTickets = Number(raffleRow.total_tickets)
-
-  return {
-    ...raffleRow,
-    prizes,
-    payment_methods: payMethods,
-    tickets_sold: av.sold,
-    tickets_available: av.available,
-    tickets_reserved: av.reserved,
-    sold_percentage: totalTickets > 0 ? ((av.sold / totalTickets) * 100).toFixed(2) : "0.00",
-    days_remaining: raffleRow.draw_date
-      ? Math.ceil((new Date(raffleRow.draw_date as string).getTime() - Date.now()) / (1000 * 60 * 60 * 24))
-      : null,
-  }
+export async function getFirstActiveRaffle(): Promise<EnrichedRaffle> {
+  const raffle = await findFirstActiveRaffle()
+  if (!raffle) throw new RaffleNotFoundError("first-active")
+  return raffle
 }
 
 // ─── Mutations ───────────────────────────────────────────────
@@ -136,9 +176,9 @@ export async function createRaffle(input: CreateRaffleInput) {
     const [result] = await conn.execute(
       `INSERT INTO raffles
        (name, description, total_tickets, price_bs, price_usd,
-        min_purchase, max_purchase, draw_date, percentage_mode,
-        activation_percentage, days_for_draw, status, auto_pause_enabled)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        min_purchase, max_purchase, draw_date,
+        days_for_draw, status, auto_pause_enabled)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
         input.name,
         input.description ?? null,
@@ -148,8 +188,6 @@ export async function createRaffle(input: CreateRaffleInput) {
         input.min_purchase ?? 1,
         input.max_purchase ?? 10,
         input.draw_date ?? null,
-        input.percentage_mode ?? false,
-        input.activation_percentage ?? null,
         input.days_for_draw ?? null,
         input.status ?? "draft",
         input.auto_pause_enabled ?? true,
@@ -321,6 +359,17 @@ export async function publishRaffle(id: number, publish: boolean) {
   return { message: `Rifa ${publish ? "" : "des"}publicada exitosamente`, raffleId: id }
 }
 
+export async function setAutoPauseEnabled(id: number, enabled: boolean) {
+  const pool = getPool()
+
+  await pool.execute(
+    "UPDATE raffles SET auto_pause_enabled = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+    [enabled ? 1 : 0, id],
+  )
+
+  return { autoPauseEnabled: enabled }
+}
+
 export async function getPublishedRaffles(limit: number, page: number) {
   const pool = getPool()
   const safeLimit = Math.min(limit ?? 10, 100)
@@ -331,14 +380,16 @@ export async function getPublishedRaffles(limit: number, page: number) {
     [safeLimit, (safePage - 1) * safeLimit],
   )
 
-  const raffleList = rows as Record<string, unknown>[]
+  const raffleList = rows as RaffleRow[]
   const enriched = await Promise.all(
     raffleList.map(async (r) => {
-      const av = await checkTicketAvailability(Number(r.id))
-      const total = Number(r.total_tickets)
+      const av = await checkTicketAvailability(r.id)
+      const total = r.total_tickets
       return {
-        ...r,
+        id: r.id,
+        name: r.name,
         tickets_sold: av.sold,
+        total_tickets: total,
         sold_percentage: total > 0 ? ((av.sold / total) * 100).toFixed(2) : "0.00",
       }
     }),
