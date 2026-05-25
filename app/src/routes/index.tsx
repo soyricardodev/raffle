@@ -1,7 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router"
-import { PublicLayout } from "@/features/layout/PublicLayout"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PublicLayout } from "@/features/layout/PublicLayout"
 import { useSiteConfig } from "@/stores/site-config"
 
 export const Route = createFileRoute("/")({

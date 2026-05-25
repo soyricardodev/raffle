@@ -1,6 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router"
-import { AdminLayoutShell } from "@/features/layout/AdminLayoutShell"
 import { getClientSession } from "@/features/auth/auth-client"
+import { AdminLayoutShell } from "@/features/layout/AdminLayoutShell"
 
 export const Route = createFileRoute("/admin")({
   beforeLoad: ({ location }) => {

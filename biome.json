@@ -1,20 +1,21 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.14/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.4.15/schema.json",
   "vcs": {
     "enabled": true,
     "clientKind": "git",
     "useIgnoreFile": true
   },
   "files": {
-    "ignore": [
-      "node_modules",
-      "dist",
-      ".output",
-      ".tanstack",
-      "routeTree.gen.ts",
-      "**/pnpm-lock.yaml",
-      "backend-legacy",
-      "frontend-legacy"
+    "includes": [
+      "**",
+      "!**/node_modules",
+      "!**/dist",
+      "!**/.output",
+      "!**/.tanstack",
+      "!**/routeTree.gen.ts",
+      "!**/pnpm-lock.yaml",
+      "!**/backend-legacy",
+      "!**/frontend-legacy"
     ]
   },
   "formatter": {

@@ -1,13 +1,5 @@
 import type { LucideIcon } from "lucide-react"
-import {
-  BarChart3,
-  Calendar,
-  LayoutDashboard,
-  Mail,
-  Plus,
-  Settings,
-  Ticket,
-} from "lucide-react"
+import { BarChart3, Calendar, LayoutDashboard, Mail, Plus, Settings, Ticket } from "lucide-react"
 
 export type AdminNavItem = {
   name: string

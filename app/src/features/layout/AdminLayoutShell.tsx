@@ -1,10 +1,10 @@
 import { Link, useRouterState } from "@tanstack/react-router"
 import { LogOut, Menu, X } from "lucide-react"
 import { useState } from "react"
+import { Button } from "@/components/ui/button"
 import { adminNavItems } from "@/features/admin/nav"
 import { clearClientSession } from "@/features/auth/auth-client"
 import type { AuthSession } from "@/features/auth/types"
-import { Button } from "@/components/ui/button"
 import { cn } from "@/lib/utils"
 import { useSiteConfig } from "@/stores/site-config"
 
@@ -71,7 +71,12 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
   return (
     <div className="bg-muted/20 min-h-svh">
       <div className="lg:hidden sticky top-0 z-40 flex h-14 items-center gap-2 border-b bg-background px-4">
-        <Button variant="ghost" size="icon" onClick={() => setMobileOpen(true)} aria-label="Abrir menú">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Abrir menú"
+        >
           <Menu className="size-5" />
         </Button>
         <span className="font-medium">Admin</span>

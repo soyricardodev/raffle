@@ -1,7 +1,7 @@
 import { useEffect } from "react"
+import { useSiteConfig } from "@/stores/site-config"
 import { PublicFooter } from "./PublicFooter"
 import { PublicHeader } from "./PublicHeader"
-import { useSiteConfig } from "@/stores/site-config"
 
 type PublicLayoutProps = {
   children: React.ReactNode

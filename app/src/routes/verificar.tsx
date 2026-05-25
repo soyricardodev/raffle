@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { PublicLayout } from "@/features/layout/PublicLayout"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { PublicLayout } from "@/features/layout/PublicLayout"
 
 export const Route = createFileRoute("/verificar")({
   component: VerifyPage,

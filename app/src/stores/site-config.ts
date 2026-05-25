@@ -23,11 +23,13 @@ type SiteConfigState = {
   contact: ContactInfo
   loaded: boolean
   applyCssVariables: () => void
-  setFromApi: (payload: Partial<{
-    site_colors: SiteColors
-    site_info: SiteInfo
-    contact_info: ContactInfo
-  }>) => void
+  setFromApi: (
+    payload: Partial<{
+      site_colors: SiteColors
+      site_info: SiteInfo
+      contact_info: ContactInfo
+    }>,
+  ) => void
 }
 
 const defaults: Pick<SiteConfigState, "colors" | "siteInfo" | "contact"> = {

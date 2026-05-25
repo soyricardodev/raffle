@@ -20,6 +20,8 @@ import { Route as AdminCrearRouteImport } from './routes/admin/crear'
 import { Route as AdminConfigRouteImport } from './routes/admin/config'
 import { Route as AdminBoletosRouteImport } from './routes/admin/boletos'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
+import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
+import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 
 const VerificarRoute = VerificarRouteImport.update({
   id: '/verificar',
@@ -76,6 +78,16 @@ const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   path: '/analytics',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const ApiHealthDbRoute = ApiHealthDbRouteImport.update({
+  id: '/api/health/db',
+  path: '/api/health/db',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
+  id: '/api/auth/$',
+  path: '/api/auth/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -89,6 +101,8 @@ export interface FileRoutesByFullPath {
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/health/db': typeof ApiHealthDbRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -101,6 +115,8 @@ export interface FileRoutesByTo {
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
   '/admin': typeof AdminIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/health/db': typeof ApiHealthDbRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -115,6 +131,8 @@ export interface FileRoutesById {
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/rifas': typeof AdminRifasRoute
   '/admin/': typeof AdminIndexRoute
+  '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/health/db': typeof ApiHealthDbRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -130,6 +148,8 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/rifas'
     | '/admin/'
+    | '/api/auth/$'
+    | '/api/health/db'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -142,6 +162,8 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/rifas'
     | '/admin'
+    | '/api/auth/$'
+    | '/api/health/db'
   id:
     | '__root__'
     | '/'
@@ -155,6 +177,8 @@ export interface FileRouteTypes {
     | '/admin/emails'
     | '/admin/rifas'
     | '/admin/'
+    | '/api/auth/$'
+    | '/api/health/db'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -162,6 +186,8 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   LoginRoute: typeof LoginRoute
   VerificarRoute: typeof VerificarRoute
+  ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiHealthDbRoute: typeof ApiHealthDbRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -243,6 +269,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AdminAnalyticsRouteImport
       parentRoute: typeof AdminRouteRoute
     }
+    '/api/health/db': {
+      id: '/api/health/db'
+      path: '/api/health/db'
+      fullPath: '/api/health/db'
+      preLoaderRoute: typeof ApiHealthDbRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/auth/$': {
+      id: '/api/auth/$'
+      path: '/api/auth/$'
+      fullPath: '/api/auth/$'
+      preLoaderRoute: typeof ApiAuthSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -275,6 +315,8 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   LoginRoute: LoginRoute,
   VerificarRoute: VerificarRoute,
+  ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiHealthDbRoute: ApiHealthDbRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
