@@ -10,7 +10,12 @@
     "typecheck": "pnpm --filter app typecheck && pnpm --filter @raffle/shared typecheck"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.3.14"
+    "@biomejs/biome": "^2.3.14",
+    "@types/bcryptjs": "^3.0.0"
   },
-  "packageManager": "pnpm@10.12.1"
+  "packageManager": "pnpm@10.12.1",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "mysql2": "^3.22.3"
+  }
 }
