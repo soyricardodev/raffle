@@ -141,12 +141,13 @@ export async function createPurchase(params: CreatePurchaseParams) {
     }
 
     // 5. Select random tickets within transaction
+    // ticketQuantity is validated (int, 1..maxPurchase)
     const [ticketRows] = await conn.execute(
       `SELECT ticket_number FROM tickets
        WHERE raffle_id = ? AND status = 'available'
        ORDER BY RAND()
-       LIMIT ? FOR UPDATE`,
-      [raffleId, ticketQuantity],
+       LIMIT ${ticketQuantity} FOR UPDATE`,
+      [raffleId],
     )
 
     const ticketNumbers = (ticketRows as { ticket_number: string }[]).map((t) => t.ticket_number)
