@@ -1,7 +1,7 @@
 /**
  * Script de migración: legacy MySQL → nuevo schema.
  *
- * Solo migra compras con sus números de ticket (no inserts individuales por ticket).
+ * Migra datos legacy incluyendo filas individuales de tickets y email_logs.
  *
  * USO:
  *   LEGACY_DATABASE_URL=mysql://... NEW_DATABASE_URL=mysql://... bun run scripts/migrate-from-legacy.ts
@@ -87,9 +87,9 @@ async function main() {
     )
   }
 
-  // ─── 6. purchases (light — sin tickets individuales) ──────
+  // ─── 6. purchases ───────────────────────────────────────────
   const [purchaseRows] = await legacy.execute("SELECT * FROM purchases")
-  console.log(`🛒 Migrando ${(purchaseRows as unknown[]).length} compras (sin tickets)...`)
+  console.log(`🛒 Migrando ${(purchaseRows as unknown[]).length} compras...`)
   for (const p of purchaseRows as Record<string, unknown>[]) {
     await newDb.execute(
       `INSERT IGNORE INTO purchases
@@ -107,7 +107,30 @@ async function main() {
     )
   }
 
-  // ─── 7. email_logs ─────────────────────────────────────────
+  // ─── 7. tickets ─────────────────────────────────────────────
+  const [ticketRows] = await legacy.execute("SELECT * FROM tickets")
+  console.log(`🎫 Migrando ${(ticketRows as unknown[]).length} tickets...`)
+  let ticketBatch = 0
+  for (const t of ticketRows as Record<string, unknown>[]) {
+    await newDb.execute(
+      `INSERT IGNORE INTO tickets
+       (id, raffle_id, ticket_number, status, purchase_id, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [
+        t.id,
+        t.raffle_id,
+        String(t.ticket_number).padStart(4, "0"),
+        t.status,
+        t.purchase_id,
+        t.created_at,
+        t.updated_at,
+      ],
+    )
+    ticketBatch++
+    if (ticketBatch % 5000 === 0) console.log(`   … ${ticketBatch} tickets`)
+  }
+
+  // ─── 8. email_logs ─────────────────────────────────────────
   const [emailRows] = await legacy.execute("SELECT * FROM email_logs")
   console.log(`📧 Migrando ${(emailRows as unknown[]).length} logs de email...`)
   for (const e of emailRows as Record<string, unknown>[]) {
@@ -124,7 +147,7 @@ async function main() {
     )
   }
 
-  console.log(`\n✅ Migración completa — las rifas nuevas generarán sus propios tickets via Drizzle`)
+  console.log(`\n✅ Migración completa (incluye tickets individuales)`)
   await legacy.end()
   await newDb.end()
 }

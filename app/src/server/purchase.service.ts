@@ -205,6 +205,18 @@ export async function createPurchase(params: CreatePurchaseParams) {
 
     logger.info({ purchaseId, raffleId, ticketQuantity, paymentMethod }, "purchase:created")
 
+    // Post-commit: auto-pause si aplica (async, no bloquea respuesta)
+    void (async () => {
+      try {
+        const autoCheck = await pauseService.checkAutoPause(raffleId)
+        if (autoCheck.needsPause && autoCheck.pauseType) {
+          await pauseService.pauseRaffle(raffleId, autoCheck.pauseType)
+        }
+      } catch (err) {
+        logger.error({ raffleId, err }, "purchase:auto_pause_failed")
+      }
+    })()
+
     return {
       purchaseId,
       ticketNumbers: ticketNumbers.sort((a, b) => String(a).localeCompare(String(b))),
@@ -308,6 +320,11 @@ export async function updatePurchaseStatus(
       }
     }
 
+    if (status === "approved" || status === "rejected") {
+      const { sendPurchaseStatusEmail } = await import("./purchase-notifications")
+      void sendPurchaseStatusEmail(purchaseId, status)
+    }
+
     return {
       message: `Compra actualizada: ${currentStatus} → ${status}`,
       status,
@@ -407,6 +424,17 @@ export async function addTicketsToPurchase(purchaseId: number, quantity: number)
     await conn.commit()
 
     logger.info({ purchaseId, added: ticketNumbers.length, newQty }, "purchase:tickets_added")
+
+    void (async () => {
+      try {
+        const autoCheck = await pauseService.checkAutoPause(raffleId)
+        if (autoCheck.needsPause && autoCheck.pauseType) {
+          await pauseService.pauseRaffle(raffleId, autoCheck.pauseType)
+        }
+      } catch (err) {
+        logger.error({ raffleId, err }, "purchase:add_tickets_auto_pause_failed")
+      }
+    })()
 
     return {
       addedTickets: ticketNumbers.sort((a, b) => String(a).localeCompare(String(b))),
@@ -666,11 +694,27 @@ export async function listAdminPurchases(params: ListAdminPurchasesParams) {
     values.push(end)
   }
 
-  query += " GROUP BY p.id ORDER BY p.created_at DESC LIMIT ? OFFSET ?"
-  values.push(limit, (page - 1) * limit)
+  const countQuery = query.replace(
+    /SELECT p\.\*, r\.name as raffle_name,\s*GROUP_CONCAT\(t\.ticket_number ORDER BY CAST\(t\.ticket_number AS UNSIGNED\)\) as ticket_numbers/,
+    "SELECT COUNT(DISTINCT p.id) as total",
+  )
+  const countValues = [...values]
 
-  const [rows] = await pool.execute(query, values)
-  return { data: rows }
+  const offset = (page - 1) * limit
+  const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100))
+  const safeOffset = Math.max(0, Number(offset) || 0)
+  query += ` GROUP BY p.id ORDER BY p.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`
+
+  const [[countRows], [rows]] = await Promise.all([
+    pool.execute(countQuery, countValues),
+    pool.execute(query, values),
+  ])
+
+  const total = Number((countRows as { total: number }[])[0]?.total ?? 0)
+  const data = rows as Record<string, unknown>[]
+  const hasMore = safeOffset + data.length < total
+
+  return { data, total, hasMore }
 }
 
 export async function getPurchaseById(purchaseId: number) {
