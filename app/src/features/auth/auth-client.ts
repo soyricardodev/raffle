@@ -1,9 +1,18 @@
 import { createAuthClient } from "better-auth/react"
 import type { AuthSession } from "./types"
 
+function resolveAuthBaseUrl(): string {
+  if (typeof window !== "undefined") return window.location.origin
+  return (
+    process.env.BETTER_AUTH_URL ??
+    process.env.APP_URL ??
+    "http://localhost:3000"
+  )
+}
+
 /** Better Auth client — singleton compartido. */
 export const authClient = createAuthClient({
-  baseURL: typeof window !== "undefined" ? window.location.origin : "http://localhost:3000",
+  baseURL: resolveAuthBaseUrl(),
 })
 
 /** Client-side session para compatibilidad con guards legacy. */

@@ -5,6 +5,8 @@
  *   DATABASE_URL=mysql://root:raffle_dev@localhost:3306/raffle_db bun run scripts/seed.ts
  */
 
+import { randomUUID } from "node:crypto"
+import { hashPassword } from "better-auth/crypto"
 import mysql from "mysql2/promise"
 import bcrypt from "bcryptjs"
 
@@ -23,6 +25,33 @@ async function main() {
     ["admin", "admin@rifas.com", hash, "super_admin"],
   )
   console.log("👤 admin / admin123 (super_admin)")
+
+  const [adminRows] = await pool.execute<mysql.RowDataPacket[]>(
+    "SELECT id FROM users WHERE email = ? LIMIT 1",
+    ["admin@rifas.com"],
+  )
+  const adminId = adminRows[0]?.id as number | undefined
+  if (adminId) {
+    const credentialHash = await hashPassword("admin123")
+    const [accounts] = await pool.execute<mysql.RowDataPacket[]>(
+      "SELECT id FROM account WHERE user_id = ? AND provider_id = 'credential' LIMIT 1",
+      [adminId],
+    )
+    if (accounts.length > 0) {
+      await pool.execute(
+        `UPDATE account SET password = ?, account_id = ?, updated_at = NOW()
+         WHERE user_id = ? AND provider_id = 'credential'`,
+        [credentialHash, String(adminId), adminId],
+      )
+    } else {
+      await pool.execute(
+        `INSERT INTO account (id, user_id, account_id, provider_id, password, created_at, updated_at)
+         VALUES (?, ?, ?, 'credential', ?, NOW(), NOW())`,
+        [randomUUID(), adminId, String(adminId), credentialHash],
+      )
+    }
+    console.log("🔐 Better Auth credential account listo (admin123)")
+  }
 
   // ─── Rifa activa ──────────────────────────────────────────
   const drawDate = new Date()
@@ -84,7 +113,16 @@ async function main() {
   const configs = [
     ["site_info", { site_name: "Rifas Premium", tagline: "¡Tu oportunidad de ganar!" }],
     ["site_colors", { primary: "#8B7355", secondary: "#F5F5DC", accent: "#FFD700" }],
-    ["hero_config", { main_text: "¡GANA", accent_text: "AHORA!", particles_type: "sparkles", particles_count: 20 }],
+    [
+      "hero_config",
+      {
+        title: "¡GANA",
+        subtitle: "AHORA!",
+        show_particles: true,
+        main_text: "¡GANA",
+        accent_text: "AHORA!",
+      },
+    ],
     ["social_media", { whatsapp: "", instagram: "", facebook: "", tiktok: "" }],
     ["contact_info", { phone: "", email: "", address: "" }],
     ["raffle_limits", { max_active: 3, max_finished_display: 10 }],
