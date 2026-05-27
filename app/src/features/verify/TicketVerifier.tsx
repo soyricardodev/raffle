@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label"
 import { publicFetch } from "@/lib/admin-fetch"
 import type { VerifyTicketInput } from "@raffle/shared/validators"
 import { VerifyTicketInput as VerifyTicketSchema } from "@raffle/shared/validators"
-import { CreditCard, Mail, Phone, Search, Ticket } from "lucide-react"
+import { CreditCard, Mail, Phone, Search, Ticket, TicketX } from "lucide-react"
 import { formatDate, getPurchaseStatusClass, getStatusLabel } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 type VerifiedTicket = {
   ticket_number: string
@@ -32,7 +33,7 @@ const searchOptions = [
 
 type SearchType = (typeof searchOptions)[number]["value"]
 
-export function TicketVerifier() {
+export function TicketVerifier({ compact = false }: { compact?: boolean }) {
   const [searchType, setSearchType] = useState<SearchType>("phone")
   const [searchValue, setSearchValue] = useState("")
 
@@ -75,11 +76,19 @@ export function TicketVerifier() {
   }
 
   const tickets = verifyMutation.data ?? []
+  const hasSearched = verifyMutation.isSuccess
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <form className="space-y-4" onSubmit={handleSubmit}>
-        <div className="grid gap-2 sm:grid-cols-4">
+        <div
+          className={cn(
+            "flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+            !compact && "sm:grid sm:grid-cols-4 sm:overflow-visible",
+          )}
+          role="tablist"
+          aria-label="Tipo de búsqueda"
+        >
           {searchOptions.map((option) => {
             const Icon = option.icon
             const active = searchType === option.value
@@ -87,14 +96,20 @@ export function TicketVerifier() {
               <button
                 key={option.value}
                 type="button"
-                onClick={() => setSearchType(option.value)}
-                className={`rounded-xl border p-3 text-left transition-colors ${
+                role="tab"
+                aria-selected={active}
+                onClick={() => {
+                  setSearchType(option.value)
+                  setSearchValue("")
+                }}
+                className={cn(
+                  "min-h-11 min-w-[5.5rem] shrink-0 rounded-xl border px-3 py-2.5 text-left transition-colors focus-visible:ring-3 focus-visible:ring-ring/30 sm:min-w-0",
                   active
                     ? "border-primary bg-primary/10"
-                    : "border-border hover:border-primary/40"
-                }`}
+                    : "border-border hover:border-primary/40",
+                )}
               >
-                <Icon className="mb-2 size-4 text-primary" />
+                <Icon className="mb-1 size-4 text-primary" aria-hidden />
                 <p className="text-sm font-medium">{option.label}</p>
               </button>
             )
@@ -108,42 +123,55 @@ export function TicketVerifier() {
             value={searchValue}
             onChange={(event) => setSearchValue(event.target.value)}
             placeholder={currentOption?.placeholder}
+            className="min-h-11"
+            autoComplete={searchType === "email" ? "email" : searchType === "phone" ? "tel" : "off"}
           />
         </div>
 
-        <Button type="submit" disabled={verifyMutation.isPending} className="w-full sm:w-auto">
+        <Button
+          type="submit"
+          disabled={verifyMutation.isPending}
+          className="min-h-11 w-full sm:w-auto"
+        >
           <Search className="mr-2 size-4" />
           {verifyMutation.isPending ? "Buscando…" : "Verificar boletos"}
         </Button>
       </form>
 
-      {verifyMutation.isSuccess && tickets.length === 0 && (
-        <Card className="border-dashed">
-          <CardContent className="py-10 text-center">
-            <p className="font-medium">No se encontraron boletos</p>
-            <p className="text-muted-foreground mt-1 text-sm">
-              Verifica que los datos coincidan con los registrados en tu compra.
-            </p>
+      {hasSearched && tickets.length === 0 && (
+        <Card className="border-dashed bg-muted/20">
+          <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+            <TicketX className="text-muted-foreground/40 size-10" />
+            <div>
+              <p className="font-medium">No encontramos boletos</p>
+              <p className="text-muted-foreground mt-1 max-w-xs text-sm">
+                Revisa que el {currentOption?.label.toLowerCase()} coincida con el de tu compra. Si
+                acabas de pagar, puede tardar unos minutos en aparecer.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
 
       {tickets.length > 0 && (
         <div className="space-y-3">
-          <p className="text-sm font-medium">{tickets.length} boleto(s) encontrado(s)</p>
+          <p className="text-sm font-medium">
+            {tickets.length} boleto{tickets.length === 1 ? "" : "s"} encontrado
+            {tickets.length === 1 ? "" : "s"}
+          </p>
           {tickets.map((ticket) => (
             <Card key={`${ticket.raffle_name}-${ticket.ticket_number}`}>
               <CardHeader className="pb-2">
-                <CardTitle className="flex items-center justify-between text-base">
-                  <span>Boleto #{ticket.ticket_number}</span>
+                <CardTitle className="flex items-center justify-between gap-2 text-base">
+                  <span className="font-mono">#{ticket.ticket_number}</span>
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-medium ${getPurchaseStatusClass(ticket.purchase_status ?? "pending")}`}
+                    className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getPurchaseStatusClass(ticket.purchase_status ?? "pending")}`}
                   >
                     {getStatusLabel(ticket.purchase_status ?? "pending")}
                   </span>
                 </CardTitle>
               </CardHeader>
-              <CardContent className="text-muted-foreground space-y-1 text-sm">
+              <CardContent className="text-muted-foreground space-y-1.5 text-sm">
                 <p>
                   <span className="text-foreground font-medium">Rifa:</span> {ticket.raffle_name}
                 </p>

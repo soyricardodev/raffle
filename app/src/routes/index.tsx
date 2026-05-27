@@ -2,7 +2,10 @@ import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { Skeleton } from "@/components/ui/skeleton"
 import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
+import { HomeHero } from "@/features/home/HomeHero"
+import { HomeStickyCta } from "@/features/home/HomeStickyCta"
 import {
   fetchHomeFirstActive,
   fetchHomePublished,
@@ -12,8 +15,9 @@ import {
 } from "@/features/home/home-queries"
 import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
 import { PublicLayout } from "@/features/layout/PublicLayout"
-import { useSiteConfig } from "@/stores/site-config"
-import { Ticket } from "lucide-react"
+import { PauseBanner } from "@/features/raffle/PauseBanner"
+import { PurchaseForm } from "@/features/raffle/PurchaseForm"
+import { Search, Ticket } from "lucide-react"
 
 export const Route = createFileRoute("/")({
   loader: async ({ context: { queryClient } }) => {
@@ -41,9 +45,8 @@ export const Route = createFileRoute("/")({
 
 function HomePage() {
   const { firstActive, published: initialPublished } = Route.useLoaderData()
-  const { siteInfo } = useSiteConfig()
 
-  const { data: activeRaffle = firstActive } = useQuery({
+  const activeQuery = useQuery({
     queryKey: homeQueryKeys.firstActive,
     queryFn: () => fetchHomeFirstActive(),
     initialData: firstActive,
@@ -51,6 +54,9 @@ function HomePage() {
     refetchInterval: 30_000,
     refetchOnMount: false,
   })
+
+  const activeRaffle = activeQuery.data
+  const activeLoading = activeQuery.isFetching && activeRaffle == null
 
   const { data: published = initialPublished } = useQuery({
     queryKey: homeQueryKeys.published(HOME_PUBLISHED_LIMIT, HOME_PUBLISHED_PAGE),
@@ -60,56 +66,63 @@ function HomePage() {
     refetchOnMount: false,
   })
 
+  const showStickyCta = activeRaffle != null && activeRaffle.status === "active"
+
   return (
     <PublicLayout>
-      <section className="container mx-auto px-4 py-12 md:py-16">
-        <div className="mx-auto max-w-3xl space-y-6 text-center">
-          <p className="text-muted-foreground text-sm uppercase tracking-[0.2em]">Rifas en línea</p>
-          <h1 className="font-heading text-4xl font-semibold tracking-tight md:text-5xl">
-            {siteInfo.site_name || "Rifas Premium"}
-          </h1>
-          <p className="text-muted-foreground text-lg">
-            {siteInfo.tagline || "¡Tu oportunidad de ganar!"}
-          </p>
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-            {activeRaffle && (
-              <Button asChild size="lg">
-                <Link to="/rifa/$id" params={{ id: String(activeRaffle.id) }}>
-                  Comprar boletos <Ticket className="ml-2" size={18} />
-                </Link>
-              </Button>
-            )}
-            <Button variant="outline" asChild size="lg">
-              <Link to="/verificar">Verificar boletos</Link>
-            </Button>
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-8 px-4 py-6 pb-24 sm:py-8">
+        <HomeHero />
+
+        {activeLoading && (
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="h-56 w-full rounded-xl" />
           </div>
-        </div>
-      </section>
+        )}
 
-      {activeRaffle && (
-        <section className="container mx-auto px-4 pb-12">
-          <ActiveRaffleCard raffle={activeRaffle} />
-        </section>
-      )}
+        {activeRaffle && (
+          <div className="space-y-6">
+            {activeRaffle.status === "paused" && <PauseBanner raffleId={activeRaffle.id} />}
+            <ActiveRaffleCard raffle={activeRaffle} variant="compact" showCta={false} />
+            <div id="comprar" className="scroll-mt-16">
+              <PurchaseForm raffle={activeRaffle} />
+            </div>
+          </div>
+        )}
 
-      {published.raffles.length > 0 && <PublishedRafflesGrid raffles={published.raffles} />}
-
-      {activeRaffle === null && (
-        <section className="container mx-auto px-4 pb-16">
-          <Card className="border-dashed">
-            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-              <Ticket size={48} className="text-muted-foreground/30 mb-4" />
-              <h2 className="mb-2 text-xl font-semibold">No hay rifas activas</h2>
-              <p className="text-muted-foreground mb-4 text-sm">
-                Vuelve pronto. Mientras tanto puedes verificar tus boletos.
-              </p>
-              <Button variant="outline" asChild>
-                <Link to="/verificar">Verificar boletos</Link>
+        {activeRaffle === null && !activeLoading && (
+          <Card className="border-dashed shadow-none">
+            <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+              <Ticket className="text-muted-foreground/40 size-10" />
+              <div className="space-y-1">
+                <p className="font-medium">No hay rifas activas</p>
+                <p className="text-muted-foreground text-sm">Vuelve pronto o verifica tus boletos.</p>
+              </div>
+              <Button variant="outline" size="sm" className="min-h-10" asChild>
+                <Link to="/verificar">
+                  <Search className="mr-2 size-4" />
+                  Verificar boletos
+                </Link>
               </Button>
             </CardContent>
           </Card>
-        </section>
+        )}
+
+        <p className="text-muted-foreground text-center text-sm">
+          ¿Ya compraste?{" "}
+          <Link to="/verificar" className="text-foreground font-medium underline-offset-4 hover:underline">
+            Verifica tus boletos
+          </Link>
+        </p>
+      </div>
+
+      {published.raffles.length > 0 && (
+        <div className="border-t">
+          <PublishedRafflesGrid raffles={published.raffles} />
+        </div>
       )}
+
+      <HomeStickyCta visible={showStickyCta} />
     </PublicLayout>
   )
 }

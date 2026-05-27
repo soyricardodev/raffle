@@ -132,4 +132,12 @@
   html {
     @apply font-mono;
   }
+  a:focus-visible,
+  button:focus-visible,
+  [role="tab"]:focus-visible,
+  input:focus-visible,
+  select:focus-visible,
+  textarea:focus-visible {
+    @apply outline-none ring-3 ring-ring/40;
+  }
 }

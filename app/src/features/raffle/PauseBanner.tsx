@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query"
-import { Clock } from "lucide-react"
+import { Clock, RefreshCw } from "lucide-react"
 import { publicFetch } from "@/lib/admin-fetch"
 
 type PauseInfo = {
@@ -17,21 +17,46 @@ export function PauseBanner({ raffleId }: { raffleId: number | string }) {
 
   if (!data?.isPaused) return null
 
-  const minutes = Math.floor((data.remainingSeconds ?? 0) / 60)
-  const seconds = (data.remainingSeconds ?? 0) % 60
+  const totalSeconds = data.remainingSeconds ?? 0
+  const minutes = Math.floor(totalSeconds / 60)
+  const seconds = totalSeconds % 60
+  const countdown =
+    totalSeconds > 0 ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : null
 
   return (
-    <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3">
+    <div
+      role="status"
+      className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4"
+    >
       <div className="flex items-start gap-3">
-        <Clock className="mt-0.5 size-5 shrink-0 text-amber-600 dark:text-amber-400" />
-        <div>
-          <p className="font-medium text-amber-900 dark:text-amber-100">Rifa pausada temporalmente</p>
-          <p className="text-muted-foreground mt-1 text-sm">
-            {data.reason ? `${data.reason}. ` : ""}
-            {data.remainingSeconds != null && data.remainingSeconds > 0
-              ? `Reanuda en ${minutes}:${String(seconds).padStart(2, "0")}.`
-              : "Vuelve a intentar en unos minutos."}
+        <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
+          <Clock className="size-5 text-amber-700 dark:text-amber-300" aria-hidden />
+        </div>
+        <div className="min-w-0 flex-1 space-y-2">
+          <p className="font-semibold text-amber-950 dark:text-amber-50">
+            Ventas pausadas temporalmente
           </p>
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            {data.reason
+              ? data.reason
+              : "Estamos procesando muchas compras. Vuelve en un momento para continuar."}
+          </p>
+          {countdown ? (
+            <div className="flex flex-wrap items-center gap-3">
+              <span
+                className="font-mono text-2xl font-bold tracking-wider text-amber-900 tabular-nums dark:text-amber-100"
+                aria-live="polite"
+              >
+                {countdown}
+              </span>
+              <span className="text-muted-foreground text-xs">hasta reanudar ventas</span>
+            </div>
+          ) : (
+            <p className="flex items-center gap-1.5 text-sm font-medium text-amber-800 dark:text-amber-200">
+              <RefreshCw className="size-4 shrink-0" />
+              Actualiza la página en unos minutos
+            </p>
+          )}
         </div>
       </div>
     </div>

@@ -133,10 +133,42 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
         <aside className="bg-sidebar border-border/80 hidden w-64 shrink-0 border-r lg:block">
           {sidebar}
         </aside>
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] lg:pb-0">
           <div className="container mx-auto p-4 md:p-6 lg:p-8">{children}</div>
         </div>
       </div>
+
+      <nav
+        className="bg-background/95 border-border/80 fixed inset-x-0 bottom-0 z-40 flex border-t pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden"
+        aria-label="Navegación principal"
+      >
+        {adminNavItems.slice(0, 4).map((item) => {
+          const Icon = item.icon
+          const active = isActive(item.href)
+          return (
+            <Link
+              key={item.href}
+              to={item.href}
+              className={cn(
+                "flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium transition-colors focus-visible:ring-3 focus-visible:ring-ring/30",
+                active ? "text-primary" : "text-muted-foreground",
+              )}
+            >
+              <Icon className="size-5" aria-hidden />
+              <span className="truncate">{item.name.split(" ")[0]}</span>
+            </Link>
+          )
+        })}
+        <button
+          type="button"
+          className="text-muted-foreground flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 px-1 text-[10px] font-medium focus-visible:ring-3 focus-visible:ring-ring/30"
+          onClick={() => setMobileOpen(true)}
+          aria-label="Más opciones"
+        >
+          <Menu className="size-5" />
+          <span>Más</span>
+        </button>
+      </nav>
     </div>
   )
 }

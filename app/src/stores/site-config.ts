@@ -17,10 +17,43 @@ export type ContactInfo = {
   address: string
 }
 
+export type SocialMedia = {
+  whatsapp: string
+  instagram: string
+  facebook: string
+}
+
+export type HeroConfig = {
+  title: string
+  subtitle: string
+  show_particles: boolean
+}
+
+/** Legacy hero_config used main_text/accent_text; v2 uses title/subtitle. */
+export function normalizeHeroConfig(raw: unknown): HeroConfig {
+  if (!raw || typeof raw !== "object") {
+    return { title: "", subtitle: "", show_particles: false }
+  }
+  const hero = raw as Record<string, unknown>
+  return {
+    title: String(hero.title ?? hero.main_text ?? ""),
+    subtitle: String(hero.subtitle ?? hero.accent_text ?? ""),
+    show_particles: Boolean(hero.show_particles),
+  }
+}
+
+export type SiteImages = {
+  banner: string
+  logo: string
+}
+
 type SiteConfigState = {
   colors: SiteColors
   siteInfo: SiteInfo
   contact: ContactInfo
+  social: SocialMedia
+  hero: HeroConfig
+  images: SiteImages
   loaded: boolean
   applyCssVariables: () => void
   setFromApi: (
@@ -28,11 +61,17 @@ type SiteConfigState = {
       site_colors: SiteColors
       site_info: SiteInfo
       contact_info: ContactInfo
+      social_media: SocialMedia
+      hero_config: HeroConfig
+      site_images: SiteImages
     }>,
   ) => void
 }
 
-const defaults: Pick<SiteConfigState, "colors" | "siteInfo" | "contact"> = {
+const defaults: Pick<
+  SiteConfigState,
+  "colors" | "siteInfo" | "contact" | "social" | "hero" | "images"
+> = {
   colors: {
     primary: "#8B7355",
     secondary: "#F5F5DC",
@@ -46,6 +85,20 @@ const defaults: Pick<SiteConfigState, "colors" | "siteInfo" | "contact"> = {
     phone: "",
     email: "",
     address: "",
+  },
+  social: {
+    whatsapp: "",
+    instagram: "",
+    facebook: "",
+  },
+  hero: {
+    title: "",
+    subtitle: "",
+    show_particles: false,
+  },
+  images: {
+    banner: "",
+    logo: "",
   },
 }
 
@@ -66,6 +119,9 @@ export const useSiteConfig = create<SiteConfigState>((set, get) => ({
       colors: payload.site_colors ?? state.colors,
       siteInfo: payload.site_info ?? state.siteInfo,
       contact: payload.contact_info ?? state.contact,
+      social: payload.social_media ?? state.social,
+      hero: payload.hero_config ? normalizeHeroConfig(payload.hero_config) : state.hero,
+      images: payload.site_images ?? state.images,
       loaded: true,
     }))
     applyThemeColors(get().colors)

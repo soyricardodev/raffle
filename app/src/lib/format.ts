@@ -1,8 +1,18 @@
+import { isDollarMethod, type PaymentMethod } from "@raffle/shared/validators"
+
 export function formatCurrency(amount: number | string, currency: "Bs" | "USD" = "Bs") {
   const value = Number(amount)
   if (Number.isNaN(value)) return "—"
   if (currency === "USD") return `$ ${value.toFixed(2)}`
   return `Bs ${value.toFixed(2)}`
+}
+
+export function formatCurrencyForMethod(
+  amount: number | string,
+  paymentMethod: string,
+): string {
+  const currency = isDollarMethod(paymentMethod as PaymentMethod) ? "USD" : "Bs"
+  return formatCurrency(amount, currency)
 }
 
 export function formatDate(value: string | Date | null | undefined) {

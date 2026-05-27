@@ -26,12 +26,15 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
 }
 
 export async function publicFetch<T>(path: string, init?: RequestInit): Promise<T> {
+  const isFormData = init?.body instanceof FormData
   const res = await fetch(path, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      ...init?.headers,
-    },
+    headers: isFormData
+      ? { ...init?.headers }
+      : {
+          "Content-Type": "application/json",
+          ...init?.headers,
+        },
   })
 
   if (!res.ok) {
