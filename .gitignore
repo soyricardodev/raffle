@@ -19,3 +19,11 @@ Thumbs.db
 
 # Logs
 *.log
+build-output.txt
+app/build-output.txt
+
+# Playwright (app)
+app/test-results/
+app/playwright-report/
+app/blob-report/
+app/e2e/.auth/

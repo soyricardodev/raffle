@@ -5,6 +5,7 @@
     "dev": "pnpm --filter app dev",
     "build": "pnpm --filter app build",
     "test": "pnpm --filter app test",
+    "test:e2e": "pnpm --filter app test:e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "typecheck": "pnpm --filter app typecheck && pnpm --filter @raffle/shared typecheck"

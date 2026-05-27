@@ -7,6 +7,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:headed": "playwright test --headed",
     "lint": "eslint",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx}\"",
     "typecheck": "tsgo --noEmit"
@@ -36,6 +39,7 @@
     "radix-ui": "^1.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
+    "recharts": "^3.8.1",
     "resend": "^6.12.4",
     "shadcn": "^4.8.0",
     "sonner": "^2.0.7",
@@ -47,7 +51,9 @@
     "zustand": "^5.0.13"
   },
   "devDependencies": {
+    "@playwright/test": "^1.55.0",
     "@tanstack/devtools-vite": "^0.6.0",
+    "bcryptjs": "^3.0.3",
     "@tanstack/eslint-config": "^0.4.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/react": "^16.3.2",
