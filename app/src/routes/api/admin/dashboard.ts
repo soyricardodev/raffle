@@ -7,7 +7,14 @@ export const Route = createFileRoute("/api/admin/dashboard")({
     handlers: {
       GET: async ({ request }) => {
         await requireAdmin(request)
-        return Response.json(await getDashboardStats())
+        const url = new URL(request.url)
+        const raffleIdParam = url.searchParams.get("raffleId")
+        const raffleId = raffleIdParam ? Number(raffleIdParam) : undefined
+        return Response.json(
+          await getDashboardStats(
+            raffleId && !Number.isNaN(raffleId) ? raffleId : undefined,
+          ),
+        )
       },
     },
   },

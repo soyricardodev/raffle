@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { getAnalyticsSnapshot, getSalesOverTime, getTopRaffles, getRevenueByMethod, getStatusDistribution } from "@/server/analytics.service"
 import { requireAdmin } from "@/lib/auth-utils.server"
 
-export const Route = createFileRoute("/api/admin/analytics" as never)({
+export const Route = createFileRoute("/api/admin/analytics")({
   server: {
     handlers: {
       GET: async ({ request }) => {

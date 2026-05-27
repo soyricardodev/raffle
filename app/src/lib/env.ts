@@ -11,6 +11,7 @@ const envSchema = z
     EMAIL_PROVIDER: z.enum(["brevo", "resend", "noop"]).default("noop"),
     BREVO_API_KEY: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
+    CRON_SECRET: z.string().optional(),
     INNGEST_EVENT_KEY: z.string().optional(),
     INNGEST_SIGNING_KEY: z.string().optional(),
     LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error"]).default("info"),
