@@ -1,5 +1,5 @@
-import { useMutation } from "@tanstack/react-query"
-import { useState } from "react"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { useEffect, useState } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -7,11 +7,30 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { adminFetch } from "@/lib/admin-fetch"
-import { PaymentMethod, type CreateRaffleInput } from "@raffle/shared/validators"
+import { PaymentMethod, type UpdateRaffleInput } from "@raffle/shared/validators"
 import { Plus, Trash2 } from "lucide-react"
 
 type PrizeDraft = { name: string; description: string; position: number }
 type MethodDraft = { method_type: string; account_info: Record<string, string> }
+
+type RaffleDetail = {
+  id: number
+  name: string
+  description: string | null
+  total_tickets: number
+  price_bs: string
+  price_usd: string
+  min_purchase: number
+  max_purchase: number
+  draw_date: string | null
+  status: string
+  prizes?: { name: string; description: string | null; position: number }[]
+  payment_methods?: {
+    method_type: string
+    account_info: string | Record<string, string>
+    is_active?: boolean
+  }[]
+}
 
 const defaultPrize = (): PrizeDraft => ({ name: "", description: "", position: 1 })
 const defaultMethod = (): MethodDraft => ({
@@ -19,33 +38,79 @@ const defaultMethod = (): MethodDraft => ({
   account_info: { banco: "", telefono: "", cedula: "" },
 })
 
-export function CreateRaffleForm() {
+function parseAccountInfo(info: string | Record<string, string>): Record<string, string> {
+  if (typeof info === "string") {
+    try {
+      return JSON.parse(info) as Record<string, string>
+    } catch {
+      return {}
+    }
+  }
+  return info
+}
+
+export function EditRaffleForm({ raffleId }: { raffleId: string }) {
   const navigate = useNavigate()
   const [name, setName] = useState("")
   const [description, setDescription] = useState("")
-  const [totalTickets, setTotalTickets] = useState("1000")
-  const [priceBs, setPriceBs] = useState("50")
-  const [priceUsd, setPriceUsd] = useState("5")
+  const [priceBs, setPriceBs] = useState("")
+  const [priceUsd, setPriceUsd] = useState("")
   const [minPurchase, setMinPurchase] = useState("1")
   const [maxPurchase, setMaxPurchase] = useState("10")
   const [drawDate, setDrawDate] = useState("")
-  const [status, setStatus] = useState<CreateRaffleInput["status"]>("draft")
+  const [status, setStatus] = useState<string>("draft")
   const [prizes, setPrizes] = useState<PrizeDraft[]>([defaultPrize()])
   const [methods, setMethods] = useState<MethodDraft[]>([defaultMethod()])
 
-  const createMutation = useMutation({
+  const raffleQuery = useQuery({
+    queryKey: ["admin", "raffle", raffleId],
+    queryFn: () => adminFetch<RaffleDetail>(`/api/admin/raffles/${raffleId}`),
+  })
+
+  useEffect(() => {
+    const r = raffleQuery.data
+    if (!r) return
+    setName(r.name)
+    setDescription(r.description ?? "")
+    setPriceBs(String(r.price_bs))
+    setPriceUsd(String(r.price_usd))
+    setMinPurchase(String(r.min_purchase))
+    setMaxPurchase(String(r.max_purchase))
+    setStatus(r.status)
+    if (r.draw_date) {
+      const d = new Date(r.draw_date)
+      setDrawDate(d.toISOString().slice(0, 16))
+    }
+    if (r.prizes?.length) {
+      setPrizes(
+        r.prizes.map((p) => ({
+          name: p.name,
+          description: p.description ?? "",
+          position: p.position,
+        })),
+      )
+    }
+    if (r.payment_methods?.length) {
+      setMethods(
+        r.payment_methods.map((m) => ({
+          method_type: m.method_type,
+          account_info: parseAccountInfo(m.account_info),
+        })),
+      )
+    }
+  }, [raffleQuery.data])
+
+  const saveMutation = useMutation({
     mutationFn: async () => {
-      const payload: CreateRaffleInput = {
+      const payload: UpdateRaffleInput = {
         name: name.trim(),
         description: description.trim() || undefined,
-        total_tickets: Number(totalTickets),
         price_bs: Number(priceBs),
         price_usd: Number(priceUsd),
         min_purchase: Number(minPurchase),
         max_purchase: Number(maxPurchase),
         draw_date: drawDate ? new Date(drawDate).toISOString() : null,
-        status,
-        auto_pause_enabled: true,
+        status: status as UpdateRaffleInput["status"],
         prizes: prizes
           .filter((prize) => prize.name.trim())
           .map((prize, index) => ({
@@ -59,111 +124,91 @@ export function CreateRaffleForm() {
           is_active: true,
         })),
       }
-
-      return adminFetch<{ raffleId: number }>("/api/admin/raffles/", {
-        method: "POST",
+      return adminFetch(`/api/admin/raffles/${raffleId}`, {
+        method: "PUT",
         body: JSON.stringify(payload),
       })
     },
-    onSuccess: (result) => {
-      toast.success(`Rifa creada (#${result.raffleId})`)
+    onSuccess: () => {
+      toast.success("Rifa actualizada")
       void navigate({ to: "/admin/rifas" })
     },
     onError: (error: Error) => toast.error(error.message),
   })
 
+  if (raffleQuery.isLoading) {
+    return <p className="text-muted-foreground animate-pulse p-8 text-center">Cargando rifa…</p>
+  }
+
   return (
     <div className="mx-auto max-w-3xl space-y-6 [&_input]:min-h-11 [&_select]:min-h-11 [&_textarea]:min-h-11">
       <div>
-        <h1 className="font-heading text-2xl font-semibold">Nueva rifa</h1>
-        <p className="text-muted-foreground text-sm">Completa los datos básicos para publicar una rifa.</p>
+        <h1 className="font-heading text-2xl font-semibold">Editar rifa</h1>
+        <p className="text-muted-foreground text-sm">#{raffleId}</p>
       </div>
-
       <Card>
         <CardHeader>
-          <CardTitle>Información general</CardTitle>
+          <CardTitle>Datos principales</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="name">Nombre</Label>
-            <Input id="name" value={name} onChange={(event) => setName(event.target.value)} />
+            <Label htmlFor="edit-name">Nombre</Label>
+            <Input id="edit-name" value={name} onChange={(e) => setName(e.target.value)} />
           </div>
           <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="description">Descripción</Label>
+            <Label htmlFor="edit-desc">Descripción</Label>
+            <Input id="edit-desc" value={description} onChange={(e) => setDescription(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Precio Bs</Label>
+            <Input type="number" value={priceBs} onChange={(e) => setPriceBs(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Precio USD</Label>
+            <Input type="number" value={priceUsd} onChange={(e) => setPriceUsd(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Mín. compra</Label>
+            <Input type="number" value={minPurchase} onChange={(e) => setMinPurchase(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Máx. compra</Label>
+            <Input type="number" value={maxPurchase} onChange={(e) => setMaxPurchase(e.target.value)} />
+          </div>
+          <div className="space-y-2">
+            <Label>Sorteo</Label>
             <Input
-              id="description"
-              value={description}
-              onChange={(event) => setDescription(event.target.value)}
+              type="datetime-local"
+              value={drawDate}
+              onChange={(e) => setDrawDate(e.target.value)}
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="total-tickets">Total boletos</Label>
-            <Input
-              id="total-tickets"
-              type="number"
-              value={totalTickets}
-              onChange={(event) => setTotalTickets(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="status">Estado inicial</Label>
+            <Label>Estado</Label>
             <select
-              id="status"
               className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
               value={status}
-              onChange={(event) => setStatus(event.target.value as CreateRaffleInput["status"])}
+              onChange={(e) => setStatus(e.target.value)}
             >
               <option value="draft">Borrador</option>
               <option value="active">Activa</option>
+              <option value="paused">Pausada</option>
+              <option value="finished">Finalizada</option>
+              <option value="cancelled">Cancelada</option>
             </select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="price-bs">Precio Bs</Label>
-            <Input id="price-bs" type="number" value={priceBs} onChange={(event) => setPriceBs(event.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="price-usd">Precio USD</Label>
-            <Input
-              id="price-usd"
-              type="number"
-              value={priceUsd}
-              onChange={(event) => setPriceUsd(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="min-purchase">Compra mínima</Label>
-            <Input
-              id="min-purchase"
-              type="number"
-              value={minPurchase}
-              onChange={(event) => setMinPurchase(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="max-purchase">Compra máxima</Label>
-            <Input
-              id="max-purchase"
-              type="number"
-              value={maxPurchase}
-              onChange={(event) => setMaxPurchase(event.target.value)}
-            />
-          </div>
-          <div className="space-y-2 sm:col-span-2">
-            <Label htmlFor="draw-date">Fecha de sorteo</Label>
-            <Input
-              id="draw-date"
-              type="datetime-local"
-              value={drawDate}
-              onChange={(event) => setDrawDate(event.target.value)}
-            />
           </div>
         </CardContent>
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Premios</CardTitle>
-          <Button type="button" variant="outline" size="sm" onClick={() => setPrizes((items) => [...items, defaultPrize()])}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setPrizes((items) => [...items, defaultPrize()])}
+          >
             <Plus className="mr-1 size-4" />
             Agregar
           </Button>
@@ -207,9 +252,14 @@ export function CreateRaffleForm() {
       </Card>
 
       <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle>Métodos de pago</CardTitle>
-          <Button type="button" variant="outline" size="sm" onClick={() => setMethods((items) => [...items, defaultMethod()])}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setMethods((items) => [...items, defaultMethod()])}
+          >
             <Plus className="mr-1 size-4" />
             Agregar
           </Button>
@@ -289,13 +339,14 @@ export function CreateRaffleForm() {
         </CardContent>
       </Card>
 
-      <Button
-        className="w-full sm:w-auto"
-        disabled={!name.trim() || createMutation.isPending}
-        onClick={() => createMutation.mutate()}
-      >
-        {createMutation.isPending ? "Creando…" : "Crear rifa"}
-      </Button>
+      <div className="flex flex-wrap gap-2">
+        <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
+          Guardar cambios
+        </Button>
+        <Button variant="outline" onClick={() => void navigate({ to: "/admin/rifas" })}>
+          Cancelar
+        </Button>
+      </div>
     </div>
   )
 }

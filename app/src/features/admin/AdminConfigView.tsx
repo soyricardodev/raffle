@@ -1,17 +1,27 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
+import { AdminMaintenanceSection } from "@/features/admin/AdminMaintenanceSection"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { adminFetch } from "@/lib/admin-fetch"
-import { useSiteConfig } from "@/stores/site-config"
+import { normalizeHeroConfig, useSiteConfig } from "@/stores/site-config"
 
 type SiteConfigApi = {
   site_info?: { site_name?: string; tagline?: string }
   site_colors?: { primary?: string; secondary?: string; accent?: string }
   contact_info?: { phone?: string; email?: string; address?: string }
+  social_media?: { whatsapp?: string; instagram?: string; facebook?: string }
+  hero_config?: {
+    title?: string
+    subtitle?: string
+    main_text?: string
+    accent_text?: string
+    show_particles?: boolean
+  }
+  site_images?: { banner?: string; logo?: string }
 }
 
 export function AdminConfigView() {
@@ -31,6 +41,12 @@ export function AdminConfigView() {
   const [phone, setPhone] = useState("")
   const [email, setEmail] = useState("")
   const [address, setAddress] = useState("")
+  const [whatsapp, setWhatsapp] = useState("")
+  const [instagram, setInstagram] = useState("")
+  const [facebook, setFacebook] = useState("")
+  const [heroTitle, setHeroTitle] = useState("")
+  const [heroSubtitle, setHeroSubtitle] = useState("")
+  const [bannerUrl, setBannerUrl] = useState("")
 
   useEffect(() => {
     const config = configQuery.data
@@ -43,6 +59,13 @@ export function AdminConfigView() {
     setPhone(config.contact_info?.phone ?? "")
     setEmail(config.contact_info?.email ?? "")
     setAddress(config.contact_info?.address ?? "")
+    setWhatsapp(config.social_media?.whatsapp ?? "")
+    setInstagram(config.social_media?.instagram ?? "")
+    setFacebook(config.social_media?.facebook ?? "")
+    const hero = normalizeHeroConfig(config.hero_config)
+    setHeroTitle(hero.title)
+    setHeroSubtitle(hero.subtitle)
+    setBannerUrl(config.site_images?.banner ?? "")
   }, [configQuery.data])
 
   const saveMutation = useMutation({
@@ -68,6 +91,31 @@ export function AdminConfigView() {
           value: { phone: phone.trim(), email: email.trim(), address: address.trim() },
         }),
       })
+      await adminFetch("/api/admin/config", {
+        method: "PUT",
+        body: JSON.stringify({
+          key: "social_media",
+          value: {
+            whatsapp: whatsapp.trim(),
+            instagram: instagram.trim(),
+            facebook: facebook.trim(),
+          },
+        }),
+      })
+      await adminFetch("/api/admin/config", {
+        method: "PUT",
+        body: JSON.stringify({
+          key: "hero_config",
+          value: { title: heroTitle.trim(), subtitle: heroSubtitle.trim(), show_particles: false },
+        }),
+      })
+      await adminFetch("/api/admin/config", {
+        method: "PUT",
+        body: JSON.stringify({
+          key: "site_images",
+          value: { banner: bannerUrl.trim(), logo: configQuery.data?.site_images?.logo ?? "" },
+        }),
+      })
     },
     onSuccess: () => {
       toast.success("Configuración guardada")
@@ -75,6 +123,9 @@ export function AdminConfigView() {
         site_info: { site_name: siteName, tagline },
         site_colors: { primary, secondary, accent },
         contact_info: { phone, email, address },
+        social_media: { whatsapp, instagram, facebook },
+        hero_config: { title: heroTitle, subtitle: heroSubtitle, show_particles: false },
+        site_images: { banner: bannerUrl, logo: configQuery.data?.site_images?.logo ?? "" },
       })
       void queryClient.invalidateQueries({ queryKey: ["admin", "config"] })
       void queryClient.invalidateQueries({ queryKey: ["site-config"] })
@@ -109,6 +160,42 @@ export function AdminConfigView() {
 
       <Card>
         <CardHeader>
+          <CardTitle>Inicio (hero)</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="hero-title">Título principal</Label>
+            <Input
+              id="hero-title"
+              value={heroTitle}
+              onChange={(e) => setHeroTitle(e.target.value)}
+              placeholder={siteName || "Rifas Premium"}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="hero-subtitle">Subtítulo</Label>
+            <Input
+              id="hero-subtitle"
+              value={heroSubtitle}
+              onChange={(e) => setHeroSubtitle(e.target.value)}
+              placeholder={tagline || "¡Tu oportunidad de ganar!"}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="banner-url">URL del banner</Label>
+            <Input
+              id="banner-url"
+              type="url"
+              value={bannerUrl}
+              onChange={(e) => setBannerUrl(e.target.value)}
+              placeholder="https://…"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle>Colores de marca</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-3">
@@ -136,7 +223,7 @@ export function AdminConfigView() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Contacto</CardTitle>
+          <CardTitle>Contacto y redes</CardTitle>
         </CardHeader>
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
@@ -151,8 +238,37 @@ export function AdminConfigView() {
             <Label htmlFor="address">Dirección</Label>
             <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
           </div>
+          <div className="space-y-2 sm:col-span-2">
+            <Label htmlFor="whatsapp">WhatsApp (solo números)</Label>
+            <Input
+              id="whatsapp"
+              value={whatsapp}
+              onChange={(e) => setWhatsapp(e.target.value)}
+              placeholder="584121234567"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="instagram">Instagram</Label>
+            <Input
+              id="instagram"
+              value={instagram}
+              onChange={(e) => setInstagram(e.target.value)}
+              placeholder="@usuario o URL"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="facebook">Facebook</Label>
+            <Input
+              id="facebook"
+              value={facebook}
+              onChange={(e) => setFacebook(e.target.value)}
+              placeholder="URL o página"
+            />
+          </div>
         </CardContent>
       </Card>
+
+      <AdminMaintenanceSection />
 
       <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
         {saveMutation.isPending ? "Guardando…" : "Guardar cambios"}

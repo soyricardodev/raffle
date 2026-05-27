@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrency, formatDate, getRaffleStatusClass, getStatusLabel } from "@/lib/format"
-import { Pause, Play, Eye } from "lucide-react"
+import { Pause, Play, Eye, Pencil } from "lucide-react"
 
 type RaffleRow = {
   id: number
@@ -127,9 +127,14 @@ export function AdminRafflesTable() {
                   <td className="py-3 pr-3">{formatDate(raffle.draw_date)}</td>
                   <td className="py-3">
                     <div className="flex flex-wrap gap-1">
-                      <Button asChild size="sm" variant="outline">
+                      <Button asChild size="sm" variant="outline" title="Ver pública">
                         <Link to="/rifa/$id" params={{ id: String(raffle.id) }}>
                           <Eye className="size-4" />
+                        </Link>
+                      </Button>
+                      <Button asChild size="sm" variant="outline" title="Editar">
+                        <Link to="/admin/edit/$id" params={{ id: String(raffle.id) }}>
+                          <Pencil className="size-4" />
                         </Link>
                       </Button>
                       {raffle.status === "active" && (
