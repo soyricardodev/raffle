@@ -2,7 +2,8 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { eq } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
-import { paymentMethods, purchaseTickets, purchases, raffles } from "@raffle/shared/db"
+import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
+import { seedPagoMovilPaymentMethodForRaffle } from "@/test/payment-methods-test-helper"
 import { createPurchase } from "./purchase.service"
 
 const TOTAL = 10_000
@@ -13,6 +14,7 @@ const hasDatabase = Boolean(process.env.DATABASE_URL)
 describe.skipIf(!hasDatabase)("purchase near sellout", () => {
   let raffleId: number
   let anchorPurchaseId: number
+  let rafflePaymentMethodId: number
 
   beforeAll(async () => {
     await setupIsolatedTestDatabase()
@@ -38,14 +40,7 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
       .returning({ id: raffles.id })
 
     raffleId = row!.id
-
-    await db.insert(paymentMethods).values({
-      raffleId,
-      methodType: "pago_movil",
-      accountInfo: JSON.stringify({ banco: "Test", telefono: "04120000000", cedula: "V12345678" }),
-      isActive: true,
-      minTickets: null,
-    })
+    rafflePaymentMethodId = await seedPagoMovilPaymentMethodForRaffle(raffleId)
 
     const [purchase] = await db
       .insert(purchases)
@@ -84,7 +79,6 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
     const db = getDb()
     await db.delete(purchaseTickets).where(eq(purchaseTickets.raffleId, raffleId))
     await db.delete(purchases).where(eq(purchases.raffleId, raffleId))
-    await db.delete(paymentMethods).where(eq(paymentMethods.raffleId, raffleId))
     await db.delete(raffles).where(eq(raffles.id, raffleId))
   })
 
@@ -93,7 +87,8 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
       raffleId,
       customerName: "Final Buyer",
       customerPhone: "04129999999",
-      paymentMethod: "pago_movil",
+      customerLocation: "Venezuela, Carabobo",
+      rafflePaymentMethodId,
       paymentReference: `near-sellout-${Date.now()}`,
       ticketQuantity: FINAL_BATCH,
     })

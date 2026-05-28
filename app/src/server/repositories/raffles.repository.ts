@@ -7,9 +7,44 @@ import {
 } from "@raffle/shared/validators"
 import { and, desc, eq, inArray, like, sql } from "drizzle-orm"
 import { getDb, type DbTransaction } from "@/lib/db.server"
-import { paymentMethods, prizes } from "@raffle/shared/db"
+import { prizes } from "@raffle/shared/db"
+import * as rafflePaymentMethodsRepo from "./raffle-payment-methods.repository"
 
 export type RaffleRow = typeof raffles.$inferSelect
+
+/** Counter + pause fields only — for live availability polls. */
+export type RaffleLiveRow = Pick<
+  RaffleRow,
+  | "id"
+  | "status"
+  | "totalTickets"
+  | "ticketsAvailable"
+  | "ticketsReserved"
+  | "ticketsSold"
+  | "minPurchase"
+  | "pauseUntil"
+  | "pauseReason"
+>
+
+export async function findRaffleLiveById(id: number): Promise<RaffleLiveRow | undefined> {
+  const db = getDb()
+  const [row] = await db
+    .select({
+      id: raffles.id,
+      status: raffles.status,
+      totalTickets: raffles.totalTickets,
+      ticketsAvailable: raffles.ticketsAvailable,
+      ticketsReserved: raffles.ticketsReserved,
+      ticketsSold: raffles.ticketsSold,
+      minPurchase: raffles.minPurchase,
+      pauseUntil: raffles.pauseUntil,
+      pauseReason: raffles.pauseReason,
+    })
+    .from(raffles)
+    .where(eq(raffles.id, id))
+    .limit(1)
+  return row
+}
 
 export async function findRaffleById(
   id: number,
@@ -162,16 +197,16 @@ export async function insertRaffle(
     }
   }
 
-  if (input.payment_methods?.length) {
-    for (const pm of input.payment_methods) {
-      await tx.insert(paymentMethods).values({
-        raffleId,
-        methodType: pm.method_type,
-        accountInfo: JSON.stringify(pm.account_info),
-        isActive: pm.is_active ?? true,
-        minTickets: pm.min_tickets ?? null,
-      })
-    }
+  if (input.payment_method_assignments?.length) {
+    await rafflePaymentMethodsRepo.insertRafflePaymentMethodAssignments(
+      tx,
+      raffleId,
+      input.payment_method_assignments.map((a) => ({
+        account_id: a.account_id,
+        min_tickets: a.min_tickets,
+        is_active: a.is_active,
+      })),
+    )
   }
 
   return raffleId
@@ -257,15 +292,29 @@ export async function unpauseRaffleRow(
   raffleId: number,
   newStatus: string
 ): Promise<void> {
-  await tx
-    .update(raffles)
-    .set({
-      status: newStatus,
-      pauseUntil: null,
-      pauseReason: null,
-      updatedAt: new Date(),
-    })
-    .where(eq(raffles.id, raffleId))
+  await setRaffleStatusRow(tx, raffleId, newStatus)
+}
+
+export async function setRaffleStatusRow(
+  tx: DbTransaction,
+  raffleId: number,
+  status: string,
+  options?: { pauseUntil?: Date; pauseReason?: string }
+): Promise<void> {
+  const patch: Partial<typeof raffles.$inferInsert> = {
+    status,
+    updatedAt: new Date(),
+  }
+
+  if (status === "paused") {
+    patch.pauseUntil = options?.pauseUntil ?? null
+    patch.pauseReason = options?.pauseReason ?? "manual"
+  } else {
+    patch.pauseUntil = null
+    patch.pauseReason = null
+  }
+
+  await tx.update(raffles).set(patch).where(eq(raffles.id, raffleId))
 }
 
 export async function finalizeExpiredRaffles(): Promise<number> {
@@ -293,7 +342,9 @@ export function rafflePricesLegacy(row: RaffleRow) {
   }
 }
 
-export function raffleAvailabilityFromCounters(row: RaffleRow) {
+export function raffleAvailabilityFromCounters(
+  row: Pick<RaffleRow, "totalTickets" | "ticketsAvailable" | "ticketsReserved" | "ticketsSold">,
+) {
   const total = row.totalTickets
   const available = row.ticketsAvailable
   const reserved = row.ticketsReserved

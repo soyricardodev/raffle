@@ -2,7 +2,8 @@ import { relations } from "drizzle-orm"
 import { accounts, sessions, verifications } from "./auth"
 import { auditEvents } from "./audit-events"
 import { emailLogs } from "./email-logs"
-import { paymentMethods } from "./payment-methods"
+import { paymentAccounts } from "./payment-accounts"
+import { rafflePaymentMethods } from "./raffle-payment-methods"
 import { purchaseTickets } from "./purchase-tickets"
 import { purchases } from "./purchases"
 import { prizes } from "./prizes"
@@ -24,7 +25,7 @@ export const accountRelations = relations(accounts, ({ one }) => ({
 
 export const raffleRelations = relations(raffles, ({ many }) => ({
   prizes: many(prizes),
-  paymentMethods: many(paymentMethods),
+  rafflePaymentMethods: many(rafflePaymentMethods),
   purchases: many(purchases),
   purchaseTickets: many(purchaseTickets),
 }))
@@ -33,12 +34,27 @@ export const prizeRelations = relations(prizes, ({ one }) => ({
   raffle: one(raffles, { fields: [prizes.raffleId], references: [raffles.id] }),
 }))
 
-export const paymentMethodRelations = relations(paymentMethods, ({ one }) => ({
-  raffle: one(raffles, { fields: [paymentMethods.raffleId], references: [raffles.id] }),
+export const paymentAccountRelations = relations(paymentAccounts, ({ many }) => ({
+  raffleAssignments: many(rafflePaymentMethods),
+}))
+
+export const rafflePaymentMethodRelations = relations(rafflePaymentMethods, ({ one }) => ({
+  raffle: one(raffles, {
+    fields: [rafflePaymentMethods.raffleId],
+    references: [raffles.id],
+  }),
+  account: one(paymentAccounts, {
+    fields: [rafflePaymentMethods.accountId],
+    references: [paymentAccounts.id],
+  }),
 }))
 
 export const purchaseRelations = relations(purchases, ({ one, many }) => ({
   raffle: one(raffles, { fields: [purchases.raffleId], references: [raffles.id] }),
+  rafflePaymentMethod: one(rafflePaymentMethods, {
+    fields: [purchases.rafflePaymentMethodId],
+    references: [rafflePaymentMethods.id],
+  }),
   tickets: many(purchaseTickets),
   emailLogs: many(emailLogs),
 }))

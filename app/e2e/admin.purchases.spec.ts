@@ -1,6 +1,12 @@
 import fs from "node:fs"
 import { expect } from "@playwright/test"
-import { createPurchase, fetchFirstActiveRaffle, setPurchaseStatus, uniqueRef } from "./helpers/api"
+import {
+  createPurchase,
+  fetchFirstActiveRaffle,
+  fetchFirstRafflePaymentMethodId,
+  setPurchaseStatus,
+  uniqueRef,
+} from "./helpers/api"
 import { describeWithDb, test } from "./helpers/fixtures"
 import { e2eEnv } from "./helpers/env"
 
@@ -28,12 +34,13 @@ describeWithDb("admin purchases", () => {
     const approveName = `E2E Approve ${Date.now()}`
     const rejectName = `E2E Reject ${Date.now()}`
     const phoneBase = String(Date.now()).slice(-7)
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
 
     const approved = await createPurchase(request, {
       raffleId: raffle.id,
       customerName: approveName,
       customerPhone: `0412${phoneBase}1`,
-      paymentMethod: "pago_movil",
+      rafflePaymentMethodId,
       paymentReference: uniqueRef("e2e-approve"),
       ticketQuantity: 1,
     })
@@ -42,7 +49,7 @@ describeWithDb("admin purchases", () => {
       raffleId: raffle.id,
       customerName: rejectName,
       customerPhone: `0412${phoneBase}2`,
-      paymentMethod: "pago_movil",
+      rafflePaymentMethodId,
       paymentReference: uniqueRef("e2e-reject"),
       ticketQuantity: 1,
     })
@@ -89,11 +96,13 @@ describeWithDb("admin purchases", () => {
     const raffle = await fetchFirstActiveRaffle(request)
     test.skip(!raffle, "No active raffle — run scripts/seed.ts")
 
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
+
     const purchase = await createPurchase(request, {
       raffleId: raffle.id,
       customerName: `E2E API Admin ${Date.now()}`,
       customerPhone: `0416${String(Date.now()).slice(-7)}`,
-      paymentMethod: "pago_movil",
+      rafflePaymentMethodId,
       paymentReference: uniqueRef("e2e-admin-api"),
       ticketQuantity: 1,
     })

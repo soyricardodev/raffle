@@ -1,9 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { AdminRafflesTable } from "@/features/admin/AdminRafflesTable"
-import {
-  adminRafflesQueryOptions,
-  normalizeAdminRaffleFilters,
-} from "@/features/admin/raffles/admin-raffles-queries"
+import { createFileRoute, Outlet } from "@tanstack/react-router"
 
 type RifasSearch = {
   status?: string
@@ -23,13 +18,9 @@ export const Route = createFileRoute("/admin/rifas")({
       ? Math.max(1, Number(search.limit))
       : undefined,
   }),
-  loaderDeps: ({ search }) => search,
-  loader: async ({ context: { queryClient }, deps }) => {
-    const filters = normalizeAdminRaffleFilters(deps)
-    await queryClient
-      .ensureQueryData(adminRafflesQueryOptions(filters))
-      .catch(() => null)
-    return null
-  },
-  component: AdminRafflesTable,
+  component: AdminRifasLayout,
 })
+
+function AdminRifasLayout() {
+  return <Outlet />
+}

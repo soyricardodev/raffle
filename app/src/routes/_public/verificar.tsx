@@ -1,9 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { TicketVerifier } from "@/features/verify/TicketVerifier"
 import { PublicLayout } from "@/features/layout/PublicLayout"
+import { TicketVerifier } from "@/features/verify/TicketVerifier"
 
-export const Route = createFileRoute("/verificar")({
+export const Route = createFileRoute("/_public/verificar")({
   component: VerifyPage,
 })
 

@@ -3,9 +3,12 @@ import { useEffect } from "react"
 import { authClient } from "@/features/auth/auth-client"
 import { mapAuthSession } from "@/features/auth/session"
 import { AdminLayoutShell } from "@/features/layout/AdminLayoutShell"
+import { AdminRouteError, AdminRouteNotFound } from "@/features/layout/RouteErrorFallback"
 
 export const Route = createFileRoute("/admin")({
   component: AdminLayoutRoute,
+  errorComponent: AdminRouteError,
+  notFoundComponent: AdminRouteNotFound,
 })
 
 function AdminLayoutRoute() {

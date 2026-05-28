@@ -11,6 +11,7 @@ import type { TicketStatus } from "@raffle/shared/validators"
 import { and, asc, desc, eq, inArray, sql } from "drizzle-orm"
 import type { DbTransaction } from "@/lib/db.server"
 import { getDb } from "@/lib/db.server"
+import { pickFreeTicketNumbers, sampleWithoutReplacement } from "@/server/ticket-sampling"
 
 export type AdminTicketLookupRow = {
   ticket_number: string
@@ -93,29 +94,6 @@ export async function lookupAdminTicketByNumber(
         priority(a.raffle_status) - priority(b.raffle_status) ||
         b.purchased_at.getTime() - a.purchased_at.getTime(),
     )
-}
-
-/** Selecciona N números libres de [0, totalTickets) y los mezcla para asignación justa. */
-function pickFreeTicketNumbers(
-  occupied: Set<number>,
-  totalTickets: number,
-  quantity: number,
-): number[] {
-  const free: number[] = []
-  for (let n = 0; n < totalTickets && free.length < quantity; n++) {
-    if (!occupied.has(n)) free.push(n)
-  }
-  if (free.length < quantity) {
-    throw new InsufficientTicketsError(free.length, quantity)
-  }
-
-  for (let i = free.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    const tmp = free[i]!
-    free[i] = free[j]!
-    free[j] = tmp
-  }
-  return free.slice(0, quantity)
 }
 
 async function applyCounterDelta(
@@ -377,6 +355,5 @@ export async function pickRandomTicketsFromPurchase(
   quantity: number,
 ): Promise<string[]> {
   const all = await getPurchaseTicketNumbers(tx, purchaseId)
-  const shuffled = [...all].sort(() => Math.random() - 0.5)
-  return shuffled.slice(0, quantity)
+  return sampleWithoutReplacement(all, quantity)
 }

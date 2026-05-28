@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 import { sql } from "drizzle-orm"
+import { rafflePaymentMethods } from "./raffle-payment-methods"
 import { raffles } from "./raffles"
 
 export const purchases = sqliteTable(
@@ -16,6 +17,10 @@ export const purchases = sqliteTable(
     customerEmail: text("customer_email"),
     customerCi: text("customer_ci"),
     customerLocation: text("customer_location"),
+    rafflePaymentMethodId: integer("raffle_payment_method_id").references(
+      () => rafflePaymentMethods.id,
+      { onDelete: "set null" },
+    ),
     paymentMethod: text("payment_method").notNull(),
     paymentReference: text("payment_reference"),
     paymentProofUrl: text("payment_proof_url"),

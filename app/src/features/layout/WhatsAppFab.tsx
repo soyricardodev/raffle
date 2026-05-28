@@ -1,5 +1,5 @@
 import { MessageCircle } from "lucide-react"
-import { useSiteConfig } from "@/stores/site-config"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
 
 function normalizeWhatsAppUrl(phone: string): string | null {
   const digits = phone.replace(/\D/g, "")
@@ -8,7 +8,8 @@ function normalizeWhatsAppUrl(phone: string): string | null {
 }
 
 export function WhatsAppFab() {
-  const whatsapp = useSiteConfig((s) => s.social.whatsapp)
+  const branding = usePublicBranding()
+  const whatsapp = branding?.social.whatsapp ?? ""
 
   const href = whatsapp ? normalizeWhatsAppUrl(whatsapp) : null
   if (!href) return null

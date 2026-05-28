@@ -7,6 +7,7 @@ import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { Toaster } from "sonner"
 
 import { useEffect, useLayoutEffect } from "react"
+import { PublicRouteError, PublicRouteNotFound } from "@/features/layout/RouteErrorFallback"
 import { useTheme } from "@/stores/theme"
 
 import appCss from "../styles.css?url"
@@ -26,17 +27,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Rifas" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
     scripts: [{ children: themeScript }],
   }),
-  notFoundComponent: () => (
-    <main className="container mx-auto p-4 pt-16">
-      <h1 className="text-2xl font-bold">404</h1>
-      <p className="text-muted-foreground">La página solicitada no existe.</p>
-    </main>
-  ),
+  errorComponent: PublicRouteError,
+  notFoundComponent: PublicRouteNotFound,
   shellComponent: RootDocument,
 })
 

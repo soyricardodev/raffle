@@ -141,17 +141,39 @@ async function main() {
     })
   }
 
+  const rpmIdByRaffleAndType = new Map<string, number>()
   const [payRows] = await source.execute("SELECT * FROM payment_methods")
   for (const m of payRows as MysqlRow[]) {
-    await db.insert(schema.paymentMethods).values({
-      id: Number(m.id),
-      raffleId: Number(m.raffle_id),
-      methodType: String(m.method_type),
-      accountInfo: parseJson(m.account_info),
-      isActive: Boolean(m.is_active ?? true),
-      minTickets: m.min_tickets != null ? Number(m.min_tickets) : null,
-      createdAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
-    })
+    const legacyId = Number(m.id)
+    const raffleId = Number(m.raffle_id)
+    const methodType = String(m.method_type)
+    const [account] = await db
+      .insert(schema.paymentAccounts)
+      .values({
+        label: `${methodType} #${legacyId}`,
+        methodType,
+        accountInfo: parseJson(m.account_info),
+        isActive: Boolean(m.is_active ?? true),
+        createdAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
+        updatedAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
+      })
+      .returning({ id: schema.paymentAccounts.id })
+
+    const [rpm] = await db
+      .insert(schema.rafflePaymentMethods)
+      .values({
+        raffleId,
+        accountId: account!.id,
+        isActive: Boolean(m.is_active ?? true),
+        minTickets: m.min_tickets != null ? Number(m.min_tickets) : null,
+        createdAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
+      })
+      .returning({ id: schema.rafflePaymentMethods.id })
+
+    const mapKey = `${raffleId}:${methodType}`
+    if (!rpmIdByRaffleAndType.has(mapKey)) {
+      rpmIdByRaffleAndType.set(mapKey, rpm!.id)
+    }
   }
 
   // ─── purchases ─────────────────────────────────────────────
@@ -161,16 +183,18 @@ async function main() {
   for (const p of purchaseRows as MysqlRow[]) {
     const paymentMethod = String(p.payment_method)
     const isUsd = ["zelle", "zinli", "binance", "usd"].includes(paymentMethod)
+    const raffleId = Number(p.raffle_id)
     await db.insert(schema.purchases).values({
       id: Number(p.id),
       publicId: randomUUID(),
-      raffleId: Number(p.raffle_id),
+      raffleId,
       customerName: String(p.customer_name),
       customerPhone: String(p.customer_phone),
       customerPhoneNormalized: normalizePhone(String(p.customer_phone)),
       customerEmail: (p.customer_email as string) ?? null,
       customerCi: (p.customer_ci as string) ?? null,
       customerLocation: (p.customer_location as string) ?? null,
+      rafflePaymentMethodId: rpmIdByRaffleAndType.get(`${raffleId}:${paymentMethod}`) ?? null,
       paymentMethod,
       paymentReference: (p.payment_reference as string) ?? null,
       paymentProofUrl: (p.payment_proof_url as string) ?? null,

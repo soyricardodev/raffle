@@ -44,6 +44,7 @@ export async function insertPurchase(
     customerEmail?: string
     customerCi?: string
     customerLocation?: string | null
+    rafflePaymentMethodId?: number | null
     paymentMethod: PaymentMethod
     paymentReference: string
     paymentProofUrl?: string | null
@@ -64,6 +65,7 @@ export async function insertPurchase(
       customerEmail: (data.customerEmail ?? "").substring(0, 100) || null,
       customerCi: (data.customerCi ?? "").substring(0, 20) || null,
       customerLocation: data.customerLocation?.substring(0, 100) ?? null,
+      rafflePaymentMethodId: data.rafflePaymentMethodId ?? null,
       paymentMethod: data.paymentMethod,
       paymentReference: data.paymentReference.substring(0, 100),
       paymentProofUrl: data.paymentProofUrl ?? null,

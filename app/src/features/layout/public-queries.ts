@@ -1,0 +1,38 @@
+import { queryOptions } from "@tanstack/react-query"
+import { createServerFn } from "@tanstack/react-start"
+import { parsePublicSiteConfig } from "@/features/layout/public-site-config-schema"
+import { getSiteConfigMap } from "@/server/site-config.service"
+import type {
+  ContactInfo,
+  HeroConfig,
+  SiteColors,
+  SiteImages,
+  SiteInfo,
+  SocialMedia,
+} from "@/stores/site-config"
+
+export const publicQueryKeys = {
+  siteConfig: ["public", "site-config"] as const,
+}
+
+export type PublicSiteConfigPayload = {
+  site_colors?: SiteColors
+  site_info?: SiteInfo
+  contact_info?: ContactInfo
+  social_media?: SocialMedia
+  hero_config?: HeroConfig
+  site_images?: SiteImages
+}
+
+export const fetchPublicSiteConfig = createServerFn({ method: "GET" }).handler(async () => {
+  const data = await getSiteConfigMap()
+  return parsePublicSiteConfig(data)
+})
+
+export function publicSiteConfigQueryOptions() {
+  return queryOptions({
+    queryKey: publicQueryKeys.siteConfig,
+    queryFn: () => fetchPublicSiteConfig(),
+    staleTime: 300_000,
+  })
+}

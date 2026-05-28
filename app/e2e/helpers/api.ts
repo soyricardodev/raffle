@@ -7,9 +7,28 @@ export type PurchasePayload = {
   customerPhone: string
   customerEmail?: string
   customerCi?: string
-  paymentMethod: string
+  customerLocation: string
+  rafflePaymentMethodId: number
   paymentReference: string
   ticketQuantity: number
+}
+
+export const DEFAULT_CUSTOMER_LOCATION = "Venezuela, Carabobo"
+
+export async function fetchFirstRafflePaymentMethodId(
+  request: APIRequestContext,
+  raffleId: number,
+): Promise<number> {
+  const response = await request.get(`/api/raffles/${raffleId}`)
+  if (!response.ok()) {
+    throw new Error(`raffle fetch failed: ${response.status()} ${await response.text()}`)
+  }
+  const data = (await response.json()) as {
+    payment_methods?: Array<{ id: number }>
+  }
+  const id = data.payment_methods?.[0]?.id
+  if (!id) throw new Error("No payment methods on raffle — run scripts/seed.ts")
+  return id
 }
 
 export type PurchaseResult = {
@@ -34,7 +53,10 @@ export async function createPurchase(
   payload: PurchasePayload,
 ): Promise<PurchaseResult> {
   const response = await request.post("/api/purchases/", {
-    data: payload,
+    data: {
+      customerLocation: DEFAULT_CUSTOMER_LOCATION,
+      ...payload,
+    },
   })
   if (!response.ok()) {
     throw new Error(`create purchase failed: ${response.status()} ${await response.text()}`)

@@ -1,5 +1,10 @@
 import { expect } from "@playwright/test"
-import { createPurchase, fetchFirstActiveRaffle, uniqueRef } from "./helpers/api"
+import {
+  createPurchase,
+  fetchFirstActiveRaffle,
+  fetchFirstRafflePaymentMethodId,
+  uniqueRef,
+} from "./helpers/api"
 import { describeWithDb, test } from "./helpers/fixtures"
 
 describeWithDb("purchase flow", () => {
@@ -7,11 +12,13 @@ describeWithDb("purchase flow", () => {
     const raffle = await fetchFirstActiveRaffle(request)
     test.skip(!raffle, "No active raffle — run scripts/seed.ts")
 
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
+
     const result = await createPurchase(request, {
       raffleId: raffle.id,
       customerName: `E2E API ${Date.now()}`,
       customerPhone: `0412${String(Date.now()).slice(-7)}`,
-      paymentMethod: "pago_movil",
+      rafflePaymentMethodId,
       paymentReference: uniqueRef("e2e-api"),
       ticketQuantity: 1,
     })

@@ -1,55 +1,21 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
+import { useMutation } from "@tanstack/react-query"
 import { useMemo } from "react"
 import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
 import type { UpdateRaffleInput } from "@raffle/shared/validators"
-import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
-import type { RaffleFormState } from "@/features/admin/raffles/types"
-import { defaultPrize, defaultRaffleFormState } from "@/features/admin/raffles/types"
 import {
-  defaultPaymentMethod,
-  type PaymentMethodDraft,
-} from "@/features/admin/PaymentMethodsEditor"
+  type AdminRaffleDetail,
+  useAdminRaffleDetailQuery,
+} from "@/features/admin/raffles/admin-raffle-detail-queries"
+import { AdminRaffleMissing } from "@/features/admin/raffles/AdminRaffleMissing"
+import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
+import type { PaymentMethodAssignment, RaffleFormState } from "@/features/admin/raffles/types"
+import { defaultPrize, defaultRaffleFormState } from "@/features/admin/raffles/types"
 import { adminFetch } from "@/lib/admin-fetch"
+import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 
-type RaffleDetail = {
-  id: number
-  name: string
-  description: string | null
-  image_url: string | null
-  price_bs: string | number
-  price_usd: string | number
-  min_purchase: number
-  max_purchase: number
-  draw_date: string | null
-  status: RaffleFormState["status"]
-  prizes?: Array<{
-    name: string
-    description: string | null
-    position: number
-    image_url?: string | null
-  }>
-  payment_methods?: Array<{
-    method_type: string
-    account_info: string | Record<string, string>
-    min_tickets?: number | null
-    is_active?: boolean
-  }>
-}
-
-function parseAccountInfo(info: string | Record<string, string>): Record<string, string> {
-  if (typeof info === "string") {
-    try {
-      return JSON.parse(info) as Record<string, string>
-    } catch {
-      return {}
-    }
-  }
-  return info
-}
-
-function mapDetailToForm(detail: RaffleDetail): RaffleFormState {
+function mapDetailToForm(detail: AdminRaffleDetail): RaffleFormState {
   const base = defaultRaffleFormState()
   return {
     ...base,
@@ -64,7 +30,7 @@ function mapDetailToForm(detail: RaffleDetail): RaffleFormState {
     drawDate: detail.draw_date
       ? new Date(detail.draw_date).toISOString().slice(0, 16)
       : "",
-    status: detail.status,
+    status: detail.status as RaffleFormState["status"],
     prizes: detail.prizes?.length
       ? detail.prizes.map((p) => ({
           name: p.name,
@@ -73,25 +39,20 @@ function mapDetailToForm(detail: RaffleDetail): RaffleFormState {
           image_url: p.image_url ?? null,
         }))
       : [defaultPrize()],
-    methods: detail.payment_methods?.length
-      ? detail.payment_methods.map(
-          (m): PaymentMethodDraft => ({
-            method_type: m.method_type,
-            account_info: parseAccountInfo(m.account_info),
-            min_tickets: m.min_tickets != null ? String(m.min_tickets) : "",
-          }),
-        )
-      : [defaultPaymentMethod()],
+    assignments:
+      detail.payment_methods?.map(
+        (m): PaymentMethodAssignment => ({
+          account_id: m.account_id,
+          min_tickets: m.min_tickets != null ? String(m.min_tickets) : "",
+          is_active: m.is_active !== false,
+        }),
+      ) ?? [],
   }
 }
 
 export function EditRaffleForm({ raffleId }: { raffleId: string }) {
   const navigate = useNavigate()
-
-  const raffleQuery = useQuery({
-    queryKey: ["admin", "raffle", raffleId],
-    queryFn: () => adminFetch<RaffleDetail>(`/api/admin/raffles/${raffleId}`),
-  })
+  const raffleQuery = useAdminRaffleDetailQuery(raffleId)
 
   const initial = useMemo(
     () => (raffleQuery.data ? mapDetailToForm(raffleQuery.data) : defaultRaffleFormState()),
@@ -111,7 +72,7 @@ export function EditRaffleForm({ raffleId }: { raffleId: string }) {
     onError: (error: Error) => toast.error(error.message),
   })
 
-  if (raffleQuery.isLoading) {
+  if (raffleQuery.isPending) {
     return (
       <div className="flex flex-col gap-4 p-4">
         <Skeleton className="h-10 w-48" />
@@ -121,8 +82,25 @@ export function EditRaffleForm({ raffleId }: { raffleId: string }) {
     )
   }
 
-  if (!raffleQuery.data) {
-    return <p className="text-muted-foreground p-8 text-center">No se encontró la rifa.</p>
+  if (raffleQuery.isError) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-4 py-16 text-center">
+        <p className="text-lg font-medium">No se pudo cargar la rifa</p>
+        <p className="text-muted-foreground max-w-sm text-sm">{raffleQuery.error.message}</p>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={() => void raffleQuery.refetch()}
+        >
+          Reintentar
+        </Button>
+      </div>
+    )
+  }
+
+  if (raffleQuery.data == null) {
+    return <AdminRaffleMissing raffleId={raffleId} />
   }
 
   return (

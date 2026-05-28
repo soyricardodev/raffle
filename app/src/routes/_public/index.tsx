@@ -4,39 +4,29 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
-import { HomeHero } from "@/features/home/HomeHero"
+import { HomeRaffleCover } from "@/features/home/HomeRaffleCover"
 import { HomeStickyCta } from "@/features/home/HomeStickyCta"
-import {
-  fetchHomeFirstActive,
-  fetchHomePublished,
-  HOME_PUBLISHED_LIMIT,
-  HOME_PUBLISHED_PAGE,
-  homeQueryKeys,
-} from "@/features/home/home-queries"
+import { homeFirstActiveQueryOptions, homePublishedQueryOptions } from "@/features/home/home-queries"
 import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
 import { PublicLayout } from "@/features/layout/PublicLayout"
+import { ensureRaffleLive } from "@/features/layout/public-page-loader"
+import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
 import { Search, Ticket } from "lucide-react"
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_public/")({
   loader: async ({ context: { queryClient } }) => {
     const [firstActive, published] = await Promise.all([
+      queryClient.ensureQueryData(homeFirstActiveQueryOptions()).catch(() => null),
       queryClient
-        .fetchQuery({
-          queryKey: homeQueryKeys.firstActive,
-          queryFn: () => fetchHomeFirstActive(),
-          staleTime: 30_000,
-        })
-        .catch(() => null),
-      queryClient
-        .fetchQuery({
-          queryKey: homeQueryKeys.published(HOME_PUBLISHED_LIMIT, HOME_PUBLISHED_PAGE),
-          queryFn: () => fetchHomePublished(),
-          staleTime: 30_000,
-        })
+        .ensureQueryData(homePublishedQueryOptions())
         .catch(() => ({ raffles: [] as never[], totalRows: 0 })),
     ])
+
+    if (firstActive?.id != null) {
+      await ensureRaffleLive(queryClient, firstActive.id)
+    }
 
     return { firstActive, published }
   },
@@ -47,11 +37,8 @@ function HomePage() {
   const { firstActive, published: initialPublished } = Route.useLoaderData()
 
   const activeQuery = useQuery({
-    queryKey: homeQueryKeys.firstActive,
-    queryFn: () => fetchHomeFirstActive(),
+    ...homeFirstActiveQueryOptions(),
     initialData: firstActive,
-    staleTime: 30_000,
-    refetchInterval: 30_000,
     refetchOnMount: false,
   })
 
@@ -59,10 +46,8 @@ function HomePage() {
   const activeLoading = activeQuery.isFetching && activeRaffle == null
 
   const { data: published = initialPublished } = useQuery({
-    queryKey: homeQueryKeys.published(HOME_PUBLISHED_LIMIT, HOME_PUBLISHED_PAGE),
-    queryFn: () => fetchHomePublished(),
+    ...homePublishedQueryOptions(),
     initialData: initialPublished,
-    staleTime: 30_000,
     refetchOnMount: false,
   })
 
@@ -70,24 +55,41 @@ function HomePage() {
 
   return (
     <PublicLayout>
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-8 px-4 py-6 pb-24 sm:py-8">
-        <HomeHero />
-
+      <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4 pb-24 sm:gap-6 sm:py-6">
         {activeLoading && (
           <div className="space-y-4">
-            <Skeleton className="h-48 w-full rounded-xl" />
+            <Skeleton className="-mx-4 aspect-[4/3] w-auto rounded-none sm:mx-0 sm:rounded-xl" />
+            <Skeleton className="h-32 w-full rounded-xl" />
             <Skeleton className="h-56 w-full rounded-xl" />
           </div>
         )}
 
         {activeRaffle && (
-          <div className="space-y-6">
-            {activeRaffle.status === "paused" && <PauseBanner raffleId={activeRaffle.id} />}
-            <ActiveRaffleCard raffle={activeRaffle} variant="compact" showCta={false} />
-            <div id="comprar" className="scroll-mt-16">
-              <PurchaseForm raffle={activeRaffle} />
+          <RaffleLiveProvider
+            raffleId={activeRaffle.id}
+            enabled={activeRaffle.status === "active" || activeRaffle.status === "paused"}
+          >
+            <div className="space-y-4">
+              <PauseBanner raffleId={activeRaffle.id} />
+              {activeRaffle.image_url ? (
+                <HomeRaffleCover
+                  name={activeRaffle.name}
+                  imageUrl={activeRaffle.image_url}
+                  status={activeRaffle.status}
+                />
+              ) : null}
+              <ActiveRaffleCard
+                raffle={activeRaffle}
+                variant="compact"
+                showCta={false}
+                showImage={!activeRaffle.image_url}
+                showTitle={!activeRaffle.image_url}
+              />
+              <div id="comprar" className="scroll-mt-16">
+                <PurchaseForm raffle={activeRaffle} />
+              </div>
             </div>
-          </div>
+          </RaffleLiveProvider>
         )}
 
         {activeRaffle === null && !activeLoading && (

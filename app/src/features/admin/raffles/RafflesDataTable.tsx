@@ -6,20 +6,21 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AdminDataGrid } from "@/features/admin/shared/AdminDataGrid"
 import { RaffleRowActions } from "@/features/admin/raffles/RaffleRowActions"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
+import type { LifecycleConfirm } from "@/features/admin/raffles/raffle-lifecycle-ui"
 import { formatCurrency, formatDate } from "@/lib/format"
 
 type RafflesDataTableProps = {
   raffles: Array<RaffleRow>
   loading?: boolean
   pending?: boolean
-  onAction: (id: number, action: "pause" | "unpause" | "publish") => void
+  onLifecycle: (id: number, confirm: LifecycleConfirm) => void
 }
 
 export function RafflesDataTable({
   raffles,
   loading = false,
   pending = false,
-  onAction,
+  onLifecycle,
 }: RafflesDataTableProps) {
   const columns = useMemo<Array<ColumnDef<RaffleRow>>>(
     () => [
@@ -84,13 +85,13 @@ export function RafflesDataTable({
               raffle={row.original}
               pending={pending}
               density="compact"
-              onAction={(action) => onAction(row.original.id, action)}
+              onLifecycle={(confirm) => onLifecycle(row.original.id, confirm)}
             />
           </div>
         ),
       },
     ],
-    [onAction, pending]
+    [onLifecycle, pending]
   )
 
   const table = useReactTable({
@@ -113,7 +114,7 @@ export function RafflesMobileList({
   raffles,
   loading = false,
   pending = false,
-  onAction,
+  onLifecycle,
 }: RafflesDataTableProps) {
   if (loading && raffles.length === 0) {
     return (
@@ -157,7 +158,7 @@ export function RafflesMobileList({
             <RaffleRowActions
               raffle={raffle}
               pending={pending}
-              onAction={(action) => onAction(raffle.id, action)}
+              onLifecycle={(confirm) => onLifecycle(raffle.id, confirm)}
             />
           </div>
         </div>

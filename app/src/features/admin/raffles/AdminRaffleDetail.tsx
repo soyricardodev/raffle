@@ -1,5 +1,4 @@
 import { Link } from "@tanstack/react-router"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   ArrowSquareOut,
   ChartBar,
@@ -7,41 +6,10 @@ import {
   Receipt,
   Ticket,
 } from "@phosphor-icons/react"
+import { PaymentMethodSummary } from "@/features/raffle/PaymentMethodSummary"
 import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
-import { toast } from "sonner"
-type AdminRaffleDetailData = {
-  id: number
-  name: string
-  description: string | null
-  image_url: string | null
-  total_tickets: number
-  price_bs: number | string
-  price_usd: number | string
-  min_purchase: number
-  max_purchase: number
-  draw_date: string | null
-  status: string
-  publish: number | boolean
-  tickets_sold: number
-  tickets_reserved: number
-  tickets_available: number
-  prizes: Array<{
-    name: string
-    description: string | null
-    image_url: string | null
-    position: number
-  }>
-  payment_methods: Array<{
-    method_type: string
-    account_info: string | Record<string, string>
-    min_tickets: number | null
-    is_active: boolean
-  }>
-}
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
-import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
-import { Badge } from "@/components/ui/badge"
+import { AdminRaffleStatusControl } from "@/features/admin/raffles/AdminRaffleStatusControl"
 import { Button } from "@/components/ui/button"
 import {
   Card,
@@ -51,62 +19,13 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
-import { Separator } from "@/components/ui/separator"
 import { Skeleton } from "@/components/ui/skeleton"
-import { adminFetch } from "@/lib/admin-fetch"
-import { formatCurrency, formatDate } from "@/lib/format"
-import { useState } from "react"
-
-const METHOD_LABELS: Record<string, string> = {
-  pago_movil: "Pago móvil",
-  zinli: "Zinli",
-  zelle: "Zelle",
-  binance: "Binance",
-  bs: "Bolívares",
-  usd: "Dólares",
-}
-
-function parseAccountInfo(info: string | Record<string, string>) {
-  if (typeof info === "string") {
-    try {
-      return JSON.parse(info) as Record<string, string>
-    } catch {
-      return {}
-    }
-  }
-  return info
-}
-
+import { useAdminRaffleDetailQuery } from "@/features/admin/raffles/admin-raffle-detail-queries"
+import { AdminRaffleMissing } from "@/features/admin/raffles/AdminRaffleMissing"
 export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
-  const queryClient = useQueryClient()
-  const [confirm, setConfirm] = useState<"pause" | "unpause" | "publish" | null>(null)
+  const raffleQuery = useAdminRaffleDetailQuery(raffleId)
 
-  const raffleQuery = useQuery({
-    queryKey: ["admin", "raffle", raffleId],
-    queryFn: () => adminFetch<AdminRaffleDetailData>(`/api/admin/raffles/${raffleId}`),
-  })
-
-  const actionMutation = useMutation({
-    mutationFn: async (action: "pause" | "unpause" | "publish") => {
-      if (action === "publish") {
-        return adminFetch(`/api/admin/raffles/${raffleId}/publish`, {
-          method: "PUT",
-          body: JSON.stringify({ publish: true }),
-        })
-      }
-      return adminFetch(`/api/admin/raffles/${raffleId}/${action}`, { method: "POST" })
-    },
-    onSuccess: () => {
-      toast.success("Rifa actualizada")
-      void queryClient.invalidateQueries({ queryKey: ["admin", "raffle", raffleId] })
-      void queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] })
-    },
-    onError: (error: Error) => toast.error(error.message),
-  })
-
-  const raffle = raffleQuery.data
-
-  if (raffleQuery.isLoading) {
+  if (raffleQuery.isPending) {
     return (
       <div className="flex flex-col gap-4">
         <Skeleton className="h-10 w-64" />
@@ -116,8 +35,26 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
     )
   }
 
-  if (!raffle) {
-    return <p className="text-muted-foreground py-12 text-center">Rifa no encontrada.</p>
+  if (raffleQuery.isError) {
+    return (
+      <div className="flex flex-col items-center gap-4 px-4 py-16 text-center">
+        <p className="text-lg font-medium">No se pudo cargar la rifa</p>
+        <p className="text-muted-foreground max-w-sm text-sm">{raffleQuery.error.message}</p>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          onClick={() => void raffleQuery.refetch()}
+        >
+          Reintentar
+        </Button>
+      </div>
+    )
+  }
+
+  const raffle = raffleQuery.data
+  if (raffle == null) {
+    return <AdminRaffleMissing raffleId={raffleId} />
   }
 
   const sold = raffle.tickets_sold
@@ -226,98 +163,26 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
                 <CardTitle>Métodos de pago</CardTitle>
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
-                {raffle.payment_methods.map((method) => {
-                  const info = parseAccountInfo(method.account_info)
-                  return (
-                    <div key={method.method_type} className="rounded-lg border p-3 text-sm">
-                      <div className="mb-2 flex flex-wrap items-center gap-2">
-                        <span className="font-medium">
-                          {METHOD_LABELS[method.method_type] ?? method.method_type}
-                        </span>
-                        {method.min_tickets != null && method.min_tickets > 0 ? (
-                          <Badge variant="secondary">Mín. {method.min_tickets} boletos</Badge>
-                        ) : null}
-                        {!method.is_active ? (
-                          <Badge variant="outline">Inactivo</Badge>
-                        ) : null}
-                      </div>
-                      <div className="text-muted-foreground flex flex-col gap-0.5">
-                        {Object.entries(info).map(([key, value]) =>
-                          value ? (
-                            <p key={key} className="capitalize">
-                              {key.replace(/_/g, " ")}:{" "}
-                              <span className="text-foreground">{value}</span>
-                            </p>
-                          ) : null,
-                        )}
-                      </div>
-                    </div>
-                  )
-                })}
+                {raffle.payment_methods.map((method) => (
+                  <PaymentMethodSummary key={method.id} method={method} variant="admin" />
+                ))}
               </CardContent>
             </Card>
           ) : null}
         </div>
 
         <aside className="flex flex-col gap-4 lg:sticky lg:top-4 lg:self-start">
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle className="text-base">Estado</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-3">
-              <RaffleStatusBadge status={raffle.status} />
-              <p className="text-muted-foreground text-sm">
-                Sorteo:{" "}
-                {raffle.draw_date
-                  ? formatDate(raffle.draw_date)
-                  : "Indefinido (hasta vender todo)"}
-              </p>
-              <Separator />
-              <p className="text-sm tabular-nums">
-                {formatCurrency(raffle.price_bs)} · {formatCurrency(raffle.price_usd, "USD")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                Compra {raffle.min_purchase}–{raffle.max_purchase} boletos
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card size="sm">
-            <CardHeader>
-              <CardTitle className="text-base">Acciones</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col gap-2">
-              {raffle.status === "active" && (
-                <Button
-                  variant="outline"
-                  className="min-h-11 w-full justify-start"
-                  disabled={actionMutation.isPending}
-                  onClick={() => setConfirm("pause")}
-                >
-                  Pausar ventas
-                </Button>
-              )}
-              {raffle.status === "paused" && (
-                <Button
-                  variant="outline"
-                  className="min-h-11 w-full justify-start"
-                  disabled={actionMutation.isPending}
-                  onClick={() => setConfirm("unpause")}
-                >
-                  Reanudar ventas
-                </Button>
-              )}
-              {raffle.status === "finished" && !raffle.publish && (
-                <Button
-                  className="min-h-11 w-full"
-                  disabled={actionMutation.isPending}
-                  onClick={() => setConfirm("publish")}
-                >
-                  Publicar resultados
-                </Button>
-              )}
-            </CardContent>
-          </Card>
+          <AdminRaffleStatusControl
+            raffleId={raffleId}
+            raffleName={raffle.name}
+            status={raffle.status}
+            publish={Boolean(raffle.publish)}
+            drawDate={raffle.draw_date}
+            priceBs={raffle.price_bs}
+            priceUsd={raffle.price_usd}
+            minPurchase={raffle.min_purchase}
+            maxPurchase={raffle.max_purchase}
+          />
 
           <Card size="sm">
             <CardHeader>
@@ -347,42 +212,6 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
         </aside>
       </div>
 
-      <ConfirmAction
-        open={confirm === "pause"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Pausar rifa"
-        description={`¿Pausar "${raffle.name}"?`}
-        confirmLabel="Pausar"
-        pending={actionMutation.isPending}
-        onConfirm={() => {
-          actionMutation.mutate("pause")
-          setConfirm(null)
-        }}
-      />
-      <ConfirmAction
-        open={confirm === "unpause"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Reanudar rifa"
-        description={`¿Reanudar "${raffle.name}"?`}
-        confirmLabel="Reanudar"
-        pending={actionMutation.isPending}
-        onConfirm={() => {
-          actionMutation.mutate("unpause")
-          setConfirm(null)
-        }}
-      />
-      <ConfirmAction
-        open={confirm === "publish"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Publicar resultados"
-        description={`¿Publicar resultados de "${raffle.name}"?`}
-        confirmLabel="Publicar"
-        pending={actionMutation.isPending}
-        onConfirm={() => {
-          actionMutation.mutate("publish")
-          setConfirm(null)
-        }}
-      />
     </div>
   )
 }

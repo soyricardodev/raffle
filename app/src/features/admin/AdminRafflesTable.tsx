@@ -37,14 +37,15 @@ import {
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { adminFetch } from "@/lib/admin-fetch"
+import { executeRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
+import type { LifecycleConfirm } from "@/features/admin/raffles/raffle-lifecycle-ui"
 import { cn } from "@/lib/utils"
 
-const routeApi = getRouteApi("/admin/rifas")
+const routeApi = getRouteApi("/admin/rifas/")
 
 export function AdminRafflesTable() {
   const routeSearch = routeApi.useSearch()
-  const navigate = useNavigate({ from: "/admin/rifas" })
+  const navigate = useNavigate({ from: "/admin/rifas/" })
   const queryClient = useQueryClient()
 
   const filters = useMemo(
@@ -80,21 +81,11 @@ export function AdminRafflesTable() {
   const actionMutation = useMutation({
     mutationFn: async ({
       id,
-      action,
+      confirm,
     }: {
       id: number
-      action: "pause" | "unpause" | "publish"
-    }) => {
-      if (action === "publish") {
-        return adminFetch(`/api/admin/raffles/${id}/publish`, {
-          method: "PUT",
-          body: JSON.stringify({ publish: true }),
-        })
-      }
-      return adminFetch(`/api/admin/raffles/${id}/${action}`, {
-        method: "POST",
-      })
-    },
+      confirm: LifecycleConfirm
+    }) => executeRaffleLifecycle(id, confirm),
     onSuccess: () => {
       toast.success("Rifa actualizada")
       void queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] })
@@ -228,7 +219,7 @@ export function AdminRafflesTable() {
               raffles={raffles}
               loading={rafflesQuery.isPending}
               pending={actionMutation.isPending}
-              onAction={(id, action) => actionMutation.mutate({ id, action })}
+              onLifecycle={(id, confirm) => actionMutation.mutate({ id, confirm })}
             />
           </div>
           <div className="p-3 md:hidden">
@@ -236,7 +227,7 @@ export function AdminRafflesTable() {
               raffles={raffles}
               loading={rafflesQuery.isPending}
               pending={actionMutation.isPending}
-              onAction={(id, action) => actionMutation.mutate({ id, action })}
+              onLifecycle={(id, confirm) => actionMutation.mutate({ id, confirm })}
             />
           </div>
           <AdminDataGridPagination

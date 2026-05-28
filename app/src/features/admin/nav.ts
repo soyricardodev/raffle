@@ -1,6 +1,7 @@
 import {
   BarChart3,
   Calendar,
+  CreditCard,
   LayoutDashboard,
   Mail,
   Plus,
@@ -53,6 +54,13 @@ export const adminNavItems: Array<AdminNavItem> = [
     href: "/admin/boletos",
     icon: Ticket,
     description: "Dueño por número",
+  },
+  {
+    name: "Métodos de pago",
+    shortName: "Pagos",
+    href: "/admin/metodos-pago",
+    icon: CreditCard,
+    description: "Cuentas globales",
   },
   {
     name: "Nueva Rifa",

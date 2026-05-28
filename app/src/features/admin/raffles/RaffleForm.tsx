@@ -1,11 +1,11 @@
 import { Plus, Trash } from "@phosphor-icons/react"
-import { PaymentMethod, PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
+import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
 import { useState } from "react"
 import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
 import type { RaffleFormState } from "@/features/admin/raffles/types"
 import { defaultPrize } from "@/features/admin/raffles/types"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
-import { PaymentMethodsEditor } from "@/features/admin/PaymentMethodsEditor"
+import { RafflePaymentMethodsPicker } from "@/features/admin/payment-methods/RafflePaymentMethodsPicker"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -69,13 +69,10 @@ function buildPayload(state: RaffleFormState): CreateRaffleInput {
         image_url: prize.image_url ?? undefined,
         position: prize.position || index + 1,
       })),
-    payment_methods: state.methods.map((method) => ({
-      method_type: PaymentMethod.parse(method.method_type),
-      account_info: method.account_info,
-      min_tickets: method.min_tickets.trim()
-        ? Number(method.min_tickets)
-        : null,
-      is_active: true,
+    payment_method_assignments: state.assignments.map((a) => ({
+      account_id: a.account_id,
+      min_tickets: a.min_tickets.trim() ? Number(a.min_tickets) : null,
+      is_active: a.is_active,
     })),
   }
 }
@@ -101,7 +98,7 @@ export function RaffleForm({
     if (!state.name.trim()) next.name = "El nombre es obligatorio"
     if (!state.priceBs || Number(state.priceBs) <= 0) next.priceBs = "Precio Bs inválido"
     if (!state.priceUsd || Number(state.priceUsd) <= 0) next.priceUsd = "Precio USD inválido"
-    if (state.methods.length === 0) next.methods = "Agrega al menos un método de pago"
+    if (state.assignments.length === 0) next.methods = "Selecciona al menos un método de pago"
     if (state.drawDateEnabled && !state.drawDate) {
       next.drawDate = "Indica la fecha del sorteo o desactívala"
     }
@@ -324,9 +321,9 @@ export function RaffleForm({
           </Card>
 
           <div data-invalid={!!errors.methods}>
-            <PaymentMethodsEditor
-              methods={state.methods}
-              onChange={(methods) => patch("methods", methods)}
+            <RafflePaymentMethodsPicker
+              assignments={state.assignments}
+              onChange={(assignments) => patch("assignments", assignments)}
             />
             {errors.methods ? (
               <p className="text-destructive mt-2 text-sm">{errors.methods}</p>
@@ -451,8 +448,8 @@ export function RaffleForm({
             <CardContent className="flex flex-col gap-2 text-sm">
               <p className="font-medium">{state.name.trim() || "Sin nombre"}</p>
               <p className="text-muted-foreground">
-                {prizeCount} premio{prizeCount === 1 ? "" : "s"} · {state.methods.length} método
-                {state.methods.length === 1 ? "" : "s"} de pago
+                {prizeCount} premio{prizeCount === 1 ? "" : "s"} · {state.assignments.length}{" "}
+                método{state.assignments.length === 1 ? "" : "s"} de pago
               </p>
               <p className="text-muted-foreground tabular-nums">
                 Bs {state.priceBs} · USD {state.priceUsd}

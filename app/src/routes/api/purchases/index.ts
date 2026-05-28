@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { createPurchase } from "@/server/purchase.service"
-import type { CreatePurchaseParams } from "@/server/purchase.service"
 import { sendPurchaseConfirmationEmail } from "@/server/purchase-notifications"
 import { ValidationError } from "@raffle/shared/errors"
 import { rateLimit } from "@/lib/rate-limit"
 import { savePaymentProof } from "@/lib/upload.server"
-import type { PaymentMethod } from "@raffle/shared/validators"
+import { parsePurchaseFromFormData, parsePurchaseFromJson } from "@/lib/parse-create-purchase"
+import { ZodError } from "zod"
 
 export const Route = createFileRoute("/api/purchases/")({
   server: {
@@ -14,39 +14,34 @@ export const Route = createFileRoute("/api/purchases/")({
         await rateLimit(request, { windowMs: 10_000, maxRequests: 5, keyPrefix: "purchase" })
 
         const contentType = request.headers.get("content-type") ?? ""
-        let body: CreatePurchaseParams
 
-        if (contentType.includes("multipart/form-data")) {
-          const form = await request.formData()
-          const proofFile = form.get("paymentProof")
-          let paymentProofUrl: string | null = null
-          if (proofFile instanceof File && proofFile.size > 0) {
-            paymentProofUrl = await savePaymentProof(proofFile)
+        try {
+          if (contentType.includes("multipart/form-data")) {
+            const form = await request.formData()
+            const proofFile = form.get("paymentProof")
+            let paymentProofUrl: string | null = null
+            if (proofFile instanceof File && proofFile.size > 0) {
+              paymentProofUrl = await savePaymentProof(proofFile)
+            }
+
+            const params = parsePurchaseFromFormData(form)
+            const result = await createPurchase({ ...params, paymentProofUrl })
+            void sendPurchaseConfirmationEmail(result.purchaseId)
+            return Response.json(result, { status: 201 })
           }
 
-          body = {
-            raffleId: Number(form.get("raffleId")),
-            customerName: String(form.get("customerName") ?? ""),
-            customerPhone: String(form.get("customerPhone") ?? ""),
-            customerEmail: String(form.get("customerEmail") ?? "") || undefined,
-            customerCi: String(form.get("customerCi") ?? "") || undefined,
-            customerLocation: String(form.get("customerLocation") ?? "") || null,
-            paymentMethod: String(form.get("paymentMethod") ?? "") as PaymentMethod,
-            paymentReference: String(form.get("paymentReference") ?? ""),
-            ticketQuantity: Number(form.get("ticketQuantity")),
-            paymentProofUrl,
+          const json = (await request.json()) as Record<string, unknown>
+          const params = parsePurchaseFromJson(json)
+          const result = await createPurchase(params)
+          void sendPurchaseConfirmationEmail(result.purchaseId)
+          return Response.json(result, { status: 201 })
+        } catch (error) {
+          if (error instanceof ZodError) {
+            const first = error.issues[0]?.message ?? "Datos de compra inválidos"
+            throw new ValidationError(first)
           }
-        } else {
-          body = (await request.json()) as CreatePurchaseParams
+          throw error
         }
-
-        if (!body.raffleId || !body.customerName || !body.customerPhone || !body.paymentMethod) {
-          throw new ValidationError("Campos requeridos faltantes")
-        }
-
-        const result = await createPurchase(body)
-        void sendPurchaseConfirmationEmail(result.purchaseId)
-        return Response.json(result, { status: 201 })
       },
     },
   },

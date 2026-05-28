@@ -4,13 +4,9 @@ import { toast } from "sonner"
 import type { CreateRaffleInput } from "@raffle/shared/validators"
 import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
 import { defaultRaffleFormState } from "@/features/admin/raffles/types"
-import { defaultPaymentMethod } from "@/features/admin/PaymentMethodsEditor"
 import { adminFetch } from "@/lib/admin-fetch"
 
-const initialState = () => ({
-  ...defaultRaffleFormState(),
-  methods: [defaultPaymentMethod()],
-})
+const initialState = () => defaultRaffleFormState()
 
 export function CreateRaffleForm() {
   const navigate = useNavigate()

@@ -1,32 +1,48 @@
 import { Link } from "@tanstack/react-router"
-import { Eye, Pause, PencilSimple, Play } from "@phosphor-icons/react"
+import { DotsThreeVertical, Eye, PencilSimple } from "@phosphor-icons/react"
 import { useState } from "react"
 import type { RaffleRow } from "@/features/admin/raffles/types"
+import {
+  getConfirmCopy,
+  getPrimaryLifecycleActions,
+  type LifecycleConfirm,
+} from "@/features/admin/raffles/raffle-lifecycle-ui"
+import type { RaffleStatus } from "@raffle/shared/validators"
 import { Button } from "@/components/ui/button"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 type RaffleRowActionsProps = {
   raffle: RaffleRow
   pending: boolean
-  onAction: (action: "pause" | "unpause" | "publish") => void
+  onLifecycle: (confirm: LifecycleConfirm) => void
   density?: "compact" | "comfortable"
 }
 
 export function RaffleRowActions({
   raffle,
   pending,
-  onAction,
+  onLifecycle,
   density = "comfortable",
 }: RaffleRowActionsProps) {
-  const [confirm, setConfirm] = useState<
-    "pause" | "unpause" | "publish" | null
-  >(null)
+  const [confirm, setConfirm] = useState<LifecycleConfirm | null>(null)
   const buttonSize = density === "compact" ? "icon-xs" : "icon-sm"
   const buttonClassName = density === "compact" ? undefined : "size-11"
 
+  const published = Boolean(raffle.publish)
+  const status = raffle.status as RaffleStatus
+  const menuActions = getPrimaryLifecycleActions(status, published)
+  const confirmCopy = confirm ? getConfirmCopy(confirm, raffle.name) : null
+
   return (
     <>
-      <div className="flex flex-wrap gap-1">
+      <div className="flex items-center gap-1">
         <Button
           asChild
           size={buttonSize}
@@ -49,81 +65,59 @@ export function RaffleRowActions({
             <PencilSimple />
           </Link>
         </Button>
-        {raffle.status === "active" && (
-          <Button
-            size={buttonSize}
-            variant="outline"
-            className={buttonClassName}
-            disabled={pending}
-            onClick={() => setConfirm("pause")}
-            title="Pausar"
-          >
-            <Pause />
-          </Button>
-        )}
-        {raffle.status === "paused" && (
-          <Button
-            size={buttonSize}
-            variant="outline"
-            className={buttonClassName}
-            disabled={pending}
-            onClick={() => setConfirm("unpause")}
-            title="Reanudar"
-          >
-            <Play />
-          </Button>
-        )}
-        {raffle.status === "finished" && !raffle.publish && (
-          <Button
-            size="sm"
-            variant="outline"
-            className="min-h-11"
-            disabled={pending}
-            onClick={() => setConfirm("publish")}
-          >
-            Publicar
-          </Button>
-        )}
+        {menuActions.length > 0 ? (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                size={buttonSize}
+                variant="outline"
+                className={buttonClassName}
+                disabled={pending}
+                title="Acciones de estado"
+              >
+                <DotsThreeVertical />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              {menuActions.map((action) => {
+                const Icon = action.icon
+                return (
+                  <DropdownMenuItem
+                    key={action.id}
+                    variant={action.variant === "destructive" ? "destructive" : "default"}
+                    onSelect={() => setConfirm(action.confirm)}
+                  >
+                    <Icon className="size-4" />
+                    {action.label}
+                  </DropdownMenuItem>
+                )
+              })}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link to="/admin/rifas/$id" params={{ id: String(raffle.id) }}>
+                  Gestionar ciclo completo…
+                </Link>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        ) : null}
       </div>
 
-      <ConfirmAction
-        open={confirm === "pause"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Pausar rifa"
-        description={`¿Pausar "${raffle.name}"? No se aceptarán nuevas compras hasta reanudar.`}
-        confirmLabel="Pausar"
-        pending={pending}
-        onConfirm={() => {
-          onAction("pause")
-          setConfirm(null)
-        }}
-      />
-
-      <ConfirmAction
-        open={confirm === "unpause"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Reanudar rifa"
-        description={`¿Reanudar "${raffle.name}"? Las compras volverán a estar disponibles.`}
-        confirmLabel="Reanudar"
-        pending={pending}
-        onConfirm={() => {
-          onAction("unpause")
-          setConfirm(null)
-        }}
-      />
-
-      <ConfirmAction
-        open={confirm === "publish"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Publicar resultados"
-        description={`¿Publicar los resultados de "${raffle.name}" en la página pública?`}
-        confirmLabel="Publicar"
-        pending={pending}
-        onConfirm={() => {
-          onAction("publish")
-          setConfirm(null)
-        }}
-      />
+      {confirmCopy ? (
+        <ConfirmAction
+          open={confirm !== null}
+          onOpenChange={(open) => !open && setConfirm(null)}
+          title={confirmCopy.title}
+          description={confirmCopy.description}
+          confirmLabel={confirmCopy.confirmLabel}
+          destructive={confirmCopy.destructive}
+          pending={pending}
+          onConfirm={() => {
+            if (confirm) onLifecycle(confirm)
+            setConfirm(null)
+          }}
+        />
+      ) : null}
     </>
   )
 }

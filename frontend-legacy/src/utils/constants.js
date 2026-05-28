@@ -1,8 +1,8 @@
 export const VENEZUELA_STATES = [
   'Amazonas', 'Anzoátegui', 'Apure', 'Aragua', 'Barinas', 'Bolívar',
   'Carabobo', 'Cojedes', 'Delta Amacuro', 'Distrito Capital', 'Falcón',
-  'Guárico', 'Lara', 'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta',
-  'Portuguesa', 'Sucre', 'Táchira', 'Trujillo', 'Vargas', 'Yaracuy', 'Zulia'
+  'Guárico', 'Lara', 'La Guaira', 'Mérida', 'Miranda', 'Monagas', 'Nueva Esparta',
+  'Portuguesa', 'Sucre', 'Táchira', 'Trujillo', 'Yaracuy', 'Zulia'
 ];
 
 export const FEATURES = {

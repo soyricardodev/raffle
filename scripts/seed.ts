@@ -13,7 +13,8 @@ import { hashPassword } from "better-auth/crypto"
 import {
   accounts,
   appSettings,
-  paymentMethods,
+  paymentAccounts,
+  rafflePaymentMethods,
   prizes,
   purchaseTickets,
   purchases,
@@ -30,7 +31,8 @@ const FORCE = process.env.SEED_FORCE === "1"
 async function clearBusinessData(db: ReturnType<typeof createScriptDb>) {
   await db.delete(purchaseTickets)
   await db.delete(purchases)
-  await db.delete(paymentMethods)
+  await db.delete(rafflePaymentMethods)
+  await db.delete(paymentAccounts)
   await db.delete(prizes)
   await db.delete(raffles)
   await db.delete(appSettings)
@@ -142,18 +144,43 @@ async function seedActiveRaffle(db: ReturnType<typeof createScriptDb>) {
     })
   }
 
-  const methods = [
-    ["pago_movil", { phone: "04125051356", holder: "Demo Admin", cedula: "12345678", bank: "BDV" }],
-    ["zelle", { email: "demo@rifas.com", holder: "Demo Admin" }],
-    ["bs", { account: "01020123456789012345", holder: "Demo Admin", bank: "BDV" }],
-    ["usd", { account: "01020123456789012346", holder: "Demo Admin", bank: "Banesco" }],
-  ] as const
+  const accounts = [
+    {
+      label: "Pago móvil principal",
+      methodType: "pago_movil" as const,
+      accountInfo: {
+        bank: "BDV",
+        phone: "04125051356",
+        cedula_type: "V",
+        cedula_number: "12345678",
+      },
+    },
+    {
+      label: "Zelle demo",
+      methodType: "zelle" as const,
+      accountInfo: { email: "demo@rifas.com", holder_name: "Demo Admin" },
+    },
+    {
+      label: "Binance demo",
+      methodType: "binance" as const,
+      accountInfo: { email: "binance@rifas.com" },
+    },
+  ]
 
-  for (const [type, info] of methods) {
-    await db.insert(paymentMethods).values({
+  for (const acc of accounts) {
+    const [row] = await db
+      .insert(paymentAccounts)
+      .values({
+        label: acc.label,
+        methodType: acc.methodType,
+        accountInfo: JSON.stringify(acc.accountInfo),
+        isActive: true,
+      })
+      .returning({ id: paymentAccounts.id })
+
+    await db.insert(rafflePaymentMethods).values({
       raffleId,
-      methodType: type,
-      accountInfo: JSON.stringify(info),
+      accountId: row!.id,
       isActive: true,
     })
   }

@@ -2,7 +2,8 @@ import { describe, it, expect, beforeAll, afterAll } from "vitest"
 import { eq } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
-import { paymentMethods, purchaseTickets, purchases, raffles } from "@raffle/shared/db"
+import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
+import { seedPagoMovilPaymentMethodForRaffle } from "@/test/payment-methods-test-helper"
 import { createPurchase } from "./purchase.service"
 import { InvalidQuantityError, PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 
@@ -12,6 +13,7 @@ const hasDatabase = Boolean(process.env.DATABASE_URL)
 
 describe.skipIf(!hasDatabase)("purchase concurrency", () => {
   let raffleId: number
+  let rafflePaymentMethodId: number
 
   beforeAll(async () => {
     await setupIsolatedTestDatabase()
@@ -36,14 +38,7 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
       .returning({ id: raffles.id })
 
     raffleId = row!.id
-
-    await db.insert(paymentMethods).values({
-      raffleId,
-      methodType: "pago_movil",
-      accountInfo: JSON.stringify({ banco: "Test", telefono: "04120000000", cedula: "V12345678" }),
-      isActive: true,
-      minTickets: null,
-    })
+    rafflePaymentMethodId = await seedPagoMovilPaymentMethodForRaffle(raffleId)
   })
 
   afterAll(async () => {
@@ -51,7 +46,6 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
     const db = getDb()
     await db.delete(purchaseTickets).where(eq(purchaseTickets.raffleId, raffleId))
     await db.delete(purchases).where(eq(purchases.raffleId, raffleId))
-    await db.delete(paymentMethods).where(eq(paymentMethods.raffleId, raffleId))
     await db.delete(raffles).where(eq(raffles.id, raffleId))
   })
 
@@ -60,7 +54,8 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
       raffleId,
       customerName: `Test Buyer ${seq}`,
       customerPhone: `0412000${String(seq).padStart(4, "0")}`,
-      paymentMethod: "pago_movil",
+      customerLocation: "Venezuela, Carabobo",
+      rafflePaymentMethodId,
       paymentReference: `ref-concurrent-${seq}-${Date.now()}`,
       ticketQuantity: quantity,
     }

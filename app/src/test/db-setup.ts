@@ -7,10 +7,16 @@ import { createClient } from "@libsql/client"
 import { resetEnvCache } from "@/lib/env"
 import { resetDbForTests } from "@/lib/db.server"
 
-const migrationSql = readFileSync(
-  join(import.meta.dirname, "../../../packages/shared/drizzle-sqlite/0000_init_libsql_v2.sql"),
-  "utf8",
-)
+const migrationDir = join(import.meta.dirname, "../../../packages/shared/drizzle-sqlite")
+
+function readMigration(name: string) {
+  return readFileSync(join(migrationDir, name), "utf8")
+}
+
+const migrationSql = [
+  readMigration("0000_init_libsql_v2.sql"),
+  readMigration("0001_payment_accounts_catalog.sql"),
+].join("\n--> statement-breakpoint\n")
 
 /** Base SQLite en archivo temporal aislado por suite de tests. */
 export async function setupIsolatedTestDatabase(): Promise<void> {

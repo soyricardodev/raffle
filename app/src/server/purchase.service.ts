@@ -17,7 +17,7 @@ import * as pauseService from "./pause.service"
 import * as purchasesRepo from "./repositories/purchases.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import * as ticketsRepo from "./repositories/tickets.repository"
-import * as paymentMethodsRepo from "./repositories/payment-methods.repository"
+import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 
 const logger = getLogger()
 
@@ -27,8 +27,8 @@ export interface CreatePurchaseParams {
   customerPhone: string
   customerEmail?: string
   customerCi?: string
-  customerLocation?: string | null
-  paymentMethod: PaymentMethod
+  customerLocation: string
+  rafflePaymentMethodId: number
   paymentReference: string
   ticketQuantity: number
   paymentProofUrl?: string | null
@@ -60,10 +60,10 @@ export async function createPurchase(params: CreatePurchaseParams) {
       throw new InvalidQuantityError(raffle.minPurchase, raffle.maxPurchase, params.ticketQuantity)
     }
 
-    const payMethod = await paymentMethodsRepo.findActivePaymentMethodForRaffle(
+    const payMethod = await rafflePaymentMethodsRepo.findActiveRafflePaymentMethodById(
       tx,
       params.raffleId,
-      params.paymentMethod,
+      params.rafflePaymentMethodId,
     )
     if (!payMethod) {
       throw new ValidationError("El método de pago seleccionado no está disponible para esta rifa")
@@ -73,6 +73,8 @@ export async function createPurchase(params: CreatePurchaseParams) {
         `Para pagar con este método necesitas comprar al menos ${payMethod.min_tickets} boletos`,
       )
     }
+
+    const paymentMethod = payMethod.method_type
 
     await purchasesRepo.assertUniquePaymentReference(
       tx,
@@ -91,7 +93,7 @@ export async function createPurchase(params: CreatePurchaseParams) {
       throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)
     }
 
-    const pricePerTicket = purchasesRepo.pricePerTicketCents(params.paymentMethod, raffle)
+    const pricePerTicket = purchasesRepo.pricePerTicketCents(paymentMethod, raffle)
     const totalAmountCents = pricePerTicket * params.ticketQuantity
 
     const purchaseId = await purchasesRepo.insertPurchase(tx, {
@@ -101,12 +103,13 @@ export async function createPurchase(params: CreatePurchaseParams) {
       customerEmail: params.customerEmail,
       customerCi: params.customerCi,
       customerLocation: params.customerLocation,
-      paymentMethod: params.paymentMethod,
+      rafflePaymentMethodId: params.rafflePaymentMethodId,
+      paymentMethod,
       paymentReference: params.paymentReference,
       paymentProofUrl: params.paymentProofUrl,
       ticketQuantity: params.ticketQuantity,
       totalAmountCents,
-      currency: purchasesRepo.purchaseCurrency(params.paymentMethod),
+      currency: purchasesRepo.purchaseCurrency(paymentMethod),
     })
 
     const ticketNumbers = await ticketsRepo.allocateTicketsToPurchase(tx, {

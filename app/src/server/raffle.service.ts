@@ -7,12 +7,13 @@ import {
 } from "@raffle/shared/errors"
 import type {
   CreateRaffleInput,
+  RaffleStatus,
   UpdateRaffleInput,
 } from "@raffle/shared/validators"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
-import { paymentMethods, prizes, purchases, raffles } from "@raffle/shared/db"
+import { prizes, purchases, raffles } from "@raffle/shared/db"
 import { fromCents } from "@raffle/shared/db"
-import * as paymentMethodsRepo from "./repositories/payment-methods.repository"
+import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import { getDb } from "@/lib/db.server"
 
@@ -26,7 +27,7 @@ export type EnrichedRaffle = ReturnType<typeof mapRaffleLegacy> & {
     position: number
   }[]
   payment_methods: Awaited<
-    ReturnType<typeof paymentMethodsRepo.listPaymentMethodsByRaffle>
+    ReturnType<typeof rafflePaymentMethodsRepo.listPaymentMethodsByRaffle>
   >
   tickets_sold: number
   tickets_available: number
@@ -73,7 +74,7 @@ async function enrichRaffleDetail(
     .orderBy(prizes.position)
 
   const av = rafflesRepo.raffleAvailabilityFromCounters(row)
-  const payMethods = await paymentMethodsRepo.listPaymentMethodsByRaffle(
+  const payMethods = await rafflePaymentMethodsRepo.listPaymentMethodsByRaffle(
     row.id,
     !options?.includeInactivePaymentMethods
   )
@@ -186,17 +187,16 @@ export async function updateRaffle(id: number, input: UpdateRaffleInput) {
       }
     }
 
-    if (input.payment_methods) {
-      await tx.delete(paymentMethods).where(eq(paymentMethods.raffleId, id))
-      for (const pm of input.payment_methods) {
-        await tx.insert(paymentMethods).values({
-          raffleId: id,
-          methodType: pm.method_type,
-          accountInfo: JSON.stringify(pm.account_info),
-          isActive: pm.is_active ?? true,
-          minTickets: pm.min_tickets ?? null,
-        })
-      }
+    if (input.payment_method_assignments) {
+      await rafflePaymentMethodsRepo.syncRafflePaymentMethods(
+        tx,
+        id,
+        input.payment_method_assignments.map((a) => ({
+          account_id: a.account_id,
+          min_tickets: a.min_tickets,
+          is_active: a.is_active,
+        })),
+      )
     }
   })
 
@@ -214,6 +214,58 @@ export async function deleteRaffle(id: number) {
   await withImmediateTransaction((tx) => rafflesRepo.deleteRaffle(tx, id))
   logger.info({ raffleId: id, name: row.name }, "raffle:deleted")
   return { deletedId: id, name: row.name }
+}
+
+const STATUS_LABELS: Record<RaffleStatus, string> = {
+  draft: "borrador",
+  active: "activa",
+  paused: "pausada",
+  finished: "finalizada",
+  cancelled: "cancelada",
+}
+
+export async function setRaffleStatus(id: number, status: RaffleStatus) {
+  const row = await rafflesRepo.findRaffleById(id)
+  if (!row) throw new RaffleNotFoundError(id)
+
+  if (row.status === status) {
+    return {
+      message: `La rifa ya está en estado ${STATUS_LABELS[status]}`,
+      raffleId: id,
+      status,
+      previousStatus: row.status,
+      noChange: true as const,
+    }
+  }
+
+  const pauseOptions =
+    status === "paused"
+      ? (() => {
+          const pauseUntil = new Date()
+          pauseUntil.setMinutes(pauseUntil.getMinutes() + 15)
+          return { pauseUntil, pauseReason: "manual" as const }
+        })()
+      : undefined
+
+  await withImmediateTransaction((tx) =>
+    rafflesRepo.setRaffleStatusRow(tx, id, status, pauseOptions),
+  )
+
+  logger.info(
+    { raffleId: id, previousStatus: row.status, status },
+    "raffle:status_changed",
+  )
+
+  return {
+    message: `Estado actualizado a ${STATUS_LABELS[status]}`,
+    raffleId: id,
+    status,
+    previousStatus: row.status,
+  }
+}
+
+export async function finishRaffle(id: number) {
+  return setRaffleStatus(id, "finished")
 }
 
 export async function publishRaffle(id: number, publish: boolean) {

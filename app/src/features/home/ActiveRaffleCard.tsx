@@ -25,6 +25,9 @@ type ActiveRaffle = {
 type ActiveRaffleCardProps = {
   raffle: ActiveRaffle
   showCta?: boolean
+  /** Home: ocultar si la portada ya muestra imagen/título. */
+  showImage?: boolean
+  showTitle?: boolean
   /** Home: compacto. Detalle: card completa con imagen grande. */
   variant?: "compact" | "detail"
 }
@@ -32,6 +35,8 @@ type ActiveRaffleCardProps = {
 export function ActiveRaffleCard({
   raffle,
   showCta = true,
+  showImage = true,
+  showTitle = true,
   variant = "detail",
 }: ActiveRaffleCardProps) {
   const sold = Number(raffle.tickets_sold) || 0
@@ -43,13 +48,17 @@ export function ActiveRaffleCard({
   const isCompact = variant === "compact"
 
   if (isCompact) {
+    const usingPageCover = !showImage && !showTitle && Boolean(raffle.image_url)
+    const showCoverImage = showImage && Boolean(raffle.image_url)
+    const showHeader = !usingPageCover
+
     return (
       <Card className="overflow-hidden border shadow-none">
-        {raffle.image_url ? (
+        {showCoverImage ? (
           <div className="aspect-[2/1] w-full overflow-hidden sm:aspect-[21/9]">
             <img
-              src={raffle.image_url}
-              alt=""
+              src={raffle.image_url!}
+              alt={raffle.name}
               className="size-full object-cover"
               loading="lazy"
             />
@@ -57,22 +66,26 @@ export function ActiveRaffleCard({
         ) : null}
 
         <CardContent className="space-y-4 p-4 sm:p-5">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 space-y-1 text-left">
-              <p className="text-muted-foreground text-xs font-medium">Rifa en curso</p>
-              <h2 className="font-heading text-lg font-semibold leading-snug">{raffle.name}</h2>
+          {showHeader ? (
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 space-y-1 text-left">
+                <p className="text-muted-foreground text-xs font-medium">Rifa en curso</p>
+                {showTitle ? (
+                  <h2 className="font-heading text-lg font-semibold leading-snug">{raffle.name}</h2>
+                ) : null}
+              </div>
+              <span
+                className={cn(
+                  "shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
+                  getRaffleStatusClass(raffle.status ?? "active"),
+                )}
+              >
+                {isPaused ? "Pausada" : getStatusLabel(raffle.status ?? "active")}
+              </span>
             </div>
-            <span
-              className={cn(
-                "shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                getRaffleStatusClass(raffle.status ?? "active"),
-              )}
-            >
-              {isPaused ? "Pausada" : getStatusLabel(raffle.status ?? "active")}
-            </span>
-          </div>
+          ) : null}
 
-          {isPaused && (
+          {isPaused && !usingPageCover && (
             <p className="flex items-center gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-900 dark:text-amber-100">
               <Pause className="size-3.5 shrink-0" />
               Ventas pausadas temporalmente

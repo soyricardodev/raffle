@@ -9,11 +9,13 @@
     "./db/phone": "./src/db/phone.ts",
     "./db/ticket-number": "./src/db/ticket-number.ts",
     "./validators": "./src/validators/index.ts",
+    "./payment-methods": "./src/payment-methods/index.ts",
     "./errors": "./src/errors/index.ts",
     "./constants": "./src/constants/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",

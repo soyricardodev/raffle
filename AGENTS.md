@@ -37,22 +37,17 @@ Si no está instalado globalmente, usar `npx tsgo --noEmit` o agregarlo como dev
 
 ```
 raffle-v2/
-├── packages/shared/    # 🟣 DeepSeek — Drizzle schema, Zod validators, errors, emails
-├── app/src/server/     # 🟣 DeepSeek — domain services
-├── app/src/routes/api/ # 🟣 DeepSeek — API server functions
-├── app/src/lib/        # 🟣 DeepSeek — db, auth, upload
-├── app/src/features/   # 🔵 Composer — UI components
-├── app/src/stores/     # 🔵 Composer — Zustand stores
-├── scripts/            # 🟣 DeepSeek — seed, migration
-├── inngest/            # 🟣 DeepSeek — background jobs
+├── packages/shared/    # Drizzle schema, Zod validators, errors, emails
+├── app/src/server/     # domain services
+├── app/src/routes/api/ # API server functions
+├── app/src/lib/        # db, auth, upload
+├── app/src/features/   # UI components
+├── app/src/stores/     # Zustand stores
+├── scripts/            # seed, migration
+├── inngest/            # background jobs
 ```
 
-### Ownership
-
-- 🟣 DeepSeek: NO tocar `app/src/features/**`, `app/src/stores/**`, `Dockerfile`, `docker-compose.yml`, `nginx/**`, `.github/**`
-- 🔵 Composer: NO tocar `packages/shared/**`, `app/src/server/**`, `app/src/routes/api/**`, `app/src/lib/auth*.ts`, `app/src/lib/db*.ts`, `scripts/**`, `inngest/**`
-- 🤝 Ambos: `app/src/routes/__root.tsx` (coordinar cambios)
-- Legacy (`backend-legacy/`, `frontend-legacy/`) es solo referencia de comportamiento. No copiar código.
+Legacy (`backend-legacy/`, `frontend-legacy/`) es solo referencia de comportamiento. No copiar código.
 
 ### Commits
 

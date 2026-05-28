@@ -1,5 +1,10 @@
 import type { CreateRaffleInput } from "@raffle/shared/validators"
-import type { PaymentMethodDraft } from "@/features/admin/PaymentMethodsEditor"
+
+export type PaymentMethodAssignment = {
+  account_id: number
+  min_tickets: string
+  is_active: boolean
+}
 
 export type RaffleRow = {
   id: number
@@ -33,7 +38,7 @@ export type RaffleFormState = {
   drawDate: string
   status: CreateRaffleInput["status"]
   prizes: Array<PrizeDraft>
-  methods: Array<PaymentMethodDraft>
+  assignments: Array<PaymentMethodAssignment>
 }
 
 export const defaultPrize = (position = 1): PrizeDraft => ({
@@ -55,5 +60,5 @@ export const defaultRaffleFormState = (): RaffleFormState => ({
   drawDate: "",
   status: "draft",
   prizes: [defaultPrize()],
-  methods: [],
+  assignments: [],
 })

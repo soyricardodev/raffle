@@ -1,5 +1,10 @@
 import { expect } from "@playwright/test"
-import { createPurchase, fetchFirstActiveRaffle, uniqueRef } from "./helpers/api"
+import {
+  createPurchase,
+  fetchFirstActiveRaffle,
+  fetchFirstRafflePaymentMethodId,
+  uniqueRef,
+} from "./helpers/api"
 import { describeWithDb, test } from "./helpers/fixtures"
 
 describeWithDb("ticket verifier", () => {
@@ -9,11 +14,13 @@ describeWithDb("ticket verifier", () => {
 
     const customerPhone = `0414${String(Date.now()).slice(-7)}`
 
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
+
     await createPurchase(request, {
       raffleId: raffle.id,
       customerName: `E2E Verify ${Date.now()}`,
       customerPhone,
-      paymentMethod: "pago_movil",
+      rafflePaymentMethodId,
       paymentReference: uniqueRef("e2e-verify"),
       ticketQuantity: 1,
     })

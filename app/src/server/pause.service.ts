@@ -4,6 +4,7 @@ import { raffles } from "@raffle/shared/db"
 import type { PauseReason } from "@raffle/shared/validators"
 import { and, eq, lte } from "drizzle-orm"
 import * as rafflesRepo from "./repositories/raffles.repository"
+import type { RaffleLiveRow } from "./repositories/raffles.repository"
 
 const logger = getLogger()
 const PAUSE_DURATION_MINUTES = 15
@@ -173,42 +174,70 @@ export async function unpauseRaffle(raffleId: number): Promise<{
   }
 }
 
-export async function getPauseInfo(raffleId: number): Promise<PauseInfo | null> {
-  const raffle = await rafflesRepo.findRaffleById(raffleId)
-  if (!raffle) return null
+export type RaffleLiveSnapshot = {
+  status: string
+  isPaused: boolean
+  remainingSeconds: number
+  pauseReason: PauseReason | null
+  pauseContext: PauseInfo["pauseContext"]
+  minPurchase: number
+  availability: Availability
+}
 
-  const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
-  const isPaused = raffle.status === "paused"
-  const pauseUntil = raffle.pauseUntil
-  const remainingSeconds = pauseUntil
-    ? Math.max(0, Math.floor((pauseUntil.getTime() - Date.now()) / 1000))
-    : 0
+function remainingPauseSeconds(pauseUntil: Date | null): number {
+  return pauseUntil ? Math.max(0, Math.floor((pauseUntil.getTime() - Date.now()) / 1000)) : 0
+}
 
-  let pauseContext: PauseInfo["pauseContext"] = null
-  if (isPaused && raffle.pauseReason) {
-    const contexts: Record<string, { title: string; description: string }> = {
-      manual: { title: "Rifa pausada", description: "Volveremos pronto." },
-      auto_full: { title: "Agotado temporalmente", description: "Todos los boletos están reservados o vendidos." },
-      auto_insufficient: {
-        title: "Pocos boletos disponibles",
-        description: `Quedan menos de ${raffle.minPurchase} boletos para la compra mínima.`,
-      },
-      auto_timeout: { title: "Pausa automática", description: "La rifa se reactivará en breve." },
-    }
-    pauseContext = contexts[raffle.pauseReason] ?? null
+function buildPauseContext(
+  raffle: Pick<RaffleLiveRow, "pauseReason" | "minPurchase">,
+  isPaused: boolean,
+): PauseInfo["pauseContext"] {
+  if (!isPaused || !raffle.pauseReason) return null
+  const contexts: Record<string, { title: string; description: string }> = {
+    manual: { title: "Rifa pausada", description: "Volveremos pronto." },
+    auto_full: { title: "Agotado temporalmente", description: "Todos los boletos están reservados o vendidos." },
+    auto_insufficient: {
+      title: "Pocos boletos disponibles",
+      description: `Quedan menos de ${raffle.minPurchase} boletos para la compra mínima.`,
+    },
+    auto_timeout: { title: "Pausa automática", description: "La rifa se reactivará en breve." },
   }
+  return contexts[raffle.pauseReason] ?? null
+}
+
+function liveSnapshotFromRow(raffle: RaffleLiveRow): RaffleLiveSnapshot {
+  const isPaused = raffle.status === "paused"
+  const remainingSeconds = remainingPauseSeconds(raffle.pauseUntil)
 
   return {
     status: raffle.status,
     isPaused,
-    pauseUntil,
-    pauseReason: raffle.pauseReason as PauseReason | null,
-    autoPauseEnabled: raffle.autoPauseEnabled,
     remainingSeconds,
-    hasTimer: isPaused && remainingSeconds > 0,
+    pauseReason: raffle.pauseReason as PauseReason | null,
+    pauseContext: buildPauseContext(raffle, isPaused),
     minPurchase: raffle.minPurchase,
-    availability,
-    pauseContext,
+    availability: rafflesRepo.raffleAvailabilityFromCounters(raffle),
+  }
+}
+
+/** Minimal read for public live polls (narrow SELECT, no joins). */
+export async function getRaffleLiveSnapshot(raffleId: number): Promise<RaffleLiveSnapshot | null> {
+  const raffle = await rafflesRepo.findRaffleLiveById(raffleId)
+  if (!raffle) return null
+  return liveSnapshotFromRow(raffle)
+}
+
+export async function getPauseInfo(raffleId: number): Promise<PauseInfo | null> {
+  const raffle = await rafflesRepo.findRaffleById(raffleId)
+  if (!raffle) return null
+
+  const live = liveSnapshotFromRow(raffle)
+
+  return {
+    ...live,
+    pauseUntil: raffle.pauseUntil,
+    autoPauseEnabled: raffle.autoPauseEnabled,
+    hasTimer: live.isPaused && live.remainingSeconds > 0,
   }
 }
 

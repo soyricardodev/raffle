@@ -2,7 +2,8 @@ export { accounts, sessions, verifications } from "./auth"
 export { auditEvents } from "./audit-events"
 export { appSettings } from "./app-settings"
 export { emailLogs } from "./email-logs"
-export { paymentMethods } from "./payment-methods"
+export { paymentAccounts } from "./payment-accounts"
+export { rafflePaymentMethods } from "./raffle-payment-methods"
 export { purchaseTickets } from "./purchase-tickets"
 export { purchases } from "./purchases"
 export { prizes } from "./prizes"
@@ -11,7 +12,8 @@ export {
   accountRelations,
   auditEventRelations,
   emailLogRelations,
-  paymentMethodRelations,
+  paymentAccountRelations,
+  rafflePaymentMethodRelations,
   purchaseRelations,
   purchaseTicketRelations,
   prizeRelations,

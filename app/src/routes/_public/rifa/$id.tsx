@@ -1,23 +1,23 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
 import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
+import { PublicLayout } from "@/features/layout/PublicLayout"
+import { ensureRaffleLive } from "@/features/layout/public-page-loader"
+import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PrizesSection } from "@/features/raffle/PrizesSection"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
-import { fetchRaffleById, raffleQueryKeys } from "@/features/raffle/raffle-queries"
-import { PublicLayout } from "@/features/layout/PublicLayout"
+import { raffleDetailQueryOptions } from "@/features/raffle/raffle-queries"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { EnrichedRaffle } from "@/server/raffle.service"
 
-export const Route = createFileRoute("/rifa/$id")({
+export const Route = createFileRoute("/_public/rifa/$id")({
   loader: async ({ params, context: { queryClient } }) => {
-    const raffle = await queryClient
-      .fetchQuery({
-        queryKey: raffleQueryKeys.detail(params.id),
-        queryFn: () => fetchRaffleById({ data: { id: params.id } }),
-        staleTime: 30_000,
-      })
-      .catch(() => null)
+    const raffle = await queryClient.ensureQueryData(raffleDetailQueryOptions(params.id)).catch(() => null)
+
+    if (raffle?.id != null) {
+      await ensureRaffleLive(queryClient, raffle.id)
+    }
 
     return { raffle }
   },
@@ -38,11 +38,9 @@ function RaffleDetailPage() {
   const { id } = Route.useParams()
   const { raffle: loaderRaffle } = Route.useLoaderData()
 
-  const { data: raffle = loaderRaffle, isError, isFetching } = useQuery({
-    queryKey: raffleQueryKeys.detail(id),
-    queryFn: () => fetchRaffleById({ data: { id } }),
+  const { data: raffle = loaderRaffle, isError } = useQuery({
+    ...raffleDetailQueryOptions(id),
     initialData: (loaderRaffle ?? undefined) as EnrichedRaffle | undefined,
-    staleTime: 30_000,
     refetchOnMount: false,
   })
 
@@ -67,28 +65,21 @@ function RaffleDetailPage() {
     )
   }
 
-  const prizes = (raffle.prizes ?? []) as Array<{
-    name: string
-    description?: string | null
-    position?: number | string
-    image_url?: string | null
-  }>
-
   return (
     <PublicLayout>
-      <div className="container mx-auto space-y-6 px-4 py-8">
-        {isFetching && (
-          <p className="text-muted-foreground text-center text-xs" aria-live="polite">
-            Actualizando datos…
-          </p>
-        )}
-        {raffle.status === "paused" && <PauseBanner raffleId={raffle.id} />}
-        <ActiveRaffleCard raffle={raffle} />
-        <PrizesSection prizes={prizes} />
-        <div id="comprar" className="scroll-mt-20">
-          <PurchaseForm raffle={raffle} />
+      <RaffleLiveProvider
+        raffleId={raffle.id}
+        enabled={raffle.status === "active" || raffle.status === "paused"}
+      >
+        <div className="container mx-auto space-y-6 px-4 py-8">
+          <PauseBanner raffleId={raffle.id} />
+          <ActiveRaffleCard raffle={raffle} />
+          <PrizesSection prizes={raffle.prizes} />
+          <div id="comprar" className="scroll-mt-20">
+            <PurchaseForm raffle={raffle} />
+          </div>
         </div>
-      </div>
+      </RaffleLiveProvider>
     </PublicLayout>
   )
 }
