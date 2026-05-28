@@ -1,13 +1,11 @@
-export * as schema from "./schema"
-
-// Re-exporta los schemas individuales para imports directos
+export * as schema from "./sqlite/schema"
+export * from "./sqlite/schema"
+export { fromCents, toCents } from "./money"
+export { normalizePhone } from "./phone"
+export { ticketNumberToInt, ticketNumberToString } from "./ticket-number"
+export { isSqliteUniqueViolation } from "./sqlite-errors"
 export {
-  emailLogs,
-  paymentMethods,
-  prizes,
-  purchases,
-  raffles,
-  siteConfig,
-  tickets,
-  users,
-} from "./schema"
+  DEFAULT_SQLITE_DB_PATH,
+  isLibsqlDatabaseUrl,
+  resolveLibsqlDatabaseUrl,
+} from "./database-url"

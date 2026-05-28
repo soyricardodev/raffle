@@ -141,10 +141,17 @@ export const AddRemoveTicketsInput = z.object({
 })
 export type AddRemoveTicketsInput = z.infer<typeof AddRemoveTicketsInput>
 
+/** Boletos fijos de la plataforma: enteros 0–9999 (10.000 boletos). */
+export const PLATFORM_TOTAL_TICKETS = 10_000
+
 export const CreateRaffleInput = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
-  total_tickets: z.number().int().min(1).max(10000),
+  image_url: z.string().optional().nullable(),
+  total_tickets: z
+    .literal(PLATFORM_TOTAL_TICKETS)
+    .optional()
+    .default(PLATFORM_TOTAL_TICKETS),
   price_bs: z.number().positive(),
   price_usd: z.number().positive(),
   min_purchase: z.number().int().min(1).default(1),

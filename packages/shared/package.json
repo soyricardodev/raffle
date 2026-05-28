@@ -5,23 +5,27 @@
   "type": "module",
   "exports": {
     "./db": "./src/db/index.ts",
+    "./db/money": "./src/db/money.ts",
+    "./db/phone": "./src/db/phone.ts",
+    "./db/ticket-number": "./src/db/ticket-number.ts",
     "./validators": "./src/validators/index.ts",
     "./errors": "./src/errors/index.ts",
     "./constants": "./src/constants/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "db:pull": "drizzle-kit pull",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@libsql/client": "^0.15.15",
     "drizzle-orm": "^0.45.2",
-    "mysql2": "^3.16.2",
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/node": "^22.15.29",
     "drizzle-kit": "^0.31.9",
     "typescript": "^5.9.3"
   }
