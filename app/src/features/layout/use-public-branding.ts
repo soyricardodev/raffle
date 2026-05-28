@@ -7,8 +7,10 @@ import {
 import { usePublicSiteConfigFromLayout } from "@/features/layout/public-site-config-context"
 import {
   normalizeHeroConfig,
+  normalizeSeoConfig,
   type ContactInfo,
   type HeroConfig,
+  type SeoConfig,
   type SiteColors,
   type SiteImages,
   type SiteInfo,
@@ -35,6 +37,10 @@ function cloneImages(value?: SiteImages): SiteImages {
   return value ? { ...value } : { banner: "", logo: "" }
 }
 
+function cloneSeo(value?: SeoConfig): SeoConfig {
+  return value ? { ...value } : normalizeSeoConfig(undefined)
+}
+
 export type PublicBranding = {
   payload: PublicSiteConfigPayload
   siteInfo: SiteInfo
@@ -43,6 +49,7 @@ export type PublicBranding = {
   social: SocialMedia
   images: SiteImages
   colors: SiteColors | undefined
+  seo: SeoConfig
 }
 
 export function resolvePublicBranding(
@@ -58,6 +65,7 @@ export function resolvePublicBranding(
     social: cloneSocial(payload.social_media),
     images: cloneImages(payload.site_images),
     colors: payload.site_colors ? { ...payload.site_colors } : undefined,
+    seo: payload.seo_config ? normalizeSeoConfig(payload.seo_config) : cloneSeo(),
   }
 }
 

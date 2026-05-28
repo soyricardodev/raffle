@@ -1,10 +1,14 @@
 import { useMutation } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Skeleton } from "@/components/ui/skeleton"
 import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
+import {
+  loadSavedBuyerProfile,
+  saveBuyerProfile,
+  type SavedBuyerProfile,
+} from "@/features/raffle/purchase-form/buyer-profile-storage"
 import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
 import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
 import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
@@ -13,19 +17,51 @@ import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-p
 import type { PurchaseResult, RaffleForPurchase, RafflePaymentMethod } from "@/features/raffle/types"
 import { publicFetch } from "@/lib/admin-fetch"
 import {
+  type CedulaPrefix,
   type CustomerLocationType,
   customerLocationFieldError,
+  formatCustomerCi,
   formatCustomerLocation,
   isDollarMethod,
+  isValidCustomerCi,
+  isValidCustomerPhone,
 } from "@raffle/shared/validators"
-import { Loader2 } from "lucide-react"
+import type { PhoneInputMode } from "@raffle/shared/validators"
+import { SpinnerGapIcon } from "@phosphor-icons/react"
 
 export type PurchaseFormProps = {
   raffle: RaffleForPurchase
 }
 
+type PurchaseFormHints = {
+  name?: string
+  phone?: string
+  email?: string
+  ci?: string
+  location?: string
+  reference?: string
+  proof?: string
+  method?: string
+}
+
+const EMPTY_HINTS: PurchaseFormHints = {}
+
 function activePaymentMethods(raw: RafflePaymentMethod[] | undefined): RafflePaymentMethod[] {
   return (raw ?? []).filter((m) => m.is_active !== false && m.id > 0)
+}
+
+function emailHint(email: string): string | undefined {
+  const trimmed = email.trim()
+  if (!trimmed) return "Ingresa tu email"
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) return "Email inválido"
+  return undefined
+}
+
+function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
+  if (!number.trim()) return "Ingresa tu cédula"
+  const formatted = formatCustomerCi(prefix, number)
+  if (!isValidCustomerCi(formatted)) return "Cédula inválida"
+  return undefined
 }
 
 export function PurchaseForm({ raffle }: PurchaseFormProps) {
@@ -50,7 +86,9 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
-  const [customerCi, setCustomerCi] = useState("")
+  const [ciPrefix, setCiPrefix] = useState<CedulaPrefix>("V")
+  const [ciNumber, setCiNumber] = useState("")
+  const [phoneMode, setPhoneMode] = useState<PhoneInputMode>("venezuela")
   const [locationType, setLocationType] = useState<CustomerLocationType>("venezuela")
   const [selectedState, setSelectedState] = useState("")
   const [customLocation, setCustomLocation] = useState("")
@@ -58,6 +96,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
   const [successResult, setSuccessResult] = useState<PurchaseResult | null>(null)
   const [touched, setTouched] = useState(false)
+  const [hasSavedProfile, setHasSavedProfile] = useState(false)
 
   const {
     selectedId: rafflePaymentMethodId,
@@ -75,32 +114,68 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     return unit * quantity
   }, [selectedMethod, quantity, raffle.price_bs, raffle.price_usd])
 
-  const hints = useMemo(() => {
-    if (!touched) return {}
-    return {
+  const customerCi = useMemo(
+    () => (ciNumber ? formatCustomerCi(ciPrefix, ciNumber) : ""),
+    [ciPrefix, ciNumber],
+  )
+
+  const applyProfile = useCallback((profile: SavedBuyerProfile) => {
+    setCustomerName(profile.customerName)
+    setCustomerPhone(profile.customerPhone)
+    setCustomerEmail(profile.customerEmail)
+    setCiPrefix(profile.ciPrefix)
+    setCiNumber(profile.ciNumber)
+    setPhoneMode(profile.phoneMode)
+    setLocationType(profile.locationType)
+    setSelectedState(profile.selectedState)
+    setCustomLocation(profile.customLocation)
+  }, [])
+
+  useEffect(() => {
+    const saved = loadSavedBuyerProfile()
+    setHasSavedProfile(saved != null)
+  }, [])
+
+  const validationMessages = useMemo<PurchaseFormHints>(
+    () => ({
       name: !customerName.trim() ? "Ingresa tu nombre completo" : undefined,
-      phone: !customerPhone.trim() ? "Ingresa tu teléfono" : undefined,
+      phone: !isValidCustomerPhone(customerPhone, phoneMode)
+        ? phoneMode === "international"
+          ? "Usa formato internacional (+código y número)"
+          : "Teléfono venezolano inválido (ej: 04121234567)"
+        : undefined,
+      email: emailHint(customerEmail),
+      ci: ciHint(ciPrefix, ciNumber),
       location: customerLocationFieldError(locationType, selectedState, customLocation),
       reference: !paymentReference.trim() ? "Ingresa la referencia de pago" : undefined,
+      proof: !paymentProof ? "Sube el comprobante de pago" : undefined,
       method: !rafflePaymentMethodId
         ? "Elige un método de pago"
         : selectedBlockedReason,
-    }
-  }, [
-    touched,
-    customerName,
-    customerPhone,
-    locationType,
-    selectedState,
-    customLocation,
-    paymentReference,
-    rafflePaymentMethodId,
-    selectedBlockedReason,
-  ])
+    }),
+    [
+      customerName,
+      customerPhone,
+      phoneMode,
+      customerEmail,
+      ciPrefix,
+      ciNumber,
+      locationType,
+      selectedState,
+      customLocation,
+      paymentReference,
+      paymentProof,
+      rafflePaymentMethodId,
+      selectedBlockedReason,
+    ],
+  )
+
+  const hints = touched ? validationMessages : EMPTY_HINTS
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
       if (!rafflePaymentMethodId) throw new Error("Selecciona un método de pago")
+      if (!paymentProof) throw new Error("Sube el comprobante de pago")
 
       const customerLocation = formatCustomerLocation(
         locationType,
@@ -112,25 +187,30 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       form.append("raffleId", String(raffle.id))
       form.append("customerName", customerName.trim())
       form.append("customerPhone", customerPhone.trim())
-      if (customerEmail.trim()) form.append("customerEmail", customerEmail.trim())
-      if (customerCi.trim()) form.append("customerCi", customerCi.trim())
+      form.append("customerEmail", customerEmail.trim())
+      form.append("customerCi", customerCi)
       form.append("customerLocation", customerLocation)
       form.append("rafflePaymentMethodId", String(rafflePaymentMethodId))
       form.append("paymentReference", paymentReference.trim())
       form.append("ticketQuantity", String(quantity))
-      if (paymentProof) form.append("paymentProof", paymentProof)
+      form.append("paymentProof", paymentProof)
 
       return publicFetch<PurchaseResult>("/api/purchases/", { method: "POST", body: form })
     },
     onSuccess: (result) => {
+      saveBuyerProfile({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim(),
+        ciPrefix,
+        ciNumber,
+        phoneMode,
+        locationType,
+        selectedState,
+        customLocation,
+      })
+      setHasSavedProfile(true)
       setSuccessResult(result)
-      setCustomerName("")
-      setCustomerPhone("")
-      setCustomerEmail("")
-      setCustomerCi("")
-      setLocationType("venezuela")
-      setSelectedState("")
-      setCustomLocation("")
       setPaymentReference("")
       setRafflePaymentMethodId(null)
       setPaymentProof(null)
@@ -162,8 +242,26 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
 
   function handleSubmit() {
     setTouched(true)
-    if (hints.name || hints.phone || hints.location || hints.reference || hints.method) return
+    if (
+      validationMessages.name ||
+      validationMessages.phone ||
+      validationMessages.email ||
+      validationMessages.ci ||
+      validationMessages.location ||
+      validationMessages.reference ||
+      validationMessages.proof ||
+      validationMessages.method
+    ) {
+      return
+    }
     purchaseMutation.mutate()
+  }
+
+  function handleApplySavedProfile() {
+    const saved = loadSavedBuyerProfile()
+    if (!saved) return
+    applyProfile(saved)
+    toast.success("Datos cargados")
   }
 
   const isSubmitting = purchaseMutation.isPending
@@ -172,23 +270,14 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     <>
       <Card className="relative overflow-hidden">
         {isSubmitting ? (
-          <div className="bg-background/80 absolute inset-0 z-10 flex flex-col gap-3 p-6 backdrop-blur-sm">
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-10 w-full" />
-            <Skeleton className="h-12 w-full" />
-            <p className="text-muted-foreground flex items-center justify-center gap-2 text-sm">
-              <Loader2 className="size-4 animate-spin" />
-              Registrando tu compra…
-            </p>
+          <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
+            <SpinnerGapIcon className="animate-spin" />
           </div>
         ) : null}
-        <CardHeader>
-          <CardTitle>Comprar boletos</CardTitle>
-          <p className="text-muted-foreground text-sm">
-            Completa los pasos. Te mostraremos tus números al finalizar.
-          </p>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Comprar</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-6">
+        <CardContent className="flex flex-col gap-4">
           <TicketQuantityStep
             quantity={quantity}
             minPurchase={minPurchase}
@@ -203,18 +292,24 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             customerName={customerName}
             customerPhone={customerPhone}
             customerEmail={customerEmail}
-            customerCi={customerCi}
+            ciPrefix={ciPrefix}
+            ciNumber={ciNumber}
+            phoneMode={phoneMode}
             locationType={locationType}
             selectedState={selectedState}
             customLocation={customLocation}
+            hasSavedProfile={hasSavedProfile}
             hints={hints}
             onCustomerNameChange={setCustomerName}
             onCustomerPhoneChange={setCustomerPhone}
             onCustomerEmailChange={setCustomerEmail}
-            onCustomerCiChange={setCustomerCi}
+            onCiPrefixChange={setCiPrefix}
+            onCiNumberChange={setCiNumber}
+            onPhoneModeChange={setPhoneMode}
             onLocationTypeChange={setLocationType}
             onSelectedStateChange={setSelectedState}
             onCustomLocationChange={setCustomLocation}
+            onApplySavedProfile={handleApplySavedProfile}
           />
 
           <PaymentStep
@@ -225,8 +320,10 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             selectedMethod={selectedMethod}
             total={total}
             paymentReference={paymentReference}
+            paymentProof={paymentProof}
             methodHint={hints.method}
             referenceHint={hints.reference}
+            proofHint={hints.proof}
             getEligibility={getEligibility}
             onSelectMethod={setRafflePaymentMethodId}
             onPaymentReferenceChange={setPaymentReference}
@@ -234,15 +331,14 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
           />
 
           <Button
-            className="min-h-12 w-full text-base"
-            size="lg"
+            className="w-full"
             data-testid="purchase-submit"
             disabled={disabled || isSubmitting || methods.length === 0}
             onClick={handleSubmit}
           >
             {isSubmitting ? (
               <>
-                <Loader2 className="mr-2 size-4 animate-spin" />
+                <SpinnerGapIcon data-icon="inline-start" className="animate-spin" />
                 Procesando…
               </>
             ) : (

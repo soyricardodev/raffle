@@ -9,9 +9,11 @@
     "./db/phone": "./src/db/phone.ts",
     "./db/ticket-number": "./src/db/ticket-number.ts",
     "./validators": "./src/validators/index.ts",
+    "./validators/buyer-identity": "./src/validators/buyer-identity.ts",
     "./payment-methods": "./src/payment-methods/index.ts",
     "./errors": "./src/errors/index.ts",
-    "./constants": "./src/constants/index.ts"
+    "./constants": "./src/constants/index.ts",
+    "./site-config": "./src/site-config/schemas.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

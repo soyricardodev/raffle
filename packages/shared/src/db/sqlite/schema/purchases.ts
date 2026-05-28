@@ -1,5 +1,6 @@
 import { index, integer, sqliteTable, text, uniqueIndex } from "drizzle-orm/sqlite-core"
 import { sql } from "drizzle-orm"
+import { customers } from "./customers"
 import { rafflePaymentMethods } from "./raffle-payment-methods"
 import { raffles } from "./raffles"
 
@@ -11,6 +12,9 @@ export const purchases = sqliteTable(
     raffleId: integer("raffle_id")
       .notNull()
       .references(() => raffles.id, { onDelete: "cascade" }),
+    customerId: integer("customer_id").references(() => customers.id, {
+      onDelete: "set null",
+    }),
     customerName: text("customer_name").notNull(),
     customerPhone: text("customer_phone").notNull(),
     customerPhoneNormalized: text("customer_phone_normalized").notNull(),

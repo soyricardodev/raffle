@@ -5,6 +5,7 @@ import { emailLogs } from "./email-logs"
 import { paymentAccounts } from "./payment-accounts"
 import { rafflePaymentMethods } from "./raffle-payment-methods"
 import { purchaseTickets } from "./purchase-tickets"
+import { customers } from "./customers"
 import { purchases } from "./purchases"
 import { prizes } from "./prizes"
 import { raffles } from "./raffles"
@@ -49,8 +50,16 @@ export const rafflePaymentMethodRelations = relations(rafflePaymentMethods, ({ o
   }),
 }))
 
+export const customerRelations = relations(customers, ({ many }) => ({
+  purchases: many(purchases),
+}))
+
 export const purchaseRelations = relations(purchases, ({ one, many }) => ({
   raffle: one(raffles, { fields: [purchases.raffleId], references: [raffles.id] }),
+  customer: one(customers, {
+    fields: [purchases.customerId],
+    references: [customers.id],
+  }),
   rafflePaymentMethod: one(rafflePaymentMethods, {
     fields: [purchases.rafflePaymentMethodId],
     references: [rafflePaymentMethods.id],

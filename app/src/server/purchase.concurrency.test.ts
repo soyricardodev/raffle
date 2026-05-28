@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
 import { seedPagoMovilPaymentMethodForRaffle } from "@/test/payment-methods-test-helper"
+import { withTestBuyerDefaults } from "@/test/purchase-test-helper"
 import { createPurchase } from "./purchase.service"
 import { InvalidQuantityError, PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 
@@ -49,16 +50,17 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
     await db.delete(raffles).where(eq(raffles.id, raffleId))
   })
 
-  function buyer(seq: number, quantity = 2): Parameters<typeof createPurchase>[0] {
-    return {
+  function buyer(seq: number, quantity = 2) {
+    return withTestBuyerDefaults({
       raffleId,
       customerName: `Test Buyer ${seq}`,
       customerPhone: `0412000${String(seq).padStart(4, "0")}`,
-      customerLocation: "Venezuela, Carabobo",
+      customerCi: `V${String(10000000 + seq).slice(-8)}`,
+      customerEmail: `buyer${seq}@test.local`,
       rafflePaymentMethodId,
       paymentReference: `ref-concurrent-${seq}-${Date.now()}`,
       ticketQuantity: quantity,
-    }
+    })
   }
 
   it("processes sequential purchases without issues", async () => {

@@ -2,7 +2,7 @@ import { useMutation } from "@tanstack/react-query"
 import { ImageIcon, SpinnerGap, Trash, UploadSimple } from "@phosphor-icons/react"
 import { useRef } from "react"
 import { toast } from "sonner"
-export type AdminImageKind = "raffles" | "prizes"
+export type AdminImageKind = "raffles" | "prizes" | "site"
 import { Button } from "@/components/ui/button"
 import {
   Field,

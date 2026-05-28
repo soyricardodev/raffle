@@ -50,6 +50,17 @@ export async function updateAppSettingsKey(key: string, value: unknown): Promise
   await saveAppSettings(current)
 }
 
+export async function patchAppSettings(patch: Record<string, unknown>): Promise<AppSettingsDocument> {
+  const current = await getAppSettings()
+  for (const [key, value] of Object.entries(patch)) {
+    if (value !== undefined) {
+      current[key] = value
+    }
+  }
+  await saveAppSettings(current)
+  return current
+}
+
 /** Mapa plano compatible con API legacy `site_config`. */
 export async function getSiteConfigMap(): Promise<Record<string, unknown>> {
   return getAppSettings()

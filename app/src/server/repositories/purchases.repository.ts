@@ -39,11 +39,12 @@ export async function insertPurchase(
   tx: DbTransaction,
   data: {
     raffleId: number
+    customerId?: number | null
     customerName: string
     customerPhone: string
-    customerEmail?: string
-    customerCi?: string
-    customerLocation?: string | null
+    customerEmail: string
+    customerCi: string
+    customerLocation: string
     rafflePaymentMethodId?: number | null
     paymentMethod: PaymentMethod
     paymentReference: string
@@ -59,12 +60,13 @@ export async function insertPurchase(
     .values({
       publicId: randomUUID(),
       raffleId: data.raffleId,
+      customerId: data.customerId ?? null,
       customerName: data.customerName.substring(0, 200),
       customerPhone: data.customerPhone.substring(0, 20),
       customerPhoneNormalized: normalizePhone(data.customerPhone),
-      customerEmail: (data.customerEmail ?? "").substring(0, 100) || null,
-      customerCi: (data.customerCi ?? "").substring(0, 20) || null,
-      customerLocation: data.customerLocation?.substring(0, 100) ?? null,
+      customerEmail: data.customerEmail.substring(0, 100),
+      customerCi: data.customerCi.substring(0, 20),
+      customerLocation: data.customerLocation.substring(0, 100),
       rafflePaymentMethodId: data.rafflePaymentMethodId ?? null,
       paymentMethod: data.paymentMethod,
       paymentReference: data.paymentReference.substring(0, 100),

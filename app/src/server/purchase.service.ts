@@ -18,6 +18,9 @@ import * as purchasesRepo from "./repositories/purchases.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import * as ticketsRepo from "./repositories/tickets.repository"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
+import * as customersRepo from "./repositories/customers.repository"
+import { formatCustomerCi, parseCustomerCi } from "@raffle/shared/validators/buyer-identity"
+import type { CustomerLocationType } from "@raffle/shared/validators"
 
 const logger = getLogger()
 
@@ -25,13 +28,15 @@ export interface CreatePurchaseParams {
   raffleId: number
   customerName: string
   customerPhone: string
-  customerEmail?: string
-  customerCi?: string
+  customerEmail: string
+  customerCi: string
   customerLocation: string
+  locationType?: CustomerLocationType
+  venezuelaState?: string | null
   rafflePaymentMethodId: number
   paymentReference: string
   ticketQuantity: number
-  paymentProofUrl?: string | null
+  paymentProofUrl: string
 }
 
 export async function createPurchase(params: CreatePurchaseParams) {
@@ -96,12 +101,29 @@ export async function createPurchase(params: CreatePurchaseParams) {
     const pricePerTicket = purchasesRepo.pricePerTicketCents(paymentMethod, raffle)
     const totalAmountCents = pricePerTicket * params.ticketQuantity
 
-    const purchaseId = await purchasesRepo.insertPurchase(tx, {
-      raffleId: params.raffleId,
+    const parsedCi = parseCustomerCi(params.customerCi)
+    const customerCiStored = parsedCi
+      ? formatCustomerCi(parsedCi.prefix, parsedCi.number)
+      : params.customerCi.trim()
+
+    const locationType = params.locationType ?? "venezuela"
+    const customerId = await customersRepo.findOrCreateCustomer(tx, {
       customerName: params.customerName,
       customerPhone: params.customerPhone,
       customerEmail: params.customerEmail,
-      customerCi: params.customerCi,
+      customerCi: customerCiStored,
+      customerLocation: params.customerLocation,
+      locationType,
+      venezuelaState: params.venezuelaState,
+    })
+
+    const purchaseId = await purchasesRepo.insertPurchase(tx, {
+      raffleId: params.raffleId,
+      customerId,
+      customerName: params.customerName,
+      customerPhone: params.customerPhone,
+      customerEmail: params.customerEmail,
+      customerCi: customerCiStored,
       customerLocation: params.customerLocation,
       rafflePaymentMethodId: params.rafflePaymentMethodId,
       paymentMethod,

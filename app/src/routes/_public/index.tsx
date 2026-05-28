@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
+import { HomeHero } from "@/features/home/HomeHero"
 import { HomeRaffleCover } from "@/features/home/HomeRaffleCover"
+import { HomeSiteBanner } from "@/features/home/HomeSiteBanner"
 import { HomeStickyCta } from "@/features/home/HomeStickyCta"
 import { homeFirstActiveQueryOptions, homePublishedQueryOptions } from "@/features/home/home-queries"
 import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
@@ -56,6 +58,9 @@ function HomePage() {
   return (
     <PublicLayout>
       <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4 pb-24 sm:gap-6 sm:py-6">
+        <HomeHero />
+        <HomeSiteBanner />
+
         {activeLoading && (
           <div className="space-y-4">
             <Skeleton className="-mx-4 aspect-[4/3] w-auto rounded-none sm:mx-0 sm:rounded-xl" />

@@ -3,6 +3,7 @@ import {
   isBolivarMethodType,
   isDollarMethodType,
 } from "../payment-methods/definitions.js"
+import { isValidCustomerCi } from "./buyer-identity.js"
 
 // ─── Enums ───────────────────────────────────────────────────
 
@@ -117,14 +118,30 @@ export function isBolivarMethod(method: PaymentMethod): boolean {
 /** Ticket number: 0000–9999 */
 export const TicketNumber = z.string().regex(/^\d{4}$/, "Número de boleto inválido (0000-9999)")
 
+export {
+  CedulaPrefix,
+  VENEZUELAN_MOBILE_PREFIXES,
+  CustomerCi,
+  CustomerEmail,
+  CustomerPhone,
+  formatCustomerCi,
+  isValidCustomerCi,
+  isValidCustomerPhone,
+  isValidInternationalPhone,
+  isValidVenezuelanMobile,
+  normalizeCustomerCi,
+  parseCustomerCi,
+  sanitizeCiDigits,
+  sanitizePhoneInput,
+  type PhoneInputMode,
+  type VenezuelanMobilePrefix,
+} from "./buyer-identity.js"
+
 /** VED currency: CI sin V/E/espacios */
 export const Cedula = z
   .string()
   .transform((s) => s.replace(/[\s\-.VEve]/g, ""))
   .pipe(z.string().min(1, "Cédula requerida"))
-
-/** Teléfono VE */
-export const Phone = z.string().min(7, "Teléfono muy corto").max(20)
 
 /** Cantidad de boletos (1–500) */
 export function ticketQuantityRange(min: number, max: number) {
@@ -141,8 +158,13 @@ export const CreatePurchaseInput = z.object({
   raffle_id: z.number().int().positive(),
   customer_name: z.string().min(1).max(200),
   customer_phone: z.string().min(7).max(20),
-  customer_email: z.string().email().max(100).or(z.literal("")),
-  customer_ci: z.string().max(20),
+  customer_email: z.string().trim().min(1, "Ingresa tu email").email("Email inválido").max(100),
+  customer_ci: z
+    .string()
+    .trim()
+    .min(1, "Ingresa tu cédula")
+    .max(20)
+    .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
   customer_location: z.string().min(1).max(100),
   raffle_payment_method_id: z.number().int().positive(),
   payment_reference: z.string().min(1).max(100),
@@ -154,15 +176,25 @@ export type CreatePurchaseInput = z.infer<typeof CreatePurchaseInput>
 /** Cuerpo camelCase (multipart FormData o JSON público). */
 export const CreatePurchaseBody = z.object({
   raffleId: z.coerce.number().int().positive(),
-  customerName: z.string().trim().min(1).max(200),
+  customerName: z.string().trim().min(1, "Ingresa tu nombre").max(200),
   customerPhone: z.string().trim().min(7).max(20),
-  customerEmail: z.string().trim().max(100).optional(),
-  customerCi: z.string().trim().max(20).optional(),
-  customerLocation: z.string().trim().min(1).max(100),
+  customerEmail: z
+    .string()
+    .trim()
+    .min(1, "Ingresa tu email")
+    .email("Email inválido")
+    .max(100),
+  customerCi: z
+    .string()
+    .trim()
+    .min(1, "Ingresa tu cédula")
+    .max(20)
+    .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
+  customerLocation: z.string().trim().min(1, "Indica tu ubicación").max(100),
   rafflePaymentMethodId: z.coerce.number().int().positive(),
-  paymentReference: z.string().trim().min(1).max(100),
+  paymentReference: z.string().trim().min(1, "Ingresa la referencia de pago").max(100),
   ticketQuantity: z.coerce.number().int().min(1).max(500),
-  paymentProofUrl: z.string().max(500).nullable().optional(),
+  paymentProofUrl: z.string().trim().min(1, "Comprobante requerido").max(500),
 })
 
 export type CreatePurchaseBody = z.infer<typeof CreatePurchaseBody>
@@ -170,13 +202,7 @@ export type CreatePurchaseBody = z.infer<typeof CreatePurchaseBody>
 export function parseCreatePurchaseBody(
   raw: Record<string, unknown>,
 ): CreatePurchaseBody {
-  const email = raw.customerEmail
-  const ci = raw.customerCi
-  return CreatePurchaseBody.parse({
-    ...raw,
-    customerEmail: email === "" || email == null ? undefined : email,
-    customerCi: ci === "" || ci == null ? undefined : ci,
-  })
+  return CreatePurchaseBody.parse(raw)
 }
 
 export const VerifyTicketInput = z
@@ -324,4 +350,5 @@ export const SITE_CONFIG_KEYS = [
   "payment_info",
   "hero_config",
   "email_settings",
+  "seo_config",
 ] as const

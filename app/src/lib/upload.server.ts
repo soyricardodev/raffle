@@ -46,7 +46,7 @@ export async function savePaymentProof(file: File): Promise<string> {
   return `/uploads/payments/${filename}`
 }
 
-export type AdminImageKind = "raffles" | "prizes"
+export type AdminImageKind = "raffles" | "prizes" | "site"
 
 export async function saveAdminImage(file: File, kind: AdminImageKind): Promise<string> {
   if (!IMAGE_MIME.has(file.type)) {

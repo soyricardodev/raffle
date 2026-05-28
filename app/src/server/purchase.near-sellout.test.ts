@@ -4,6 +4,7 @@ import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
 import { seedPagoMovilPaymentMethodForRaffle } from "@/test/payment-methods-test-helper"
+import { withTestBuyerDefaults } from "@/test/purchase-test-helper"
 import { createPurchase } from "./purchase.service"
 
 const TOTAL = 10_000
@@ -83,15 +84,16 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
   })
 
   it("allocates the last free tickets when almost sold out", async () => {
-    const result = await createPurchase({
-      raffleId,
-      customerName: "Final Buyer",
-      customerPhone: "04129999999",
-      customerLocation: "Venezuela, Carabobo",
-      rafflePaymentMethodId,
-      paymentReference: `near-sellout-${Date.now()}`,
-      ticketQuantity: FINAL_BATCH,
-    })
+    const result = await createPurchase(
+      withTestBuyerDefaults({
+        raffleId,
+        customerName: "Final Buyer",
+        customerPhone: "04129999999",
+        rafflePaymentMethodId,
+        paymentReference: `near-sellout-${Date.now()}`,
+        ticketQuantity: FINAL_BATCH,
+      }),
+    )
 
     expect(result.ticketNumbers).toHaveLength(FINAL_BATCH)
 

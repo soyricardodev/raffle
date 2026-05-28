@@ -5,15 +5,17 @@ export type PurchasePayload = {
   raffleId: number
   customerName: string
   customerPhone: string
-  customerEmail?: string
-  customerCi?: string
+  customerEmail: string
+  customerCi: string
   customerLocation: string
   rafflePaymentMethodId: number
   paymentReference: string
   ticketQuantity: number
+  paymentProofUrl?: string
 }
 
 export const DEFAULT_CUSTOMER_LOCATION = "Venezuela, Carabobo"
+export const DEFAULT_PAYMENT_PROOF_URL = "/uploads/payments/e2e-proof.jpg"
 
 export async function fetchFirstRafflePaymentMethodId(
   request: APIRequestContext,
@@ -55,6 +57,9 @@ export async function createPurchase(
   const response = await request.post("/api/purchases/", {
     data: {
       customerLocation: DEFAULT_CUSTOMER_LOCATION,
+      customerEmail: `buyer-${Date.now()}@e2e.test`,
+      customerCi: "V12345678",
+      paymentProofUrl: DEFAULT_PAYMENT_PROOF_URL,
       ...payload,
     },
   })

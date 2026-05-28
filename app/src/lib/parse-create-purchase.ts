@@ -15,23 +15,46 @@ export function formDataToPurchaseRecord(form: FormData): Record<string, unknown
   }
 }
 
+function parseLocationMeta(location: string): {
+  locationType: "venezuela" | "other"
+  venezuelaState: string | null
+} {
+  const trimmed = location.trim()
+  if (trimmed.toLowerCase().startsWith("venezuela,")) {
+    const state = trimmed.slice("venezuela,".length).trim()
+    return { locationType: "venezuela", venezuelaState: state || null }
+  }
+  return { locationType: "other", venezuelaState: null }
+}
+
 export function toCreatePurchaseParams(body: CreatePurchaseBody): CreatePurchaseParams {
+  const { locationType, venezuelaState } = parseLocationMeta(body.customerLocation)
   return {
     raffleId: body.raffleId,
     customerName: body.customerName,
     customerPhone: body.customerPhone,
-    customerEmail: body.customerEmail || undefined,
-    customerCi: body.customerCi || undefined,
+    customerEmail: body.customerEmail,
+    customerCi: body.customerCi,
     customerLocation: body.customerLocation,
+    locationType,
+    venezuelaState,
     rafflePaymentMethodId: body.rafflePaymentMethodId,
     paymentReference: body.paymentReference,
     ticketQuantity: body.ticketQuantity,
-    paymentProofUrl: body.paymentProofUrl ?? null,
+    paymentProofUrl: body.paymentProofUrl,
   }
 }
 
-export function parsePurchaseFromFormData(form: FormData): CreatePurchaseParams {
-  return toCreatePurchaseParams(parseCreatePurchaseBody(formDataToPurchaseRecord(form)))
+export function parsePurchaseFromFormData(
+  form: FormData,
+  paymentProofUrl: string,
+): CreatePurchaseParams {
+  return toCreatePurchaseParams(
+    parseCreatePurchaseBody({
+      ...formDataToPurchaseRecord(form),
+      paymentProofUrl,
+    }),
+  )
 }
 
 export function parsePurchaseFromJson(raw: unknown): CreatePurchaseParams {

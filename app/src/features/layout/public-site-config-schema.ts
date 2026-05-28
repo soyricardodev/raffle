@@ -1,36 +1,16 @@
+import {
+  ContactInfoSchema,
+  SeoConfigSchema,
+  SiteColorsSchema,
+  SiteImagesSchema,
+  SiteInfoSchema,
+  SocialMediaSchema,
+} from "@raffle/shared/site-config"
 import { z } from "zod"
-import { normalizeHeroConfig } from "@/stores/site-config"
+import { normalizeHeroConfig, normalizeSeoConfig } from "@/stores/site-config"
 import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 
-const SiteColorsSchema = z.object({
-  primary: z.string(),
-  secondary: z.string(),
-  accent: z.string(),
-})
-
-const SiteInfoSchema = z.object({
-  site_name: z.string(),
-  tagline: z.string(),
-})
-
-const ContactInfoSchema = z.object({
-  phone: z.string(),
-  email: z.string(),
-  address: z.string(),
-})
-
-const SocialMediaSchema = z.object({
-  whatsapp: z.string(),
-  instagram: z.string(),
-  facebook: z.string(),
-})
-
-const SiteImagesSchema = z.object({
-  banner: z.string(),
-  logo: z.string(),
-})
-
-const HeroConfigSchema = z
+const HeroConfigRawSchema = z
   .object({
     title: z.string().optional(),
     subtitle: z.string().optional(),
@@ -45,8 +25,9 @@ export const PublicSiteConfigPayloadSchema = z.object({
   site_info: SiteInfoSchema.optional(),
   contact_info: ContactInfoSchema.optional(),
   social_media: SocialMediaSchema.optional(),
-  hero_config: HeroConfigSchema.optional(),
+  hero_config: HeroConfigRawSchema.optional(),
   site_images: SiteImagesSchema.optional(),
+  seo_config: SeoConfigSchema.optional(),
 })
 
 export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSiteConfigPayload {
@@ -61,5 +42,6 @@ export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSite
     social_media: parsed.data.social_media,
     site_images: parsed.data.site_images,
     hero_config: hero ? normalizeHeroConfig(hero) : undefined,
+    seo_config: parsed.data.seo_config ? normalizeSeoConfig(parsed.data.seo_config) : undefined,
   }
 }

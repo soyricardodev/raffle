@@ -1,18 +1,16 @@
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Badge } from "@/components/ui/badge"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { PaymentDetailsPanel } from "@/features/raffle/purchase-form/PaymentDetailsPanel"
-import { FieldHint, SectionHeader } from "@/features/raffle/purchase-form/ui"
+import { PaymentProofUpload } from "@/features/raffle/purchase-form/PaymentProofUpload"
+import { SectionHeader } from "@/features/raffle/purchase-form/ui"
 import {
-  formatAccountInfoForDisplay,
   paymentMethodCurrencyLabel,
   paymentMethodDisplayLabel,
-  paymentMethodTypeLabel,
 } from "@raffle/shared/payment-methods"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 import type { MethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import { cn } from "@/lib/utils"
-import { CreditCard } from "lucide-react"
 
 type PaymentStepProps = {
   methods: RafflePaymentMethod[]
@@ -22,8 +20,10 @@ type PaymentStepProps = {
   selectedMethod: RafflePaymentMethod | null
   total: number
   paymentReference: string
+  paymentProof: File | null
   methodHint?: string
   referenceHint?: string
+  proofHint?: string
   getEligibility: (method: RafflePaymentMethod) => MethodEligibility
   onSelectMethod: (id: number) => void
   onPaymentReferenceChange: (value: string) => void
@@ -38,44 +38,37 @@ export function PaymentStep({
   selectedMethod,
   total,
   paymentReference,
+  paymentProof,
   methodHint,
   referenceHint,
+  proofHint,
   getEligibility,
   onSelectMethod,
   onPaymentReferenceChange,
   onPaymentProofChange,
 }: PaymentStepProps) {
-  const accountDisplayLines = selectedMethod
-    ? formatAccountInfoForDisplay(selectedMethod.method_type, selectedMethod.account_info)
-    : []
-
   return (
-    <section className="space-y-4">
-      <SectionHeader step={3} title="Pago" />
+    <section className="flex flex-col gap-2">
+      <SectionHeader title="Pago" />
 
       {methods.length === 0 ? (
-        <div className="rounded-xl border border-dashed p-6 text-center">
-          <CreditCard className="text-muted-foreground mx-auto mb-2 size-8" />
-          <p className="text-sm font-medium">Sin métodos de pago</p>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Esta rifa aún no tiene cuentas configuradas. Intenta más tarde.
-          </p>
-        </div>
+        <p className="text-muted-foreground text-xs">Sin métodos de pago.</p>
       ) : (
-        <>
-          <div className="space-y-2">
-            <Label id="payment-method-label">Elige cómo pagar *</Label>
+        <FieldGroup className="gap-3">
+          <Field data-invalid={!!methodHint}>
+            <FieldLabel id="payment-method-label" className="sr-only">
+              Método
+            </FieldLabel>
             <div
               role="radiogroup"
               aria-labelledby="payment-method-label"
-              className="flex flex-col gap-2"
+              className="flex flex-col gap-1.5"
             >
               {methods.map((method) => {
                 const active = selectedId === method.id
                 const { locked, minTickets } = getEligibility(method)
                 const currency = paymentMethodCurrencyLabel(method.method_type)
                 const title = paymentMethodDisplayLabel(method)
-                const subtitle = method.label ? paymentMethodTypeLabel(method.method_type) : null
 
                 return (
                   <button
@@ -87,90 +80,60 @@ export function PaymentStep({
                     disabled={disabled || locked}
                     onClick={() => onSelectMethod(method.id)}
                     className={cn(
-                      "flex min-h-14 w-full items-start gap-3 rounded-xl border p-3 text-left transition-colors focus-visible:ring-3 focus-visible:ring-ring/30",
-                      active
-                        ? "border-primary bg-primary/10 ring-2 ring-primary/25"
-                        : "border-border bg-card hover:border-primary/40",
-                      locked && "cursor-not-allowed opacity-60",
+                      "flex min-h-10 w-full items-center gap-2 rounded-lg border px-3 py-2 text-left transition-colors",
+                      active ? "border-primary bg-primary/10" : "border-border bg-card",
+                      locked && "cursor-not-allowed opacity-50",
                     )}
                   >
                     <span
                       className={cn(
-                        "mt-0.5 flex size-5 shrink-0 items-center justify-center rounded-full border-2",
-                        active
-                          ? "border-primary bg-primary text-primary-foreground"
-                          : "border-muted-foreground/40",
+                        "size-4 shrink-0 rounded-full border-2",
+                        active ? "border-primary bg-primary" : "border-muted-foreground/40",
                       )}
                       aria-hidden
-                    >
-                      {active ? <span className="size-2.5 rounded-full bg-primary" /> : null}
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="flex flex-wrap items-center gap-2">
-                        <span className="font-medium">{title}</span>
-                        <Badge variant="outline" className="text-[10px]">
-                          {currency}
-                        </Badge>
+                    />
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">{title}</span>
+                    <Badge variant="outline" className="shrink-0 text-[10px]">
+                      {currency}
+                    </Badge>
+                    {locked ? (
+                      <span className="text-destructive shrink-0 text-[10px]">
+                        min {minTickets}
                       </span>
-                      {subtitle ? (
-                        <span className="text-muted-foreground mt-0.5 block text-xs">{subtitle}</span>
-                      ) : null}
-                      {locked ? (
-                        <span className="text-destructive mt-1 block text-xs font-medium">
-                          Necesitas al menos {minTickets} boletos (tienes {quantity})
-                        </span>
-                      ) : minTickets > 0 ? (
-                        <span className="text-muted-foreground mt-1 block text-xs">
-                          Disponible desde {minTickets} boletos
-                        </span>
-                      ) : null}
-                    </span>
+                    ) : null}
                   </button>
                 )
               })}
             </div>
-            <FieldHint message={methodHint} />
-          </div>
+            <FieldError>{methodHint}</FieldError>
+          </Field>
 
-          {selectedMethod && accountDisplayLines.length > 0 ? (
-            <PaymentDetailsPanel method={selectedMethod} total={total} />
-          ) : selectedMethod ? (
-            <p className="text-muted-foreground rounded-lg border border-dashed p-4 text-center text-sm">
-              No hay datos de cuenta para este método. Elige otro o contacta al organizador.
-            </p>
-          ) : (
-            <p className="text-muted-foreground text-center text-xs">
-              Selecciona un método para ver los datos de pago.
-            </p>
-          )}
+          {selectedMethod ? (
+            <PaymentDetailsPanel method={selectedMethod} total={total} quantity={quantity} />
+          ) : null}
 
-          <div className="space-y-2">
-            <Label htmlFor="payment-reference">Referencia de pago *</Label>
+          <Field data-invalid={!!referenceHint}>
+            <FieldLabel htmlFor="payment-reference">Referencia</FieldLabel>
             <Input
               id="payment-reference"
               value={paymentReference}
               onChange={(event) => onPaymentReferenceChange(event.target.value)}
               disabled={disabled || !selectedMethod}
               aria-invalid={!!referenceHint}
-              className="min-h-11"
-              placeholder="Últimos dígitos o número de referencia"
+              className="h-9"
+              placeholder="Nº referencia"
+              inputMode="numeric"
             />
-            <FieldHint message={referenceHint} />
-          </div>
+            <FieldError>{referenceHint}</FieldError>
+          </Field>
 
-          <div className="space-y-2">
-            <Label htmlFor="payment-proof">Comprobante (opcional)</Label>
-            <Input
-              id="payment-proof"
-              type="file"
-              accept="image/*,application/pdf"
-              disabled={disabled || !selectedMethod}
-              className="min-h-11 file:mr-3"
-              onChange={(event) => onPaymentProofChange(event.target.files?.[0] ?? null)}
-            />
-            <p className="text-muted-foreground text-xs">Foto o PDF del comprobante.</p>
-          </div>
-        </>
+          <PaymentProofUpload
+            file={paymentProof}
+            disabled={disabled || !selectedMethod}
+            error={proofHint}
+            onChange={onPaymentProofChange}
+          />
+        </FieldGroup>
       )}
     </section>
   )

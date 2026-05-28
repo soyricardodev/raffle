@@ -1,33 +1,15 @@
 import { create } from "zustand"
+import type {
+  ContactInfo,
+  HeroConfig,
+  SeoConfig,
+  SiteColors,
+  SiteImages,
+  SiteInfo,
+  SocialMedia,
+} from "@raffle/shared/site-config"
 
-export type SiteColors = {
-  primary: string
-  secondary: string
-  accent: string
-}
-
-export type SiteInfo = {
-  site_name: string
-  tagline: string
-}
-
-export type ContactInfo = {
-  phone: string
-  email: string
-  address: string
-}
-
-export type SocialMedia = {
-  whatsapp: string
-  instagram: string
-  facebook: string
-}
-
-export type HeroConfig = {
-  title: string
-  subtitle: string
-  show_particles: boolean
-}
+export type { ContactInfo, HeroConfig, SeoConfig, SiteColors, SiteImages, SiteInfo, SocialMedia }
 
 /** Legacy hero_config used main_text/accent_text; v2 uses title/subtitle. */
 export function normalizeHeroConfig(raw: unknown): HeroConfig {
@@ -42,9 +24,24 @@ export function normalizeHeroConfig(raw: unknown): HeroConfig {
   }
 }
 
-export type SiteImages = {
-  banner: string
-  logo: string
+export function normalizeSeoConfig(raw: unknown): SeoConfig {
+  if (!raw || typeof raw !== "object") {
+    return {
+      meta_title: "",
+      meta_description: "",
+      og_image: "",
+      canonical_url: "",
+      indexable: true,
+    }
+  }
+  const seo = raw as Record<string, unknown>
+  return {
+    meta_title: String(seo.meta_title ?? ""),
+    meta_description: String(seo.meta_description ?? ""),
+    og_image: String(seo.og_image ?? ""),
+    canonical_url: String(seo.canonical_url ?? ""),
+    indexable: seo.indexable !== false,
+  }
 }
 
 type SiteConfigState = {
@@ -54,6 +51,7 @@ type SiteConfigState = {
   social: SocialMedia
   hero: HeroConfig
   images: SiteImages
+  seo: SeoConfig
   loaded: boolean
   applyCssVariables: () => void
   setFromApi: (
@@ -64,13 +62,14 @@ type SiteConfigState = {
       social_media: SocialMedia
       hero_config: HeroConfig
       site_images: SiteImages
+      seo_config: SeoConfig
     }>,
   ) => void
 }
 
 const defaults: Pick<
   SiteConfigState,
-  "colors" | "siteInfo" | "contact" | "social" | "hero" | "images"
+  "colors" | "siteInfo" | "contact" | "social" | "hero" | "images" | "seo"
 > = {
   colors: {
     primary: "#8B7355",
@@ -100,6 +99,13 @@ const defaults: Pick<
     banner: "",
     logo: "",
   },
+  seo: {
+    meta_title: "",
+    meta_description: "",
+    og_image: "",
+    canonical_url: "",
+    indexable: true,
+  },
 }
 
 function applyThemeColors(colors: SiteColors) {
@@ -122,6 +128,7 @@ export const useSiteConfig = create<SiteConfigState>((set, get) => ({
       social: payload.social_media ?? state.social,
       hero: payload.hero_config ? normalizeHeroConfig(payload.hero_config) : state.hero,
       images: payload.site_images ?? state.images,
+      seo: payload.seo_config ? normalizeSeoConfig(payload.seo_config) : state.seo,
       loaded: true,
     }))
     applyThemeColors(get().colors)

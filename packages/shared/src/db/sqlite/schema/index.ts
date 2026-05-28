@@ -1,4 +1,5 @@
 export { accounts, sessions, verifications } from "./auth"
+export { customers } from "./customers"
 export { auditEvents } from "./audit-events"
 export { appSettings } from "./app-settings"
 export { emailLogs } from "./email-logs"
@@ -10,6 +11,7 @@ export { prizes } from "./prizes"
 export { raffles } from "./raffles"
 export {
   accountRelations,
+  customerRelations,
   auditEventRelations,
   emailLogRelations,
   paymentAccountRelations,

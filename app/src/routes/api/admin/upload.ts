@@ -3,7 +3,7 @@ import { requireAdmin } from "@/lib/auth-utils.server"
 import { saveAdminImage, type AdminImageKind } from "@/lib/upload.server"
 import { ValidationError } from "@raffle/shared/errors"
 
-const KINDS = new Set<AdminImageKind>(["raffles", "prizes"])
+const KINDS = new Set<AdminImageKind>(["raffles", "prizes", "site"])
 
 export const Route = createFileRoute("/api/admin/upload")({
   server: {

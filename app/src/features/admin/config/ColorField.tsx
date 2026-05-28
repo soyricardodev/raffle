@@ -8,11 +8,12 @@ type ColorFieldProps = {
   value: string
   onChange: (value: string) => void
   className?: string
+  error?: string
 }
 
-export function ColorField({ id, label, value, onChange, className }: ColorFieldProps) {
+export function ColorField({ id, label, value, onChange, className, error }: ColorFieldProps) {
   return (
-    <div className={cn("space-y-2", className)}>
+    <div className={cn("flex flex-col gap-2", className)} data-invalid={!!error}>
       <Label htmlFor={id}>{label}</Label>
       <div className="flex items-center gap-3">
         <label
@@ -35,8 +36,10 @@ export function ColorField({ id, label, value, onChange, className }: ColorField
           onChange={(e) => onChange(e.target.value)}
           className="min-h-11 font-mono text-sm"
           placeholder="#000000"
+          aria-invalid={!!error}
         />
       </div>
+      {error ? <p className="text-destructive text-sm">{error}</p> : null}
     </div>
   )
 }

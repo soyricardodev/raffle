@@ -6,7 +6,7 @@ export function HomeHero() {
 
   if (!branding) {
     return (
-      <header className="space-y-2 text-center" aria-hidden>
+      <header className="flex flex-col gap-2 text-center" aria-hidden>
         <div className="bg-muted/60 mx-auto h-8 w-48 max-w-full animate-pulse rounded-md" />
         <div className="bg-muted/40 mx-auto h-4 w-64 max-w-full animate-pulse rounded-md" />
       </header>
@@ -20,9 +20,12 @@ export function HomeHero() {
   }
 
   return (
-    <header className="space-y-2 text-center">
+    <header className="flex flex-col gap-2 text-center">
       {headline ? (
-        <h1 className="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl">
+        <h1
+          className="font-heading text-2xl font-semibold tracking-tight text-balance sm:text-3xl"
+          style={{ color: "var(--brand-primary, inherit)" }}
+        >
           {headline}
         </h1>
       ) : null}

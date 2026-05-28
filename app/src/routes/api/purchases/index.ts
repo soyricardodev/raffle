@@ -19,18 +19,21 @@ export const Route = createFileRoute("/api/purchases/")({
           if (contentType.includes("multipart/form-data")) {
             const form = await request.formData()
             const proofFile = form.get("paymentProof")
-            let paymentProofUrl: string | null = null
-            if (proofFile instanceof File && proofFile.size > 0) {
-              paymentProofUrl = await savePaymentProof(proofFile)
+            if (!(proofFile instanceof File) || proofFile.size <= 0) {
+              throw new ValidationError("Sube el comprobante de pago")
             }
+            const paymentProofUrl = await savePaymentProof(proofFile)
 
-            const params = parsePurchaseFromFormData(form)
-            const result = await createPurchase({ ...params, paymentProofUrl })
+            const params = parsePurchaseFromFormData(form, paymentProofUrl)
+            const result = await createPurchase(params)
             void sendPurchaseConfirmationEmail(result.purchaseId)
             return Response.json(result, { status: 201 })
           }
 
           const json = (await request.json()) as Record<string, unknown>
+          if (!json.paymentProofUrl || String(json.paymentProofUrl).trim() === "") {
+            throw new ValidationError("Comprobante de pago requerido")
+          }
           const params = parsePurchaseFromJson(json)
           const result = await createPurchase(params)
           void sendPurchaseConfirmationEmail(result.purchaseId)

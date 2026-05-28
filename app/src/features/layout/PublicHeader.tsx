@@ -15,6 +15,7 @@ export function PublicHeader() {
         <Link
           to="/"
           className="font-heading flex min-w-0 items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
+          style={{ color: "var(--brand-primary, inherit)" }}
         >
           {logoUrl ? (
             <img

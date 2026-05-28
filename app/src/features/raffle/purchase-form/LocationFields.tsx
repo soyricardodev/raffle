@@ -1,19 +1,18 @@
-import { Button } from "@/components/ui/button"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import {
   Select,
   SelectContent,
+  SelectGroup,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { FieldHint } from "@/features/raffle/purchase-form/ui"
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
   type CustomerLocationType,
   VENEZUELA_STATES,
 } from "@raffle/shared/validators"
-import { Globe, MapPin } from "lucide-react"
 
 type LocationFieldsProps = {
   locationType: CustomerLocationType
@@ -37,71 +36,65 @@ export function LocationFields({
   onCustomLocationChange,
 }: LocationFieldsProps) {
   return (
-    <div className="space-y-3 sm:col-span-2">
-      <div className="flex items-center gap-2">
-        <MapPin className="text-muted-foreground size-4 shrink-0" />
-        <Label>¿Desde dónde juegas? *</Label>
-      </div>
-      <div className="grid grid-cols-2 gap-2">
-        <Button
-          type="button"
-          variant={locationType === "venezuela" ? "default" : "outline"}
-          className="min-h-11 text-sm"
-          disabled={disabled}
-          onClick={() => onLocationTypeChange("venezuela")}
-        >
-          Venezuela 🇻🇪
-        </Button>
-        <Button
-          type="button"
-          variant={locationType === "other" ? "default" : "outline"}
-          className="min-h-11 text-sm"
-          disabled={disabled}
-          onClick={() => onLocationTypeChange("other")}
-        >
-          <Globe className="mr-1 size-3.5 shrink-0" />
-          Otro país
-        </Button>
-      </div>
+    <Field data-invalid={!!locationError}>
+      <FieldLabel htmlFor={locationType === "venezuela" ? "customer-state" : "customer-location-other"}>
+        Ubicación
+      </FieldLabel>
+      <ToggleGroup
+        type="single"
+        value={locationType}
+        onValueChange={(type) => {
+          if (type) onLocationTypeChange(type as CustomerLocationType)
+        }}
+        variant="outline"
+        size="sm"
+        spacing={1}
+        className="w-full"
+        disabled={disabled}
+      >
+        <ToggleGroupItem value="venezuela" className="flex-1 text-xs">
+          VE
+        </ToggleGroupItem>
+        <ToggleGroupItem value="other" className="flex-1 text-xs">
+          Otro
+        </ToggleGroupItem>
+      </ToggleGroup>
       {locationType === "venezuela" ? (
-        <div className="space-y-2">
-          <Select
-            value={selectedState || undefined}
-            onValueChange={onSelectedStateChange}
-            disabled={disabled}
+        <Select
+          value={selectedState || undefined}
+          onValueChange={onSelectedStateChange}
+          disabled={disabled}
+        >
+          <SelectTrigger
+            id="customer-state"
+            className="h-9 w-full"
+            aria-invalid={!!locationError}
           >
-            <SelectTrigger
-              id="customer-state"
-              className="min-h-11 w-full"
-              aria-invalid={!!locationError}
-            >
-              <SelectValue placeholder="Selecciona tu estado…" />
-            </SelectTrigger>
-            <SelectContent>
+            <SelectValue placeholder="Estado" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectGroup>
               {VENEZUELA_STATES.map((state) => (
                 <SelectItem key={state} value={state}>
                   {state}
                 </SelectItem>
               ))}
-            </SelectContent>
-          </Select>
-          <FieldHint message={locationError} />
-        </div>
+            </SelectGroup>
+          </SelectContent>
+        </Select>
       ) : (
-        <div className="space-y-2">
-          <Input
-            id="customer-location-other"
-            value={customLocation}
-            onChange={(event) => onCustomLocationChange(event.target.value)}
-            disabled={disabled}
-            aria-invalid={!!locationError}
-            className="min-h-11"
-            placeholder="¿País y ciudad?"
-            maxLength={100}
-          />
-          <FieldHint message={locationError} />
-        </div>
+        <Input
+          id="customer-location-other"
+          value={customLocation}
+          onChange={(event) => onCustomLocationChange(event.target.value)}
+          disabled={disabled}
+          aria-invalid={!!locationError}
+          className="h-9"
+          placeholder="País, ciudad"
+          maxLength={100}
+        />
       )}
-    </div>
+      <FieldError>{locationError}</FieldError>
+    </Field>
   )
 }
