@@ -1,0 +1,29 @@
+import { createFileRoute } from "@tanstack/react-router"
+import { requireAdmin } from "@/lib/auth-utils.server"
+import { saveAdminImage, type AdminImageKind } from "@/lib/upload.server"
+import { ValidationError } from "@raffle/shared/errors"
+
+const KINDS = new Set<AdminImageKind>(["raffles", "prizes"])
+
+export const Route = createFileRoute("/api/admin/upload")({
+  server: {
+    handlers: {
+      POST: async ({ request }) => {
+        await requireAdmin(request)
+        const form = await request.formData()
+        const file = form.get("file")
+        const kind = String(form.get("kind") ?? "raffles")
+
+        if (!(file instanceof File) || file.size === 0) {
+          throw new ValidationError("Archivo de imagen requerido")
+        }
+        if (!KINDS.has(kind as AdminImageKind)) {
+          throw new ValidationError("Tipo de subida inválido")
+        }
+
+        const url = await saveAdminImage(file, kind as AdminImageKind)
+        return Response.json({ url })
+      },
+    },
+  },
+})

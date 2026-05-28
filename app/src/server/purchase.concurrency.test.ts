@@ -1,10 +1,10 @@
 import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { getPool } from "@/lib/db.server"
+import { eq } from "drizzle-orm"
+import { getDb } from "@/lib/db.server"
+import { setupIsolatedTestDatabase } from "@/test/db-setup"
+import { paymentMethods, purchaseTickets, purchases, raffles } from "@raffle/shared/db"
 import { createPurchase } from "./purchase.service"
-import {
-  InvalidQuantityError,
-  PaymentReferenceDuplicateError,
-} from "@raffle/shared/errors"
+import { InvalidQuantityError, PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 
 const TOTAL_TICKETS = 50
 const MAX_PURCHASE = 5
@@ -14,50 +14,45 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
   let raffleId: number
 
   beforeAll(async () => {
-    const pool = getPool()
+    await setupIsolatedTestDatabase()
+    const db = getDb()
+    const [row] = await db
+      .insert(raffles)
+      .values({
+        name: "TEST-Concurrency",
+        description: "Rifa de prueba para tests de concurrencia",
+        totalTickets: TOTAL_TICKETS,
+        priceBsCents: 1000,
+        priceUsdCents: 100,
+        minPurchase: 1,
+        maxPurchase: MAX_PURCHASE,
+        drawDate: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
+        status: "active",
+        autoPauseEnabled: false,
+        ticketsAvailable: TOTAL_TICKETS,
+        ticketsReserved: 0,
+        ticketsSold: 0,
+      })
+      .returning({ id: raffles.id })
 
-    const [result] = await pool.execute(
-      `INSERT INTO raffles
-       (name, description, total_tickets, price_bs, price_usd,
-        min_purchase, max_purchase, draw_date, status, auto_pause_enabled)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        "TEST-Concurrency",
-        "Rifa de prueba para tests de concurrencia",
-        TOTAL_TICKETS,
-        10,
-        1,
-        1,
-        MAX_PURCHASE,
-        new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
-        "active",
-        false,
-      ],
-    )
-    raffleId = (result as { insertId: number }).insertId
+    raffleId = row!.id
 
-    const batchSize = 100
-    for (let i = 0; i < TOTAL_TICKETS; i += batchSize) {
-      const batch: (string | number)[][] = []
-      for (let j = i; j < Math.min(i + batchSize, TOTAL_TICKETS); j++) {
-        batch.push([raffleId, String(j).padStart(4, "0"), "available"])
-      }
-      const placeholders = batch.map(() => "(?, ?, ?)").join(", ")
-      const values = batch.flat()
-      await pool.execute(
-        `INSERT INTO tickets (raffle_id, ticket_number, status) VALUES ${placeholders}`,
-        values,
-      )
-    }
+    await db.insert(paymentMethods).values({
+      raffleId,
+      methodType: "pago_movil",
+      accountInfo: JSON.stringify({ banco: "Test", telefono: "04120000000", cedula: "V12345678" }),
+      isActive: true,
+      minTickets: null,
+    })
   })
 
   afterAll(async () => {
-    const pool = getPool()
-    await pool.execute("SET FOREIGN_KEY_CHECKS=0")
-    await pool.execute("DELETE FROM tickets WHERE raffle_id = ?", [raffleId])
-    await pool.execute("DELETE FROM purchases WHERE raffle_id = ?", [raffleId])
-    await pool.execute("DELETE FROM raffles WHERE id = ?", [raffleId])
-    await pool.execute("SET FOREIGN_KEY_CHECKS=1")
+    if (!raffleId) return
+    const db = getDb()
+    await db.delete(purchaseTickets).where(eq(purchaseTickets.raffleId, raffleId))
+    await db.delete(purchases).where(eq(purchases.raffleId, raffleId))
+    await db.delete(paymentMethods).where(eq(paymentMethods.raffleId, raffleId))
+    await db.delete(raffles).where(eq(raffles.id, raffleId))
   })
 
   function buyer(seq: number, quantity = 2): Parameters<typeof createPurchase>[0] {
@@ -91,20 +86,28 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
     expect(succeeded).toBeGreaterThan(0)
     expect(succeeded + failed).toBe(10)
 
-    const pool = getPool()
-    const [sold] = await pool.execute(
-      "SELECT COUNT(*) as c FROM tickets WHERE raffle_id = ? AND status = 'sold'",
-      [raffleId],
+    const db = getDb()
+    const ticketRows = await db
+      .select({ ticketNumber: purchaseTickets.ticketNumber })
+      .from(purchaseTickets)
+      .where(eq(purchaseTickets.raffleId, raffleId))
+
+    const uniqueNumbers = new Set(ticketRows.map((r) => r.ticketNumber))
+    expect(uniqueNumbers.size).toBe(ticketRows.length)
+
+    const [raffle] = await db.select().from(raffles).where(eq(raffles.id, raffleId)).limit(1)
+    expect(raffle).toBeDefined()
+    expect(raffle!.ticketsAvailable + raffle!.ticketsReserved + raffle!.ticketsSold).toBe(
+      TOTAL_TICKETS,
     )
-    const soldCount = Number((sold as [{ c: number }])[0]!.c)
-    expect(soldCount).toBeLessThanOrEqual(TOTAL_TICKETS)
+    expect(raffle!.ticketsAvailable).toBeGreaterThanOrEqual(0)
   })
 
   it("rejects duplicate payment references", async () => {
+    await new Promise((r) => setTimeout(r, 50))
     const ref = `ref-dup-${Date.now()}`
-    const qty = 1
-    const params1 = { ...buyer(50, qty), paymentReference: ref }
-    const params2 = { ...buyer(51, qty), paymentReference: ref }
+    const params1 = { ...buyer(50, 1), paymentReference: ref }
+    const params2 = { ...buyer(51, 1), paymentReference: ref }
 
     await createPurchase(params1)
     await expect(createPurchase(params2)).rejects.toThrow(PaymentReferenceDuplicateError)

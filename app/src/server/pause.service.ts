@@ -1,9 +1,11 @@
-import { getPool } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
+import { getDb, withImmediateTransaction } from "@/lib/db.server"
+import { raffles } from "@raffle/shared/db"
 import type { PauseReason } from "@raffle/shared/validators"
+import { and, eq, lte } from "drizzle-orm"
+import * as rafflesRepo from "./repositories/raffles.repository"
 
 const logger = getLogger()
-
 const PAUSE_DURATION_MINUTES = 15
 
 export interface Availability {
@@ -31,39 +33,13 @@ export interface PauseInfo {
   } | null
 }
 
-// ─── Availability ────────────────────────────────────────────
-
 export async function checkTicketAvailability(raffleId: number): Promise<Availability> {
-  const pool = getPool()
-  const [rows] = await pool.execute(
-    `SELECT
-       COUNT(*) as total,
-       SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
-       SUM(CASE WHEN status = 'sold' THEN 1 ELSE 0 END) as sold,
-       SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END) as reserved
-     FROM tickets
-     WHERE raffle_id = ?`,
-    [raffleId],
-  )
-
-  const r: Record<string, number> = (rows as Record<string, number>[])[0] ?? {}
-  const available = Number(r.available) || 0
-  const sold = Number(r.sold) || 0
-  const reserved = Number(r.reserved) || 0
-  const total = Number(r.total) || 0
-  const unavailable = sold + reserved
-
-  return {
-    total,
-    available,
-    sold,
-    reserved,
-    unavailable,
-    isFull: unavailable >= total,
+  const row = await rafflesRepo.findRaffleById(raffleId)
+  if (!row) {
+    return { total: 0, available: 0, sold: 0, reserved: 0, unavailable: 0, isFull: true }
   }
+  return rafflesRepo.raffleAvailabilityFromCounters(row)
 }
-
-// ─── Auto-pause check ────────────────────────────────────────
 
 export interface AutoPauseResult {
   needsPause: boolean
@@ -74,25 +50,17 @@ export interface AutoPauseResult {
 }
 
 export async function checkAutoPause(raffleId: number): Promise<AutoPauseResult> {
-  const pool = getPool()
-
-  const [raffleRows] = await pool.execute(
-    `SELECT id, name, status, auto_pause_enabled, min_purchase FROM raffles
-     WHERE id = ? AND status = 'active'`,
-    [raffleId],
-  )
-
-  const raffle = (raffleRows as Record<string, unknown>[])[0]
-  if (!raffle) {
+  const raffle = await rafflesRepo.findRaffleById(raffleId)
+  if (!raffle || raffle.status !== "active") {
     return { needsPause: false, reason: "Rifa no activa o no encontrada" }
   }
 
-  if (!raffle.auto_pause_enabled) {
+  if (!raffle.autoPauseEnabled) {
     return { needsPause: false, reason: "Pausa automática deshabilitada" }
   }
 
-  const availability = await checkTicketAvailability(raffleId)
-  const minPurchase = Number(raffle.min_purchase) || 1
+  const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
+  const minPurchase = raffle.minPurchase
 
   if (availability.isFull) {
     return {
@@ -122,8 +90,6 @@ export async function checkAutoPause(raffleId: number): Promise<AutoPauseResult>
   }
 }
 
-// ─── Pause / Unpause ─────────────────────────────────────────
-
 export interface PauseResult {
   success: boolean
   pauseUntil?: Date
@@ -137,33 +103,18 @@ export async function pauseRaffle(
   reason: PauseReason = "auto_full",
   durationMinutes: number | null = null,
 ): Promise<PauseResult> {
-  const pool = getPool()
-  const conn = await pool.getConnection()
-
   try {
-    await conn.beginTransaction()
-
     const pauseUntil = new Date()
-    if (durationMinutes !== null) {
-      pauseUntil.setMinutes(pauseUntil.getMinutes() + durationMinutes)
-    } else {
-      pauseUntil.setMinutes(pauseUntil.getMinutes() + PAUSE_DURATION_MINUTES)
-    }
+    const minutes = durationMinutes ?? PAUSE_DURATION_MINUTES
+    pauseUntil.setMinutes(pauseUntil.getMinutes() + minutes)
 
-    const [result] = await conn.execute(
-      `UPDATE raffles
-       SET status = 'paused', pause_until = ?, pause_reason = ?, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ? AND status = 'active'`,
-      [pauseUntil, reason, raffleId],
+    const success = await withImmediateTransaction((tx) =>
+      rafflesRepo.pauseRaffleRow(tx, raffleId, pauseUntil, reason),
     )
 
-    const affected = (result as { affectedRows: number }).affectedRows
-    if (affected === 0) {
-      await conn.rollback()
+    if (!success) {
       return { success: false, error: "No se pudo pausar la rifa (posiblemente ya no está activa)" }
     }
-
-    await conn.commit()
 
     const messages: Record<string, string> = {
       manual: "Rifa pausada manualmente",
@@ -180,11 +131,8 @@ export async function pauseRaffle(
       message: messages[reason] ?? `Rifa pausada por ${PAUSE_DURATION_MINUTES} min`,
     }
   } catch (error) {
-    await conn.rollback()
     logger.error({ raffleId, err: error }, "raffle:pause_failed")
     return { success: false, error: String(error) }
-  } finally {
-    conn.release()
   }
 }
 
@@ -195,26 +143,14 @@ export async function unpauseRaffle(raffleId: number): Promise<{
   availability?: Availability
   error?: string
 }> {
-  const pool = getPool()
-  const conn = await pool.getConnection()
-
   try {
-    await conn.beginTransaction()
-
-    const [raffleRows] = await conn.execute(
-      `SELECT id, name, status, pause_reason, min_purchase FROM raffles
-       WHERE id = ? AND status = 'paused'`,
-      [raffleId],
-    )
-
-    const raffle = (raffleRows as Record<string, unknown>[])[0]
-    if (!raffle) {
-      await conn.rollback()
+    const raffle = await rafflesRepo.findRaffleById(raffleId)
+    if (!raffle || raffle.status !== "paused") {
       return { success: false, error: "Rifa no encontrada o no está pausada" }
     }
 
-    const availability = await checkTicketAvailability(raffleId)
-    const minPurchase = Number(raffle.min_purchase) || 1
+    const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
+    const minPurchase = raffle.minPurchase
 
     let newStatus = "active"
     let message = "Rifa reactivada exitosamente"
@@ -227,129 +163,69 @@ export async function unpauseRaffle(raffleId: number): Promise<{
       message = `Rifa finalizada — tickets insuficientes (${availability.available} < ${minPurchase})`
     }
 
-    await conn.execute(
-      `UPDATE raffles
-       SET status = ?, pause_until = NULL, pause_reason = NULL, updated_at = CURRENT_TIMESTAMP
-       WHERE id = ?`,
-      [newStatus, raffleId],
-    )
-
-    await conn.commit()
+    await withImmediateTransaction((tx) => rafflesRepo.unpauseRaffleRow(tx, raffleId, newStatus))
 
     logger.info({ raffleId, newStatus }, "raffle:unpaused")
     return { success: true, newStatus, message, availability }
   } catch (error) {
-    await conn.rollback()
     logger.error({ raffleId, err: error }, "raffle:unpause_failed")
     return { success: false, error: String(error) }
-  } finally {
-    conn.release()
   }
 }
-
-// ─── Pause info ──────────────────────────────────────────────
 
 export async function getPauseInfo(raffleId: number): Promise<PauseInfo | null> {
-  const pool = getPool()
-  const [rows] = await pool.execute(
-    `SELECT status, pause_until, pause_reason, auto_pause_enabled, min_purchase
-     FROM raffles WHERE id = ?`,
-    [raffleId],
-  )
-
-  const raffle = (rows as Record<string, unknown>[])[0]
+  const raffle = await rafflesRepo.findRaffleById(raffleId)
   if (!raffle) return null
 
-  const now = new Date()
-  const pauseUntil = raffle.pause_until ? new Date(raffle.pause_until as string) : null
+  const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
+  const isPaused = raffle.status === "paused"
+  const pauseUntil = raffle.pauseUntil
   const remainingSeconds = pauseUntil
-    ? Math.max(0, Math.floor((pauseUntil.getTime() - now.getTime()) / 1000))
+    ? Math.max(0, Math.floor((pauseUntil.getTime() - Date.now()) / 1000))
     : 0
 
-  const availability = await checkTicketAvailability(raffleId)
+  let pauseContext: PauseInfo["pauseContext"] = null
+  if (isPaused && raffle.pauseReason) {
+    const contexts: Record<string, { title: string; description: string }> = {
+      manual: { title: "Rifa pausada", description: "Volveremos pronto." },
+      auto_full: { title: "Agotado temporalmente", description: "Todos los boletos están reservados o vendidos." },
+      auto_insufficient: {
+        title: "Pocos boletos disponibles",
+        description: `Quedan menos de ${raffle.minPurchase} boletos para la compra mínima.`,
+      },
+      auto_timeout: { title: "Pausa automática", description: "La rifa se reactivará en breve." },
+    }
+    pauseContext = contexts[raffle.pauseReason] ?? null
+  }
 
   return {
-    status: raffle.status as string,
-    isPaused: raffle.status === "paused",
+    status: raffle.status,
+    isPaused,
     pauseUntil,
-    pauseReason: raffle.pause_reason as PauseReason | null,
-    autoPauseEnabled: Boolean(raffle.auto_pause_enabled),
+    pauseReason: raffle.pauseReason as PauseReason | null,
+    autoPauseEnabled: raffle.autoPauseEnabled,
     remainingSeconds,
-    hasTimer: Boolean(pauseUntil && remainingSeconds > 0),
-    minPurchase: Number(raffle.min_purchase) || 1,
+    hasTimer: isPaused && remainingSeconds > 0,
+    minPurchase: raffle.minPurchase,
     availability,
-    pauseContext: getPauseContext(
-      raffle.pause_reason as PauseReason | null,
-      availability,
-      Number(raffle.min_purchase) || 1,
-    ),
+    pauseContext,
   }
 }
 
-function getPauseContext(
-  pauseReason: PauseReason | null,
-  availability: Availability,
-  minPurchase: number,
-): { title: string; description: string } | null {
-  if (!pauseReason) return null
+export async function processPausedRaffles(): Promise<{ unpaused: number; finalized: number }> {
+  const db = getDb()
+  const now = new Date()
 
-  const contexts: Record<string, { title: string; description: string }> = {
-    auto_full: {
-      title: "Rifa Completa",
-      description: "Todos los boletos están vendidos o reservados",
-    },
-    auto_insufficient: {
-      title: "Boletos Insuficientes",
-      description: `Solo quedan ${availability.available} boletos disponibles, pero se necesitan al menos ${minPurchase} para realizar una compra`,
-    },
-    auto_timeout: {
-      title: "Tiempo Agotado",
-      description: "La rifa se pausó automáticamente por tiempo",
-    },
-    manual: {
-      title: "Pausa Manual",
-      description: "La rifa fue pausada manualmente por un administrador",
-    },
+  const expired = await db
+    .select({ id: raffles.id })
+    .from(raffles)
+    .where(and(eq(raffles.status, "paused"), lte(raffles.pauseUntil, now)))
+
+  let unpaused = 0
+  for (const row of expired) {
+    const result = await unpauseRaffle(row.id)
+    if (result.success) unpaused++
   }
 
-  return contexts[pauseReason] ?? {
-    title: "Rifa Pausada",
-    description: "La rifa se encuentra en pausa temporalmente",
-  }
-}
-
-// ─── Process expired pauses ──────────────────────────────────
-
-export async function processPausedRaffles(): Promise<{
-  success: boolean
-  processed: number
-  reactivated: number
-  finished: number
-}> {
-  const pool = getPool()
-
-  const [expiredRaffles] = await pool.execute(
-    `SELECT id FROM raffles
-     WHERE status = 'paused'
-       AND pause_until IS NOT NULL
-       AND pause_until <= NOW()`,
-  )
-
-  const expired = expiredRaffles as { id: number }[]
-  if (expired.length === 0) {
-    return { success: true, processed: 0, reactivated: 0, finished: 0 }
-  }
-
-  let reactivated = 0
-  let finished = 0
-
-  for (const { id } of expired) {
-    const result = await unpauseRaffle(id)
-    if (result.success) {
-      if (result.newStatus === "active") reactivated++
-      else if (result.newStatus === "finished") finished++
-    }
-  }
-
-  return { success: true, processed: expired.length, reactivated, finished }
+  return { unpaused, finalized: 0 }
 }

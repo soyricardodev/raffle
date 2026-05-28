@@ -1,11 +1,17 @@
-# Repositories (fase Drizzle)
+# Repositories (libSQL + Drizzle)
 
-Capa de acceso a datos en migración desde `getPool().execute()` directo en servicios.
+Capa de acceso a datos. Los servicios en `app/src/server/*.service.ts` orquestan reglas de negocio; **no usan SQL crudo**.
 
-Orden previsto:
+| Repositorio | Responsabilidad |
+|-------------|-----------------|
+| `tickets.repository.ts` | Asignación sparse, liberación, estados reserved/sold |
+| `purchases.repository.ts` | CRUD compras, listados admin, unicidad `payment_reference` |
+| `raffles.repository.ts` | CRUD rifas, contadores, pausa |
+| `payment-methods.repository.ts` | Métodos por rifa |
+| `settings.repository.ts` | `app_settings` (ex site_config) |
+| `email-logs.repository.ts` | Auditoría de emails |
+| `analytics.repository.ts` | Agregados dashboard |
 
-1. `purchases.repository.ts` — compras y asignación de tickets
-2. `raffles.repository.ts` — rifas y disponibilidad
-3. `analytics.repository.ts` — agregados de reporting
+Schema: `packages/shared/src/db/sqlite/schema/`. Migraciones: `packages/shared/drizzle-sqlite/`.
 
-Ver [docs/DRIZZLE_LIBSQL_PHASE.md](../../../../docs/DRIZZLE_LIBSQL_PHASE.md).
+Cutover: [docs/LIBSQL_CUTOVER_RUNBOOK.md](../../../../docs/LIBSQL_CUTOVER_RUNBOOK.md).

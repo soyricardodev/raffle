@@ -8,10 +8,9 @@ export const Route = createFileRoute("/api/health/db")({
       GET: async () => {
         try {
           const db = getDb()
-          const result = await db.execute(sql`SELECT 1 as ok`)
-          const rows = result[0] as unknown as { ok: number }[]
+          const row = await db.get<{ ok: number }>(sql`SELECT 1 as ok`)
 
-          return Response.json({ ok: true, db: rows[0]?.ok === 1 })
+          return Response.json({ ok: true, db: row?.ok === 1 })
         } catch (error) {
           return Response.json(
             {

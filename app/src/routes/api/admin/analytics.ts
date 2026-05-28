@@ -9,14 +9,19 @@ export const Route = createFileRoute("/api/admin/analytics")({
         await requireAdmin(request)
         const url = new URL(request.url)
         const days = Number(url.searchParams.get("days") || 30)
+        const raffleIdParam = url.searchParams.get("raffleId")
+        const raffleId =
+          raffleIdParam && !Number.isNaN(Number(raffleIdParam))
+            ? Number(raffleIdParam)
+            : undefined
 
         const [snapshot, salesOverTime, topRaffles, revenueByMethod, statusDistribution] =
           await Promise.all([
-            getAnalyticsSnapshot(days),
-            getSalesOverTime(days),
-            getTopRaffles(5),
-            getRevenueByMethod(days),
-            getStatusDistribution(days),
+            getAnalyticsSnapshot(days, raffleId),
+            getSalesOverTime(days, raffleId),
+            getTopRaffles(5, raffleId),
+            getRevenueByMethod(days, raffleId),
+            getStatusDistribution(days, raffleId),
           ])
 
         return Response.json({

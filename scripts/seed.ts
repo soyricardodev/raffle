@@ -1,162 +1,271 @@
 /**
- * Seed script — data de ejemplo para desarrollo local.
+ * Seed libSQL — datos de desarrollo completos (sparse tickets).
  *
  * USO:
- *   DATABASE_URL=mysql://root:raffle_dev@localhost:3306/raffle_db bun run scripts/seed.ts
+ *   pnpm db:seed
+ *   SEED_FORCE=1 pnpm db:seed   # borra datos de negocio y re-seed
+ *
+ * Requiere migraciones aplicadas: pnpm db:migrate
  */
 
 import { randomUUID } from "node:crypto"
 import { hashPassword } from "better-auth/crypto"
-import mysql from "mysql2/promise"
-import bcrypt from "bcryptjs"
+import {
+  accounts,
+  appSettings,
+  paymentMethods,
+  prizes,
+  purchaseTickets,
+  purchases,
+  raffles,
+  users,
+} from "@raffle/shared/db"
+import { createScriptClient, createScriptDb } from "./lib/db"
 
-const DB_URL = process.env.DATABASE_URL ?? "mysql://root:raffle_dev@localhost:3306/raffle_db"
+const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@rifas.com"
+const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin"
+const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin123"
+const FORCE = process.env.SEED_FORCE === "1"
 
-async function main() {
-  const pool = mysql.createPool({ uri: DB_URL, connectionLimit: 1 })
+async function clearBusinessData(db: ReturnType<typeof createScriptDb>) {
+  await db.delete(purchaseTickets)
+  await db.delete(purchases)
+  await db.delete(paymentMethods)
+  await db.delete(prizes)
+  await db.delete(raffles)
+  await db.delete(appSettings)
+  await db.delete(accounts)
+  await db.delete(users)
+}
 
-  console.log("🌱 Seed: data de ejemplo para raffle-v2")
+async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
+  const userId = randomUUID()
+  const credentialHash = await hashPassword(ADMIN_PASSWORD)
 
-  // ─── Admin user (password: admin123) ───────────────────────
-  const hash = await bcrypt.hash("admin123", 10)
-  await pool.execute(
-    `INSERT IGNORE INTO users (username, email, password_hash, role)
-     VALUES (?, ?, ?, ?)`,
-    ["admin", "admin@rifas.com", hash, "super_admin"],
-  )
-  console.log("👤 admin / admin123 (super_admin)")
+  await db.insert(users).values({
+    id: userId,
+    username: ADMIN_USERNAME,
+    email: ADMIN_EMAIL,
+    emailVerified: true,
+    role: "super_admin",
+  })
 
-  const [adminRows] = await pool.execute<mysql.RowDataPacket[]>(
-    "SELECT id FROM users WHERE email = ? LIMIT 1",
-    ["admin@rifas.com"],
-  )
-  const adminId = adminRows[0]?.id as number | undefined
-  if (adminId) {
-    const credentialHash = await hashPassword("admin123")
-    const [accounts] = await pool.execute<mysql.RowDataPacket[]>(
-      "SELECT id FROM account WHERE user_id = ? AND provider_id = 'credential' LIMIT 1",
-      [adminId],
-    )
-    if (accounts.length > 0) {
-      await pool.execute(
-        `UPDATE account SET password = ?, account_id = ?, updated_at = NOW()
-         WHERE user_id = ? AND provider_id = 'credential'`,
-        [credentialHash, String(adminId), adminId],
-      )
-    } else {
-      await pool.execute(
-        `INSERT INTO account (id, user_id, account_id, provider_id, password, created_at, updated_at)
-         VALUES (?, ?, ?, 'credential', ?, NOW(), NOW())`,
-        [randomUUID(), adminId, String(adminId), credentialHash],
-      )
-    }
-    console.log("🔐 Better Auth credential account listo (admin123)")
+  await db.insert(accounts).values({
+    id: randomUUID(),
+    userId,
+    accountId: userId,
+    providerId: "credential",
+    password: credentialHash,
+  })
+
+  console.log(`👤 Admin: ${ADMIN_USERNAME} / ${ADMIN_PASSWORD} (${ADMIN_EMAIL})`)
+  return userId
+}
+
+async function seedAppSettings(db: ReturnType<typeof createScriptDb>) {
+  const settings = {
+    site_info: { site_name: "Rifas Premium", tagline: "¡Tu oportunidad de ganar!" },
+    site_colors: { primary: "#8B7355", secondary: "#F5F5DC", accent: "#FFD700" },
+    hero_config: {
+      title: "¡GANA",
+      subtitle: "AHORA!",
+      show_particles: true,
+      main_text: "¡GANA",
+      accent_text: "AHORA!",
+    },
+    social_media: {
+      whatsapp: "584121234567",
+      instagram: "@rifaspremium",
+      facebook: "rifaspremium",
+      tiktok: "@rifaspremium",
+    },
+    contact_info: {
+      phone: "0412-1234567",
+      email: "contacto@rifas.com",
+      address: "Caracas, Venezuela",
+    },
+    raffle_limits: { max_active: 3, max_finished_display: 10 },
+    payment_info: { default_methods: ["pago_movil", "zelle", "bs", "usd"] },
+    email_settings: {
+      enabled: false,
+      from_name: "Rifas Premium",
+      from_email: "noreply@rifas.com",
+      send_confirmation: false,
+    },
   }
 
-  // ─── Rifa activa ──────────────────────────────────────────
+  await db.insert(appSettings).values({
+    version: 1,
+    settings: JSON.stringify(settings),
+  })
+  console.log(`⚙️  app_settings: ${Object.keys(settings).length} claves`)
+}
+
+async function seedActiveRaffle(db: ReturnType<typeof createScriptDb>) {
   const drawDate = new Date()
   drawDate.setDate(drawDate.getDate() + 15)
+  const totalTickets = 1000
 
-  const [raffleResult] = await pool.execute(
-    `INSERT INTO raffles
-     (name, description, total_tickets, price_bs, price_usd,
-      min_purchase, max_purchase, draw_date, status, auto_pause_enabled)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-    [
-      "Combo Power 2026",
-      "¡Gana un increíble premio en nuestro sorteo especial!",
-      1000,
-      150.0,
-      1.0,
-      1,
-      10,
+  const [raffle] = await db
+    .insert(raffles)
+    .values({
+      name: "Combo Power 2026",
+      description: "¡Gana un increíble premio en nuestro sorteo especial!",
+      totalTickets,
+      priceBsCents: 15000,
+      priceUsdCents: 100,
+      minPurchase: 1,
+      maxPurchase: 10,
       drawDate,
-      "active",
-      true,
-    ],
-  )
-  const raffleId = (raffleResult as { insertId: number }).insertId
-  console.log(`🎯 Rifa activa: Combo Power 2026 (1000 tickets) [id=${raffleId}]`)
+      status: "active",
+      autoPauseEnabled: true,
+      publish: false,
+      ticketsAvailable: totalTickets,
+      ticketsReserved: 0,
+      ticketsSold: 0,
+    })
+    .returning({ id: raffles.id })
 
-  // ─── Premios ───────────────────────────────────────────────
-  const prizes = [
+  const raffleId = raffle!.id
+
+  const prizeRows = [
     ["Primer Premio - Automóvil 0km", "Chevrolet Spark modelo 2026"],
     ["Segundo Premio - Efectivo", "$500 dólares en efectivo"],
     ["Tercer Premio - TV 55\"", "Smart TV Samsung 4K"],
   ]
-
-  for (let i = 0; i < prizes.length; i++) {
-    await pool.execute(
-      "INSERT INTO prizes (raffle_id, name, description, position) VALUES (?, ?, ?, ?)",
-      [raffleId, prizes[i]![0], prizes[i]![1], i + 1],
-    )
+  for (let i = 0; i < prizeRows.length; i++) {
+    await db.insert(prizes).values({
+      raffleId,
+      name: prizeRows[i]![0]!,
+      description: prizeRows[i]![1]!,
+      position: i + 1,
+    })
   }
-  console.log(`🏆 ${prizes.length} premios creados`)
 
-  // ─── Métodos de pago ──────────────────────────────────────
   const methods = [
-    ["pago_movil", JSON.stringify({ phone: "04125051356", holder: "Cindy Vanessa Ortiz", cedula: "12345678", bank: "Banco de Venezuela" })],
-    ["zelle", JSON.stringify({ email: "cindy@email.com", holder: "Cindy Vanessa Ortiz" })],
-    ["bs", JSON.stringify({ account: "01020123456789012345", holder: "Cindy Vanessa Ortiz", bank: "Banco de Venezuela" })],
-    ["usd", JSON.stringify({ account: "01020123456789012346", holder: "Cindy Vanessa Ortiz", bank: "Banesco" })],
-  ]
+    ["pago_movil", { phone: "04125051356", holder: "Demo Admin", cedula: "12345678", bank: "BDV" }],
+    ["zelle", { email: "demo@rifas.com", holder: "Demo Admin" }],
+    ["bs", { account: "01020123456789012345", holder: "Demo Admin", bank: "BDV" }],
+    ["usd", { account: "01020123456789012346", holder: "Demo Admin", bank: "Banesco" }],
+  ] as const
 
   for (const [type, info] of methods) {
-    await pool.execute(
-      "INSERT INTO payment_methods (raffle_id, method_type, account_info) VALUES (?, ?, ?)",
-      [raffleId, type, info],
-    )
+    await db.insert(paymentMethods).values({
+      raffleId,
+      methodType: type,
+      accountInfo: JSON.stringify(info),
+      isActive: true,
+    })
   }
-  console.log(`💳 ${methods.length} métodos de pago creados`)
 
-  // ─── Site config básico ────────────────────────────────────
-  const configs = [
-    ["site_info", { site_name: "Rifas Premium", tagline: "¡Tu oportunidad de ganar!" }],
-    ["site_colors", { primary: "#8B7355", secondary: "#F5F5DC", accent: "#FFD700" }],
-    [
-      "hero_config",
-      {
-        title: "¡GANA",
-        subtitle: "AHORA!",
-        show_particles: true,
-        main_text: "¡GANA",
-        accent_text: "AHORA!",
-      },
-    ],
-    ["social_media", { whatsapp: "", instagram: "", facebook: "", tiktok: "" }],
-    ["contact_info", { phone: "", email: "", address: "" }],
-    ["raffle_limits", { max_active: 3, max_finished_display: 10 }],
-    ["payment_info", { default_methods: ["pago_movil", "zelle", "bs", "usd"] }],
-    ["email_settings", { enabled: false, from_name: "Rifas Premium", from_email: "", send_confirmation: false }],
-  ]
+  console.log(`🎯 Rifa activa id=${raffleId} (${totalTickets} disponibles, sparse)`)
+  return raffleId
+}
 
-  for (const [key, value] of configs) {
-    await pool.execute(
-      "INSERT IGNORE INTO site_config (config_key, config_value, description) VALUES (?, ?, ?)",
-      [key, JSON.stringify(value), `Config: ${key}`],
-    )
+async function seedFinishedRaffle(db: ReturnType<typeof createScriptDb>) {
+  const totalTickets = 100
+
+  const [raffle] = await db
+    .insert(raffles)
+    .values({
+      name: "Sorteo Pasado Demo",
+      description: "Rifa finalizada para probar listado publicado",
+      totalTickets,
+      priceBsCents: 5000,
+      priceUsdCents: 50,
+      minPurchase: 1,
+      maxPurchase: 5,
+      drawDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+      status: "finished",
+      autoPauseEnabled: false,
+      publish: true,
+      ticketsAvailable: totalTickets - 3,
+      ticketsReserved: 0,
+      ticketsSold: 3,
+    })
+    .returning({ id: raffles.id })
+
+  const raffleId = raffle!.id
+
+  const [purchase] = await db
+    .insert(purchases)
+    .values({
+      publicId: randomUUID(),
+      raffleId,
+      customerName: "Comprador Demo",
+      customerPhone: "04141234567",
+      customerPhoneNormalized: "04141234567",
+      customerEmail: "comprador@example.com",
+      paymentMethod: "pago_movil",
+      paymentReference: "REF-DEMO-001",
+      ticketQuantity: 3,
+      totalAmountCents: 15000,
+      currency: "VES",
+      status: "approved",
+    })
+    .returning({ id: purchases.id })
+
+  for (const n of [1, 42, 99]) {
+    await db.insert(purchaseTickets).values({
+      raffleId,
+      purchaseId: purchase!.id,
+      ticketNumber: n,
+      status: "sold",
+    })
   }
-  console.log(`⚙️  ${configs.length} configs de sitio creadas`)
 
-  // ─── Generar pool de tickets para la rifa (lite — batch) ──
-  const totalTickets = 1000
-  console.log(`🎫 Generando ${totalTickets} tickets (0000-0999)...`)
+  console.log(`🏁 Rifa finalizada publicada id=${raffleId} (3 tickets sold de muestra)`)
+}
 
-  const batchSize = 500
-  for (let i = 0; i < totalTickets; i += batchSize) {
-    const batch: (string | number)[][] = []
-    for (let j = i; j < Math.min(i + batchSize, totalTickets); j++) {
-      batch.push([raffleId, String(j).padStart(4, "0"), "available"])
+async function validateCounters(db: ReturnType<typeof createScriptDb>) {
+  const rows = await db
+    .select({
+      id: raffles.id,
+      total: raffles.totalTickets,
+      available: raffles.ticketsAvailable,
+      reserved: raffles.ticketsReserved,
+      sold: raffles.ticketsSold,
+    })
+    .from(raffles)
+
+  for (const r of rows) {
+    const sum = r.available + r.reserved + r.sold
+    if (sum !== r.total) {
+      throw new Error(`Contadores incoherentes rifa ${r.id}: ${sum} !== ${r.total}`)
     }
-    const placeholders = batch.map(() => "(?, ?, ?)").join(", ")
-    const values = batch.flat()
-    await pool.execute(
-      `INSERT INTO tickets (raffle_id, ticket_number, status) VALUES ${placeholders}`,
-      values,
-    )
   }
-  console.log("✅ Seed completo. Datos listos para desarrollo.")
-  await pool.end()
+}
+
+async function main() {
+  const { resolveDatabaseUrl } = await import("./lib/db")
+  const url = resolveDatabaseUrl()
+  console.log(`🌱 Seed libSQL → ${url}`)
+
+  const client = createScriptClient(url)
+  await client.execute("PRAGMA journal_mode = WAL")
+  await client.execute("PRAGMA busy_timeout = 10000")
+  await client.close()
+
+  const db = createScriptDb(url)
+
+  const existing = await db.select({ id: users.id }).from(users).limit(1)
+  if (existing.length > 0 && !FORCE) {
+    console.log("ℹ️  BD ya tiene datos. Usa SEED_FORCE=1 para resetear y volver a sembrar.")
+    return
+  }
+
+  if (FORCE) {
+    console.log("🧹 SEED_FORCE: limpiando datos…")
+    await clearBusinessData(db)
+  }
+
+  await seedAdmin(db)
+  await seedAppSettings(db)
+  await seedActiveRaffle(db)
+  await seedFinishedRaffle(db)
+  await validateCounters(db)
+
+  console.log("✅ Seed completo. Sparse model — no hay filas available en purchase_tickets.")
 }
 
 main().catch((err) => {

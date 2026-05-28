@@ -1,4 +1,16 @@
+import { resolveLibsqlDatabaseUrl } from "@raffle/shared/db"
 import { z } from "zod"
+
+function normalizeDatabaseEnv(
+  input: Record<string, string | undefined>,
+): Record<string, string | undefined> {
+  const next = { ...input }
+  const nodeEnv = next.NODE_ENV ?? "development"
+  if (next.DATABASE_URL || nodeEnv !== "production") {
+    next.DATABASE_URL = resolveLibsqlDatabaseUrl(next.DATABASE_URL)
+  }
+  return next
+}
 
 const envSchema = z
   .object({
@@ -39,7 +51,7 @@ let cached: ServerEnv | undefined
 /** Validated server env — fail fast on boot. Server-only. */
 export function getEnv(): ServerEnv {
   if (!cached) {
-    cached = parseEnv(process.env as Record<string, string | undefined>)
+    cached = parseEnv(normalizeDatabaseEnv(process.env as Record<string, string | undefined>))
   }
   return cached
 }
@@ -51,11 +63,13 @@ export function resetEnvCache(): void {
 
 /** Use when opening a DB connection — fails if DATABASE_URL is missing. */
 export function requireDatabaseUrl(): string {
-  const url = getEnv().DATABASE_URL
-  if (!url) {
-    throw new Error("DATABASE_URL is not configured. Set it in .env when connecting to MySQL.")
+  const raw = process.env.DATABASE_URL ?? getEnv().DATABASE_URL
+  if (!raw && (process.env.NODE_ENV ?? "development") === "production") {
+    throw new Error(
+      "DATABASE_URL is not configured. Use file:…/packages/shared/data/raffle.db or libsql://… (Turso).",
+    )
   }
-  return url
+  return resolveLibsqlDatabaseUrl(raw)
 }
 
 export { envSchema, parseEnv }

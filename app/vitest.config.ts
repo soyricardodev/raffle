@@ -6,5 +6,11 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    /** Tests de BD comparten un archivo SQLite local — no paralelizar archivos. */
+    fileParallelism: false,
+    pool: "forks",
+    poolOptions: {
+      forks: { singleFork: true },
+    },
   },
 })

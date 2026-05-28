@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { getAllRaffles, createRaffle } from "@/server/raffle.service"
 import { requireAdmin } from "@/lib/auth-utils.server"
+import { CreateRaffleInput } from "@raffle/shared/validators"
+import { ValidationError } from "@raffle/shared/errors"
 
 export const Route = createFileRoute("/api/admin/raffles/")({
   server: {
@@ -15,8 +17,11 @@ export const Route = createFileRoute("/api/admin/raffles/")({
       },
       POST: async ({ request }) => {
         await requireAdmin(request)
-        const body = await request.json()
-        return Response.json(await createRaffle(body), { status: 201 })
+        const parsed = CreateRaffleInput.safeParse(await request.json())
+        if (!parsed.success) {
+          throw new ValidationError("Datos de rifa inválidos", parsed.error.flatten().fieldErrors)
+        }
+        return Response.json(await createRaffle(parsed.data), { status: 201 })
       },
     },
   },

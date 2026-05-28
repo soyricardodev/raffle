@@ -1,6 +1,7 @@
 {
   "name": "raffle",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "pnpm --filter app dev",
     "build": "pnpm --filter app build",
@@ -8,15 +9,21 @@
     "test:e2e": "pnpm --filter app test:e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
-    "typecheck": "pnpm --filter app typecheck && pnpm --filter @raffle/shared typecheck"
+    "typecheck": "pnpm --filter app typecheck && pnpm --filter @raffle/shared typecheck",
+    "db:migrate": "pnpm --filter @raffle/shared db:migrate",
+    "db:generate": "pnpm --filter @raffle/shared db:generate",
+    "db:studio": "pnpm --filter @raffle/shared db:studio",
+    "db:seed": "pnpm db:migrate && bun run scripts/seed.ts",
+    "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
-    "@types/bcryptjs": "^3.0.0"
+    "@libsql/client": "^0.15.15",
+    "@raffle/shared": "workspace:*",
+    "better-auth": "^1.6.11",
+    "drizzle-orm": "^0.45.2",
+    "mysql2": "^3.22.3",
+    "typescript": "^5.9.3"
   },
-  "packageManager": "pnpm@10.12.1",
-  "dependencies": {
-    "bcryptjs": "^3.0.3",
-    "mysql2": "^3.22.3"
-  }
+  "packageManager": "pnpm@10.12.1"
 }

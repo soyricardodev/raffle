@@ -1,65 +1,73 @@
 import { randomUUID } from "node:crypto"
+import { createClient } from "@libsql/client"
 import { hashPassword } from "better-auth/crypto"
-import mysql from "mysql2/promise"
+import { desc, eq } from "drizzle-orm"
+import { drizzle } from "drizzle-orm/libsql"
+import { accounts, raffles, schema, users } from "@raffle/shared/db"
 import { e2eEnv } from "./env"
 
-export async function withPool<T>(fn: (pool: mysql.Pool) => Promise<T>): Promise<T> {
+function createE2eDb() {
   if (!e2eEnv.databaseUrl) {
-    throw new Error("DATABASE_URL is required for database helpers")
+    throw new Error("DATABASE_URL is required for database helpers (file:… or libsql://…)")
   }
-  const pool = mysql.createPool({ uri: e2eEnv.databaseUrl, connectionLimit: 2 })
-  try {
-    return await fn(pool)
-  } finally {
-    await pool.end()
-  }
+  const client = createClient({
+    url: e2eEnv.databaseUrl,
+    authToken: process.env.DATABASE_AUTH_TOKEN,
+  })
+  return drizzle(client, { schema })
 }
 
 /** Removes credential rows so Better Auth sign-up/sign-in can recreate them. */
 export async function resetAdminCredentialAccount(): Promise<void> {
-  await withPool(async (pool) => {
-    await pool.execute(
-      `DELETE FROM account WHERE user_id IN (SELECT id FROM users WHERE email = ?)`,
-      [e2eEnv.adminEmail],
-    )
-  })
+  const db = createE2eDb()
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, e2eEnv.adminEmail))
+    .limit(1)
+
+  if (!user) return
+
+  await db.delete(accounts).where(eq(accounts.userId, user.id))
 }
 
 /** Ensures Better Auth credential account exists for seed admin user. */
 export async function ensureAdminCredentialAccount(): Promise<void> {
-  await withPool(async (pool) => {
-    const [users] = await pool.execute<mysql.RowDataPacket[]>(
-      "SELECT id, email FROM users WHERE email = ? LIMIT 1",
-      [e2eEnv.adminEmail],
+  const db = createE2eDb()
+  const [user] = await db
+    .select({ id: users.id })
+    .from(users)
+    .where(eq(users.email, e2eEnv.adminEmail))
+    .limit(1)
+
+  if (!user) {
+    throw new Error(
+      `No admin user for ${e2eEnv.adminEmail}. Run pnpm db:seed with DATABASE_URL=${e2eEnv.databaseUrl}.`,
     )
-    const user = users[0]
-    if (!user) {
-      throw new Error(
-        `No admin user for ${e2eEnv.adminEmail}. Run scripts/seed.ts against DATABASE_URL.`,
-      )
-    }
+  }
 
-    const [accounts] = await pool.execute<mysql.RowDataPacket[]>(
-      `SELECT id FROM account WHERE user_id = ? AND provider_id = 'credential' LIMIT 1`,
-      [user.id],
-    )
+  const [existing] = await db
+    .select({ id: accounts.id })
+    .from(accounts)
+    .where(eq(accounts.userId, user.id))
+    .limit(1)
 
-    const hash = await hashPassword(e2eEnv.adminPassword)
+  const hash = await hashPassword(e2eEnv.adminPassword)
 
-    if (accounts.length > 0) {
-      await pool.execute(
-        `UPDATE account SET password = ?, account_id = ?, updated_at = NOW()
-         WHERE user_id = ? AND provider_id = 'credential'`,
-        [hash, String(user.id), user.id],
-      )
-      return
-    }
+  if (existing) {
+    await db
+      .update(accounts)
+      .set({ password: hash, accountId: user.id, updatedAt: new Date() })
+      .where(eq(accounts.userId, user.id))
+    return
+  }
 
-    await pool.execute(
-      `INSERT INTO account (id, user_id, account_id, provider_id, password, created_at, updated_at)
-       VALUES (?, ?, ?, 'credential', ?, NOW(), NOW())`,
-      [randomUUID(), user.id, String(user.id), hash],
-    )
+  await db.insert(accounts).values({
+    id: randomUUID(),
+    userId: user.id,
+    accountId: user.id,
+    providerId: "credential",
+    password: hash,
   })
 }
 
@@ -69,12 +77,14 @@ export type ActiveRaffle = {
 }
 
 export async function getFirstActiveRaffle(): Promise<ActiveRaffle | null> {
-  return withPool(async (pool) => {
-    const [rows] = await pool.execute<mysql.RowDataPacket[]>(
-      `SELECT id, name FROM raffles WHERE status = 'active' ORDER BY id DESC LIMIT 1`,
-    )
-    const row = rows[0]
-    if (!row) return null
-    return { id: Number(row.id), name: String(row.name) }
-  })
+  const db = createE2eDb()
+  const [row] = await db
+    .select({ id: raffles.id, name: raffles.name })
+    .from(raffles)
+    .where(eq(raffles.status, "active"))
+    .orderBy(desc(raffles.id))
+    .limit(1)
+
+  if (!row) return null
+  return { id: row.id, name: row.name }
 }

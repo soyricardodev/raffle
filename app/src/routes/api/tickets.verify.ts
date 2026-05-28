@@ -1,6 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getPool } from "@/lib/db.server"
+import { getDb } from "@/lib/db.server"
 import { rateLimit } from "@/lib/rate-limit"
+import { normalizePhone, purchaseTickets, purchases, raffles, ticketNumberToInt } from "@raffle/shared/db"
+import { and, eq, inArray, or, sql } from "drizzle-orm"
 
 export const Route = createFileRoute("/api/tickets/verify")({
   server: {
@@ -8,39 +10,83 @@ export const Route = createFileRoute("/api/tickets/verify")({
       POST: async ({ request }) => {
         await rateLimit(request, { windowMs: 30_000, maxRequests: 10, keyPrefix: "verify" })
 
-        const body = await request.json() as { phone?: string; ticketNumber?: string; cedula?: string; email?: string }
-        const pool = getPool()
-
-        const conditions: string[] = []
-        const values: (string | number)[] = []
-
-        if (body.phone?.trim()) { conditions.push("p.customer_phone = ?"); values.push(body.phone.trim()) }
-        if (body.ticketNumber?.trim()) { conditions.push("t.ticket_number = ?"); values.push(body.ticketNumber.trim()) }
-        if (body.cedula?.trim()) {
-          const normalized = body.cedula.trim().replace(/[\s\-\.VEve]/g, "")
-          conditions.push("(REPLACE(REPLACE(REPLACE(UPPER(p.customer_ci), 'V', ''), 'E', ''), '-', '') = ? OR p.customer_ci = ?)")
-          values.push(normalized, body.cedula.trim())
+        const body = (await request.json()) as {
+          phone?: string
+          ticketNumber?: string
+          cedula?: string
+          email?: string
         }
-        if (body.email?.trim()) { conditions.push("LOWER(p.customer_email) = LOWER(?)"); values.push(body.email.trim()) }
+
+        const conditions = []
+        if (body.phone?.trim()) {
+          conditions.push(eq(purchases.customerPhoneNormalized, normalizePhone(body.phone.trim())))
+        }
+        if (body.ticketNumber?.trim()) {
+          conditions.push(eq(purchaseTickets.ticketNumber, ticketNumberToInt(body.ticketNumber.trim())))
+        }
+        if (body.cedula?.trim()) {
+          const normalized = body.cedula.trim().replace(/[\s\-.VEve]/g, "").toUpperCase()
+          conditions.push(
+            or(
+              sql`replace(replace(replace(upper(${purchases.customerCi}), 'V', ''), 'E', ''), '-', '') = ${normalized}`,
+              eq(purchases.customerCi, body.cedula.trim()),
+            )!,
+          )
+        }
+        if (body.email?.trim()) {
+          conditions.push(sql`lower(${purchases.customerEmail}) = lower(${body.email.trim()})`)
+        }
 
         if (conditions.length === 0) {
-          return Response.json({ error: "Debe proporcionar al menos un criterio de búsqueda" }, { status: 400 })
+          return Response.json(
+            { error: "Debe proporcionar al menos un criterio de búsqueda" },
+            { status: 400 },
+          )
         }
 
-        const [rows] = await pool.execute(
-          `SELECT t.*, r.name as raffle_name, r.draw_date, p.customer_name, p.customer_phone,
-                  p.customer_email, p.customer_ci as customer_cedula, p.status as purchase_status
-           FROM tickets t
-           JOIN raffles r ON t.raffle_id = r.id
-           LEFT JOIN purchases p ON t.purchase_id = p.id
-           WHERE (${conditions.join(" OR ")})
-           AND t.status IN ('sold', 'reserved')
-           AND r.status IN ('active', 'paused')
-           ORDER BY CAST(t.ticket_number AS UNSIGNED), r.name`,
-          values,
-        )
+        const db = getDb()
+        const rows = await db
+          .select({
+            ticket_number: purchaseTickets.ticketNumber,
+            status: purchaseTickets.status,
+            raffle_id: purchaseTickets.raffleId,
+            purchase_id: purchaseTickets.purchaseId,
+            raffle_name: raffles.name,
+            draw_date: raffles.drawDate,
+            customer_name: purchases.customerName,
+            customer_phone: purchases.customerPhone,
+            customer_email: purchases.customerEmail,
+            customer_cedula: purchases.customerCi,
+            purchase_status: purchases.status,
+            raffle_status: raffles.status,
+          })
+          .from(purchaseTickets)
+          .innerJoin(raffles, eq(purchaseTickets.raffleId, raffles.id))
+          .leftJoin(purchases, eq(purchaseTickets.purchaseId, purchases.id))
+          .where(
+            and(
+              or(...conditions)!,
+              inArray(purchaseTickets.status, ["sold", "reserved"]),
+              inArray(raffles.status, ["active", "paused"]),
+            ),
+          )
+          .orderBy(purchaseTickets.ticketNumber, raffles.name)
 
-        return Response.json(rows)
+        const mapped = rows.map((r) => ({
+          ticket_number: String(r.ticket_number).padStart(4, "0"),
+          status: r.status,
+          raffle_id: r.raffle_id,
+          purchase_id: r.purchase_id,
+          raffle_name: r.raffle_name,
+          draw_date: r.draw_date,
+          customer_name: r.customer_name,
+          customer_phone: r.customer_phone,
+          customer_email: r.customer_email,
+          customer_cedula: r.customer_cedula,
+          purchase_status: r.purchase_status,
+        }))
+
+        return Response.json(mapped)
       },
     },
   },

@@ -1,30 +1,44 @@
 import { schema } from "@raffle/shared/db"
-import { drizzle, type MySql2Database } from "drizzle-orm/mysql2"
-import mysql from "mysql2/promise"
+import { ConcurrentPurchaseError } from "@raffle/shared/errors"
+import { createClient, type Client } from "@libsql/client"
+import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql"
 import { getEnv, requireDatabaseUrl } from "./env"
 import { getLogger } from "./logger"
 
-type DrizzleDB = MySql2Database<typeof schema> & { $client: mysql.Pool }
+function isRetryableTransactionError(err: unknown): boolean {
+  if (err instanceof ConcurrentPurchaseError) return true
+  const code =
+    err && typeof err === "object" && "code" in err ? String((err as { code: unknown }).code) : ""
+  if (code === "CONCURRENT_PURCHASE") return true
+  const msg = String(err instanceof Error ? err.message : err).toLowerCase()
+  return msg.includes("busy") || msg.includes("locked") || msg.includes("sqlite_busy")
+}
 
+export type DrizzleDB = LibSQLDatabase<typeof schema>
+
+let _client: Client | undefined
 let _db: DrizzleDB | undefined
-let _pool: mysql.Pool | undefined
+
+function createLibsqlClient(url: string, authToken?: string): Client {
+  if (url.startsWith("file:") || url.endsWith(".db")) {
+    const fileUrl = url.startsWith("file:") ? url : `file:${url}`
+    return createClient({ url: fileUrl })
+  }
+  return createClient({
+    url,
+    authToken: authToken ?? undefined,
+  })
+}
 
 export function getDb(): DrizzleDB {
   if (!_db) {
     const url = requireDatabaseUrl()
     const env = getEnv()
-
-    _pool = mysql.createPool({
-      uri: url,
-      connectionLimit: 10,
-      waitForConnections: true,
-      queueLimit: 0,
-      charset: "utf8mb4",
-    })
-
-    _db = drizzle(_pool, {
+    _client = createLibsqlClient(url, process.env.DATABASE_AUTH_TOKEN)
+    void _client.execute("PRAGMA journal_mode = WAL").catch(() => undefined)
+    void _client.execute("PRAGMA busy_timeout = 10000").catch(() => undefined)
+    _db = drizzle(_client, {
       schema,
-      mode: "default",
       logger:
         env.LOG_LEVEL === "debug"
           ? {
@@ -33,22 +47,55 @@ export function getDb(): DrizzleDB {
               },
             }
           : undefined,
-    }) as DrizzleDB
-
-    getLogger().info("db:connected")
+    })
+    getLogger().info({ url: url.startsWith("file:") ? url : "remote" }, "db:connected")
   }
   return _db
 }
 
-/** Pool raw para operaciones que necesitan transacciones manuales (FOR UPDATE, etc.) */
-export function getPool(): mysql.Pool {
-  getDb() // ensure initialized
-  return _pool!
+/** @deprecated Usar getDb() y transacciones Drizzle. Mantenido temporalmente para tests en migración. */
+export function getPool(): never {
+  throw new Error("getPool() fue eliminado. Usa getDb() con repositorios Drizzle (libSQL).")
 }
 
-/** Acceso directo para scripts y tests. Preferir getDb() en server functions. */
+/** Acceso directo para scripts y tests. */
 export const db = new Proxy({} as DrizzleDB, {
   get(_target, prop) {
     return (getDb() as never)[prop]
   },
 })
+
+export type DbTransaction = Parameters<Parameters<DrizzleDB["transaction"]>[0]>[0]
+
+/** Transacción SQLite con lock inmediato (compras / asignación de tickets). */
+export async function withImmediateTransaction<T>(
+  fn: (tx: DbTransaction) => Promise<T>,
+): Promise<T> {
+  return getDb().transaction(fn, { behavior: "immediate" })
+}
+
+/** Reintenta transacciones ante busy/conflict de SQLite. */
+/** Solo tests: reinicia el singleton entre archivos/suites. */
+export function resetDbForTests(): void {
+  _db = undefined
+  _client = undefined
+}
+
+export async function withRetryTransaction<T>(
+  fn: (tx: DbTransaction) => Promise<T>,
+  maxAttempts = 5,
+): Promise<T> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return await withImmediateTransaction(fn)
+    } catch (err) {
+      lastError = err
+      if (!isRetryableTransactionError(err)) {
+        throw err
+      }
+      await new Promise((r) => setTimeout(r, 15 * (attempt + 1)))
+    }
+  }
+  throw lastError
+}

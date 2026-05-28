@@ -4,7 +4,7 @@ import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { getDb } from "./db.server"
 import { getEnv } from "./env"
 
-/** Better Auth model names (singular) → Drizzle exports (legacy table names). */
+/** Better Auth model names (singular) → Drizzle exports. */
 const authSchema = {
   ...dbSchema,
   user: dbSchema.users,
@@ -33,7 +33,7 @@ export function getAuth() {
     _auth = betterAuth({
       baseURL: env.BETTER_AUTH_URL,
       database: drizzleAdapter(getDb(), {
-        provider: "mysql",
+        provider: "sqlite",
         schema: authSchema,
       }),
       user: {

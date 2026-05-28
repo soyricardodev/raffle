@@ -1,28 +1,25 @@
-import { getPool } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
+import { withRetryTransaction } from "@/lib/db.server"
 import {
   RaffleNotFoundError,
   RaffleNotActiveError,
   RafflePausedError,
   RaffleFinishedError,
   InsufficientTicketsError,
-  PaymentReferenceDuplicateError,
   PurchaseNotFoundError,
   PurchaseNoTicketsError,
   PurchaseRejectedImmutableError,
   InvalidQuantityError,
-  ConcurrentPurchaseError,
+  ValidationError,
 } from "@raffle/shared/errors"
-import {
-  isDollarMethod,
-  type PaymentMethod,
-  type PurchaseStatus,
-} from "@raffle/shared/validators"
+import { type PaymentMethod, type PurchaseStatus } from "@raffle/shared/validators"
 import * as pauseService from "./pause.service"
+import * as purchasesRepo from "./repositories/purchases.repository"
+import * as rafflesRepo from "./repositories/raffles.repository"
+import * as ticketsRepo from "./repositories/tickets.repository"
+import * as paymentMethodsRepo from "./repositories/payment-methods.repository"
 
 const logger = getLogger()
-
-// ─── Create ──────────────────────────────────────────────────
 
 export interface CreatePurchaseParams {
   raffleId: number
@@ -38,734 +35,341 @@ export interface CreatePurchaseParams {
 }
 
 export async function createPurchase(params: CreatePurchaseParams) {
-  const {
-    raffleId,
-    customerName,
-    customerPhone,
-    customerEmail,
-    customerCi,
-    customerLocation,
-    paymentMethod,
-    paymentReference,
-    ticketQuantity,
-    paymentProofUrl,
-  } = params
-
-  const pool = getPool()
-  const conn = await pool.getConnection()
-
-  try {
-    await conn.beginTransaction()
-
-    // 1. Lock raffle row and validate
-    const [raffleRows] = await conn.execute(
-      `SELECT id, name, status, price_bs, price_usd, min_purchase, max_purchase,
-              draw_date, pause_until, auto_pause_enabled
-       FROM raffles WHERE id = ? FOR UPDATE`,
-      [raffleId],
-    )
-
-    const raffleRow = (raffleRows as Record<string, unknown>[])[0]
-    if (!raffleRow) {
-      await conn.rollback()
-      throw new RaffleNotFoundError(raffleId)
-    }
-
-    const raffle = {
-      id: Number(raffleRow.id),
-      status: raffleRow.status as string,
-      priceBs: Number(raffleRow.price_bs),
-      priceUsd: Number(raffleRow.price_usd),
-      minPurchase: Number(raffleRow.min_purchase) || 1,
-      maxPurchase: Number(raffleRow.max_purchase) || 10,
-      drawDate: raffleRow.draw_date as string | null,
-      autoPauseEnabled: Boolean(raffleRow.auto_pause_enabled),
-    }
+  const result = await withRetryTransaction(async (tx) => {
+    const raffle = await rafflesRepo.findRaffleForUpdate(tx, params.raffleId)
+    if (!raffle) throw new RaffleNotFoundError(params.raffleId)
 
     if (raffle.status === "finished" || raffle.status === "cancelled") {
-      await conn.rollback()
-      throw new RaffleFinishedError(raffleId)
+      throw new RaffleFinishedError(params.raffleId)
     }
 
     if (raffle.status === "paused") {
-      const info = await pauseService.getPauseInfo(raffleId)
-      await conn.rollback()
-      throw new RafflePausedError(raffleId, info ?? undefined)
+      const info = await pauseService.getPauseInfo(params.raffleId)
+      throw new RafflePausedError(params.raffleId, info ?? undefined)
     }
 
-    if (raffle.drawDate && new Date(raffle.drawDate) <= new Date()) {
-      await conn.rollback()
-      throw new RaffleFinishedError(raffleId)
+    if (raffle.drawDate && raffle.drawDate <= new Date()) {
+      throw new RaffleFinishedError(params.raffleId)
     }
 
     if (raffle.status !== "active") {
-      await conn.rollback()
-      throw new RaffleNotActiveError(raffleId, raffle.status)
+      throw new RaffleNotActiveError(params.raffleId, raffle.status)
     }
 
-    // 2. Validate purchase limits
-    if (ticketQuantity < raffle.minPurchase || ticketQuantity > raffle.maxPurchase) {
-      await conn.rollback()
-      throw new InvalidQuantityError(raffle.minPurchase, raffle.maxPurchase, ticketQuantity)
+    if (params.ticketQuantity < raffle.minPurchase || params.ticketQuantity > raffle.maxPurchase) {
+      throw new InvalidQuantityError(raffle.minPurchase, raffle.maxPurchase, params.ticketQuantity)
     }
 
-    // 3. Check duplicate payment reference
-    if (paymentReference?.trim()) {
-      const [refRows] = await conn.execute(
-        "SELECT id FROM purchases WHERE payment_reference = ? AND raffle_id = ?",
-        [paymentReference.trim(), raffleId],
+    const payMethod = await paymentMethodsRepo.findActivePaymentMethodForRaffle(
+      tx,
+      params.raffleId,
+      params.paymentMethod,
+    )
+    if (!payMethod) {
+      throw new ValidationError("El método de pago seleccionado no está disponible para esta rifa")
+    }
+    if (payMethod.min_tickets != null && params.ticketQuantity < payMethod.min_tickets) {
+      throw new ValidationError(
+        `Para pagar con este método necesitas comprar al menos ${payMethod.min_tickets} boletos`,
       )
-      if ((refRows as unknown[]).length > 0) {
-        await conn.rollback()
-        throw new PaymentReferenceDuplicateError(paymentReference.trim(), raffleId)
-      }
     }
 
-    // 4. Check availability + select random tickets
-    const [countResult] = await conn.execute(
-      `SELECT COUNT(*) as available FROM tickets
-       WHERE raffle_id = ? AND status = 'available' FOR UPDATE`,
-      [raffleId],
+    await purchasesRepo.assertUniquePaymentReference(
+      tx,
+      params.raffleId,
+      params.paymentReference,
     )
 
-    const available = Number((countResult as [{ available: number }])[0]!.available)
-
-    if (available < raffle.minPurchase && raffle.autoPauseEnabled) {
-      await conn.rollback()
-      throw new InsufficientTicketsError(available, ticketQuantity)
+    if (
+      raffle.ticketsAvailable < raffle.minPurchase &&
+      raffle.autoPauseEnabled
+    ) {
+      throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)
     }
 
-    if (available < ticketQuantity) {
-      await conn.rollback()
-      throw new InsufficientTicketsError(available, ticketQuantity)
+    if (raffle.ticketsAvailable < params.ticketQuantity) {
+      throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)
     }
 
-    // 5. Select random tickets within transaction
-    // ticketQuantity is validated (int, 1..maxPurchase)
-    const [ticketRows] = await conn.execute(
-      `SELECT ticket_number FROM tickets
-       WHERE raffle_id = ? AND status = 'available'
-       ORDER BY RAND()
-       LIMIT ${ticketQuantity} FOR UPDATE`,
-      [raffleId],
-    )
+    const pricePerTicket = purchasesRepo.pricePerTicketCents(params.paymentMethod, raffle)
+    const totalAmountCents = pricePerTicket * params.ticketQuantity
 
-    const ticketNumbers = (ticketRows as { ticket_number: string }[]).map((t) => t.ticket_number)
+    const purchaseId = await purchasesRepo.insertPurchase(tx, {
+      raffleId: params.raffleId,
+      customerName: params.customerName,
+      customerPhone: params.customerPhone,
+      customerEmail: params.customerEmail,
+      customerCi: params.customerCi,
+      customerLocation: params.customerLocation,
+      paymentMethod: params.paymentMethod,
+      paymentReference: params.paymentReference,
+      paymentProofUrl: params.paymentProofUrl,
+      ticketQuantity: params.ticketQuantity,
+      totalAmountCents,
+      currency: purchasesRepo.purchaseCurrency(params.paymentMethod),
+    })
 
-    if (ticketNumbers.length < ticketQuantity) {
-      await conn.rollback()
-      throw new InsufficientTicketsError(ticketNumbers.length, ticketQuantity)
-    }
-
-    // 6. Calculate amount
-    const pricePerTicket = isDollarMethod(paymentMethod) ? raffle.priceUsd : raffle.priceBs
-    const totalAmount = pricePerTicket * ticketQuantity
-
-    // 7. Insert purchase
-    const [insertResult] = await conn.execute(
-      `INSERT INTO purchases
-       (raffle_id, customer_name, customer_phone, customer_email, customer_ci,
-        customer_location, payment_method, payment_reference, payment_proof_url,
-        ticket_quantity, total_amount, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
-      [
-        raffleId,
-        customerName.substring(0, 200),
-        customerPhone.substring(0, 20),
-        (customerEmail ?? "").substring(0, 100),
-        (customerCi ?? "").substring(0, 20),
-        customerLocation?.substring(0, 100) ?? null,
-        paymentMethod,
-        paymentReference.substring(0, 100),
-        paymentProofUrl ?? null,
-        ticketQuantity,
-        totalAmount,
-      ],
-    )
-
-    const purchaseId = (insertResult as { insertId: number }).insertId
-
-    // 8. Assign tickets
-    const placeholders = ticketNumbers.map(() => "?").join(", ")
-    const [updateResult] = await conn.execute(
-      `UPDATE tickets
-       SET status = 'reserved', purchase_id = ?
-       WHERE raffle_id = ?
-         AND ticket_number IN (${placeholders})
-         AND status = 'available'`,
-      [purchaseId, raffleId, ...ticketNumbers],
-    )
-
-    if ((updateResult as { affectedRows: number }).affectedRows !== ticketNumbers.length) {
-      await conn.rollback()
-      throw new ConcurrentPurchaseError()
-    }
-
-    await conn.commit()
-
-    logger.info({ purchaseId, raffleId, ticketQuantity, paymentMethod }, "purchase:created")
-
-    // Post-commit: auto-pause si aplica (async, no bloquea respuesta)
-    void (async () => {
-      try {
-        const autoCheck = await pauseService.checkAutoPause(raffleId)
-        if (autoCheck.needsPause && autoCheck.pauseType) {
-          await pauseService.pauseRaffle(raffleId, autoCheck.pauseType)
-        }
-      } catch (err) {
-        logger.error({ raffleId, err }, "purchase:auto_pause_failed")
-      }
-    })()
-
-    return {
+    const ticketNumbers = await ticketsRepo.allocateTicketsToPurchase(tx, {
+      raffleId: params.raffleId,
       purchaseId,
-      ticketNumbers: ticketNumbers.sort((a, b) => String(a).localeCompare(String(b))),
-      totalAmount,
-    }
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
-  }
-}
+      quantity: params.ticketQuantity,
+      ticketStatus: "reserved",
+      totalTickets: raffle.totalTickets,
+      ticketsAvailable: raffle.ticketsAvailable,
+    })
 
-// ─── Status update ───────────────────────────────────────────
+    return { purchaseId, ticketNumbers, totalAmount: totalAmountCents / 100 }
+  })
+
+  logger.info(
+    { purchaseId: result.purchaseId, raffleId: params.raffleId, ticketQuantity: params.ticketQuantity },
+    "purchase:created",
+  )
+
+  void (async () => {
+    try {
+      const autoCheck = await pauseService.checkAutoPause(params.raffleId)
+      if (autoCheck.needsPause && autoCheck.pauseType) {
+        await pauseService.pauseRaffle(params.raffleId, autoCheck.pauseType)
+      }
+    } catch (err) {
+      logger.error({ raffleId: params.raffleId, err }, "purchase:auto_pause_failed")
+    }
+  })()
+
+  return result
+}
 
 export async function updatePurchaseStatus(
   purchaseId: number,
   status: PurchaseStatus,
   notes?: string,
 ) {
-  const pool = getPool()
-  const conn = await pool.getConnection()
+  const outcome = await withRetryTransaction(async (tx) => {
+    const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
+    if (!purchase) throw new PurchaseNotFoundError(purchaseId)
 
-  try {
-    await conn.beginTransaction()
-
-    const [purchaseRows] = await conn.execute(
-      `SELECT p.*, r.status as raffle_status,
-              r.auto_pause_enabled, r.pause_reason
-       FROM purchases p
-       JOIN raffles r ON p.raffle_id = r.id
-       WHERE p.id = ? FOR UPDATE`,
-      [purchaseId],
-    )
-
-    const purchaseRow = (purchaseRows as Record<string, unknown>[])[0]
-    if (!purchaseRow) {
-      await conn.rollback()
-      throw new PurchaseNotFoundError(purchaseId)
-    }
-
-    const currentStatus = purchaseRow.status as string
-    const raffleId = Number(purchaseRow.raffle_id)
+    const currentStatus = purchase.status
+    const raffleId = purchase.raffleId
 
     if (!["pending", "approved", "rejected"].includes(status)) {
-      await conn.rollback()
       throw new Error(`Estado inválido: ${status}`)
     }
 
     if (currentStatus === status) {
-      await conn.rollback()
-      return { message: `La compra ya está ${status}`, noChange: true }
+      return { message: `La compra ya está ${status}`, noChange: true as const, raffleId }
     }
 
     if (status === "approved" || status === "rejected") {
-      const [ticketCount] = await conn.execute(
-        "SELECT COUNT(*) as count FROM tickets WHERE purchase_id = ?",
-        [purchaseId],
-      )
-      if ((ticketCount as { count: number }[])[0]!.count === 0) {
-        await conn.rollback()
-        throw new PurchaseNoTicketsError(purchaseId)
-      }
+      const count = await ticketsRepo.countTicketsForPurchase(tx, purchaseId)
+      if (count === 0) throw new PurchaseNoTicketsError(purchaseId)
     }
 
-    await conn.execute(
-      "UPDATE purchases SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [status, notes ?? null, purchaseId],
-    )
+    await purchasesRepo.updatePurchaseStatusRow(tx, purchaseId, status, notes)
 
-    const ticketStatus = status === "approved" ? "sold" : status === "rejected" ? "available" : "reserved"
-
-    await conn.execute(
-      "UPDATE tickets SET status = ? WHERE purchase_id = ?",
-      [ticketStatus, purchaseId],
-    )
-
-    if (status === "rejected") {
-      await conn.execute(
-        "UPDATE tickets SET purchase_id = NULL WHERE purchase_id = ?",
-        [purchaseId],
+    if (status === "approved") {
+      await ticketsRepo.markPurchaseTicketsStatus(tx, purchaseId, raffleId, "reserved", "sold")
+    } else if (status === "rejected") {
+      await ticketsRepo.releasePurchaseTickets(
+        tx,
+        purchaseId,
+        raffleId,
+        currentStatus as "pending" | "approved" | "rejected",
       )
-    }
-
-    await conn.commit()
-
-    logger.info({ purchaseId, oldStatus: currentStatus, newStatus: status }, "purchase:status_updated")
-
-    // Post-commit: auto-unpause
-    if (status === "rejected") {
-      const [raffleInfo] = await pool.execute(
-        "SELECT auto_pause_enabled, pause_reason FROM raffles WHERE id = ?",
-        [raffleId],
-      )
-      const info = (raffleInfo as Record<string, unknown>[])[0]
-      if (info?.auto_pause_enabled && info.pause_reason === "auto_full") {
-        const availability = await pauseService.checkTicketAvailability(raffleId)
-        if (availability.available > 0) {
-          await pauseService.unpauseRaffle(raffleId)
-        }
-      }
-    }
-
-    if (status === "approved" || status === "rejected") {
-      const { sendPurchaseStatusEmail } = await import("./purchase-notifications")
-      void sendPurchaseStatusEmail(purchaseId, status)
     }
 
     return {
       message: `Compra actualizada: ${currentStatus} → ${status}`,
       status,
       previousStatus: currentStatus,
+      raffleId,
+      autoPauseEnabled: purchase.autoPauseEnabled,
+      pauseReason: purchase.pauseReason,
+      noChange: false as const,
     }
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
-  }
-}
+  })
 
-// ─── Add tickets ──────────────────────────────────────────────
+  if (outcome.noChange) return outcome
+
+  logger.info({ purchaseId, newStatus: status }, "purchase:status_updated")
+
+  if (outcome.status === "rejected" && outcome.autoPauseEnabled && outcome.pauseReason === "auto_full") {
+    const availability = await pauseService.checkTicketAvailability(outcome.raffleId)
+    if (availability.available > 0) {
+      await pauseService.unpauseRaffle(outcome.raffleId)
+    }
+  }
+
+  if (status === "approved" || status === "rejected") {
+    const { sendPurchaseStatusEmail } = await import("./purchase-notifications")
+    void sendPurchaseStatusEmail(purchaseId, status)
+  }
+
+  return outcome
+}
 
 export async function addTicketsToPurchase(purchaseId: number, quantity: number) {
-  const pool = getPool()
-  const conn = await pool.getConnection()
+  const result = await withRetryTransaction(async (tx) => {
+    const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
+    if (!purchase) throw new PurchaseNotFoundError(purchaseId)
 
-  try {
-    await conn.beginTransaction()
-
-    const [purchaseRows] = await conn.execute(
-      `SELECT p.*, r.price_bs, r.price_usd
-       FROM purchases p
-       JOIN raffles r ON p.raffle_id = r.id
-       WHERE p.id = ? FOR UPDATE`,
-      [purchaseId],
-    )
-
-    const purchaseRow = (purchaseRows as Record<string, unknown>[])[0]
-    if (!purchaseRow) {
-      await conn.rollback()
-      throw new PurchaseNotFoundError(purchaseId)
-    }
-
-    const raffleId = Number(purchaseRow.raffle_id)
-    const purchaseStatus = purchaseRow.status as string
-    const paymentMethod = purchaseRow.payment_method as PaymentMethod
-    const currentQty = Number(purchaseRow.ticket_quantity)
-    const currentTotal = Number(purchaseRow.total_amount)
-    const priceBs = Number(purchaseRow.price_bs)
-    const priceUsd = Number(purchaseRow.price_usd)
-
-    if (purchaseStatus === "rejected") {
-      await conn.rollback()
+    if (purchase.status === "rejected") {
       throw new PurchaseRejectedImmutableError(purchaseId)
     }
 
-    const [countResult] = await conn.execute(
-      `SELECT COUNT(*) as available FROM tickets
-       WHERE raffle_id = ? AND status = 'available' FOR UPDATE`,
-      [raffleId],
-    )
+    const raffle = await rafflesRepo.findRaffleForUpdate(tx, purchase.raffleId)
+    if (!raffle) throw new RaffleNotFoundError(purchase.raffleId)
 
-    const available = Number((countResult as [{ available: number }])[0]!.available)
-
-    if (available < quantity) {
-      await conn.rollback()
-      throw new InsufficientTicketsError(available, quantity)
+    if (raffle.ticketsAvailable < quantity) {
+      throw new InsufficientTicketsError(raffle.ticketsAvailable, quantity)
     }
 
-    const [ticketRows] = await conn.execute(
-      `SELECT ticket_number FROM tickets
-       WHERE raffle_id = ? AND status = 'available'
-       ORDER BY RAND()
-       LIMIT ? FOR UPDATE`,
-      [raffleId, quantity],
+    const ticketStatus = purchase.status === "approved" ? "sold" : "reserved"
+    const added = await ticketsRepo.allocateTicketsToPurchase(tx, {
+      raffleId: purchase.raffleId,
+      purchaseId,
+      quantity,
+      ticketStatus,
+      totalTickets: raffle.totalTickets,
+      ticketsAvailable: raffle.ticketsAvailable,
+    })
+
+    const pricePerTicket = purchasesRepo.pricePerTicketCents(
+      purchase.paymentMethod as PaymentMethod,
+      purchase,
     )
+    const additional = pricePerTicket * added.length
+    const newQty = purchase.ticketQuantity + added.length
+    const newTotal = purchase.totalAmountCents + additional
 
-    const ticketNumbers = (ticketRows as { ticket_number: string }[]).map((t) => t.ticket_number)
-
-    if (ticketNumbers.length < quantity) {
-      await conn.rollback()
-      throw new InsufficientTicketsError(ticketNumbers.length, quantity)
-    }
-
-    const dollar = isDollarMethod(paymentMethod)
-    const pricePerTicket = dollar ? priceUsd : priceBs
-    const additional = pricePerTicket * ticketNumbers.length
-    const newQty = currentQty + ticketNumbers.length
-    const newTotal = currentTotal + additional
-
-    await conn.execute(
-      "UPDATE purchases SET ticket_quantity = ?, total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [newQty, newTotal, purchaseId],
-    )
-
-    const ticketStatus = purchaseStatus === "approved" ? "sold" : "reserved"
-    const placeholders = ticketNumbers.map(() => "?").join(", ")
-    await conn.execute(
-      `UPDATE tickets SET status = ?, purchase_id = ?
-       WHERE raffle_id = ? AND ticket_number IN (${placeholders}) AND status = 'available'`,
-      [ticketStatus, purchaseId, raffleId, ...ticketNumbers],
-    )
-
-    await conn.commit()
-
-    logger.info({ purchaseId, added: ticketNumbers.length, newQty }, "purchase:tickets_added")
-
-    void (async () => {
-      try {
-        const autoCheck = await pauseService.checkAutoPause(raffleId)
-        if (autoCheck.needsPause && autoCheck.pauseType) {
-          await pauseService.pauseRaffle(raffleId, autoCheck.pauseType)
-        }
-      } catch (err) {
-        logger.error({ raffleId, err }, "purchase:add_tickets_auto_pause_failed")
-      }
-    })()
+    await purchasesRepo.updatePurchaseTotals(tx, purchaseId, newQty, newTotal)
 
     return {
-      addedTickets: ticketNumbers.sort((a, b) => String(a).localeCompare(String(b))),
+      addedTickets: added,
       newQuantity: newQty,
-      newTotalAmount: newTotal,
-      additionalAmount: additional,
+      newTotalAmount: newTotal / 100,
+      additionalAmount: additional / 100,
+      raffleId: purchase.raffleId,
     }
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
-  }
+  })
+
+  logger.info({ purchaseId, added: result.addedTickets.length }, "purchase:tickets_added")
+
+  void (async () => {
+    try {
+      const autoCheck = await pauseService.checkAutoPause(result.raffleId)
+      if (autoCheck.needsPause && autoCheck.pauseType) {
+        await pauseService.pauseRaffle(result.raffleId, autoCheck.pauseType)
+      }
+    } catch (err) {
+      logger.error({ raffleId: result.raffleId, err }, "purchase:add_tickets_auto_pause_failed")
+    }
+  })()
+
+  return result
 }
 
-// ─── Remove tickets ──────────────────────────────────────────
-
 export async function removeTicketsFromPurchase(purchaseId: number, quantity: number) {
-  const pool = getPool()
-  const conn = await pool.getConnection()
+  const result = await withRetryTransaction(async (tx) => {
+    const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
+    if (!purchase) throw new PurchaseNotFoundError(purchaseId)
 
-  try {
-    await conn.beginTransaction()
-
-    const [purchaseRows] = await conn.execute(
-      `SELECT p.*, r.price_bs, r.price_usd
-       FROM purchases p
-       JOIN raffles r ON p.raffle_id = r.id
-       WHERE p.id = ? FOR UPDATE`,
-      [purchaseId],
-    )
-
-    const purchaseRow = (purchaseRows as Record<string, unknown>[])[0]
-    if (!purchaseRow) {
-      await conn.rollback()
-      throw new PurchaseNotFoundError(purchaseId)
-    }
-
-    const raffleId = Number(purchaseRow.raffle_id)
-    const purchaseStatus = purchaseRow.status as string
-    const paymentMethod = purchaseRow.payment_method as PaymentMethod
-    const currentQty = Number(purchaseRow.ticket_quantity)
-    const currentTotal = Number(purchaseRow.total_amount)
-    const priceBs = Number(purchaseRow.price_bs)
-    const priceUsd = Number(purchaseRow.price_usd)
-
-    if (purchaseStatus === "rejected") {
-      await conn.rollback()
+    if (purchase.status === "rejected") {
       throw new PurchaseRejectedImmutableError(purchaseId)
     }
 
-    if (quantity >= currentQty) {
-      await conn.rollback()
+    if (quantity >= purchase.ticketQuantity) {
       throw new Error("No se pueden eliminar todos los boletos. Debe quedar al menos 1.")
     }
 
-    const [ticketRows] = await conn.execute(
-      `SELECT ticket_number FROM tickets
-       WHERE purchase_id = ?
-       ORDER BY RAND()
-       LIMIT ?`,
-      [purchaseId, quantity],
-    )
-
-    const ticketNumbers = (ticketRows as { ticket_number: string }[]).map((t) => t.ticket_number)
-
+    const ticketNumbers = await ticketsRepo.pickRandomTicketsFromPurchase(tx, purchaseId, quantity)
     if (ticketNumbers.length === 0) {
-      await conn.rollback()
       throw new Error("No se encontraron boletos para eliminar en esta compra")
     }
 
-    const dollar = isDollarMethod(paymentMethod)
-    const pricePerTicket = dollar ? priceUsd : priceBs
+    const pricePerTicket = purchasesRepo.pricePerTicketCents(
+      purchase.paymentMethod as PaymentMethod,
+      purchase,
+    )
     const deduction = pricePerTicket * ticketNumbers.length
-    const newQty = currentQty - ticketNumbers.length
-    const newTotal = currentTotal - deduction
+    const newQty = purchase.ticketQuantity - ticketNumbers.length
+    const newTotal = purchase.totalAmountCents - deduction
 
-    await conn.execute(
-      "UPDATE purchases SET ticket_quantity = ?, total_amount = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [newQty, newTotal, purchaseId],
+    await purchasesRepo.updatePurchaseTotals(tx, purchaseId, newQty, newTotal)
+    await ticketsRepo.releaseTicketNumbers(
+      tx,
+      purchaseId,
+      purchase.raffleId,
+      ticketNumbers,
+      purchase.status as "pending" | "approved" | "rejected",
     )
-
-    const placeholders = ticketNumbers.map(() => "?").join(", ")
-    await conn.execute(
-      `UPDATE tickets SET status = 'available', purchase_id = NULL
-       WHERE purchase_id = ? AND ticket_number IN (${placeholders})`,
-      [purchaseId, ...ticketNumbers],
-    )
-
-    await conn.commit()
-
-    logger.info({ purchaseId, removed: ticketNumbers.length, newQty }, "purchase:tickets_removed")
-
-    // Post-commit auto-unpause
-    const [raffleInfo] = await pool.execute(
-      "SELECT auto_pause_enabled, pause_reason FROM raffles WHERE id = ?",
-      [raffleId],
-    )
-    const info = (raffleInfo as Record<string, unknown>[])[0]
-    if (info?.auto_pause_enabled && info.pause_reason === "auto_full") {
-      const availability = await pauseService.checkTicketAvailability(raffleId)
-      if (availability.available > 0) {
-        await pauseService.unpauseRaffle(raffleId)
-      }
-    }
 
     return {
       removedTickets: ticketNumbers,
       newQuantity: newQty,
-      newTotalAmount: newTotal,
-      deductedAmount: deduction,
+      newTotalAmount: newTotal / 100,
+      deductedAmount: deduction / 100,
+      raffleId: purchase.raffleId,
+      autoPauseEnabled: purchase.autoPauseEnabled,
+      pauseReason: purchase.pauseReason,
     }
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
+  })
+
+  logger.info({ purchaseId, removed: result.removedTickets.length }, "purchase:tickets_removed")
+
+  if (result.autoPauseEnabled && result.pauseReason === "auto_full") {
+    const availability = await pauseService.checkTicketAvailability(result.raffleId)
+    if (availability.available > 0) {
+      await pauseService.unpauseRaffle(result.raffleId)
+    }
   }
+
+  return result
 }
 
-// ─── Reassign ────────────────────────────────────────────────
-
 export async function reassignTicketsToPurchase(purchaseId: number) {
-  const pool = getPool()
-  const conn = await pool.getConnection()
-
-  try {
-    await conn.beginTransaction()
-
-    const [purchaseRows] = await conn.execute(
-      `SELECT p.*, r.price_bs, r.price_usd
-       FROM purchases p
-       JOIN raffles r ON p.raffle_id = r.id
-       WHERE p.id = ? AND p.status = 'rejected' FOR UPDATE`,
-      [purchaseId],
-    )
-
-    const purchaseRow = (purchaseRows as Record<string, unknown>[])[0]
-    if (!purchaseRow) {
-      await conn.rollback()
+  return withRetryTransaction(async (tx) => {
+    const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
+    if (!purchase || purchase.status !== "rejected") {
       throw new PurchaseNotFoundError(purchaseId)
     }
 
-    const qty = Number(purchaseRow.ticket_quantity)
-    const raffleId = Number(purchaseRow.raffle_id)
-    const paymentMethod = purchaseRow.payment_method as PaymentMethod
-    const priceBs = Number(purchaseRow.price_bs)
-    const priceUsd = Number(purchaseRow.price_usd)
-    const dollar = isDollarMethod(paymentMethod)
-    const pricePerTicket = dollar ? priceUsd : priceBs
+    const raffle = await rafflesRepo.findRaffleForUpdate(tx, purchase.raffleId)
+    if (!raffle) throw new RaffleNotFoundError(purchase.raffleId)
 
-    const [ticketRows] = await conn.execute(
-      `SELECT ticket_number FROM tickets
-       WHERE raffle_id = ? AND status = 'available'
-       ORDER BY RAND()
-       LIMIT ? FOR UPDATE`,
-      [raffleId, qty],
+    const qty = purchase.ticketQuantity
+    const pricePerTicket = purchasesRepo.pricePerTicketCents(
+      purchase.paymentMethod as PaymentMethod,
+      purchase,
     )
 
-    const ticketNumbers = (ticketRows as { ticket_number: string }[]).map((t) => t.ticket_number)
-
-    if (ticketNumbers.length === 0) {
-      await conn.rollback()
-      throw new InsufficientTicketsError(0, qty)
-    }
+    const ticketNumbers = await ticketsRepo.allocateTicketsToPurchase(tx, {
+      raffleId: purchase.raffleId,
+      purchaseId,
+      quantity: qty,
+      ticketStatus: "reserved",
+      totalTickets: raffle.totalTickets,
+      ticketsAvailable: raffle.ticketsAvailable,
+    })
 
     const newTotal = pricePerTicket * ticketNumbers.length
 
-    await conn.execute(
-      "UPDATE purchases SET ticket_quantity = ?, total_amount = ?, status = 'pending', updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-      [ticketNumbers.length, newTotal, purchaseId],
-    )
-
-    const placeholders = ticketNumbers.map(() => "?").join(", ")
-    await conn.execute(
-      `UPDATE tickets SET status = 'reserved', purchase_id = ?
-       WHERE raffle_id = ? AND ticket_number IN (${placeholders}) AND status = 'available'`,
-      [purchaseId, raffleId, ...ticketNumbers],
-    )
-
-    await conn.commit()
+    await purchasesRepo.updatePurchaseTotals(tx, purchaseId, ticketNumbers.length, newTotal)
+    await purchasesRepo.updatePurchaseStatusRow(tx, purchaseId, "pending")
 
     logger.info({ purchaseId, reassigned: ticketNumbers.length }, "purchase:reassigned")
 
     return {
       purchaseId,
-      ticketNumbers: ticketNumbers.sort((a, b) => String(a).localeCompare(String(b))),
+      ticketNumbers,
       newQuantity: ticketNumbers.length,
-      newTotalAmount: newTotal,
+      newTotalAmount: newTotal / 100,
     }
-  } catch (error) {
-    await conn.rollback()
-    throw error
-  } finally {
-    conn.release()
-  }
+  })
 }
 
-// ─── Queries ─────────────────────────────────────────────────
+export type ListAdminPurchasesParams = Parameters<typeof purchasesRepo.listAdminPurchases>[0]
 
-export interface ListAdminPurchasesParams {
-  limit: number
-  page: number
-  status?: string
-  raffleId?: string | null
-  search?: string | null
-  searchType?: string
-  start?: string | null
-  end?: string | null
-}
-
-export async function listAdminPurchases(params: ListAdminPurchasesParams) {
-  const pool = getPool()
-  const { limit, page, status = "all", raffleId, search, searchType = "all", start, end } = params
-
-  let query = `
-    SELECT p.*, r.name as raffle_name,
-           GROUP_CONCAT(t.ticket_number ORDER BY CAST(t.ticket_number AS UNSIGNED)) as ticket_numbers
-    FROM purchases p
-    JOIN raffles r ON p.raffle_id = r.id
-    LEFT JOIN tickets t ON p.id = t.purchase_id
-    WHERE 1=1
-  `
-  const values: (string | number)[] = []
-
-  if (status !== "all") {
-    query += " AND p.status = ?"
-    values.push(status)
-  }
-  if (raffleId) {
-    query += " AND p.raffle_id = ?"
-    values.push(Number(raffleId))
-  }
-  if (search && searchType === "all") {
-    query +=
-      " AND CONCAT(p.customer_name, ' ', p.customer_phone, ' ', p.customer_email, ' ', p.customer_ci, ' ', p.payment_reference) LIKE ?"
-    values.push(`%${search}%`)
-  } else if (search && searchType) {
-    const cols: Record<string, string> = {
-      name: "p.customer_name",
-      phone: "p.customer_phone",
-      email: "p.customer_email",
-      ci: "p.customer_ci",
-      ticket: "t.ticket_number",
-    }
-    if (cols[searchType]) {
-      query += ` AND ${cols[searchType]} LIKE ?`
-      values.push(`%${search}%`)
-    }
-  }
-  if (start) {
-    query += " AND DATE(p.created_at) >= ?"
-    values.push(start)
-  }
-  if (end) {
-    query += " AND DATE(p.created_at) <= ?"
-    values.push(end)
-  }
-
-  const countQuery = query.replace(
-    /SELECT p\.\*, r\.name as raffle_name,\s*GROUP_CONCAT\(t\.ticket_number ORDER BY CAST\(t\.ticket_number AS UNSIGNED\)\) as ticket_numbers/,
-    "SELECT COUNT(DISTINCT p.id) as total",
-  )
-  const countValues = [...values]
-
-  const offset = (page - 1) * limit
-  const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100))
-  const safeOffset = Math.max(0, Number(offset) || 0)
-  query += ` GROUP BY p.id ORDER BY p.created_at DESC LIMIT ${safeLimit} OFFSET ${safeOffset}`
-
-  const [[countRows], [rows]] = await Promise.all([
-    pool.execute(countQuery, countValues),
-    pool.execute(query, values),
-  ])
-
-  const total = Number((countRows as { total: number }[])[0]?.total ?? 0)
-  const data = rows as Record<string, unknown>[]
-  const hasMore = safeOffset + data.length < total
-
-  return { data, total, hasMore }
-}
-
-export async function getPurchaseById(purchaseId: number) {
-  const pool = getPool()
-
-  const [rows] = await pool.execute(
-    `SELECT p.*, r.name as raffle_name
-     FROM purchases p
-     JOIN raffles r ON p.raffle_id = r.id
-     WHERE p.id = ?`,
-    [purchaseId],
-  )
-
-  const purchase = (rows as Record<string, unknown>[])[0]
-  if (!purchase) throw new PurchaseNotFoundError(purchaseId)
-
-  const [ticketRows] = await pool.execute(
-    `SELECT ticket_number FROM tickets WHERE purchase_id = ? ORDER BY CAST(ticket_number AS UNSIGNED)`,
-    [purchaseId],
-  )
-
-  return {
-    ...purchase,
-    ticketNumbers: (ticketRows as { ticket_number: string }[]).map((t) => t.ticket_number),
-  }
-}
-
-export async function getClientPurchases(params: {
-  status?: string
-  raffleId?: number
-  limit?: number
-}) {
-  const pool = getPool()
-  const { status, raffleId, limit = 10 } = params
-
-  let query = `
-    SELECT
-      p.raffle_id, p.customer_name, p.customer_ci, p.customer_phone, p.customer_email,
-      SUM(p.ticket_quantity) as ticket_quantity,
-      COUNT(DISTINCT p.id) as purchases,
-      SUM(p.total_amount) as total
-    FROM purchases p
-    JOIN raffles r ON p.raffle_id = r.id
-    WHERE 1=1
-  `
-  const values: (string | number | boolean | null)[] = []
-  if (status) { query += " AND p.status = ?"; values.push(status) }
-  if (raffleId) { query += " AND p.raffle_id = ?"; values.push(raffleId) }
-  query += " GROUP BY p.customer_ci ORDER BY total DESC LIMIT ?"
-  values.push(limit)
-
-  const [rows] = await pool.execute(query, values)
-  return rows as Record<string, unknown>[]
-}
+export const listAdminPurchases = purchasesRepo.listAdminPurchases
+export const getPurchaseById = purchasesRepo.getPurchaseById
+export const getClientPurchases = purchasesRepo.getClientPurchases
