@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -108,6 +108,26 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   }, [raffle.payment_methods])
 
   const selectedMethod = methods.find((method) => method.method_type === paymentMethod)
+
+  useEffect(() => {
+    if (!paymentMethod) return
+    const method = methods.find((m) => m.method_type === paymentMethod)
+    const min = method?.min_tickets ?? 0
+    if (min > 0 && quantity < min) {
+      setPaymentMethod("")
+    }
+  }, [quantity, paymentMethod, methods])
+
+  const methodBlockedReason = useMemo(() => {
+    if (!paymentMethod) return undefined
+    const method = methods.find((m) => m.method_type === paymentMethod)
+    if (!method) return undefined
+    const min = method.min_tickets ?? 0
+    if (min > 0 && quantity < min) {
+      return `Disponible desde ${min} boletos (tienes ${quantity} seleccionados)`
+    }
+    return undefined
+  }, [paymentMethod, methods, quantity])
   const accountInfo = selectedMethod ? parseAccountInfo(selectedMethod.account_info) : null
 
   const total = useMemo(() => {
@@ -124,9 +144,11 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       name: !customerName.trim() ? "Ingresa tu nombre completo" : undefined,
       phone: !customerPhone.trim() ? "Ingresa tu teléfono" : undefined,
       reference: !paymentReference.trim() ? "Ingresa la referencia de pago" : undefined,
-      method: !paymentMethod ? "Elige un método de pago" : undefined,
+      method: !paymentMethod
+        ? "Elige un método de pago"
+        : methodBlockedReason,
     }
-  }, [touched, customerName, customerPhone, paymentReference, paymentMethod])
+  }, [touched, customerName, customerPhone, paymentReference, paymentMethod, methodBlockedReason])
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
@@ -144,29 +166,14 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         ticketQuantity: String(quantity),
       }
 
-      if (paymentProof) {
-        const form = new FormData()
-        for (const [key, value] of Object.entries(base)) {
-          if (value) form.append(key, value)
-        }
-        form.append("paymentProof", paymentProof)
-        return publicFetch<PurchaseResult>("/api/purchases/", { method: "POST", body: form })
+      const form = new FormData()
+      for (const [key, value] of Object.entries(base)) {
+        if (value) form.append(key, value)
       }
-
-      return publicFetch<PurchaseResult>("/api/purchases/", {
-        method: "POST",
-        body: JSON.stringify({
-          raffleId: Number(raffle.id),
-          customerName: base.customerName,
-          customerPhone: base.customerPhone,
-          customerEmail: base.customerEmail || undefined,
-          customerCi: base.customerCi || undefined,
-          customerLocation: base.customerLocation || null,
-          paymentMethod,
-          paymentReference: base.paymentReference,
-          ticketQuantity: quantity,
-        }),
-      })
+      if (paymentProof) {
+        form.append("paymentProof", paymentProof)
+      }
+      return publicFetch<PurchaseResult>("/api/purchases/", { method: "POST", body: form })
     },
     onSuccess: (result) => {
       setSuccessResult(result)
@@ -352,24 +359,32 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
               <div className="grid gap-2 sm:grid-cols-2">
                 {methods.map((method) => {
                   const active = paymentMethod === method.method_type
+                  const min = method.min_tickets ?? 0
+                  const locked = min > 0 && quantity < min
                   return (
                     <button
                       key={method.method_type}
                       type="button"
                       data-testid={`payment-method-${method.method_type}`}
                       aria-pressed={active}
-                      disabled={disabled}
+                      disabled={disabled || locked}
                       onClick={() => setPaymentMethod(method.method_type)}
                       className={cn(
                         "min-h-11 rounded-xl border p-3 text-left text-sm transition-colors focus-visible:ring-3 focus-visible:ring-ring/30",
                         active
                           ? "border-primary bg-primary/10 ring-2 ring-primary/25"
                           : "border-border hover:border-primary/40",
+                        locked && "cursor-not-allowed opacity-50",
                       )}
                     >
                       <span className="font-medium">
                         {PAYMENT_LABELS[method.method_type] ?? method.method_type}
                       </span>
+                      {min > 0 ? (
+                        <span className="text-muted-foreground mt-0.5 block text-xs">
+                          Desde {min} boletos
+                        </span>
+                      ) : null}
                     </button>
                   )
                 })}

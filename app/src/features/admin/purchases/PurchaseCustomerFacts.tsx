@@ -1,0 +1,50 @@
+import type { ReactNode } from "react"
+import type { PurchaseDetail } from "@/features/admin/purchases/types"
+import { formatDateTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
+
+function Row({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-0.5 text-sm leading-snug">
+      <span className="text-muted-foreground text-xs">{label}</span>
+      <span className="min-w-0 font-medium break-words">{children}</span>
+    </div>
+  )
+}
+
+type PurchaseCustomerFactsProps = {
+  purchase: PurchaseDetail & { customer_location?: string | null }
+  className?: string
+}
+
+export function PurchaseCustomerFacts({ purchase, className }: PurchaseCustomerFactsProps) {
+  const phone = purchase.customer_phone.replace(/\s/g, "")
+  const email = purchase.customer_email?.trim()
+
+  return (
+    <div className={cn("flex flex-col gap-1.5", className)}>
+      <Row label="Cliente">{purchase.customer_name}</Row>
+      <Row label="Teléfono">
+        <a href={`tel:${phone}`} className="text-primary hover:underline">
+          {purchase.customer_phone}
+        </a>
+      </Row>
+      <Row label="Cédula">{purchase.customer_ci?.trim() || "—"}</Row>
+      <Row label="Email">
+        {email ? (
+          <a href={`mailto:${email}`} className="text-primary break-all hover:underline">
+            {email}
+          </a>
+        ) : (
+          "—"
+        )}
+      </Row>
+      {purchase.customer_location ? (
+        <Row label="Ubicación">{purchase.customer_location}</Row>
+      ) : null}
+      <Row label="Rifa">{purchase.raffle_name}</Row>
+      <Row label="Boletos">{purchase.ticket_quantity}</Row>
+      <Row label="Fecha">{formatDateTime(purchase.created_at)}</Row>
+    </div>
+  )
+}

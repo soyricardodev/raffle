@@ -1,50 +1,99 @@
-import { Link } from "@tanstack/react-router"
+import { Link, getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { useState } from "react"
+import {
+  ArrowClockwiseIcon,
+  MagnifyingGlassIcon,
+  PlusIcon,
+  XIcon,
+} from "@phosphor-icons/react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import type { RaffleRow } from "@/features/admin/raffles/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  RafflesDataTable,
+  RafflesMobileList,
+} from "@/features/admin/raffles/RafflesDataTable"
+import {
+  ADMIN_RAFFLES_PAGE_SIZE,
+  adminRafflesQueryOptions,
+  normalizeAdminRaffleFilters,
+} from "@/features/admin/raffles/admin-raffles-queries"
+import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { adminFetch } from "@/lib/admin-fetch"
-import { formatCurrency, formatDate, getRaffleStatusClass, getStatusLabel } from "@/lib/format"
-import { Pause, Play, Eye, Pencil } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-type RaffleRow = {
-  id: number
-  name: string
-  status: string
-  total_tickets: number | string
-  tickets_sold: number | string
-  sold_percentage: string
-  price_bs: number | string
-  price_usd: number | string
-  draw_date: string | null
-  publish?: boolean
-}
+const routeApi = getRouteApi("/admin/rifas")
 
 export function AdminRafflesTable() {
+  const routeSearch = routeApi.useSearch()
+  const navigate = useNavigate({ from: "/admin/rifas" })
   const queryClient = useQueryClient()
-  const [status, setStatus] = useState("all")
-  const [search, setSearch] = useState("")
+
+  const filters = useMemo(
+    () => normalizeAdminRaffleFilters(routeSearch),
+    [routeSearch]
+  )
+  const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
+  const debouncedSearch = useDebouncedValue(searchDraft)
+
+  useEffect(() => {
+    setSearchDraft(filters.search ?? "")
+  }, [filters.search])
+
+  useEffect(() => {
+    const nextSearch = debouncedSearch.trim()
+    if (nextSearch === (filters.search ?? "")) return
+
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        q: nextSearch || undefined,
+        page: 1,
+      }),
+    })
+  }, [debouncedSearch, filters.search, navigate])
 
   const rafflesQuery = useQuery({
-    queryKey: ["admin", "raffles", status],
-    queryFn: () => {
-      const params = new URLSearchParams({ limit: "50", page: "1" })
-      if (status !== "all") params.set("status", status)
-      return adminFetch<RaffleRow[]>(`/api/admin/raffles/?${params}`)
-    },
+    ...adminRafflesQueryOptions(filters),
+    refetchOnMount: false,
   })
 
   const actionMutation = useMutation({
-    mutationFn: async ({ id, action }: { id: number; action: "pause" | "unpause" | "publish" }) => {
+    mutationFn: async ({
+      id,
+      action,
+    }: {
+      id: number
+      action: "pause" | "unpause" | "publish"
+    }) => {
       if (action === "publish") {
         return adminFetch(`/api/admin/raffles/${id}/publish`, {
           method: "PUT",
           body: JSON.stringify({ publish: true }),
         })
       }
-      return adminFetch(`/api/admin/raffles/${id}/${action}`, { method: "POST" })
+      return adminFetch(`/api/admin/raffles/${id}/${action}`, {
+        method: "POST",
+      })
     },
     onSuccess: () => {
       toast.success("Rifa actualizada")
@@ -53,129 +102,150 @@ export function AdminRafflesTable() {
     onError: (error: Error) => toast.error(error.message),
   })
 
-  const raffles = (rafflesQuery.data ?? []).filter((raffle) =>
-    search.trim() ? raffle.name.toLowerCase().includes(search.trim().toLowerCase()) : true,
+  const raffles: Array<RaffleRow> = rafflesQuery.data?.data ?? []
+  const total = rafflesQuery.data?.total ?? 0
+  const pageSize = filters.limit ?? ADMIN_RAFFLES_PAGE_SIZE
+  const hasCustomFilters = Boolean(
+    filters.search || filters.status !== "active"
   )
 
-  return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">Mis rifas</h1>
-          <p className="text-muted-foreground text-sm">Gestiona el estado de tus rifas</p>
-        </div>
-        <Button asChild>
-          <Link to="/admin/crear">Nueva rifa</Link>
-        </Button>
-      </div>
+  function updateSearch(patch: Partial<typeof routeSearch>) {
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        ...patch,
+      }),
+    })
+  }
 
-      <Card>
-        <CardHeader className="gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <CardTitle>Listado</CardTitle>
-          <div className="flex flex-wrap gap-2">
-            <select
-              className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
+  return (
+    <div className="flex flex-col gap-4">
+      <AdminPageHeader
+        title="Mis rifas"
+        description={`${total.toLocaleString("es-VE")} rifa${total === 1 ? "" : "s"} en el sistema`}
+        actions={
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={rafflesQuery.isFetching}
+              onClick={() => void rafflesQuery.refetch()}
             >
-              <option value="all">Todas</option>
-              <option value="draft">Borrador</option>
-              <option value="active">Activas</option>
-              <option value="paused">Pausadas</option>
-              <option value="finished">Finalizadas</option>
-            </select>
-            <Input
-              placeholder="Buscar rifa…"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              className="w-full sm:w-56"
-            />
+              <ArrowClockwiseIcon
+                data-icon="inline-start"
+                className={cn(rafflesQuery.isFetching && "animate-spin")}
+              />
+              Actualizar
+            </Button>
+            <Button asChild size="sm">
+              <Link to="/admin/crear">
+                <PlusIcon data-icon="inline-start" />
+                Nueva rifa
+              </Link>
+            </Button>
+          </>
+        }
+      />
+
+      <Card className="overflow-hidden">
+        <CardHeader className="gap-3 border-b p-3 sm:p-4">
+          <div>
+            <CardTitle className="text-base">Listado</CardTitle>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              Mostrando rifas{" "}
+              {filters.status === "active"
+                ? "activas"
+                : `en estado «${filters.status}»`}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+            <InputGroup className="lg:max-w-80">
+              <InputGroupAddon>
+                <MagnifyingGlassIcon />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Buscar rifa por nombre"
+                value={searchDraft}
+                onChange={(event) => setSearchDraft(event.target.value)}
+              />
+              {searchDraft ? (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                    size="icon-xs"
+                    aria-label="Limpiar búsqueda"
+                    onClick={() => setSearchDraft("")}
+                  >
+                    <XIcon />
+                  </InputGroupButton>
+                </InputGroupAddon>
+              ) : null}
+            </InputGroup>
+
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <Select
+                value={filters.status}
+                onValueChange={(status) => updateSearch({ status, page: 1 })}
+              >
+                <SelectTrigger size="sm" className="w-[148px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="active">Activas</SelectItem>
+                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="draft">Borrador</SelectItem>
+                    <SelectItem value="paused">Pausadas</SelectItem>
+                    <SelectItem value="finished">Finalizadas</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              {hasCustomFilters ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    updateSearch({
+                      status: undefined,
+                      q: undefined,
+                      page: 1,
+                    })
+                  }
+                >
+                  Limpiar
+                </Button>
+              ) : null}
+            </div>
           </div>
         </CardHeader>
-        <CardContent className="overflow-x-auto">
-          <table className="w-full min-w-[820px] text-sm">
-            <thead>
-              <tr className="text-muted-foreground border-b text-left">
-                <th className="py-2 pr-3">Rifa</th>
-                <th className="py-2 pr-3">Estado</th>
-                <th className="py-2 pr-3">Ventas</th>
-                <th className="py-2 pr-3">Precios</th>
-                <th className="py-2 pr-3">Sorteo</th>
-                <th className="py-2">Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {raffles.map((raffle) => (
-                <tr key={raffle.id} className="border-b last:border-0">
-                  <td className="py-3 pr-3">
-                    <p className="font-medium">{raffle.name}</p>
-                    <p className="text-muted-foreground text-xs">ID {raffle.id}</p>
-                  </td>
-                  <td className="py-3 pr-3">
-                    <span
-                      className={`rounded-full px-2 py-0.5 text-xs font-medium ${getRaffleStatusClass(raffle.status)}`}
-                    >
-                      {getStatusLabel(raffle.status)}
-                    </span>
-                  </td>
-                  <td className="py-3 pr-3">
-                    {raffle.tickets_sold} / {raffle.total_tickets} ({raffle.sold_percentage}%)
-                  </td>
-                  <td className="py-3 pr-3">
-                    {formatCurrency(raffle.price_bs)} · {formatCurrency(raffle.price_usd, "USD")}
-                  </td>
-                  <td className="py-3 pr-3">{formatDate(raffle.draw_date)}</td>
-                  <td className="py-3">
-                    <div className="flex flex-wrap gap-1">
-                      <Button asChild size="sm" variant="outline" title="Ver pública">
-                        <Link to="/rifa/$id" params={{ id: String(raffle.id) }}>
-                          <Eye className="size-4" />
-                        </Link>
-                      </Button>
-                      <Button asChild size="sm" variant="outline" title="Editar">
-                        <Link to="/admin/edit/$id" params={{ id: String(raffle.id) }}>
-                          <Pencil className="size-4" />
-                        </Link>
-                      </Button>
-                      {raffle.status === "active" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actionMutation.isPending}
-                          onClick={() => actionMutation.mutate({ id: raffle.id, action: "pause" })}
-                        >
-                          <Pause className="size-4" />
-                        </Button>
-                      )}
-                      {raffle.status === "paused" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actionMutation.isPending}
-                          onClick={() => actionMutation.mutate({ id: raffle.id, action: "unpause" })}
-                        >
-                          <Play className="size-4" />
-                        </Button>
-                      )}
-                      {raffle.status === "finished" && !raffle.publish && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={actionMutation.isPending}
-                          onClick={() => actionMutation.mutate({ id: raffle.id, action: "publish" })}
-                        >
-                          Publicar
-                        </Button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {raffles.length === 0 && (
-            <p className="text-muted-foreground py-8 text-center text-sm">No hay rifas en este filtro.</p>
-          )}
+
+        <CardContent className="p-0">
+          <div className="hidden md:block">
+            <RafflesDataTable
+              raffles={raffles}
+              loading={rafflesQuery.isPending}
+              pending={actionMutation.isPending}
+              onAction={(id, action) => actionMutation.mutate({ id, action })}
+            />
+          </div>
+          <div className="p-3 md:hidden">
+            <RafflesMobileList
+              raffles={raffles}
+              loading={rafflesQuery.isPending}
+              pending={actionMutation.isPending}
+              onAction={(id, action) => actionMutation.mutate({ id, action })}
+            />
+          </div>
+          <AdminDataGridPagination
+            page={filters.page}
+            pageSize={pageSize}
+            total={total}
+            loading={rafflesQuery.isFetching}
+            onPageChange={(page) => updateSearch({ page })}
+          />
         </CardContent>
       </Card>
     </div>

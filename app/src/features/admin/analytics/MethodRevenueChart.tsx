@@ -1,26 +1,54 @@
-import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts"
+"use client"
+
+import {
+  Bar,
+  EvilBarChart,
+  Grid,
+  Legend,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "@/components/evilcharts/charts/bar-chart"
+import { type ChartConfig } from "@/components/evilcharts/ui/chart"
 
 type Row = { method: string; revenue: number; count: number }
 
-export function MethodRevenueChart({ data }: { data: Row[] }) {
+const chartConfig = {
+  revenue: {
+    label: "Ingresos",
+    colors: { light: ["var(--color-chart-3)"], dark: ["var(--color-chart-3)"] },
+  },
+} satisfies ChartConfig
+
+export function MethodRevenueChart({
+  data,
+  isLoading = false,
+}: {
+  data: Row[]
+  isLoading?: boolean
+}) {
   const chartData = data.map((row) => ({
     ...row,
     label: row.method.replace(/_/g, " "),
   }))
 
-  if (!chartData.length) {
+  if (!chartData.length && !isLoading) {
     return <p className="text-muted-foreground py-8 text-center text-sm">Sin datos.</p>
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%" minHeight={220} className="min-h-[220px] md:min-h-[260px]">
-      <BarChart data={chartData} margin={{ top: 8, right: 8, left: 0, bottom: 40 }}>
-        <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-        <XAxis dataKey="label" tick={{ fontSize: 10 }} angle={-25} textAnchor="end" height={60} />
-        <YAxis tick={{ fontSize: 11 }} />
-        <Tooltip />
-        <Bar dataKey="revenue" name="Ingresos" fill="var(--color-chart-3)" radius={[4, 4, 0, 0]} />
-      </BarChart>
-    </ResponsiveContainer>
+    <EvilBarChart
+      data={chartData}
+      config={chartConfig}
+      isLoading={isLoading}
+      className="h-full min-h-[220px] w-full p-2 md:min-h-[260px]"
+    >
+      <Grid />
+      <XAxis dataKey="label" />
+      <YAxis />
+      <Tooltip />
+      <Legend />
+      <Bar dataKey="revenue" variant="gradient" />
+    </EvilBarChart>
   )
 }

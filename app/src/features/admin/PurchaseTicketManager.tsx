@@ -1,28 +1,29 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { Minus, Plus, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
+import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrencyForMethod } from "@/lib/format"
-import { Minus, Plus, RefreshCw } from "lucide-react"
-import type { PurchaseDetail } from "@/features/admin/PurchaseDetailDialog"
 
 type TicketAddResult = {
-  addedTickets: string[]
+  addedTickets: Array<string>
   newQuantity: number
   newTotalAmount: number
 }
 
 type TicketRemoveResult = {
-  removedTickets: string[]
+  removedTickets: Array<string>
   newQuantity: number
   newTotalAmount: number
 }
 
 type TicketReassignResult = {
-  ticketNumbers: string[]
+  ticketNumbers: Array<string>
   newQuantity: number
   newTotalAmount: number
 }
@@ -31,13 +32,15 @@ type PurchaseApi = {
   status: string
   ticket_quantity: number
   total_amount: number | string
-  ticketNumbers: string[]
+  ticketNumbers: Array<string>
 }
 
 type PurchaseTicketManagerProps = {
   purchase: PurchaseDetail
   onUpdated: (patch: Partial<PurchaseDetail>) => void
 }
+
+type ConfirmKind = "add" | "remove" | "reassign" | null
 
 async function refetchPurchaseDetail(id: number): Promise<Partial<PurchaseDetail>> {
   const data = await adminFetch<PurchaseApi>(`/api/admin/purchases/${id}`)
@@ -46,14 +49,14 @@ async function refetchPurchaseDetail(id: number): Promise<Partial<PurchaseDetail
     ticket_quantity: data.ticket_quantity,
     total_amount: data.total_amount,
     ticket_numbers: data.ticketNumbers.join(", "),
+    ticketNumbers: data.ticketNumbers,
   }
 }
 
 export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketManagerProps) {
   const queryClient = useQueryClient()
   const [quantity, setQuantity] = useState(1)
-  const [confirmRemove, setConfirmRemove] = useState(false)
-  const [confirmReassign, setConfirmReassign] = useState(false)
+  const [confirm, setConfirm] = useState<ConfirmKind>(null)
 
   const qty = Math.max(1, Math.min(quantity, 500))
 
@@ -62,8 +65,7 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
     const patch = await refetchPurchaseDetail(purchase.id)
     onUpdated(patch)
     void queryClient.invalidateQueries({ queryKey: ["admin"] })
-    setConfirmRemove(false)
-    setConfirmReassign(false)
+    setConfirm(null)
   }
 
   const addMutation = useMutation({
@@ -109,43 +111,23 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
   if (!canAdjust && !canReassign) return null
 
   return (
-    <div className="space-y-4 rounded-xl border bg-muted/20 p-4">
-      <p className="text-sm font-semibold">Gestionar boletos</p>
+    <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
+      <p className="text-xs font-semibold tracking-wide uppercase">Gestionar boletos</p>
 
       {canReassign && (
         <div className="space-y-2">
           <p className="text-muted-foreground text-xs leading-relaxed">
             Asigna nuevos números disponibles y deja la compra en pendiente.
           </p>
-          {confirmReassign ? (
-            <div className="flex flex-col gap-2 sm:flex-row">
-              <Button
-                variant="outline"
-                className="min-h-11 flex-1"
-                disabled={pending}
-                onClick={() => setConfirmReassign(false)}
-              >
-                Cancelar
-              </Button>
-              <Button
-                className="min-h-11 flex-1"
-                disabled={pending}
-                onClick={() => reassignMutation.mutate()}
-              >
-                Confirmar reasignación
-              </Button>
-            </div>
-          ) : (
-            <Button
-              className="min-h-11 w-full"
-              variant="secondary"
-              disabled={pending}
-              onClick={() => setConfirmReassign(true)}
-            >
-              <RefreshCw className="mr-2 size-4" />
-              Reasignar boletos
-            </Button>
-          )}
+          <Button
+            className="min-h-11 w-full"
+            variant="secondary"
+            disabled={pending}
+            onClick={() => setConfirm("reassign")}
+          >
+            <RefreshCw className="mr-2 size-4" />
+            Reasignar boletos
+          </Button>
         </div>
       )}
 
@@ -171,7 +153,7 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
                 id="ticket-qty"
                 type="number"
                 min={1}
-                max={canAdjust ? maxRemove : 500}
+                max={maxRemove}
                 value={qty}
                 onChange={(e) => setQuantity(Number(e.target.value) || 1)}
                 className="min-h-11 text-center"
@@ -194,41 +176,55 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button className="min-h-11" disabled={pending} onClick={() => addMutation.mutate()}>
+            <Button
+              className="min-h-11"
+              disabled={pending}
+              onClick={() => setConfirm("add")}
+            >
               Agregar
             </Button>
-            {confirmRemove ? (
-              <>
-                <Button
-                  variant="outline"
-                  className="min-h-11"
-                  disabled={pending}
-                  onClick={() => setConfirmRemove(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  variant="destructive"
-                  className="col-span-2 min-h-11"
-                  disabled={pending || qty >= purchase.ticket_quantity}
-                  onClick={() => removeMutation.mutate()}
-                >
-                  Confirmar: quitar {qty} boleto(s)
-                </Button>
-              </>
-            ) : (
-              <Button
-                variant="outline"
-                className="min-h-11"
-                disabled={pending || qty >= purchase.ticket_quantity}
-                onClick={() => setConfirmRemove(true)}
-              >
-                Quitar
-              </Button>
-            )}
+            <Button
+              variant="outline"
+              className="min-h-11"
+              disabled={pending || qty >= purchase.ticket_quantity}
+              onClick={() => setConfirm("remove")}
+            >
+              Quitar
+            </Button>
           </div>
         </>
       )}
+
+      <ConfirmAction
+        open={confirm === "add"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Agregar boletos"
+        description={`¿Agregar ${qty} boleto(s) a la compra #${purchase.id}? El total se actualizará.`}
+        confirmLabel="Agregar"
+        pending={pending}
+        onConfirm={() => addMutation.mutate()}
+      />
+
+      <ConfirmAction
+        open={confirm === "remove"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Quitar boletos"
+        description={`¿Quitar ${qty} boleto(s) de la compra #${purchase.id}?`}
+        confirmLabel="Quitar"
+        pending={pending}
+        destructive
+        onConfirm={() => removeMutation.mutate()}
+      />
+
+      <ConfirmAction
+        open={confirm === "reassign"}
+        onOpenChange={(open) => !open && setConfirm(null)}
+        title="Reasignar boletos"
+        description="Se asignarán nuevos números disponibles y la compra quedará en pendiente."
+        confirmLabel="Reasignar"
+        pending={pending}
+        onConfirm={() => reassignMutation.mutate()}
+      />
     </div>
   )
 }

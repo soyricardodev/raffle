@@ -2,10 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { AdminMaintenanceSection } from "@/features/admin/AdminMaintenanceSection"
+import { ColorField } from "@/features/admin/config/ColorField"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { adminFetch } from "@/lib/admin-fetch"
 import { normalizeHeroConfig, useSiteConfig } from "@/stores/site-config"
 
@@ -27,6 +31,8 @@ type SiteConfigApi = {
 export function AdminConfigView() {
   const queryClient = useQueryClient()
   const setFromApi = useSiteConfig((state) => state.setFromApi)
+  const [confirmSave, setConfirmSave] = useState(false)
+  const [bannerPreviewError, setBannerPreviewError] = useState(false)
 
   const configQuery = useQuery({
     queryKey: ["admin", "config"],
@@ -66,6 +72,7 @@ export function AdminConfigView() {
     setHeroTitle(hero.title)
     setHeroSubtitle(hero.subtitle)
     setBannerUrl(config.site_images?.banner ?? "")
+    setBannerPreviewError(false)
   }, [configQuery.data])
 
   const saveMutation = useMutation({
@@ -119,6 +126,7 @@ export function AdminConfigView() {
     },
     onSuccess: () => {
       toast.success("Configuración guardada")
+      setConfirmSave(false)
       setFromApi({
         site_info: { site_name: siteName, tagline },
         site_colors: { primary, secondary, accent },
@@ -133,14 +141,25 @@ export function AdminConfigView() {
     onError: (error: Error) => toast.error(error.message),
   })
 
-  return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">Configuración</h1>
-        <p className="text-muted-foreground text-sm">
-          Personaliza la identidad del sitio y datos de contacto.
-        </p>
+  if (configQuery.isPending) {
+    return (
+      <div className="mx-auto max-w-3xl space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-40 rounded-xl" />
+        <Skeleton className="h-32 rounded-xl" />
       </div>
+    )
+  }
+
+  const showBannerPreview = bannerUrl.trim().length > 0 && !bannerPreviewError
+
+  return (
+    <div className="mx-auto max-w-3xl space-y-6 pb-24 lg:pb-6">
+      <AdminPageHeader
+        title="Configuración"
+        description="Personaliza la identidad del sitio y datos de contacto."
+      />
 
       <Card>
         <CardHeader>
@@ -149,11 +168,21 @@ export function AdminConfigView() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="site-name">Nombre</Label>
-            <Input id="site-name" value={siteName} onChange={(e) => setSiteName(e.target.value)} />
+            <Input
+              id="site-name"
+              className="min-h-11"
+              value={siteName}
+              onChange={(e) => setSiteName(e.target.value)}
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="tagline">Eslogan</Label>
-            <Input id="tagline" value={tagline} onChange={(e) => setTagline(e.target.value)} />
+            <Input
+              id="tagline"
+              className="min-h-11"
+              value={tagline}
+              onChange={(e) => setTagline(e.target.value)}
+            />
           </div>
         </CardContent>
       </Card>
@@ -162,11 +191,12 @@ export function AdminConfigView() {
         <CardHeader>
           <CardTitle>Inicio (hero)</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4">
+        <CardContent className="flex flex-col gap-4">
           <div className="space-y-2">
             <Label htmlFor="hero-title">Título principal</Label>
             <Input
               id="hero-title"
+              className="min-h-11"
               value={heroTitle}
               onChange={(e) => setHeroTitle(e.target.value)}
               placeholder={siteName || "Rifas Premium"}
@@ -176,6 +206,7 @@ export function AdminConfigView() {
             <Label htmlFor="hero-subtitle">Subtítulo</Label>
             <Input
               id="hero-subtitle"
+              className="min-h-11"
               value={heroSubtitle}
               onChange={(e) => setHeroSubtitle(e.target.value)}
               placeholder={tagline || "¡Tu oportunidad de ganar!"}
@@ -186,11 +217,29 @@ export function AdminConfigView() {
             <Input
               id="banner-url"
               type="url"
+              className="min-h-11"
               value={bannerUrl}
-              onChange={(e) => setBannerUrl(e.target.value)}
+              onChange={(e) => {
+                setBannerUrl(e.target.value)
+                setBannerPreviewError(false)
+              }}
               placeholder="https://…"
             />
           </div>
+          {showBannerPreview ? (
+            <div className="overflow-hidden rounded-xl border bg-muted/30">
+              <img
+                src={bannerUrl.trim()}
+                alt="Vista previa del banner"
+                className="h-36 w-full object-cover md:h-44"
+                onError={() => setBannerPreviewError(true)}
+              />
+            </div>
+          ) : bannerUrl.trim() && bannerPreviewError ? (
+            <p className="text-muted-foreground text-xs">
+              No se pudo cargar la imagen. Revisa la URL.
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 
@@ -198,26 +247,10 @@ export function AdminConfigView() {
         <CardHeader>
           <CardTitle>Colores de marca</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-3">
-          {[
-            { id: "primary", label: "Primario", value: primary, set: setPrimary },
-            { id: "secondary", label: "Secundario", value: secondary, set: setSecondary },
-            { id: "accent", label: "Acento", value: accent, set: setAccent },
-          ].map((color) => (
-            <div key={color.id} className="space-y-2">
-              <Label htmlFor={color.id}>{color.label}</Label>
-              <div className="flex gap-2">
-                <input
-                  id={color.id}
-                  type="color"
-                  value={color.value}
-                  onChange={(e) => color.set(e.target.value)}
-                  className="size-10 cursor-pointer rounded-lg border"
-                />
-                <Input value={color.value} onChange={(e) => color.set(e.target.value)} />
-              </div>
-            </div>
-          ))}
+        <CardContent className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <ColorField id="primary" label="Primario" value={primary} onChange={setPrimary} />
+          <ColorField id="secondary" label="Secundario" value={secondary} onChange={setSecondary} />
+          <ColorField id="accent" label="Acento" value={accent} onChange={setAccent} />
         </CardContent>
       </Card>
 
@@ -228,20 +261,37 @@ export function AdminConfigView() {
         <CardContent className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="phone">Teléfono</Label>
-            <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+            <Input
+              id="phone"
+              className="min-h-11"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
-            <Input id="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input
+              id="email"
+              type="email"
+              className="min-h-11"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="address">Dirección</Label>
-            <Input id="address" value={address} onChange={(e) => setAddress(e.target.value)} />
+            <Input
+              id="address"
+              className="min-h-11"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+            />
           </div>
           <div className="space-y-2 sm:col-span-2">
             <Label htmlFor="whatsapp">WhatsApp (solo números)</Label>
             <Input
               id="whatsapp"
+              className="min-h-11"
               value={whatsapp}
               onChange={(e) => setWhatsapp(e.target.value)}
               placeholder="584121234567"
@@ -251,6 +301,7 @@ export function AdminConfigView() {
             <Label htmlFor="instagram">Instagram</Label>
             <Input
               id="instagram"
+              className="min-h-11"
               value={instagram}
               onChange={(e) => setInstagram(e.target.value)}
               placeholder="@usuario o URL"
@@ -260,6 +311,7 @@ export function AdminConfigView() {
             <Label htmlFor="facebook">Facebook</Label>
             <Input
               id="facebook"
+              className="min-h-11"
               value={facebook}
               onChange={(e) => setFacebook(e.target.value)}
               placeholder="URL o página"
@@ -270,9 +322,25 @@ export function AdminConfigView() {
 
       <AdminMaintenanceSection />
 
-      <Button disabled={saveMutation.isPending} onClick={() => saveMutation.mutate()}>
-        {saveMutation.isPending ? "Guardando…" : "Guardar cambios"}
-      </Button>
+      <div className="bg-background/95 border-border/80 fixed inset-x-0 bottom-[calc(4.5rem+env(safe-area-inset-bottom))] z-30 border-t p-4 backdrop-blur lg:static lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        <Button
+          className="min-h-11 w-full lg:w-auto"
+          disabled={saveMutation.isPending}
+          onClick={() => setConfirmSave(true)}
+        >
+          {saveMutation.isPending ? "Guardando…" : "Guardar cambios"}
+        </Button>
+      </div>
+
+      <ConfirmAction
+        open={confirmSave}
+        onOpenChange={setConfirmSave}
+        title="Guardar configuración"
+        description="Se actualizarán los datos del sitio, colores, contacto e imágenes públicas."
+        confirmLabel="Guardar"
+        pending={saveMutation.isPending}
+        onConfirm={() => saveMutation.mutate()}
+      />
     </div>
   )
 }

@@ -1,12 +1,12 @@
-import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip, Legend } from "recharts"
+"use client"
 
-const COLORS = [
-  "var(--color-chart-1)",
-  "var(--color-chart-2)",
-  "var(--color-chart-3)",
-  "var(--color-chart-4)",
-  "var(--color-chart-5)",
-]
+import {
+  EvilPieChart,
+  Legend,
+  Pie,
+  Tooltip,
+} from "@/components/evilcharts/charts/pie-chart"
+import { type ChartConfig } from "@/components/evilcharts/ui/chart"
 
 type Row = { status: string; count: number }
 
@@ -16,37 +16,50 @@ const labels: Record<string, string> = {
   rejected: "Rechazado",
 }
 
-export function StatusPieChart({ data }: { data: Row[] }) {
+const chartConfig = {
+  Pendiente: {
+    label: "Pendiente",
+    colors: { light: ["var(--color-chart-4)"], dark: ["var(--color-chart-4)"] },
+  },
+  Aprobado: {
+    label: "Aprobado",
+    colors: { light: ["var(--color-chart-1)"], dark: ["var(--color-chart-1)"] },
+  },
+  Rechazado: {
+    label: "Rechazado",
+    colors: { light: ["var(--color-chart-5)"], dark: ["var(--color-chart-5)"] },
+  },
+} satisfies ChartConfig
+
+export function StatusPieChart({
+  data,
+  isLoading = false,
+}: {
+  data: Row[]
+  isLoading?: boolean
+}) {
   const chartData = data.map((row) => ({
     name: labels[row.status] ?? row.status,
+    status: row.status,
     value: row.count,
   }))
 
-  if (!chartData.length) {
+  if (!chartData.length && !isLoading) {
     return <p className="text-muted-foreground py-8 text-center text-sm">Sin datos.</p>
   }
 
   return (
-    <ResponsiveContainer width="100%" height="100%" minHeight={220} className="min-h-[220px] md:min-h-[260px]">
-      <PieChart>
-        <Pie
-          data={chartData}
-          dataKey="value"
-          nameKey="name"
-          cx="50%"
-          cy="50%"
-          outerRadius="70%"
-          label={({ name, percent }) =>
-            percent && percent > 0.05 ? `${name}` : ""
-          }
-        >
-          {chartData.map((_, index) => (
-            <Cell key={index} fill={COLORS[index % COLORS.length]} />
-          ))}
-        </Pie>
-        <Tooltip />
-        <Legend />
-      </PieChart>
-    </ResponsiveContainer>
+    <EvilPieChart
+      data={chartData}
+      config={chartConfig}
+      dataKey="value"
+      nameKey="name"
+      isLoading={isLoading}
+      className="h-full min-h-[220px] w-full p-2 md:min-h-[260px]"
+    >
+      <Tooltip />
+      <Legend />
+      <Pie variant="gradient" innerRadius="45%" />
+    </EvilPieChart>
   )
 }

@@ -1,36 +1,44 @@
 import { useQuery } from "@tanstack/react-query"
-import { useMemo, useState } from "react"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { useEffect, useMemo, useState } from "react"
+import { AlertCircle, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { adminFetch } from "@/lib/admin-fetch"
-import { formatCurrency } from "@/lib/format"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Skeleton } from "@/components/ui/skeleton"
 import { MethodRevenueChart } from "@/features/admin/analytics/MethodRevenueChart"
+import { PeriodFilter } from "@/features/admin/analytics/PeriodFilter"
 import { SalesTrendChart } from "@/features/admin/analytics/SalesTrendChart"
 import { StatusPieChart } from "@/features/admin/analytics/StatusPieChart"
 import { TopRafflesList } from "@/features/admin/analytics/TopRafflesList"
-import { Skeleton } from "@/components/ui/skeleton"
-import { AlertCircle, Download, RefreshCw } from "lucide-react"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { adminFetch } from "@/lib/admin-fetch"
+import { formatCurrency } from "@/lib/format"
+const POLL_MS = 60_000
 
 type AnalyticsResponse = {
-  salesOverTime: { date: string; count: number; revenue: number }[]
-  topRaffles: {
+  salesOverTime: Array<{ date: string; count: number; revenue: number }>
+  topRaffles: Array<{
     id: number
     name: string
     totalSales: number
     totalRevenue: number
     ticketCount: number
-  }[]
-  revenueByMethod: { method: string; count: number; revenue: number }[]
-  statusDistribution: { status: string; count: number }[]
+  }>
+  revenueByMethod: Array<{ method: string; count: number; revenue: number }>
+  statusDistribution: Array<{ status: string; count: number }>
   dailyAverage: number
   totalRevenue: number
 }
 
-const PERIODS = [
-  { label: "7 días", days: 7 },
-  { label: "30 días", days: 30 },
-  { label: "90 días", days: 90 },
-] as const
+type DashboardStats = {
+  active_raffles: Array<{ id: number; name: string }>
+}
 
 function exportCsv(data: AnalyticsResponse, days: number) {
   const lines = [
@@ -52,10 +60,31 @@ function exportCsv(data: AnalyticsResponse, days: number) {
 
 export function AdminAnalytics() {
   const [days, setDays] = useState(30)
+  const [raffleId, setRaffleId] = useState("")
+  const [raffleInitialized, setRaffleInitialized] = useState(false)
+
+  const rafflesQuery = useQuery({
+    queryKey: ["admin", "dashboard", "raffles-list"],
+    queryFn: () => adminFetch<DashboardStats>("/api/admin/dashboard"),
+    staleTime: 60_000,
+  })
+
+  const activeRaffles = rafflesQuery.data?.active_raffles ?? []
+
+  useEffect(() => {
+    if (raffleInitialized || !activeRaffles.length) return
+    setRaffleId(String(activeRaffles[0]!.id))
+    setRaffleInitialized(true)
+  }, [activeRaffles, raffleInitialized])
 
   const analyticsQuery = useQuery({
-    queryKey: ["admin", "analytics", days],
-    queryFn: () => adminFetch<AnalyticsResponse>(`/api/admin/analytics?days=${days}`),
+    queryKey: ["admin", "analytics", days, raffleId],
+    queryFn: () => {
+      const params = new URLSearchParams({ days: String(days) })
+      if (raffleId) params.set("raffleId", raffleId)
+      return adminFetch<AnalyticsResponse>(`/api/admin/analytics?${params}`)
+    },
+    refetchInterval: POLL_MS,
   })
 
   const data = analyticsQuery.data
@@ -73,31 +102,37 @@ export function AdminAnalytics() {
   )
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="font-heading text-2xl font-semibold">Análisis</h1>
-          <p className="text-muted-foreground text-sm">Tendencias y desempeño comercial</p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {PERIODS.map((period) => (
-            <Button
-              key={period.days}
-              size="sm"
-              variant={days === period.days ? "default" : "outline"}
-              onClick={() => setDays(period.days)}
+    <div className="flex flex-col gap-6">
+      <AdminPageHeader
+        title="Análisis"
+        description="Tendencias y desempeño comercial"
+        actions={
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <Select
+              value={raffleId || "all"}
+              onValueChange={(v) => setRaffleId(v === "all" ? "" : v)}
             >
-              {period.label}
-            </Button>
-          ))}
-          {data && (
-            <Button size="sm" variant="outline" onClick={() => exportCsv(data, days)}>
-              <Download className="mr-2 size-4" />
-              CSV
-            </Button>
-          )}
-        </div>
-      </div>
+              <SelectTrigger className="h-11 w-full sm:w-[200px]" aria-label="Filtrar por rifa">
+                <SelectValue placeholder="Rifa" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas las rifas</SelectItem>
+                {activeRaffles.map((r) => (
+                  <SelectItem key={r.id} value={String(r.id)}>
+                    {r.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <PeriodFilter
+              value={days}
+              onChange={setDays}
+              onExport={data ? () => exportCsv(data, days) : undefined}
+              exportDisabled={!data}
+            />
+          </div>
+        }
+      />
 
       {analyticsQuery.isError && (
         <Card className="border-destructive/30 bg-destructive/5">
@@ -107,7 +142,11 @@ export function AdminAnalytics() {
               <p className="font-medium">No se pudieron cargar los datos</p>
               <p className="text-muted-foreground text-sm">Revisa tu conexión e intenta de nuevo.</p>
             </div>
-            <Button variant="outline" className="min-h-11" onClick={() => void analyticsQuery.refetch()}>
+            <Button
+              variant="outline"
+              className="min-h-11"
+              onClick={() => void analyticsQuery.refetch()}
+            >
               <RefreshCw className="mr-2 size-4" />
               Reintentar
             </Button>
@@ -135,10 +174,13 @@ export function AdminAnalytics() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Ventas e ingresos en el tiempo</CardTitle>
+            <CardTitle className="text-base">Ventas por día</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px] md:h-[300px]">
-            <SalesTrendChart data={data?.salesOverTime ?? []} />
+            <SalesTrendChart
+              data={data?.salesOverTime ?? []}
+              isLoading={analyticsQuery.isLoading}
+            />
           </CardContent>
         </Card>
         <Card>
@@ -146,7 +188,10 @@ export function AdminAnalytics() {
             <CardTitle className="text-base">Ingresos por método de pago</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px] md:h-[300px]">
-            <MethodRevenueChart data={data?.revenueByMethod ?? []} />
+            <MethodRevenueChart
+              data={data?.revenueByMethod ?? []}
+              isLoading={analyticsQuery.isLoading}
+            />
           </CardContent>
         </Card>
         <Card>
@@ -154,7 +199,10 @@ export function AdminAnalytics() {
             <CardTitle className="text-base">Distribución por estado</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px] md:h-[300px]">
-            <StatusPieChart data={data?.statusDistribution ?? []} />
+            <StatusPieChart
+              data={data?.statusDistribution ?? []}
+              isLoading={analyticsQuery.isLoading}
+            />
           </CardContent>
         </Card>
         <Card>

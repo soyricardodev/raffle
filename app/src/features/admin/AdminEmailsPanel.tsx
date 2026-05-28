@@ -1,32 +1,87 @@
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { useState } from "react"
+import { getRouteApi, useNavigate } from "@tanstack/react-router"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  ArrowClockwiseIcon,
+  EnvelopeSimpleIcon,
+  MagnifyingGlassIcon,
+  XIcon,
+} from "@phosphor-icons/react"
+import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import type { EmailLogRow } from "@/features/admin/emails/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import {
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import {
+  EmailLogsDataTable,
+  EmailLogsMobileList,
+} from "@/features/admin/emails/EmailLogsDataTable"
+import {
+  ADMIN_EMAILS_PAGE_SIZE,
+  adminEmailsQueryOptions,
+  normalizeAdminEmailFilters,
+} from "@/features/admin/emails/admin-emails-queries"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
+import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { adminFetch } from "@/lib/admin-fetch"
-import { formatDateTime } from "@/lib/format"
-import { Mail, RefreshCw } from "lucide-react"
+import { cn } from "@/lib/utils"
 
-type EmailLogRow = {
-  id: number
-  purchase_id: number | null
-  recipient_email: string
-  email_type: string
-  subject: string
-  status: string
-  sent_at: string | null
-  created_at: string
-  customer_name: string | null
-}
+const routeApi = getRouteApi("/admin/emails")
 
 export function AdminEmailsPanel() {
+  const routeSearch = routeApi.useSearch()
+  const navigate = useNavigate({ from: "/admin/emails" })
+  const queryClient = useQueryClient()
+
   const [testEmail, setTestEmail] = useState("")
+  const [confirmSend, setConfirmSend] = useState(false)
+
+  const filters = useMemo(
+    () => normalizeAdminEmailFilters(routeSearch),
+    [routeSearch]
+  )
+  const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
+  const debouncedSearch = useDebouncedValue(searchDraft)
+
+  useEffect(() => {
+    setSearchDraft(filters.search ?? "")
+  }, [filters.search])
+
+  useEffect(() => {
+    const nextSearch = debouncedSearch.trim()
+    if (nextSearch === (filters.search ?? "")) return
+
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        q: nextSearch || undefined,
+        page: 1,
+      }),
+    })
+  }, [debouncedSearch, filters.search, navigate])
 
   const logsQuery = useQuery({
-    queryKey: ["admin", "emails"],
-    queryFn: () => adminFetch<{ data: EmailLogRow[] }>("/api/admin/emails?limit=50"),
+    ...adminEmailsQueryOptions(filters),
+    refetchOnMount: false,
   })
 
   const testMutation = useMutation({
@@ -35,84 +90,192 @@ export function AdminEmailsPanel() {
         method: "POST",
         body: JSON.stringify({ to: testEmail.trim() }),
       }),
-    onSuccess: () => toast.success("Email de prueba enviado"),
+    onSuccess: () => {
+      toast.success("Email de prueba enviado")
+      setConfirmSend(false)
+      void queryClient.invalidateQueries({ queryKey: ["admin", "emails"] })
+    },
     onError: (error: Error) => toast.error(error.message),
   })
 
-  const logs = logsQuery.data?.data ?? []
+  const logs: Array<EmailLogRow> = logsQuery.data?.data ?? []
+  const total = logsQuery.data?.total ?? 0
+  const pageSize = filters.limit ?? ADMIN_EMAILS_PAGE_SIZE
+  const hasCustomFilters = Boolean(
+    filters.search || filters.start || filters.end || filters.status !== "all"
+  )
+
+  function updateSearch(patch: Partial<typeof routeSearch>) {
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        ...patch,
+      }),
+    })
+  }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-heading text-2xl font-semibold">Emails</h1>
-        <p className="text-muted-foreground text-sm">Historial y pruebas de envío</p>
-      </div>
+    <div className="flex flex-col gap-4">
+      <AdminPageHeader
+        title="Emails"
+        description="Historial de envíos y pruebas"
+        actions={
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={logsQuery.isFetching}
+            onClick={() => void logsQuery.refetch()}
+          >
+            <ArrowClockwiseIcon
+              data-icon="inline-start"
+              className={cn(logsQuery.isFetching && "animate-spin")}
+            />
+            Actualizar
+          </Button>
+        }
+      />
 
       <Card>
-        <CardHeader>
+        <CardHeader className="border-b p-3 sm:p-4">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Mail className="size-4" />
+            <EnvelopeSimpleIcon />
             Email de prueba
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <div className="min-w-[240px] flex-1 space-y-2">
+        <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-end sm:p-4">
+          <div className="min-w-0 flex-1 sm:min-w-[240px]">
             <Label htmlFor="test-email">Destinatario</Label>
             <Input
               id="test-email"
               type="email"
+              className="mt-1.5"
               value={testEmail}
               onChange={(e) => setTestEmail(e.target.value)}
               placeholder="correo@ejemplo.com"
             />
           </div>
           <Button
-            className="self-end"
+            className="w-full sm:w-auto"
             disabled={!testEmail.trim() || testMutation.isPending}
-            onClick={() => testMutation.mutate()}
+            onClick={() => setConfirmSend(true)}
           >
             Enviar prueba
           </Button>
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-base">Historial</CardTitle>
-          <Button variant="outline" size="sm" onClick={() => void logsQuery.refetch()}>
-            <RefreshCw className="mr-2 size-4" />
-            Actualizar
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {logs.map((log) => (
-            <div key={log.id} className="rounded-lg border px-3 py-2 text-sm">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-medium">{log.subject}</span>
-                <span
-                  className={`rounded-full px-2 py-0.5 text-xs ${
-                    log.status === "sent"
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-red-100 text-red-800"
-                  }`}
+      <Card className="overflow-hidden">
+        <CardHeader className="gap-3 border-b p-3 sm:p-4">
+          <div>
+            <CardTitle className="text-base">Historial</CardTitle>
+            <p className="text-xs text-muted-foreground tabular-nums">
+              {total.toLocaleString("es-VE")} registro{total === 1 ? "" : "s"}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
+            <InputGroup className="lg:max-w-80">
+              <InputGroupAddon>
+                <MagnifyingGlassIcon />
+              </InputGroupAddon>
+              <InputGroupInput
+                placeholder="Asunto, destinatario o cliente"
+                value={searchDraft}
+                onChange={(event) => setSearchDraft(event.target.value)}
+              />
+              {searchDraft ? (
+                <InputGroupAddon align="inline-end">
+                  <InputGroupButton
+                    size="icon-xs"
+                    aria-label="Limpiar búsqueda"
+                    onClick={() => setSearchDraft("")}
+                  >
+                    <XIcon />
+                  </InputGroupButton>
+                </InputGroupAddon>
+              ) : null}
+            </InputGroup>
+
+            <div className="flex min-w-0 flex-wrap items-center gap-2">
+              <Select
+                value={filters.status}
+                onValueChange={(status) => updateSearch({ status, page: 1 })}
+              >
+                <SelectTrigger size="sm" className="w-[136px]">
+                  <SelectValue placeholder="Estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">Todos</SelectItem>
+                    <SelectItem value="sent">Enviados</SelectItem>
+                    <SelectItem value="failed">Fallidos</SelectItem>
+                    <SelectItem value="pending">Pendientes</SelectItem>
+                    <SelectItem value="error">Error</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              <AdminDateRangeFilter
+                start={filters.start}
+                end={filters.end}
+                onChange={(range) =>
+                  updateSearch({
+                    start: range.start,
+                    end: range.end,
+                    page: 1,
+                  })
+                }
+              />
+
+              {hasCustomFilters ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={() =>
+                    updateSearch({
+                      status: undefined,
+                      q: undefined,
+                      start: undefined,
+                      end: undefined,
+                      page: 1,
+                    })
+                  }
                 >
-                  {log.status}
-                </span>
-              </div>
-              <p className="text-muted-foreground text-xs">
-                {log.recipient_email} · {log.email_type.replace(/_/g, " ")}
-              </p>
-              <p className="text-muted-foreground text-xs">
-                {formatDateTime(log.sent_at ?? log.created_at)}
-                {log.customer_name ? ` · ${log.customer_name}` : ""}
-              </p>
+                  Limpiar
+                </Button>
+              ) : null}
             </div>
-          ))}
-          {logs.length === 0 && (
-            <p className="text-muted-foreground py-6 text-center text-sm">Sin registros aún.</p>
-          )}
+          </div>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <div className="hidden md:block">
+            <EmailLogsDataTable logs={logs} loading={logsQuery.isPending} />
+          </div>
+          <div className="p-3 md:hidden">
+            <EmailLogsMobileList logs={logs} loading={logsQuery.isPending} />
+          </div>
+          <AdminDataGridPagination
+            page={filters.page}
+            pageSize={pageSize}
+            total={total}
+            loading={logsQuery.isFetching}
+            onPageChange={(page) => updateSearch({ page })}
+          />
         </CardContent>
       </Card>
+
+      <ConfirmAction
+        open={confirmSend}
+        onOpenChange={setConfirmSend}
+        title="Enviar email de prueba"
+        description={`¿Enviar un correo de prueba a ${testEmail.trim()}?`}
+        confirmLabel="Enviar"
+        pending={testMutation.isPending}
+        onConfirm={() => testMutation.mutate()}
+      />
     </div>
   )
 }

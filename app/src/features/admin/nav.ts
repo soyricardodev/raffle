@@ -1,52 +1,76 @@
+import {
+  BarChart3,
+  Calendar,
+  LayoutDashboard,
+  Mail,
+  Plus,
+  Receipt,
+  Settings,
+  Ticket,
+} from "lucide-react"
 import type { LucideIcon } from "lucide-react"
-import { BarChart3, Calendar, LayoutDashboard, Mail, Plus, Settings, Ticket } from "lucide-react"
 
 export type AdminNavItem = {
   name: string
+  shortName: string
   href: string
   icon: LucideIcon
   description: string
 }
 
-export const adminNavItems: AdminNavItem[] = [
+export const adminNavItems: Array<AdminNavItem> = [
   {
     name: "Dashboard",
+    shortName: "Inicio",
     href: "/admin",
     icon: LayoutDashboard,
     description: "Resumen general",
   },
   {
     name: "Mis Rifas",
+    shortName: "Rifas",
     href: "/admin/rifas",
     icon: Calendar,
     description: "Gestionar rifas",
   },
   {
+    name: "Compras",
+    shortName: "Compras",
+    href: "/admin/compras",
+    icon: Receipt,
+    description: "Ventas y aprobaciones",
+  },
+  {
     name: "Análisis",
+    shortName: "Stats",
     href: "/admin/analytics",
     icon: BarChart3,
     description: "Estadísticas",
   },
   {
-    name: "Boletos",
+    name: "Buscar boleto",
+    shortName: "Boleto",
     href: "/admin/boletos",
     icon: Ticket,
-    description: "Boletos vendidos",
+    description: "Dueño por número",
   },
   {
     name: "Nueva Rifa",
+    shortName: "Nueva",
     href: "/admin/crear",
     icon: Plus,
     description: "Crear rifa",
   },
   {
     name: "Configuración",
+    shortName: "Config",
     href: "/admin/config",
     icon: Settings,
     description: "Sitio y email",
   },
   {
     name: "Emails",
+    shortName: "Emails",
     href: "/admin/emails",
     icon: Mail,
     description: "Logs y pruebas",
