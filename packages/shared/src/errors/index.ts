@@ -84,6 +84,16 @@ export class RaffleHasPurchasesError extends AppError {
   }
 }
 
+export class RaffleInvalidTransitionError extends AppError {
+  constructor(
+    message: string,
+    details?: { raffleId?: number; from?: string; to?: string; intent?: string },
+  ) {
+    super(message, 400, "RAFFLE_INVALID_TRANSITION", details)
+    this.name = "RaffleInvalidTransitionError"
+  }
+}
+
 // ─── Tickets ─────────────────────────────────────────────────
 
 export class InsufficientTicketsError extends AppError {

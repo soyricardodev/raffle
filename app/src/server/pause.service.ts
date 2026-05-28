@@ -1,7 +1,7 @@
 import { getLogger } from "@/lib/logger"
 import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { raffles } from "@raffle/shared/db"
-import type { PauseReason } from "@raffle/shared/validators"
+import type { PauseReason, RaffleStatus } from "@raffle/shared/validators"
 import { and, eq, lte } from "drizzle-orm"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import type { RaffleLiveRow } from "./repositories/raffles.repository"
@@ -153,7 +153,7 @@ export async function unpauseRaffle(raffleId: number): Promise<{
     const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
     const minPurchase = raffle.minPurchase
 
-    let newStatus = "active"
+    let newStatus: RaffleStatus = "active"
     let message = "Rifa reactivada exitosamente"
 
     if (availability.available === 0) {
@@ -164,7 +164,9 @@ export async function unpauseRaffle(raffleId: number): Promise<{
       message = `Rifa finalizada — tickets insuficientes (${availability.available} < ${minPurchase})`
     }
 
-    await withImmediateTransaction((tx) => rafflesRepo.unpauseRaffleRow(tx, raffleId, newStatus))
+    await withImmediateTransaction((tx) =>
+      rafflesRepo.unpauseRaffleRow(tx, raffleId, newStatus),
+    )
 
     logger.info({ raffleId, newStatus }, "raffle:unpaused")
     return { success: true, newStatus, message, availability }

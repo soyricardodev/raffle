@@ -3,6 +3,7 @@ import { AppError } from "@raffle/shared/errors"
 import {
   PLATFORM_TOTAL_TICKETS,
   type CreateRaffleInput,
+  type RaffleStatus,
   type UpdateRaffleInput,
 } from "@raffle/shared/validators"
 import { and, desc, eq, inArray, like, sql } from "drizzle-orm"
@@ -242,7 +243,6 @@ export async function updateRaffleRow(
     patch.drawDate = input.draw_date ? new Date(input.draw_date) : null
   }
   if (input.days_for_draw !== undefined) patch.daysForDraw = input.days_for_draw
-  if (input.status !== undefined) patch.status = input.status
   if (input.auto_pause_enabled !== undefined)
     patch.autoPauseEnabled = input.auto_pause_enabled
 
@@ -290,7 +290,7 @@ export async function pauseRaffleRow(
 export async function unpauseRaffleRow(
   tx: DbTransaction,
   raffleId: number,
-  newStatus: string
+  newStatus: RaffleStatus
 ): Promise<void> {
   await setRaffleStatusRow(tx, raffleId, newStatus)
 }
@@ -298,7 +298,7 @@ export async function unpauseRaffleRow(
 export async function setRaffleStatusRow(
   tx: DbTransaction,
   raffleId: number,
-  status: string,
+  status: RaffleStatus,
   options?: { pauseUntil?: Date; pauseReason?: string }
 ): Promise<void> {
   const patch: Partial<typeof raffles.$inferInsert> = {
@@ -322,7 +322,12 @@ export async function finalizeExpiredRaffles(): Promise<number> {
   const cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000)
   const updated = await db
     .update(raffles)
-    .set({ status: "finished", updatedAt: new Date() })
+    .set({
+      status: "finished",
+      pauseUntil: null,
+      pauseReason: null,
+      updatedAt: new Date(),
+    })
     .where(
       and(
         inArray(raffles.status, ["active", "paused"]),

@@ -56,6 +56,7 @@ import { Route as ApiAdminRafflesIdUnpauseRouteImport } from './routes/api/admin
 import { Route as ApiAdminRafflesIdStatusRouteImport } from './routes/api/admin/raffles/$id.status'
 import { Route as ApiAdminRafflesIdPublishRouteImport } from './routes/api/admin/raffles/$id.publish'
 import { Route as ApiAdminRafflesIdPauseRouteImport } from './routes/api/admin/raffles/$id.pause'
+import { Route as ApiAdminRafflesIdLifecycleRouteImport } from './routes/api/admin/raffles/$id.lifecycle'
 import { Route as ApiAdminRafflesIdAutoPauseRouteImport } from './routes/api/admin/raffles/$id.auto-pause'
 import { Route as ApiAdminPurchasesIdStatusRouteImport } from './routes/api/admin/purchases/$id.status'
 import { Route as ApiAdminPurchasesIdTicketsRemoveRouteImport } from './routes/api/admin/purchases/$id.tickets.remove'
@@ -300,6 +301,12 @@ const ApiAdminRafflesIdPauseRoute = ApiAdminRafflesIdPauseRouteImport.update({
   path: '/pause',
   getParentRoute: () => ApiAdminRafflesIdRoute,
 } as any)
+const ApiAdminRafflesIdLifecycleRoute =
+  ApiAdminRafflesIdLifecycleRouteImport.update({
+    id: '/lifecycle',
+    path: '/lifecycle',
+    getParentRoute: () => ApiAdminRafflesIdRoute,
+  } as any)
 const ApiAdminRafflesIdAutoPauseRoute =
   ApiAdminRafflesIdAutoPauseRouteImport.update({
     id: '/auto-pause',
@@ -376,6 +383,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/raffles/': typeof ApiAdminRafflesIndexRoute
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
+  '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
@@ -427,6 +435,7 @@ export interface FileRoutesByTo {
   '/api/admin/raffles': typeof ApiAdminRafflesIndexRoute
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
+  '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
@@ -482,6 +491,7 @@ export interface FileRoutesById {
   '/api/admin/raffles/': typeof ApiAdminRafflesIndexRoute
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
+  '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
@@ -537,6 +547,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/'
     | '/api/admin/purchases/$id/status'
     | '/api/admin/raffles/$id/auto-pause'
+    | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
@@ -588,6 +599,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles'
     | '/api/admin/purchases/$id/status'
     | '/api/admin/raffles/$id/auto-pause'
+    | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
@@ -642,6 +654,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/'
     | '/api/admin/purchases/$id/status'
     | '/api/admin/raffles/$id/auto-pause'
+    | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
@@ -1011,6 +1024,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRafflesIdPauseRouteImport
       parentRoute: typeof ApiAdminRafflesIdRoute
     }
+    '/api/admin/raffles/$id/lifecycle': {
+      id: '/api/admin/raffles/$id/lifecycle'
+      path: '/lifecycle'
+      fullPath: '/api/admin/raffles/$id/lifecycle'
+      preLoaderRoute: typeof ApiAdminRafflesIdLifecycleRouteImport
+      parentRoute: typeof ApiAdminRafflesIdRoute
+    }
     '/api/admin/raffles/$id/auto-pause': {
       id: '/api/admin/raffles/$id/auto-pause'
       path: '/auto-pause'
@@ -1143,6 +1163,7 @@ const ApiAdminPurchasesIdRouteWithChildren =
 
 interface ApiAdminRafflesIdRouteChildren {
   ApiAdminRafflesIdAutoPauseRoute: typeof ApiAdminRafflesIdAutoPauseRoute
+  ApiAdminRafflesIdLifecycleRoute: typeof ApiAdminRafflesIdLifecycleRoute
   ApiAdminRafflesIdPauseRoute: typeof ApiAdminRafflesIdPauseRoute
   ApiAdminRafflesIdPublishRoute: typeof ApiAdminRafflesIdPublishRoute
   ApiAdminRafflesIdStatusRoute: typeof ApiAdminRafflesIdStatusRoute
@@ -1151,6 +1172,7 @@ interface ApiAdminRafflesIdRouteChildren {
 
 const ApiAdminRafflesIdRouteChildren: ApiAdminRafflesIdRouteChildren = {
   ApiAdminRafflesIdAutoPauseRoute: ApiAdminRafflesIdAutoPauseRoute,
+  ApiAdminRafflesIdLifecycleRoute: ApiAdminRafflesIdLifecycleRoute,
   ApiAdminRafflesIdPauseRoute: ApiAdminRafflesIdPauseRoute,
   ApiAdminRafflesIdPublishRoute: ApiAdminRafflesIdPublishRoute,
   ApiAdminRafflesIdStatusRoute: ApiAdminRafflesIdStatusRoute,

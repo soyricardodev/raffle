@@ -1,3 +1,4 @@
+import { Link } from "@tanstack/react-router"
 import { Plus, Trash } from "@phosphor-icons/react"
 import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
 import { useState } from "react"
@@ -6,6 +7,7 @@ import type { RaffleFormState } from "@/features/admin/raffles/types"
 import { defaultPrize } from "@/features/admin/raffles/types"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
 import { RafflePaymentMethodsPicker } from "@/features/admin/payment-methods/RafflePaymentMethodsPicker"
+import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -41,6 +43,7 @@ type RaffleFormProps = {
   title: string
   description?: string
   initial: RaffleFormState
+  raffleId?: string
   isPending?: boolean
   onSubmit: (payload: CreateRaffleInput | UpdateRaffleInput) => void
   onCancel?: () => void
@@ -82,6 +85,7 @@ export function RaffleForm({
   title,
   description,
   initial,
+  raffleId,
   isPending = false,
   onSubmit,
   onCancel,
@@ -108,7 +112,13 @@ export function RaffleForm({
 
   function handleSubmit() {
     if (!validate()) return
-    onSubmit(buildPayload(state))
+    const payload = buildPayload(state)
+    if (mode === "edit") {
+      const { status: _status, ...update } = payload
+      onSubmit(update)
+      return
+    }
+    onSubmit(payload)
   }
 
   const prizeCount = state.prizes.filter((p) => p.name.trim()).length
@@ -339,30 +349,42 @@ export function RaffleForm({
             </CardHeader>
             <CardContent>
               <FieldGroup>
-                <Field>
-                  <FieldLabel htmlFor="raffle-status">Estado inicial</FieldLabel>
-                  <Select
-                    value={state.status}
-                    onValueChange={(value) =>
-                      patch("status", value as RaffleFormState["status"])
-                    }
-                  >
-                    <SelectTrigger id="raffle-status" className="min-h-11 w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="draft">Borrador</SelectItem>
-                      <SelectItem value="active">Activa</SelectItem>
-                      {mode === "edit" ? (
-                        <>
-                          <SelectItem value="paused">Pausada</SelectItem>
-                          <SelectItem value="finished">Finalizada</SelectItem>
-                          <SelectItem value="cancelled">Cancelada</SelectItem>
-                        </>
+                {mode === "create" ? (
+                  <Field>
+                    <FieldLabel htmlFor="raffle-status">Estado inicial</FieldLabel>
+                    <Select
+                      value={state.status}
+                      onValueChange={(value) =>
+                        patch("status", value as RaffleFormState["status"])
+                      }
+                    >
+                      <SelectTrigger id="raffle-status" className="min-h-11 w-full">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="draft">Borrador</SelectItem>
+                        <SelectItem value="active">Activa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                ) : (
+                  <Field>
+                    <FieldLabel>Estado de venta</FieldLabel>
+                    <div className="flex flex-col gap-2 rounded-lg border p-3">
+                      <RaffleStatusBadge status={state.status} />
+                      <p className="text-muted-foreground text-sm">
+                        El estado se gestiona desde el ciclo de venta (pausar, finalizar, publicar).
+                      </p>
+                      {raffleId ? (
+                        <Button asChild variant="outline" className="min-h-11 w-full">
+                          <Link to="/admin/rifas/$id" params={{ id: raffleId }}>
+                            Ir al ciclo de venta
+                          </Link>
+                        </Button>
                       ) : null}
-                    </SelectContent>
-                  </Select>
-                </Field>
+                    </div>
+                  </Field>
+                )}
 
                 <Separator />
 

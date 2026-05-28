@@ -6,14 +6,14 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AdminDataGrid } from "@/features/admin/shared/AdminDataGrid"
 import { RaffleRowActions } from "@/features/admin/raffles/RaffleRowActions"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
-import type { LifecycleConfirm } from "@/features/admin/raffles/raffle-lifecycle-ui"
+import type { TransitionRaffleInput } from "@raffle/shared/validators"
 import { formatCurrency, formatDate } from "@/lib/format"
 
 type RafflesDataTableProps = {
   raffles: Array<RaffleRow>
   loading?: boolean
   pending?: boolean
-  onLifecycle: (id: number, confirm: LifecycleConfirm) => void
+  onLifecycle: (id: number, request: TransitionRaffleInput) => void
 }
 
 export function RafflesDataTable({
@@ -85,7 +85,7 @@ export function RafflesDataTable({
               raffle={row.original}
               pending={pending}
               density="compact"
-              onLifecycle={(confirm) => onLifecycle(row.original.id, confirm)}
+              onLifecycle={(request) => onLifecycle(row.original.id, request)}
             />
           </div>
         ),
@@ -158,7 +158,7 @@ export function RafflesMobileList({
             <RaffleRowActions
               raffle={raffle}
               pending={pending}
-              onLifecycle={(confirm) => onLifecycle(raffle.id, confirm)}
+              onLifecycle={(request) => onLifecycle(raffle.id, request)}
             />
           </div>
         </div>

@@ -5,11 +5,7 @@ import {
   RaffleHasPurchasesError,
   RaffleNotActiveError,
 } from "@raffle/shared/errors"
-import type {
-  CreateRaffleInput,
-  RaffleStatus,
-  UpdateRaffleInput,
-} from "@raffle/shared/validators"
+import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import { prizes, purchases, raffles } from "@raffle/shared/db"
 import { fromCents } from "@raffle/shared/db"
@@ -214,58 +210,6 @@ export async function deleteRaffle(id: number) {
   await withImmediateTransaction((tx) => rafflesRepo.deleteRaffle(tx, id))
   logger.info({ raffleId: id, name: row.name }, "raffle:deleted")
   return { deletedId: id, name: row.name }
-}
-
-const STATUS_LABELS: Record<RaffleStatus, string> = {
-  draft: "borrador",
-  active: "activa",
-  paused: "pausada",
-  finished: "finalizada",
-  cancelled: "cancelada",
-}
-
-export async function setRaffleStatus(id: number, status: RaffleStatus) {
-  const row = await rafflesRepo.findRaffleById(id)
-  if (!row) throw new RaffleNotFoundError(id)
-
-  if (row.status === status) {
-    return {
-      message: `La rifa ya está en estado ${STATUS_LABELS[status]}`,
-      raffleId: id,
-      status,
-      previousStatus: row.status,
-      noChange: true as const,
-    }
-  }
-
-  const pauseOptions =
-    status === "paused"
-      ? (() => {
-          const pauseUntil = new Date()
-          pauseUntil.setMinutes(pauseUntil.getMinutes() + 15)
-          return { pauseUntil, pauseReason: "manual" as const }
-        })()
-      : undefined
-
-  await withImmediateTransaction((tx) =>
-    rafflesRepo.setRaffleStatusRow(tx, id, status, pauseOptions),
-  )
-
-  logger.info(
-    { raffleId: id, previousStatus: row.status, status },
-    "raffle:status_changed",
-  )
-
-  return {
-    message: `Estado actualizado a ${STATUS_LABELS[status]}`,
-    raffleId: id,
-    status,
-    previousStatus: row.status,
-  }
-}
-
-export async function finishRaffle(id: number) {
-  return setRaffleStatus(id, "finished")
 }
 
 export async function publishRaffle(id: number, publish: boolean) {

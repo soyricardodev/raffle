@@ -1,5 +1,5 @@
 import { Link, getRouteApi, useNavigate } from "@tanstack/react-router"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import {
   ArrowClockwiseIcon,
   MagnifyingGlassIcon,
@@ -7,7 +7,7 @@ import {
   XIcon,
 } from "@phosphor-icons/react"
 import { useEffect, useMemo, useState } from "react"
-import { toast } from "sonner"
+import { RaffleStatus } from "@raffle/shared/validators"
 import type { RaffleRow } from "@/features/admin/raffles/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -37,8 +37,7 @@ import {
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { executeRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
-import type { LifecycleConfirm } from "@/features/admin/raffles/raffle-lifecycle-ui"
+import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
 import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/rifas/")
@@ -46,8 +45,6 @@ const routeApi = getRouteApi("/admin/rifas/")
 export function AdminRafflesTable() {
   const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/rifas/" })
-  const queryClient = useQueryClient()
-
   const filters = useMemo(
     () => normalizeAdminRaffleFilters(routeSearch),
     [routeSearch]
@@ -78,22 +75,12 @@ export function AdminRafflesTable() {
     refetchOnMount: false,
   })
 
-  const actionMutation = useMutation({
-    mutationFn: async ({
-      id,
-      confirm,
-    }: {
-      id: number
-      confirm: LifecycleConfirm
-    }) => executeRaffleLifecycle(id, confirm),
-    onSuccess: () => {
-      toast.success("Rifa actualizada")
-      void queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] })
-    },
-    onError: (error: Error) => toast.error(error.message),
-  })
+  const { runForRaffle, pending: lifecyclePending } = useAdminRaffleLifecycle()
 
-  const raffles: Array<RaffleRow> = rafflesQuery.data?.data ?? []
+  const raffles: Array<RaffleRow> = (rafflesQuery.data?.data ?? []).map((row) => ({
+    ...row,
+    status: RaffleStatus.parse(row.status),
+  }))
   const total = rafflesQuery.data?.total ?? 0
   const pageSize = filters.limit ?? ADMIN_RAFFLES_PAGE_SIZE
   const hasCustomFilters = Boolean(
@@ -218,16 +205,16 @@ export function AdminRafflesTable() {
             <RafflesDataTable
               raffles={raffles}
               loading={rafflesQuery.isPending}
-              pending={actionMutation.isPending}
-              onLifecycle={(id, confirm) => actionMutation.mutate({ id, confirm })}
+              pending={lifecyclePending}
+              onLifecycle={(id, request) => runForRaffle(id, request)}
             />
           </div>
           <div className="p-3 md:hidden">
             <RafflesMobileList
               raffles={raffles}
               loading={rafflesQuery.isPending}
-              pending={actionMutation.isPending}
-              onLifecycle={(id, confirm) => actionMutation.mutate({ id, confirm })}
+              pending={lifecyclePending}
+              onLifecycle={(id, request) => runForRaffle(id, request)}
             />
           </div>
           <AdminDataGridPagination

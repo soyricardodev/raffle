@@ -109,6 +109,7 @@ export function EditRaffleForm({ raffleId }: { raffleId: string }) {
       mode="edit"
       title="Editar rifa"
       description={`Rifa #${raffleId}`}
+      raffleId={raffleId}
       initial={initial}
       isPending={saveMutation.isPending}
       onSubmit={(payload) => saveMutation.mutate(payload as UpdateRaffleInput)}

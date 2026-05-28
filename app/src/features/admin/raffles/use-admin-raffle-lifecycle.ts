@@ -1,63 +1,63 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
+import type { TransitionRaffleInput } from "@raffle/shared/validators"
 import { toast } from "sonner"
-import { adminRaffleDetailQueryOptions } from "@/features/admin/raffles/admin-raffle-detail-queries"
-import type { LifecycleConfirm } from "@/features/admin/raffles/raffle-lifecycle-ui"
+import {
+  adminRaffleDetailQueryOptions,
+  adminRaffleQueryKeys,
+} from "@/features/admin/raffles/admin-raffle-detail-queries"
 import { adminFetch } from "@/lib/admin-fetch"
 
 export async function executeRaffleLifecycle(
   raffleId: string | number,
-  confirm: LifecycleConfirm,
+  request: TransitionRaffleInput,
 ) {
-  const id = String(raffleId)
-  if (confirm === "pause") {
-    return adminFetch(`/api/admin/raffles/${id}/pause`, { method: "POST" })
-  }
-  if (confirm === "unpause") {
-    return adminFetch(`/api/admin/raffles/${id}/unpause`, { method: "POST" })
-  }
-  if (confirm === "publish") {
-    return adminFetch(`/api/admin/raffles/${id}/publish`, {
-      method: "PUT",
-      body: JSON.stringify({ publish: true }),
-    })
-  }
-  if (confirm === "finish") {
-    return adminFetch(`/api/admin/raffles/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status: "finished" }),
-    })
-  }
-  if (confirm === "activate" || confirm === "reactivate") {
-    return adminFetch(`/api/admin/raffles/${id}/status`, {
-      method: "PUT",
-      body: JSON.stringify({ status: "active" }),
-    })
-  }
-  return adminFetch(`/api/admin/raffles/${id}/status`, {
-    method: "PUT",
-    body: JSON.stringify({ status: confirm.status }),
+  return adminFetch(`/api/admin/raffles/${String(raffleId)}/lifecycle`, {
+    method: "POST",
+    body: JSON.stringify(request),
   })
 }
 
-export function useAdminRaffleLifecycle(raffleId: string) {
+export function useAdminRaffleLifecycle(raffleId?: string) {
   const queryClient = useQueryClient()
 
   const invalidate = () => {
-    void queryClient.invalidateQueries({
-      queryKey: adminRaffleDetailQueryOptions(raffleId).queryKey,
-    })
+    if (raffleId) {
+      void queryClient.invalidateQueries({
+        queryKey: adminRaffleDetailQueryOptions(raffleId).queryKey,
+      })
+    }
     void queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] })
   }
 
   const mutation = useMutation({
-    mutationFn: async (confirm: LifecycleConfirm) =>
-      executeRaffleLifecycle(raffleId, confirm),
-    onSuccess: () => {
+    mutationFn: async ({
+      id,
+      request,
+    }: {
+      id: number
+      request: TransitionRaffleInput
+    }) => executeRaffleLifecycle(id, request),
+    onSuccess: (_data, variables) => {
       toast.success("Rifa actualizada")
+      if (raffleId && variables.id === Number(raffleId)) {
+        void queryClient.invalidateQueries({
+          queryKey: adminRaffleQueryKeys.detail(raffleId),
+        })
+      }
       invalidate()
     },
     onError: (error: Error) => toast.error(error.message),
   })
 
-  return { run: mutation.mutate, pending: mutation.isPending }
+  return {
+    run: (request: TransitionRaffleInput) => {
+      if (raffleId == null) {
+        throw new Error("raffleId is required for run()")
+      }
+      mutation.mutate({ id: Number(raffleId), request })
+    },
+    runForRaffle: (id: number, request: TransitionRaffleInput) =>
+      mutation.mutate({ id, request }),
+    pending: mutation.isPending,
+  }
 }

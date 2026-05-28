@@ -248,8 +248,29 @@ export {
 } from "../payment-methods/schemas.js"
 export type CreateRaffleInput = z.infer<typeof CreateRaffleInput>
 
-export const UpdateRaffleInput = CreateRaffleInput.partial()
+/** Edit form must not change status; use admin lifecycle transitions instead. */
+export const UpdateRaffleInput = CreateRaffleInput.omit({ status: true }).partial()
 export type UpdateRaffleInput = z.infer<typeof UpdateRaffleInput>
+
+export const RaffleLifecycleIntent = z.enum([
+  "pause_sales",
+  "resume_sales",
+  "finish",
+  "activate",
+  "publish_results",
+  "set_status",
+])
+export type RaffleLifecycleIntent = z.infer<typeof RaffleLifecycleIntent>
+
+export const TransitionRaffleInput = z.discriminatedUnion("intent", [
+  z.object({ intent: z.literal("pause_sales") }),
+  z.object({ intent: z.literal("resume_sales") }),
+  z.object({ intent: z.literal("finish") }),
+  z.object({ intent: z.literal("activate") }),
+  z.object({ intent: z.literal("publish_results") }),
+  z.object({ intent: z.literal("set_status"), status: RaffleStatus }),
+])
+export type TransitionRaffleInput = z.infer<typeof TransitionRaffleInput>
 
 export const PauseRaffleInput = z.object({
   duration: z.number().int().positive().optional(),

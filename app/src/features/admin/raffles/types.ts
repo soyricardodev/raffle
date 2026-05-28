@@ -1,4 +1,4 @@
-import type { CreateRaffleInput } from "@raffle/shared/validators"
+import type { CreateRaffleInput, RaffleStatus } from "@raffle/shared/validators"
 
 export type PaymentMethodAssignment = {
   account_id: number
@@ -9,7 +9,7 @@ export type PaymentMethodAssignment = {
 export type RaffleRow = {
   id: number
   name: string
-  status: string
+  status: RaffleStatus
   tickets_sold: number
   total_tickets: number
   sold_percentage: string

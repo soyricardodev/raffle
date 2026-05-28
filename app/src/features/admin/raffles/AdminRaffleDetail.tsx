@@ -7,7 +7,7 @@ import {
   Ticket,
 } from "@phosphor-icons/react"
 import { PaymentMethodSummary } from "@/features/raffle/PaymentMethodSummary"
-import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
+import { PLATFORM_TOTAL_TICKETS, RaffleStatus } from "@raffle/shared/validators"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { AdminRaffleStatusControl } from "@/features/admin/raffles/AdminRaffleStatusControl"
 import { Button } from "@/components/ui/button"
@@ -175,7 +175,7 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
           <AdminRaffleStatusControl
             raffleId={raffleId}
             raffleName={raffle.name}
-            status={raffle.status}
+            status={RaffleStatus.parse(raffle.status)}
             publish={Boolean(raffle.publish)}
             drawDate={raffle.draw_date}
             priceBs={raffle.price_bs}

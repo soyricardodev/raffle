@@ -1,13 +1,16 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { unpauseRaffle } from "@/server/pause.service"
+import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 import { requireAdmin } from "@/lib/auth-utils.server"
 
+/** @deprecated Prefer POST /lifecycle — kept for compatibility. */
 export const Route = createFileRoute("/api/admin/raffles/$id/unpause")({
   server: {
     handlers: {
       POST: async ({ request, params }) => {
         await requireAdmin(request)
-        return Response.json(await unpauseRaffle(Number(params.id)))
+        return Response.json(
+          await transitionRaffle(Number(params.id), { intent: "resume_sales" }),
+        )
       },
     },
   },

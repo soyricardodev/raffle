@@ -5,9 +5,8 @@ import type { RaffleRow } from "@/features/admin/raffles/types"
 import {
   getConfirmCopy,
   getPrimaryLifecycleActions,
-  type LifecycleConfirm,
 } from "@/features/admin/raffles/raffle-lifecycle-ui"
-import type { RaffleStatus } from "@raffle/shared/validators"
+import type { TransitionRaffleInput } from "@raffle/shared/validators"
 import { Button } from "@/components/ui/button"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import {
@@ -21,7 +20,7 @@ import {
 type RaffleRowActionsProps = {
   raffle: RaffleRow
   pending: boolean
-  onLifecycle: (confirm: LifecycleConfirm) => void
+  onLifecycle: (request: TransitionRaffleInput) => void
   density?: "compact" | "comfortable"
 }
 
@@ -31,14 +30,17 @@ export function RaffleRowActions({
   onLifecycle,
   density = "comfortable",
 }: RaffleRowActionsProps) {
-  const [confirm, setConfirm] = useState<LifecycleConfirm | null>(null)
+  const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(
+    null,
+  )
   const buttonSize = density === "compact" ? "icon-xs" : "icon-sm"
   const buttonClassName = density === "compact" ? undefined : "size-11"
 
   const published = Boolean(raffle.publish)
-  const status = raffle.status as RaffleStatus
-  const menuActions = getPrimaryLifecycleActions(status, published)
-  const confirmCopy = confirm ? getConfirmCopy(confirm, raffle.name) : null
+  const menuActions = getPrimaryLifecycleActions(raffle.status, published)
+  const confirmCopy = pendingRequest
+    ? getConfirmCopy(pendingRequest, raffle.name)
+    : null
 
   return (
     <>
@@ -85,7 +87,7 @@ export function RaffleRowActions({
                   <DropdownMenuItem
                     key={action.id}
                     variant={action.variant === "destructive" ? "destructive" : "default"}
-                    onSelect={() => setConfirm(action.confirm)}
+                    onSelect={() => setPendingRequest(action.request)}
                   >
                     <Icon className="size-4" />
                     {action.label}
@@ -105,16 +107,16 @@ export function RaffleRowActions({
 
       {confirmCopy ? (
         <ConfirmAction
-          open={confirm !== null}
-          onOpenChange={(open) => !open && setConfirm(null)}
+          open={pendingRequest !== null}
+          onOpenChange={(open) => !open && setPendingRequest(null)}
           title={confirmCopy.title}
           description={confirmCopy.description}
           confirmLabel={confirmCopy.confirmLabel}
           destructive={confirmCopy.destructive}
           pending={pending}
           onConfirm={() => {
-            if (confirm) onLifecycle(confirm)
-            setConfirm(null)
+            if (pendingRequest) onLifecycle(pendingRequest)
+            setPendingRequest(null)
           }}
         />
       ) : null}

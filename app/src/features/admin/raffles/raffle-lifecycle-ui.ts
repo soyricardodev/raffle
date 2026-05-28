@@ -9,19 +9,10 @@ import {
   RocketLaunch,
 } from "@phosphor-icons/react"
 import type { ComponentType } from "react"
-import type { RaffleStatus } from "@raffle/shared/validators"
+import type { RaffleStatus, TransitionRaffleInput } from "@raffle/shared/validators"
 import { getStatusLabel } from "@/lib/format"
 
 export type LifecyclePhase = "prep" | "selling" | "closed"
-
-export type LifecycleConfirm =
-  | "pause"
-  | "unpause"
-  | "publish"
-  | "finish"
-  | "activate"
-  | "reactivate"
-  | { status: RaffleStatus }
 
 type LifecycleIcon = ComponentType<IconProps>
 
@@ -30,7 +21,7 @@ export type LifecycleAction = {
   label: string
   description: string
   icon: LifecycleIcon
-  confirm: LifecycleConfirm
+  request: TransitionRaffleInput
   variant?: "default" | "outline" | "destructive"
 }
 
@@ -76,7 +67,7 @@ export function getPrimaryLifecycleActions(
           label: "Activar ventas",
           description: "La rifa quedará disponible para compradores",
           icon: RocketLaunch,
-          confirm: "activate",
+          request: { intent: "activate" },
           variant: "default",
         },
       ]
@@ -85,9 +76,9 @@ export function getPrimaryLifecycleActions(
         {
           id: "pause",
           label: "Pausar ventas",
-          description: "Detiene compras por unos minutos (pausa temporal)",
+          description: "Detiene compras por 15 minutos (pausa temporal)",
           icon: Pause,
-          confirm: "pause",
+          request: { intent: "pause_sales" },
           variant: "outline",
         },
         {
@@ -95,18 +86,18 @@ export function getPrimaryLifecycleActions(
           label: "Finalizar rifa",
           description: "Cierra las ventas de forma definitiva",
           icon: Flag,
-          confirm: "finish",
+          request: { intent: "finish" },
           variant: "destructive",
         },
       ]
     case "paused":
       return [
         {
-          id: "unpause",
+          id: "resume",
           label: "Reanudar ventas",
-          description: "Vuelve a permitir compras si hay boletos",
+          description: "Evalúa boletos y reactiva o finaliza automáticamente",
           icon: Play,
-          confirm: "unpause",
+          request: { intent: "resume_sales" },
           variant: "default",
         },
         {
@@ -114,7 +105,7 @@ export function getPrimaryLifecycleActions(
           label: "Finalizar rifa",
           description: "Cierra las ventas sin reanudar",
           icon: Flag,
-          confirm: "finish",
+          request: { intent: "finish" },
           variant: "destructive",
         },
       ]
@@ -126,7 +117,7 @@ export function getPrimaryLifecycleActions(
             label: "Publicar resultados",
             description: "Muestra esta rifa en el historial público",
             icon: CheckCircle,
-            confirm: "publish",
+            request: { intent: "publish_results" },
             variant: "default",
           },
         ]
@@ -137,7 +128,7 @@ export function getPrimaryLifecycleActions(
           label: "Reabrir ventas",
           description: "Vuelve a estado activo (uso excepcional)",
           icon: Play,
-          confirm: "reactivate",
+          request: { intent: "activate" },
           variant: "outline",
         },
       ]
@@ -148,12 +139,14 @@ export function getPrimaryLifecycleActions(
           label: "Reactivar rifa",
           description: "Restaura como rifa activa",
           icon: Play,
-          confirm: "reactivate",
+          request: { intent: "activate" },
           variant: "default",
         },
       ]
-    default:
-      return []
+    default: {
+      const _exhaustive: never = status
+      return _exhaustive
+    }
   }
 }
 
@@ -165,84 +158,71 @@ export type MoreStatusOption = {
   destructive?: boolean
 }
 
-export function getMoreStatusOptions(
-  current: RaffleStatus,
-): MoreStatusOption[] {
-  const options: MoreStatusOption[] = []
+const MORE_STATUS_OPTIONS: Array<
+  MoreStatusOption & { when: (current: RaffleStatus) => boolean }
+> = [
+  {
+    status: "draft",
+    label: "Volver a borrador",
+    description: "Oculta la rifa y detiene ventas",
+    icon: FileDashed,
+    when: (c) => c !== "draft",
+  },
+  {
+    status: "active",
+    label: "Marcar como activa",
+    description: "Solo desde borrador, finalizada o cancelada",
+    icon: RocketLaunch,
+    when: (c) => c === "draft" || c === "finished" || c === "cancelled",
+  },
+  {
+    status: "paused",
+    label: "Marcar como pausada",
+    description: "Pausa administrativa con temporizador de 15 min",
+    icon: Pause,
+    when: (c) => c === "draft" || c === "finished" || c === "cancelled",
+  },
+  {
+    status: "finished",
+    label: "Marcar como finalizada",
+    description: "Cierra ventas sin usar el flujo principal",
+    icon: Flag,
+    when: (c) => c !== "finished",
+  },
+  {
+    status: "cancelled",
+    label: "Cancelar rifa",
+    description: "La rifa queda fuera de circulación",
+    icon: Prohibit,
+    destructive: true,
+    when: (c) => c !== "cancelled",
+  },
+]
 
-  if (current !== "draft") {
-    options.push({
-      status: "draft",
-      label: "Volver a borrador",
-      description: "Oculta la rifa y detiene ventas",
-      icon: FileDashed,
-    })
-  }
-  if (current !== "active" && current !== "paused") {
-    options.push({
-      status: "active",
-      label: "Marcar como activa",
-      description: "Permite compras de inmediato",
-      icon: RocketLaunch,
-    })
-  }
-  if (current !== "paused" && current !== "active") {
-    options.push({
-      status: "paused",
-      label: "Marcar como pausada",
-      description: "Estado pausado sin temporizador automático",
-      icon: Pause,
-    })
-  }
-  if (current !== "finished") {
-    options.push({
-      status: "finished",
-      label: "Marcar como finalizada",
-      description: "Cierra ventas sin usar el flujo principal",
-      icon: Flag,
-    })
-  }
-  if (current !== "cancelled") {
-    options.push({
-      status: "cancelled",
-      label: "Cancelar rifa",
-      description: "La rifa queda fuera de circulación",
-      icon: Prohibit,
-      destructive: true,
-    })
-  }
-
-  return options
+export function getMoreStatusOptions(current: RaffleStatus): MoreStatusOption[] {
+  return MORE_STATUS_OPTIONS.filter((o) => o.when(current)).map(
+    ({ when: _when, ...option }) => option,
+  )
 }
 
 export function getConfirmCopy(
-  confirm: LifecycleConfirm,
+  request: TransitionRaffleInput,
   raffleName: string,
 ): { title: string; description: string; confirmLabel: string; destructive?: boolean } {
-  if (typeof confirm === "object") {
-    const label = getStatusLabel(confirm.status)
-    return {
-      title: `Cambiar a ${label}`,
-      description: `¿Cambiar «${raffleName}» al estado ${label}?`,
-      confirmLabel: "Confirmar",
-      destructive: confirm.status === "cancelled",
-    }
-  }
-
-  switch (confirm) {
-    case "pause":
+  switch (request.intent) {
+    case "pause_sales":
       return {
         title: "Pausar ventas",
-        description: `«${raffleName}» dejará de aceptar compras temporalmente. Podrás reanudar después.`,
+        description: `«${raffleName}» dejará de aceptar compras temporalmente (15 min). Podrás reanudar después.`,
         confirmLabel: "Pausar",
       }
-    case "unpause":
+    case "resume_sales":
       return {
         title: "Reanudar ventas",
         description: `¿Reanudar «${raffleName}»? Si no quedan boletos suficientes, puede finalizarse sola.`,
         confirmLabel: "Reanudar",
       }
-    case "publish":
+    case "publish_results":
       return {
         title: "Publicar resultados",
         description: `Los resultados de «${raffleName}» serán visibles en la página pública.`,
@@ -258,14 +238,21 @@ export function getConfirmCopy(
     case "activate":
       return {
         title: "Activar ventas",
-        description: `«${raffleName}» quedará activa y visible para compradores.`,
+        description: `«${raffleName}» quedará activa y disponible para compradores.`,
         confirmLabel: "Activar",
       }
-    case "reactivate":
+    case "set_status": {
+      const label = getStatusLabel(request.status)
       return {
-        title: "Reabrir rifa",
-        description: `«${raffleName}» volverá a estado activo. Úsalo solo si necesitas reabrir ventas.`,
-        confirmLabel: "Reabrir",
+        title: `Cambiar a ${label}`,
+        description: `¿Cambiar «${raffleName}» al estado ${label}?`,
+        confirmLabel: "Confirmar",
+        destructive: request.status === "cancelled",
       }
+    }
+    default: {
+      const _exhaustive: never = request
+      throw _exhaustive
+    }
   }
 }

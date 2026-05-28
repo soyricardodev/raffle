@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { setRaffleStatus } from "@/server/raffle.service"
+import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import { SetRaffleStatusInput } from "@raffle/shared/validators"
 import { ValidationError } from "@raffle/shared/errors"
 
+/** @deprecated Prefer POST /lifecycle — kept for compatibility. */
 export const Route = createFileRoute("/api/admin/raffles/$id/status")({
   server: {
     handlers: {
@@ -17,7 +18,10 @@ export const Route = createFileRoute("/api/admin/raffles/$id/status")({
           )
         }
         return Response.json(
-          await setRaffleStatus(Number(params.id), parsed.data.status),
+          await transitionRaffle(Number(params.id), {
+            intent: "set_status",
+            status: parsed.data.status,
+          }),
         )
       },
     },

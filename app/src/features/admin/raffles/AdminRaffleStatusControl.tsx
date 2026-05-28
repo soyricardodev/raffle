@@ -1,8 +1,9 @@
 import { useState } from "react"
-import { CaretRight, SlidersHorizontal } from "@phosphor-icons/react"
-import type { RaffleStatus } from "@raffle/shared/validators"
+import { SlidersHorizontal } from "@phosphor-icons/react"
+import type { RaffleStatus, TransitionRaffleInput } from "@raffle/shared/validators"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
+import { LifecycleOptionButton } from "@/features/admin/raffles/LifecycleOptionButton"
 import {
   getConfirmCopy,
   getLifecyclePhase,
@@ -10,7 +11,6 @@ import {
   getPrimaryLifecycleActions,
   getStatusHint,
   PHASE_LABELS,
-  type LifecycleConfirm,
   type LifecyclePhase,
 } from "@/features/admin/raffles/raffle-lifecycle-ui"
 import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
@@ -38,7 +38,7 @@ const PHASES: LifecyclePhase[] = ["prep", "selling", "closed"]
 type AdminRaffleStatusControlProps = {
   raffleId: string
   raffleName: string
-  status: string
+  status: RaffleStatus
   publish: boolean
   drawDate: string | null
   priceBs: number
@@ -58,23 +58,24 @@ export function AdminRaffleStatusControl({
   minPurchase,
   maxPurchase,
 }: AdminRaffleStatusControlProps) {
-  const current = status as RaffleStatus
   const published = Boolean(publish)
-  const phase = getLifecyclePhase(current)
+  const phase = getLifecyclePhase(status)
   const { run, pending } = useAdminRaffleLifecycle(raffleId)
 
   const [moreOpen, setMoreOpen] = useState(false)
-  const [pendingConfirm, setPendingConfirm] = useState<LifecycleConfirm | null>(null)
+  const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(
+    null,
+  )
 
-  const primaryActions = getPrimaryLifecycleActions(current, published)
-  const moreOptions = getMoreStatusOptions(current)
-  const confirmCopy = pendingConfirm
-    ? getConfirmCopy(pendingConfirm, raffleName)
+  const primaryActions = getPrimaryLifecycleActions(status, published)
+  const moreOptions = getMoreStatusOptions(status)
+  const confirmCopy = pendingRequest
+    ? getConfirmCopy(pendingRequest, raffleName)
     : null
 
-  function requestConfirm(confirm: LifecycleConfirm) {
+  function requestConfirm(request: TransitionRaffleInput) {
     setMoreOpen(false)
-    setPendingConfirm(confirm)
+    setPendingRequest(request)
   }
 
   return (
@@ -85,66 +86,39 @@ export function AdminRaffleStatusControl({
           <CardDescription>Gestiona el estado y las ventas de la rifa</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
-          <LifecycleStepper phase={phase} status={current} />
+          <LifecycleStepper phase={phase} status={status} />
 
           <div className="rounded-xl border bg-muted/30 p-4">
             <div className="flex flex-wrap items-center gap-2">
               <RaffleStatusBadge status={status} />
-              {current === "paused" ? (
+              {status === "paused" ? (
                 <span className="text-muted-foreground text-xs">dentro de «En venta»</span>
               ) : null}
-              {current === "finished" && published ? (
+              {status === "finished" && published ? (
                 <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-800 dark:bg-blue-950 dark:text-blue-200">
                   Publicada
                 </span>
               ) : null}
             </div>
             <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-              {getStatusHint(current, published)}
+              {getStatusHint(status, published)}
             </p>
           </div>
 
           {primaryActions.length > 0 ? (
             <div className="flex flex-col gap-2">
-              {primaryActions.map((action) => {
-                const Icon = action.icon
-                return (
-                  <button
-                    key={action.id}
-                    type="button"
-                    disabled={pending}
-                    onClick={() => requestConfirm(action.confirm)}
-                    className={cn(
-                      "flex min-h-[52px] w-full items-center gap-3 rounded-xl border px-3 py-2.5 text-left transition-colors",
-                      "hover:bg-muted/60 active:bg-muted disabled:pointer-events-none disabled:opacity-50",
-                      action.variant === "destructive" &&
-                        "border-destructive/30 bg-destructive/5 hover:bg-destructive/10",
-                      action.variant === "default" &&
-                        "border-primary/30 bg-primary/5 hover:bg-primary/10",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-full",
-                        action.variant === "destructive"
-                          ? "bg-destructive/15 text-destructive"
-                          : action.variant === "default"
-                            ? "bg-primary/15 text-primary"
-                            : "bg-muted text-foreground",
-                      )}
-                    >
-                      <Icon className="size-5" weight="duotone" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{action.label}</span>
-                      <span className="text-muted-foreground block text-xs leading-snug">
-                        {action.description}
-                      </span>
-                    </span>
-                    <CaretRight className="text-muted-foreground size-4 shrink-0" />
-                  </button>
-                )
-              })}
+              {primaryActions.map((action) => (
+                <LifecycleOptionButton
+                  key={action.id}
+                  icon={action.icon}
+                  label={action.label}
+                  description={action.description}
+                  disabled={pending}
+                  destructive={action.variant === "destructive"}
+                  primary={action.variant === "default"}
+                  onClick={() => requestConfirm(action.request)}
+                />
+              ))}
             </div>
           ) : null}
 
@@ -191,58 +165,40 @@ export function AdminRaffleStatusControl({
           <SheetHeader className="text-left">
             <SheetTitle>Otros estados</SheetTitle>
             <SheetDescription>
-              Cambios avanzados. Úsalos solo si el flujo principal no aplica.
+              Cambios avanzados. Algunos atajos del flujo principal no están aquí.
             </SheetDescription>
           </SheetHeader>
           <ul className="mt-4 flex flex-col gap-2">
-            {moreOptions.map((option) => {
-              const Icon = option.icon
-              return (
-                <li key={option.status}>
-                  <button
-                    type="button"
-                    disabled={pending}
-                    onClick={() => requestConfirm({ status: option.status })}
-                    className={cn(
-                      "flex min-h-[56px] w-full items-center gap-3 rounded-xl border px-3 py-3 text-left",
-                      "hover:bg-muted/60 active:bg-muted disabled:opacity-50",
-                      option.destructive && "border-destructive/40",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "flex size-10 shrink-0 items-center justify-center rounded-full bg-muted",
-                        option.destructive && "bg-destructive/15 text-destructive",
-                      )}
-                    >
-                      <Icon className="size-5" />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className="block text-sm font-medium">{option.label}</span>
-                      <span className="text-muted-foreground block text-xs">
-                        {option.description}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              )
-            })}
+            {moreOptions.map((option) => (
+              <li key={option.status}>
+                <LifecycleOptionButton
+                  icon={option.icon}
+                  label={option.label}
+                  description={option.description}
+                  disabled={pending}
+                  destructive={option.destructive}
+                  onClick={() =>
+                    requestConfirm({ intent: "set_status", status: option.status })
+                  }
+                />
+              </li>
+            ))}
           </ul>
         </SheetContent>
       </Sheet>
 
       {confirmCopy ? (
         <ConfirmAction
-          open={pendingConfirm !== null}
-          onOpenChange={(open) => !open && setPendingConfirm(null)}
+          open={pendingRequest !== null}
+          onOpenChange={(open) => !open && setPendingRequest(null)}
           title={confirmCopy.title}
           description={confirmCopy.description}
           confirmLabel={confirmCopy.confirmLabel}
           destructive={confirmCopy.destructive}
           pending={pending}
           onConfirm={() => {
-            if (pendingConfirm) run(pendingConfirm)
-            setPendingConfirm(null)
+            if (pendingRequest) run(pendingRequest)
+            setPendingRequest(null)
           }}
         />
       ) : null}
