@@ -17,6 +17,16 @@ dist/
 .DS_Store
 Thumbs.db
 
+# libSQL local files
+packages/shared/data/*.db
+packages/shared/data/*.db-*
+
+# Dev/test SQLite and uploaded media
+test-raffle.db*
+app/test-raffle.db*
+packages/shared/test-raffle.db*
+app/uploads/
+
 # Logs
 *.log
 build-output.txt

@@ -12,9 +12,9 @@ pnpm --filter app exec playwright install chromium
 # Smoke only — no database required
 pnpm test:e2e -- --project=smoke
 
-# Full suite (needs MySQL + seed data)
-cp .env.example app/.env   # set DATABASE_URL, BETTER_AUTH_SECRET, etc.
-pnpm exec tsx scripts/seed.ts   # or: bun run scripts/seed.ts
+# Full suite (needs libSQL + seed)
+cp .env.example app/.env   # DATABASE_URL=file:../packages/shared/data/raffle.db
+pnpm db:seed
 pnpm test:e2e
 ```
 
@@ -31,7 +31,7 @@ Run from `app/` with the same commands (`pnpm test:e2e`, etc.).
 | `verifier`| Verify by phone (API)    | Required       |
 | `admin`   | Approve/reject (UI + API)| Requires admin auth setup |
 
-Integration describes use `test.describe.skip` when `DATABASE_URL` is unset, so CI can run smoke without MySQL.
+Integration specs use `test.describe.skip` when `DATABASE_URL` is unset, so CI can run smoke without a database.
 
 - **Purchase UI**: uses `data-testid` on payment methods and submit; runs in `purchase` project when DB is available.
 - **Admin**: requires working Better Auth login (Fast Login on `/login`). Setup runs `ensureAdminCredentialAccount()`; auth maps `users` → Better Auth `user` in `auth.server.ts`.
@@ -40,7 +40,7 @@ Integration describes use `test.describe.skip` when `DATABASE_URL` is unset, so 
 
 | Variable | Default | Purpose |
 |----------|---------|---------|
-| `DATABASE_URL` | — | MySQL URI; required for purchase/admin/verifier DB tests |
+| `DATABASE_URL` | — | libSQL `file:` o `libsql://`; required for purchase/admin/verifier DB tests |
 | `E2E_PORT` | `3100` | Dev server port (avoids clashing with `pnpm dev` on 3000) |
 | `E2E_BASE_URL` | `http://localhost:3100` | App URL (Playwright `baseURL` + `webServer`) |
 | `E2E_ADMIN_EMAIL` | `admin@rifas.com` | Admin login (seed user) |
@@ -53,7 +53,7 @@ Integration describes use `test.describe.skip` when `DATABASE_URL` is unset, so 
 
 ## Fixtures
 
-- **Seed**: `scripts/seed.ts` — active raffle, payment methods, tickets, admin user.
+- **Seed**: `pnpm db:seed` — admin Better Auth, rifa activa (sparse), rifa finalizada demo, `app_settings`, métodos de pago.
 - **API helpers**: `app/e2e/helpers/api.ts` — create purchases, approve via admin API (verifier test).
 - **DB helper**: `app/e2e/helpers/db.ts` — `ensureAdminCredentialAccount()` for Better Auth compatibility.
 
@@ -62,7 +62,7 @@ Integration describes use `test.describe.skip` when `DATABASE_URL` is unset, so 
 ```yaml
 - run: pnpm exec playwright install chromium
 - run: pnpm test:e2e -- --project=smoke
-  # Optional job with MySQL service + seed for full suite
+  # Optional job with libSQL file DB + pnpm db:seed for full suite
 ```
 
 ## Troubleshooting

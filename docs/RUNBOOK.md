@@ -4,7 +4,7 @@
 
 | Variable | Purpose |
 |----------|---------|
-| `DATABASE_URL` | MySQL connection string |
+| `DATABASE_URL` | libSQL (`file:…` local o `libsql://…` Turso) |
 | `BETTER_AUTH_SECRET` | 32+ random chars (session signing) |
 | `BETTER_AUTH_URL` / `APP_URL` | Public app URL (must match browser origin) |
 | `CRON_SECRET` | Bearer token for `/api/cron/maintenance` |
@@ -15,14 +15,17 @@
 ## Database
 
 ```bash
-# Apply Drizzle migrations (from packages/shared)
-pnpm --filter @raffle/shared exec drizzle-kit migrate
+# Migrar + seed desarrollo (SQLite en packages/shared/data/raffle.db)
+pnpm db:seed
 
-# Dev seed (raffle, tickets, admin, Better Auth account)
-DATABASE_URL=mysql://... pnpm exec tsx scripts/seed.ts
+# Solo migraciones
+pnpm db:migrate
+
+# Re-seed forzado (borra datos de negocio)
+SEED_FORCE=1 pnpm db:seed
 ```
 
-After pulling auth changes, ensure `users` has `email_verified` and `image` columns (`packages/shared/drizzle/0001_auth_user_columns.sql`).
+Admin por defecto: `admin` / `admin123` (`admin@rifas.com`). Ver `docs/LIBSQL_CUTOVER_RUNBOOK.md` para cutover desde MySQL.
 
 ## Cron / maintenance
 
