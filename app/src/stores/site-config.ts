@@ -2,6 +2,7 @@ import { create } from "zustand"
 import type {
   ContactInfo,
   HeroConfig,
+  OfficialFooterLogo,
   SeoConfig,
   SiteColors,
   SiteImages,
@@ -9,7 +10,46 @@ import type {
   SocialMedia,
 } from "@raffle/shared/site-config"
 
-export type { ContactInfo, HeroConfig, SeoConfig, SiteColors, SiteImages, SiteInfo, SocialMedia }
+export type {
+  ContactInfo,
+  HeroConfig,
+  OfficialFooterLogo,
+  SeoConfig,
+  SiteColors,
+  SiteImages,
+  SiteInfo,
+  SocialMedia,
+}
+
+/** Normalizes site_images including legacy footer_logo-only payloads. */
+export function normalizeSiteImages(raw: unknown): SiteImages {
+  if (!raw || typeof raw !== "object") {
+    return { banner: "", logo: "", footer_logo: "", official_logos: [] }
+  }
+  const images = raw as Record<string, unknown>
+  const officialRaw = images.official_logos
+  const official_logos: OfficialFooterLogo[] = Array.isArray(officialRaw)
+    ? officialRaw
+        .map((entry) => {
+          if (!entry || typeof entry !== "object") return null
+          const row = entry as Record<string, unknown>
+          const image = String(row.image ?? "").trim()
+          if (!image) return null
+          return {
+            image,
+            alt: String(row.alt ?? "").trim(),
+          }
+        })
+        .filter((entry): entry is OfficialFooterLogo => entry != null)
+    : []
+
+  return {
+    banner: String(images.banner ?? ""),
+    logo: String(images.logo ?? ""),
+    footer_logo: String(images.footer_logo ?? ""),
+    official_logos,
+  }
+}
 
 /** Legacy hero_config used main_text/accent_text; v2 uses title/subtitle. */
 export function normalizeHeroConfig(raw: unknown): HeroConfig {
@@ -98,6 +138,8 @@ const defaults: Pick<
   images: {
     banner: "",
     logo: "",
+    footer_logo: "",
+    official_logos: [],
   },
   seo: {
     meta_title: "",
@@ -127,7 +169,7 @@ export const useSiteConfig = create<SiteConfigState>((set, get) => ({
       contact: payload.contact_info ?? state.contact,
       social: payload.social_media ?? state.social,
       hero: payload.hero_config ? normalizeHeroConfig(payload.hero_config) : state.hero,
-      images: payload.site_images ?? state.images,
+      images: payload.site_images ? normalizeSiteImages(payload.site_images) : state.images,
       seo: payload.seo_config ? normalizeSeoConfig(payload.seo_config) : state.seo,
       loaded: true,
     }))

@@ -35,9 +35,6 @@ export function PublicHeader() {
             </Link>
           </Button>
           <ThemeToggle />
-          <Button variant="ghost" size="sm" className="hidden text-xs sm:inline-flex" asChild>
-            <Link to="/login">Admin</Link>
-          </Button>
         </nav>
       </div>
     </header>

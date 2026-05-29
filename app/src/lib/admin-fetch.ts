@@ -1,7 +1,4 @@
-type ApiErrorBody = {
-  message?: string
-  error?: string
-}
+import { getApiErrorMessage, readApiErrorMessage } from "@/lib/api-error-message"
 
 export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(path, {
@@ -18,8 +15,7 @@ export async function adminFetch<T>(path: string, init?: RequestInit): Promise<T
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as ApiErrorBody
-    throw new Error(body.message ?? body.error ?? `Error ${res.status}`)
+    throw new Error(await readApiErrorMessage(res))
   }
 
   return res.json() as Promise<T>
@@ -37,8 +33,7 @@ export async function adminUpload<T>(path: string, form: FormData): Promise<T> {
   }
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as ApiErrorBody
-    throw new Error(body.message ?? body.error ?? `Error ${res.status}`)
+    throw new Error(await readApiErrorMessage(res))
   }
 
   return res.json() as Promise<T>
@@ -57,9 +52,10 @@ export async function publicFetch<T>(path: string, init?: RequestInit): Promise<
   })
 
   if (!res.ok) {
-    const body = (await res.json().catch(() => ({}))) as ApiErrorBody
-    throw new Error(body.message ?? body.error ?? `Error ${res.status}`)
+    throw new Error(await readApiErrorMessage(res))
   }
 
   return res.json() as Promise<T>
 }
+
+export { getApiErrorMessage }

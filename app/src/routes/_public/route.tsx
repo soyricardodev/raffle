@@ -1,6 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { brandCssVariables } from "@/features/layout/public-brand-css"
 import { ensurePublicSiteConfig } from "@/features/layout/public-page-loader"
+import { resolveSiteFaviconUrl } from "@/features/layout/public-favicon"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
 import { PublicSiteConfigProvider } from "@/features/layout/public-site-config-context"
 
@@ -34,8 +35,16 @@ export const Route = createFileRoute("/_public")({
       meta.push({ name: "canonical", content: seo.canonicalUrl })
     }
 
+    const favicon = resolveSiteFaviconUrl(loaderData?.siteConfig)
+    const links: Array<{ rel: string; href: string }> = []
+    if (favicon) {
+      links.push({ rel: "icon", href: favicon })
+      links.push({ rel: "apple-touch-icon", href: favicon })
+    }
+
     return {
       meta,
+      links,
       style: [{ children: brandCssVariables(loaderData?.siteConfig) }],
     }
   },

@@ -1,5 +1,9 @@
-import { AdminSiteConfigPatchSchema, type AdminSiteConfigPatch } from "@raffle/shared/site-config"
-import { normalizeHeroConfig, normalizeSeoConfig } from "@/stores/site-config"
+import {
+  AdminSiteConfigPatchSchema,
+  type AdminSiteConfigPatch,
+  type OfficialFooterLogo,
+} from "@raffle/shared/site-config"
+import { normalizeHeroConfig, normalizeSeoConfig, normalizeSiteImages } from "@/stores/site-config"
 
 export type AdminSiteConfigDraft = {
   site_name: string
@@ -18,6 +22,8 @@ export type AdminSiteConfigDraft = {
   show_particles: boolean
   banner: string
   logo: string
+  footer_logo: string
+  official_logos: OfficialFooterLogo[]
   meta_title: string
   meta_description: string
   og_image: string
@@ -42,6 +48,8 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   show_particles: false,
   banner: "",
   logo: "",
+  footer_logo: "",
+  official_logos: [],
   meta_title: "",
   meta_description: "",
   og_image: "",
@@ -59,7 +67,7 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
   const colors = data.site_colors as Record<string, unknown> | undefined
   const contact = data.contact_info as Record<string, unknown> | undefined
   const social = data.social_media as Record<string, unknown> | undefined
-  const images = data.site_images as Record<string, unknown> | undefined
+  const images = normalizeSiteImages(data.site_images)
 
   return {
     site_name: String(siteInfo?.site_name ?? base.site_name),
@@ -76,8 +84,10 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     hero_title: hero.title,
     hero_subtitle: hero.subtitle,
     show_particles: hero.show_particles,
-    banner: String(images?.banner ?? base.banner),
-    logo: String(images?.logo ?? base.logo),
+    banner: images.banner || base.banner,
+    logo: images.logo || base.logo,
+    footer_logo: images.footer_logo || base.footer_logo,
+    official_logos: images.official_logos.length > 0 ? images.official_logos : base.official_logos,
     meta_title: seo.meta_title,
     meta_description: seo.meta_description,
     og_image: seo.og_image,
@@ -112,6 +122,13 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
     site_images: {
       banner: draft.banner.trim(),
       logo: draft.logo.trim(),
+      footer_logo: draft.footer_logo.trim(),
+      official_logos: draft.official_logos
+        .map((logo) => ({
+          image: logo.image.trim(),
+          alt: logo.alt.trim(),
+        }))
+        .filter((logo) => logo.image.length > 0),
     },
     seo_config: {
       meta_title: draft.meta_title.trim(),

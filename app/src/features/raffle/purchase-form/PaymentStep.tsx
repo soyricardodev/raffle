@@ -48,7 +48,7 @@ export function PaymentStep({
   onPaymentProofChange,
 }: PaymentStepProps) {
   return (
-    <section className="flex flex-col gap-2">
+    <section id="purchase-payment" className="flex flex-col gap-2">
       <SectionHeader title="Pago" />
 
       {methods.length === 0 ? (
@@ -121,8 +121,10 @@ export function PaymentStep({
               disabled={disabled || !selectedMethod}
               aria-invalid={!!referenceHint}
               className="h-9"
-              placeholder="Nº referencia"
+              placeholder="Nº referencia (mín. 10 dígitos)"
               inputMode="numeric"
+              minLength={10}
+              maxLength={100}
             />
             <FieldError>{referenceHint}</FieldError>
           </Field>

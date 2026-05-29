@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
-import { HomeHero } from "@/features/home/HomeHero"
 import { HomeRaffleCover } from "@/features/home/HomeRaffleCover"
 import { HomeSiteBanner } from "@/features/home/HomeSiteBanner"
 import { HomeStickyCta } from "@/features/home/HomeStickyCta"
@@ -58,7 +57,6 @@ function HomePage() {
   return (
     <PublicLayout>
       <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4 pb-24 sm:gap-6 sm:py-6">
-        <HomeHero />
         <HomeSiteBanner />
 
         {activeLoading && (

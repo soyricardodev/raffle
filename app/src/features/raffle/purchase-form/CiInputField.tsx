@@ -9,6 +9,7 @@ import {
   type CedulaPrefix,
   sanitizeCiDigits,
 } from "@raffle/shared/validators"
+import { cn } from "@/lib/utils"
 
 const PREFIXES: CedulaPrefix[] = ["V", "E", "J"]
 
@@ -54,7 +55,11 @@ export function CiInputField({
                 key={p}
                 value={p}
                 aria-label={p}
-                className="min-w-7 px-1.5 text-xs font-semibold"
+                className={cn(
+                  "min-w-8 px-2 text-xs font-semibold transition-colors",
+                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
+                  "data-[state=on]:shadow-sm data-[state=off]:text-muted-foreground",
+                )}
               >
                 {p}
               </ToggleGroupItem>

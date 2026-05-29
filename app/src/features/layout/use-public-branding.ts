@@ -8,6 +8,7 @@ import { usePublicSiteConfigFromLayout } from "@/features/layout/public-site-con
 import {
   normalizeHeroConfig,
   normalizeSeoConfig,
+  normalizeSiteImages,
   type ContactInfo,
   type HeroConfig,
   type SeoConfig,
@@ -34,7 +35,12 @@ function cloneSocial(value?: SocialMedia): SocialMedia {
 }
 
 function cloneImages(value?: SiteImages): SiteImages {
-  return value ? { ...value } : { banner: "", logo: "" }
+  return value
+    ? {
+        ...value,
+        official_logos: value.official_logos.map((logo) => ({ ...logo })),
+      }
+    : normalizeSiteImages(undefined)
 }
 
 function cloneSeo(value?: SeoConfig): SeoConfig {
@@ -63,28 +69,26 @@ export function resolvePublicBranding(
     hero: payload.hero_config ? normalizeHeroConfig(payload.hero_config) : cloneHero(),
     contact: cloneContact(payload.contact_info),
     social: cloneSocial(payload.social_media),
-    images: cloneImages(payload.site_images),
+    images: payload.site_images ? normalizeSiteImages(payload.site_images) : cloneImages(),
     colors: payload.site_colors ? { ...payload.site_colors } : undefined,
     seo: payload.seo_config ? normalizeSeoConfig(payload.seo_config) : cloneSeo(),
   }
 }
 
 /**
- * Branding for public pages — SSR loader context first (no Zustand defaults).
+ * Branding for public pages — React Query is source of truth; loader data seeds initial cache.
  */
 export function usePublicBranding(): PublicBranding | null {
   const fromLayout = usePublicSiteConfigFromLayout()
-  const hasLayoutConfig = fromLayout != null
 
   const { data } = useQuery({
     ...publicSiteConfigQueryOptions(),
-    enabled: !hasLayoutConfig,
     initialData: fromLayout ?? undefined,
     staleTime: 300_000,
-    refetchOnMount: false,
+    refetchOnMount: true,
   })
 
-  const payload = hasLayoutConfig ? fromLayout : (data ?? null)
+  const payload = data ?? fromLayout ?? null
 
   return useMemo(() => resolvePublicBranding(payload), [payload])
 }

@@ -14,6 +14,31 @@ describe("parsePublicSiteConfig", () => {
     expect(result.hero_config?.subtitle).toBe("Mundo")
   })
 
+  it("normalizes footer images including official logos", () => {
+    const result = parsePublicSiteConfig({
+      site_images: {
+        banner: "/b.png",
+        logo: "/l.png",
+        footer_logo: "/f.png",
+        official_logos: [{ image: "/tachira.png", alt: "Táchira" }],
+      },
+    })
+
+    expect(result.site_images?.footer_logo).toBe("/f.png")
+    expect(result.site_images?.official_logos).toEqual([
+      { image: "/tachira.png", alt: "Táchira" },
+    ])
+  })
+
+  it("parses legacy site_images without footer fields", () => {
+    const result = parsePublicSiteConfig({
+      site_images: { banner: "/b.png", logo: "/l.png" },
+    })
+
+    expect(result.site_images?.footer_logo).toBe("")
+    expect(result.site_images?.official_logos).toEqual([])
+  })
+
   it("parses seo_config", () => {
     const result = parsePublicSiteConfig({
       seo_config: {

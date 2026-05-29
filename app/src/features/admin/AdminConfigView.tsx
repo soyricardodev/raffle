@@ -10,6 +10,7 @@ import {
   type AdminSiteConfigDraft,
 } from "@/features/admin/config/admin-site-config"
 import { ColorField } from "@/features/admin/config/ColorField"
+import { OfficialLogosEditor } from "@/features/admin/config/OfficialLogosEditor"
 import { SitePreviewCard } from "@/features/admin/config/SitePreviewCard"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
@@ -155,6 +156,9 @@ export function AdminConfigView() {
           </TabsTrigger>
           <TabsTrigger value="contact" className="min-h-9 flex-1 text-xs sm:text-sm">
             Contacto
+          </TabsTrigger>
+          <TabsTrigger value="footer" className="min-h-9 flex-1 text-xs sm:text-sm">
+            Pie
           </TabsTrigger>
         </TabsList>
 
@@ -340,6 +344,33 @@ export function AdminConfigView() {
                 onChange={(v) => update("accent", v)}
                 error={fieldError("site_colors.accent")}
               />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="footer">
+          <Card>
+            <CardHeader>
+              <CardTitle>Pie de página</CardTitle>
+              <CardDescription>
+                Logo del footer y sellos oficiales. Los enlaces sociales se configuran en Contacto.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FieldGroup>
+                <AdminImageUploadField
+                  id="footer-logo"
+                  label="Logo del footer"
+                  description="Si está vacío, se usa el logo principal del sitio."
+                  kind="site"
+                  value={draft.footer_logo || null}
+                  onChange={(url) => update("footer_logo", url ?? "")}
+                />
+                <OfficialLogosEditor
+                  logos={draft.official_logos}
+                  onChange={(official_logos) => update("official_logos", official_logos)}
+                />
+              </FieldGroup>
             </CardContent>
           </Card>
         </TabsContent>

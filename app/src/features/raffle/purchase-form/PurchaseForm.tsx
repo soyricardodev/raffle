@@ -1,4 +1,4 @@
-import { useMutation } from "@tanstack/react-query"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -15,7 +15,8 @@ import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseS
 import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
 import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-payment-method-selection"
 import type { PurchaseResult, RaffleForPurchase, RafflePaymentMethod } from "@/features/raffle/types"
-import { publicFetch } from "@/lib/admin-fetch"
+import { getApiErrorMessage, publicFetch } from "@/lib/admin-fetch"
+import { raffleQueryKeys } from "@/features/raffle/raffle-queries"
 import {
   type CedulaPrefix,
   type CustomerLocationType,
@@ -65,6 +66,7 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
 }
 
 export function PurchaseForm({ raffle }: PurchaseFormProps) {
+  const queryClient = useQueryClient()
   const minPurchase = Number(raffle.min_purchase) || 1
   const maxPurchase = Number(raffle.max_purchase) || 10
 
@@ -90,7 +92,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const [ciNumber, setCiNumber] = useState("")
   const [phoneMode, setPhoneMode] = useState<PhoneInputMode>("venezuela")
   const [locationType, setLocationType] = useState<CustomerLocationType>("venezuela")
-  const [selectedState, setSelectedState] = useState("")
+  const [selectedState, setSelectedState] = useState("Carabobo")
   const [customLocation, setCustomLocation] = useState("")
   const [paymentReference, setPaymentReference] = useState("")
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
@@ -147,11 +149,17 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       email: emailHint(customerEmail),
       ci: ciHint(ciPrefix, ciNumber),
       location: customerLocationFieldError(locationType, selectedState, customLocation),
-      reference: !paymentReference.trim() ? "Ingresa la referencia de pago" : undefined,
+      reference: !paymentReference.trim()
+        ? "Ingresa la referencia de pago"
+        : paymentReference.trim().length < 10
+          ? "La referencia debe tener al menos 10 caracteres"
+          : undefined,
       proof: !paymentProof ? "Sube el comprobante de pago" : undefined,
       method: !rafflePaymentMethodId
         ? "Elige un método de pago"
-        : selectedBlockedReason,
+        : !methods.some((m) => m.id === rafflePaymentMethodId)
+          ? "Este método ya no está disponible. Elige otro."
+          : selectedBlockedReason,
     }),
     [
       customerName,
@@ -167,6 +175,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       paymentProof,
       rafflePaymentMethodId,
       selectedBlockedReason,
+      methods,
     ],
   )
 
@@ -217,8 +226,16 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       setQuantity(minPurchase)
       setTouched(false)
     },
-    onError: (error: Error) => {
-      toast.error(error.message)
+    onError: (error: unknown) => {
+      const message = getApiErrorMessage(error, "No se pudo procesar la compra")
+      toast.error(message)
+      if (
+        message.includes("método de pago") ||
+        message.includes("Método de pago")
+      ) {
+        void queryClient.invalidateQueries({ queryKey: raffleQueryKeys.detail(String(raffle.id)) })
+        void queryClient.invalidateQueries({ queryKey: ["raffle", "first-active"] })
+      }
     },
   })
 
@@ -268,7 +285,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
 
   return (
     <>
-      <Card className="relative overflow-hidden">
+      <Card id="purchase-form" className="relative overflow-hidden">
         {isSubmitting ? (
           <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
             <SpinnerGapIcon className="animate-spin" />

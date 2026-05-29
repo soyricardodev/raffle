@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { createPurchase } from "@/server/purchase.service"
 import { sendPurchaseConfirmationEmail } from "@/server/purchase-notifications"
 import { ValidationError } from "@raffle/shared/errors"
+import { apiErrorResponse } from "@/lib/api-error-response"
 import { rateLimit } from "@/lib/rate-limit"
 import { savePaymentProof } from "@/lib/upload.server"
 import { parsePurchaseFromFormData, parsePurchaseFromJson } from "@/lib/parse-create-purchase"
@@ -41,9 +42,9 @@ export const Route = createFileRoute("/api/purchases/")({
         } catch (error) {
           if (error instanceof ZodError) {
             const first = error.issues[0]?.message ?? "Datos de compra inválidos"
-            throw new ValidationError(first)
+            return apiErrorResponse(new ValidationError(first))
           }
-          throw error
+          return apiErrorResponse(error)
         }
       },
     },

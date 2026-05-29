@@ -2,6 +2,18 @@ import { useEffect, useState } from "react"
 import { getMethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 
+/** Prefer Pago móvil when eligible; otherwise first eligible method. */
+export function pickDefaultPaymentMethodId(
+  methods: RafflePaymentMethod[],
+  quantity: number,
+): number | null {
+  const eligible = methods.filter((m) => getMethodEligibility(m, quantity).canSelect)
+  if (eligible.length === 0) return null
+
+  const pagoMovil = eligible.find((m) => m.method_type === "pago_movil")
+  return (pagoMovil ?? eligible[0])!.id
+}
+
 export function usePaymentMethodSelection(
   methods: RafflePaymentMethod[],
   quantity: number,
@@ -11,18 +23,18 @@ export function usePaymentMethodSelection(
   const selectedMethod = methods.find((m) => m.id === selectedId) ?? null
 
   useEffect(() => {
-    if (methods.length !== 1 || selectedId != null) return
-    const only = methods[0]
-    if (!only) return
-    if (getMethodEligibility(only, quantity).canSelect) {
-      setSelectedId(only.id)
-    }
+    if (selectedId != null) return
+    const defaultId = pickDefaultPaymentMethodId(methods, quantity)
+    if (defaultId != null) setSelectedId(defaultId)
   }, [methods, selectedId, quantity])
 
   useEffect(() => {
     if (!selectedId) return
     const method = methods.find((m) => m.id === selectedId)
-    if (!method) return
+    if (!method) {
+      setSelectedId(null)
+      return
+    }
     if (!getMethodEligibility(method, quantity).canSelect) {
       setSelectedId(null)
     }

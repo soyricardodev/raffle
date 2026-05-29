@@ -1,4 +1,3 @@
-import { getHomeHeadline } from "@/features/home/home-hero-copy"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
 import { resolvePublicBranding } from "@/features/layout/use-public-branding"
 import {
@@ -17,7 +16,6 @@ export function SitePreviewCard({ draft, className }: SitePreviewCardProps) {
   const branding = resolvePublicBranding(draftToPublicPayload(draft))
   if (!branding) return null
 
-  const { headline, subline } = getHomeHeadline(branding.siteInfo, branding.hero)
   const seo = resolvePublicSeo(branding.payload)
   const colors = branding.colors ?? {
     primary: draft.primary,
@@ -92,12 +90,8 @@ export function SitePreviewCard({ draft, className }: SitePreviewCardProps) {
           )}
 
           <div className="flex flex-col gap-2 p-3">
-            {headline ? (
-              <h3 className="font-heading text-sm font-semibold leading-tight">{headline}</h3>
-            ) : null}
-            {subline ? <p className="text-muted-foreground text-[11px] leading-snug">{subline}</p> : null}
             <div
-              className="mt-1 rounded-lg px-3 py-2 text-center text-[11px] font-semibold text-white"
+              className="rounded-lg px-3 py-2 text-center text-[11px] font-semibold text-white"
               style={{ backgroundColor: "var(--brand-primary)" }}
             >
               Ir a comprar
@@ -106,6 +100,7 @@ export function SitePreviewCard({ draft, className }: SitePreviewCardProps) {
           </div>
 
           <div className="border-t px-3 py-2">
+            <p className="truncate text-[10px] font-medium">{siteName}</p>
             <p className="text-muted-foreground truncate text-[10px]">
               {branding.contact.phone || branding.contact.email || "Contacto"}
             </p>

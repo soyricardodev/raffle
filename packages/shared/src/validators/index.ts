@@ -167,7 +167,11 @@ export const CreatePurchaseInput = z.object({
     .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
   customer_location: z.string().min(1).max(100),
   raffle_payment_method_id: z.number().int().positive(),
-  payment_reference: z.string().min(1).max(100),
+  payment_reference: z
+    .string()
+    .trim()
+    .min(10, "La referencia debe tener al menos 10 caracteres")
+    .max(100),
   ticket_quantity: z.number().int().min(1).max(500),
 })
 
@@ -192,7 +196,11 @@ export const CreatePurchaseBody = z.object({
     .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
   customerLocation: z.string().trim().min(1, "Indica tu ubicación").max(100),
   rafflePaymentMethodId: z.coerce.number().int().positive(),
-  paymentReference: z.string().trim().min(1, "Ingresa la referencia de pago").max(100),
+  paymentReference: z
+    .string()
+    .trim()
+    .min(10, "La referencia debe tener al menos 10 caracteres")
+    .max(100),
   ticketQuantity: z.coerce.number().int().min(1).max(500),
   paymentProofUrl: z.string().trim().min(1, "Comprobante requerido").max(500),
 })

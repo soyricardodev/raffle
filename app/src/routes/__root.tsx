@@ -2,7 +2,6 @@ import { TanStackDevtools } from "@tanstack/react-devtools"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router"
 import type { QueryClient } from "@tanstack/react-query"
-import { queryClient } from "@/lib/query-client"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { Toaster } from "sonner"
 
@@ -37,6 +36,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 })
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  const { queryClient } = Route.useRouteContext()
   const { mode, setMode, syncSystem } = useTheme()
 
   useLayoutEffect(() => {

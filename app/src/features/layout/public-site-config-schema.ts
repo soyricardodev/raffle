@@ -7,7 +7,7 @@ import {
   SocialMediaSchema,
 } from "@raffle/shared/site-config"
 import { z } from "zod"
-import { normalizeHeroConfig, normalizeSeoConfig } from "@/stores/site-config"
+import { normalizeHeroConfig, normalizeSeoConfig, normalizeSiteImages } from "@/stores/site-config"
 import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 
 const HeroConfigRawSchema = z
@@ -40,7 +40,11 @@ export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSite
     site_info: parsed.data.site_info,
     contact_info: parsed.data.contact_info,
     social_media: parsed.data.social_media,
-    site_images: parsed.data.site_images,
+    site_images: parsed.data.site_images
+      ? normalizeSiteImages(parsed.data.site_images)
+      : data.site_images
+        ? normalizeSiteImages(data.site_images)
+        : undefined,
     hero_config: hero ? normalizeHeroConfig(hero) : undefined,
     seo_config: parsed.data.seo_config ? normalizeSeoConfig(parsed.data.seo_config) : undefined,
   }

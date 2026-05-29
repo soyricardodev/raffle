@@ -36,9 +36,16 @@ export const HeroConfigSchema = z.object({
   show_particles: z.boolean(),
 })
 
+export const OfficialFooterLogoSchema = z.object({
+  image: z.string().trim().max(500),
+  alt: z.string().trim().max(120),
+})
+
 export const SiteImagesSchema = z.object({
-  banner: z.string().trim().max(500),
-  logo: z.string().trim().max(500),
+  banner: z.string().trim().max(500).default(""),
+  logo: z.string().trim().max(500).default(""),
+  footer_logo: z.string().trim().max(500).default(""),
+  official_logos: z.array(OfficialFooterLogoSchema).max(8).default([]),
 })
 
 export const SeoConfigSchema = z.object({
@@ -64,6 +71,7 @@ export type SiteColors = z.infer<typeof SiteColorsSchema>
 export type ContactInfo = z.infer<typeof ContactInfoSchema>
 export type SocialMedia = z.infer<typeof SocialMediaSchema>
 export type HeroConfig = z.infer<typeof HeroConfigSchema>
+export type OfficialFooterLogo = z.infer<typeof OfficialFooterLogoSchema>
 export type SiteImages = z.infer<typeof SiteImagesSchema>
 export type SeoConfig = z.infer<typeof SeoConfigSchema>
 export type AdminSiteConfigPatch = z.infer<typeof AdminSiteConfigPatchSchema>
