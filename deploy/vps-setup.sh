@@ -55,9 +55,9 @@ if [[ ! -f "$RAFFLE_ROOT/.env" ]]; then
   chmod 600 "$RAFFLE_ROOT/.env" 2>/dev/null || true
 fi
 
-if [[ -n "$GIT_REPO" ]] && [[ ! -d "$RAFFLE_ROOT/src/.git" ]]; then
-  log "Clonando $GIT_REPO"
-  sudo -u "$RAFFLE_USER" git clone "$GIT_REPO" "$RAFFLE_ROOT/src"
+if [[ -n "$GIT_REPO" ]] && [[ ! -d "$RAFFLE_ROOT/src/.git" ]] && [[ ! -d "$RAFFLE_ROOT/.git" ]]; then
+  log "Clonando $GIT_REPO (usa HTTPS si no tienes SSH key: https://github.com/USER/raffle.git)"
+  sudo -u "$RAFFLE_USER" git clone "$GIT_REPO" "${RAFFLE_ROOT}/src" || log "WARN: clone falló — sube código manualmente o configura git"
 fi
 
 log ""

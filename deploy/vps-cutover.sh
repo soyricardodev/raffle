@@ -14,7 +14,11 @@
 set -euo pipefail
 
 RAFFLE_ROOT="${RAFFLE_ROOT:-/opt/raffle}"
-ENV_FILE="${RAFFLE_ROOT}/.env"
+SRC_DIR="${RAFFLE_ROOT}/src"
+if [[ -d "$RAFFLE_ROOT/.git" ]]; then
+  SRC_DIR="$RAFFLE_ROOT"
+fi
+ENV_FILE="${ENV_FILE:-$RAFFLE_ROOT/.env}"
 BACKUP_DIR="${RAFFLE_ROOT}/backups"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 
@@ -22,6 +26,7 @@ log() { echo "[cutover] $*"; }
 die() { echo "[cutover] ERROR: $*" >&2; exit 1; }
 
 [[ -f "$ENV_FILE" ]] || die "Falta $ENV_FILE"
+[[ -d "$SRC_DIR" ]] || die "No encuentro repo en $SRC_DIR"
 
 # shellcheck disable=SC1090
 set -a && source "$ENV_FILE" && set +a
@@ -32,9 +37,6 @@ set -a && source "$ENV_FILE" && set +a
 
 command -v bun >/dev/null 2>&1 || die "Instala Bun"
 command -v mysqldump >/dev/null 2>&1 || log "WARN: mysqldump no encontrado — haz backup manual"
-
-SRC_DIR="${RAFFLE_ROOT}/src"
-[[ -d "$SRC_DIR" ]] || die "Ejecuta vps-deploy.sh primero o clona el repo en $SRC_DIR"
 
 mkdir -p "$BACKUP_DIR" "$(dirname "${TARGET_DATABASE_URL#file:}")"
 
@@ -92,7 +94,7 @@ export UPLOAD_DIR="${UPLOAD_DIR:-$RAFFLE_ROOT/uploads}"
 bun run scripts/validate-migration.ts
 
 log "=== 6/6 Deploy app v2 ==="
-bash "$SRC_DIR/deploy/vps-deploy.sh"
+RAFFLE_ROOT="$SRC_DIR" ENV_FILE="$ENV_FILE" bash "$SRC_DIR/deploy/vps-deploy.sh"
 
 log ""
 log "✅ Cutover completo"

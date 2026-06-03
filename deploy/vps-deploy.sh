@@ -1,30 +1,53 @@
 #!/usr/bin/env bash
-# Despliegue Raffle v2 en VPS (Bun + pnpm, código desde GitHub).
+# Despliegue Raffle v2 en VPS (Bun + pnpm).
 #
-# Uso:
-#   sudo bash deploy/vps-deploy.sh
+# Uso (desde el repo, ej. /home/admin/raffle):
+#   bash deploy/vps-deploy.sh
 #
 # Variables opcionales:
-#   RAFFLE_ROOT=/opt/raffle   Raíz de instalación
-#   GIT_REPO=git@github.com:USER/raffle.git
+#   RAFFLE_ROOT=/home/admin/raffle   Raíz del repo (auto-detectada si omites)
+#   ENV_FILE=/home/admin/raffle/.env
+#   GIT_REPO=https://github.com/USER/raffle.git   Solo HTTPS si no tienes SSH key
 #   GIT_BRANCH=main
-#   SKIP_BUILD=1              Solo pull + migrate + restart
-#   SKIP_MIGRATE=1            No corre drizzle migrate
-#   SKIP_PULL=1               No hace git pull
+#   SKIP_BUILD=1
+#   SKIP_MIGRATE=1
+#   SKIP_PULL=1          Útil si el código ya está en disco (sin git remoto)
+#   SERVICE_NAME=raffle
 
 set -euo pipefail
 
-RAFFLE_ROOT="${RAFFLE_ROOT:-/opt/raffle}"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+DEFAULT_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+RAFFLE_ROOT="${RAFFLE_ROOT:-$DEFAULT_REPO}"
 GIT_REPO="${GIT_REPO:-}"
 GIT_BRANCH="${GIT_BRANCH:-main}"
-SRC_DIR="${RAFFLE_ROOT}/src"
-ENV_FILE="${RAFFLE_ROOT}/.env"
 SERVICE_NAME="${SERVICE_NAME:-raffle}"
+
+# Repo en RAFFLE_ROOT o en RAFFLE_ROOT/src (layout /opt/raffle)
+if [[ -d "$RAFFLE_ROOT/.git" ]]; then
+  SRC_DIR="$RAFFLE_ROOT"
+elif [[ -d "$RAFFLE_ROOT/src/.git" ]]; then
+  SRC_DIR="$RAFFLE_ROOT/src"
+else
+  SRC_DIR="$RAFFLE_ROOT"
+fi
+
+ENV_FILE="${ENV_FILE:-}"
+if [[ -z "$ENV_FILE" ]]; then
+  if [[ -f "$RAFFLE_ROOT/.env" ]]; then
+    ENV_FILE="$RAFFLE_ROOT/.env"
+  elif [[ -f "$SRC_DIR/.env" ]]; then
+    ENV_FILE="$SRC_DIR/.env"
+  else
+    ENV_FILE="$RAFFLE_ROOT/.env"
+  fi
+fi
 
 log() { echo "[deploy] $*"; }
 die() { echo "[deploy] ERROR: $*" >&2; exit 1; }
 
-[[ -f "$ENV_FILE" ]] || die "Falta $ENV_FILE — copia deploy/env.production.example"
+[[ -f "$ENV_FILE" ]] || die "Falta $ENV_FILE — copia deploy/env.yoiberifas.example o deploy/env.production.example"
 
 # shellcheck disable=SC1090
 set -a && source "$ENV_FILE" && set +a
@@ -33,26 +56,33 @@ set -a && source "$ENV_FILE" && set +a
 [[ -n "${BETTER_AUTH_SECRET:-}" ]] || die "BETTER_AUTH_SECRET no definido (mín. 32 chars)"
 
 command -v bun >/dev/null 2>&1 || die "Instala Bun: curl -fsSL https://bun.sh/install | bash"
-command -v git >/dev/null 2>&1 || die "git no encontrado"
 
+# Clone solo si no hay repo y se pasó GIT_REPO
 if [[ ! -d "$SRC_DIR/.git" ]]; then
-  [[ -n "$GIT_REPO" ]] || die "Primera vez: export GIT_REPO=git@github.com:USER/raffle.git"
-  log "Clonando $GIT_REPO → $SRC_DIR"
-  mkdir -p "$(dirname "$SRC_DIR")"
-  git clone --branch "$GIT_BRANCH" "$GIT_REPO" "$SRC_DIR"
+  if [[ -n "$GIT_REPO" ]]; then
+    log "Clonando $GIT_REPO → $SRC_DIR"
+    mkdir -p "$(dirname "$SRC_DIR")"
+    git clone --branch "$GIT_BRANCH" "$GIT_REPO" "$SRC_DIR"
+  else
+    die "No hay .git en $SRC_DIR. Clona manualmente o export GIT_REPO=https://github.com/USER/raffle.git"
+  fi
 fi
 
 cd "$SRC_DIR"
 
 if [[ "${SKIP_PULL:-0}" != "1" ]]; then
-  log "git pull ($GIT_BRANCH)"
-  git fetch origin "$GIT_BRANCH"
-  git checkout "$GIT_BRANCH"
-  git pull --ff-only origin "$GIT_BRANCH"
+  if git remote get-url origin &>/dev/null; then
+    log "git pull ($GIT_BRANCH)"
+    git fetch origin "$GIT_BRANCH" 2>/dev/null || log "WARN: git fetch falló (¿sin SSH key? usa GIT_REPO=https://... o SKIP_PULL=1)"
+    git checkout "$GIT_BRANCH" 2>/dev/null || true
+    git pull --ff-only origin "$GIT_BRANCH" 2>/dev/null || log "WARN: git pull falló — continúo con código local (SKIP_PULL=1 para silenciar)"
+  else
+    log "Sin remote git — usa SKIP_PULL=1 si el código ya está actualizado"
+  fi
 fi
 
 log "Instalando dependencias (pnpm via corepack)"
-corepack enable
+corepack enable 2>/dev/null || true
 corepack prepare pnpm@10.12.1 --activate
 pnpm install --frozen-lockfile
 
@@ -60,6 +90,7 @@ if [[ "${SKIP_MIGRATE:-0}" != "1" ]]; then
   log "Aplicando migraciones SQLite (drizzle)"
   export DATABASE_URL
   export DATABASE_AUTH_TOKEN="${DATABASE_AUTH_TOKEN:-}"
+  mkdir -p "$(dirname "${DATABASE_URL#file:}")" 2>/dev/null || true
   pnpm db:migrate
 fi
 
@@ -72,17 +103,20 @@ fi
 log "Reiniciando servicio $SERVICE_NAME"
 if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
   sudo systemctl restart "$SERVICE_NAME"
+elif command -v pm2 >/dev/null 2>&1 && pm2 describe "$SERVICE_NAME" &>/dev/null; then
+  pm2 restart "$SERVICE_NAME"
 else
-  log "Servicio no activo — instala deploy/raffle.service.example primero"
-  log "Arranque manual: cd $SRC_DIR/app && bun run .output/server/index.mjs"
+  log "Servicio no configurado — arranque manual:"
+  log "  cd $SRC_DIR/app && bun run .output/server/index.mjs"
+  log "O instala systemd: bash deploy/install-systemd.sh"
   exit 0
 fi
 
 sleep 2
-APP_URL="${APP_URL:-http://127.0.0.1:3000}"
-log "Health check $APP_URL/api/health/db"
-if curl -sf "$APP_URL/api/health/db" | grep -q '"ok":true'; then
+HEALTH_URL="${APP_URL:-http://127.0.0.1:3000}"
+log "Health check $HEALTH_URL/api/health/db"
+if curl -sf "$HEALTH_URL/api/health/db" | grep -q '"ok":true'; then
   log "✅ Deploy OK"
 else
-  die "Health check falló — revisa: journalctl -u $SERVICE_NAME -n 50"
+  die "Health check falló — revisa: journalctl -u $SERVICE_NAME -n 50 (o pm2 logs)"
 fi
