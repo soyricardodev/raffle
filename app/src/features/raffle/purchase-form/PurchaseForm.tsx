@@ -488,7 +488,11 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         </CardContent>
       </Card>
 
-      <PurchaseSuccessDialog result={successResult} onClose={() => setSuccessResult(null)} />
+      <PurchaseSuccessDialog
+        result={successResult}
+        raffleImageUrl={raffle.image_url}
+        onClose={() => setSuccessResult(null)}
+      />
     </>
   )
 }

@@ -24,7 +24,7 @@ export function buildPurchaseFinalizeWhatsAppMessage(input: PurchaseFinalizeWhat
   const raffle = input.raffleName.trim() || "la rifa"
   const count = input.ticketCount
   const ticketLabel = count === 1 ? "1 boleto" : `${count} boletos`
-  return `Hola, soy ${name}. Para finalizar mi compra, compré ${ticketLabel} de la rifa "${raffle}". Quiero confirmar mis datos.`
+  return `Hola, soy ${name}. Para finalizar mi compra, compré ${ticketLabel} de la rifa "${raffle}". Te escribo para que me guardes en WhatsApp y confirmes mis datos.`
 }
 
 /** WhatsApp channel/community invite URL (must already be https). */

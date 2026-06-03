@@ -19,7 +19,7 @@ type PurchaseSuccessTicketsProps = {
 }
 
 const listScrollClassName =
-  "bg-background/70 min-h-0 overflow-y-auto overscroll-contain rounded-md border p-1.5"
+  "bg-background/70 min-h-11 overflow-y-auto overscroll-contain rounded-md border p-1.5"
 
 export function PurchaseSuccessTickets({
   purchaseId,
@@ -49,7 +49,7 @@ export function PurchaseSuccessTickets({
   }
 
   return (
-    <div className="from-primary/8 to-primary/4 flex min-h-0 flex-1 flex-col rounded-xl border bg-gradient-to-br p-3">
+    <div className="from-primary/8 to-primary/4 flex min-h-[124px] flex-1 flex-col rounded-xl border bg-gradient-to-br p-3">
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
@@ -77,12 +77,12 @@ export function PurchaseSuccessTickets({
           ticketNumbers={ticketNumbers}
           listId={listId}
           ticketCount={ticketCount}
-          className={cn(listScrollClassName, "max-h-[min(32vh,260px)]")}
+          className={cn(listScrollClassName, "max-h-[min(34vh,280px)]")}
         />
       ) : (
         <div
           id={listId}
-          className={cn(listScrollClassName, expanded ? "max-h-[min(32vh,260px)]" : "max-h-[72px]")}
+          className={cn(listScrollClassName, expanded ? "max-h-[min(34vh,280px)]" : "max-h-[72px]")}
           role="list"
           aria-label={`Números de boletos asignados, ${ticketCount} en total`}
         >

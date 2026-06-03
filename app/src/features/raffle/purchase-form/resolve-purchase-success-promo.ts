@@ -54,13 +54,18 @@ export function resolvePurchaseSuccessPromo(
 
   const title = normalized.title.trim()
   const description = normalized.description.trim()
-  const whatsappChannelHrefResolved = whatsAppChannelHref(normalized.whatsapp_channel_url)
+  const promoEnabled = normalized.enabled
+  const hasConfiguredPromo = promoEnabled && isFirstPurchase
+  const whatsappChannelHrefResolved = promoEnabled
+    ? whatsAppChannelHref(normalized.whatsapp_channel_url)
+    : ""
   const instagramHrefResolved =
-    instagramHref(normalized.instagram_url) || instagramHref(social.instagram)
-  const tiktokHrefResolved = tiktokHref(normalized.tiktok_url) || tiktokHref(social.tiktok)
+    (promoEnabled ? instagramHref(normalized.instagram_url) : "") || instagramHref(social.instagram)
+  const tiktokHrefResolved =
+    (promoEnabled ? tiktokHref(normalized.tiktok_url) : "") || tiktokHref(social.tiktok)
 
   const whatsappFinalizeHref =
-    isFirstPurchase && purchase
+    hasConfiguredPromo && purchase
       ? whatsAppHrefWithText(
           social.whatsapp,
           buildPurchaseFinalizeWhatsAppMessage({
@@ -71,24 +76,20 @@ export function resolvePurchaseSuccessPromo(
         )
       : ""
 
-  const socialLinks = isFirstPurchase ? buildSocialLinks(social) : []
+  const socialLinks = buildSocialLinks(social)
 
-  const hasContent = Boolean(
-    title ||
-      description ||
-      whatsappFinalizeHref ||
-      whatsappChannelHrefResolved ||
-      instagramHrefResolved ||
-      tiktokHrefResolved ||
-      socialLinks.length > 0,
+  const hasSocialContent = Boolean(socialLinks.length > 0 || instagramHrefResolved || tiktokHrefResolved)
+  const hasFirstPurchaseContent = Boolean(
+    hasConfiguredPromo &&
+      (title || description || whatsappFinalizeHref || whatsappChannelHrefResolved),
   )
 
   return {
-    shouldShow: normalized.enabled && isFirstPurchase && hasContent,
-    title,
-    description,
+    shouldShow: hasFirstPurchaseContent || hasSocialContent,
+    title: hasConfiguredPromo ? title : "",
+    description: hasConfiguredPromo ? description : "",
     whatsappFinalizeHref,
-    whatsappChannelHref: whatsappChannelHrefResolved,
+    whatsappChannelHref: hasConfiguredPromo ? whatsappChannelHrefResolved : "",
     instagramHref: instagramHrefResolved,
     tiktokHref: tiktokHrefResolved,
     socialLinks,

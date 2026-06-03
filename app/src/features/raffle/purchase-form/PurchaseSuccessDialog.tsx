@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router"
-import { PartyPopper } from "lucide-react"
+import { PartyPopper, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -17,10 +17,15 @@ import type { PurchaseResult } from "@/features/raffle/types"
 
 type PurchaseSuccessDialogProps = {
   result: PurchaseResult | null
+  raffleImageUrl?: string | null
   onClose: () => void
 }
 
-export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialogProps) {
+export function PurchaseSuccessDialog({
+  result,
+  raffleImageUrl,
+  onClose,
+}: PurchaseSuccessDialogProps) {
   const branding = usePublicBranding()
   const {
     promo,
@@ -44,18 +49,20 @@ export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialog
       <SheetContent
         side="bottom"
         showCloseButton
-        className="flex max-h-[min(92dvh,720px)] flex-col gap-0 rounded-t-2xl p-0 sm:mx-auto sm:max-w-lg"
+        className="flex max-h-[min(94dvh,720px)] flex-col gap-0 rounded-t-2xl p-0 sm:mx-auto sm:max-w-lg"
         aria-describedby={result ? "purchase-success-description" : undefined}
       >
-        <SheetHeader className="shrink-0 space-y-1 px-4 pt-4 pb-2 text-center">
-          <div
-            className="mx-auto flex size-11 items-center justify-center rounded-full bg-emerald-500/15"
-            aria-hidden
-          >
-            <PartyPopper className="size-6 text-emerald-600 dark:text-emerald-400" />
+        <SheetHeader className="shrink-0 gap-1 px-4 pt-3 pb-2 text-center">
+          <div className="relative mx-auto flex size-12 items-center justify-center" aria-hidden>
+            <span className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-300 via-pink-400 to-emerald-400 opacity-25 blur-sm" />
+            <span className="relative flex size-10 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 via-pink-500 to-emerald-500 text-white shadow-sm">
+              <PartyPopper className="size-5" />
+            </span>
+            <Sparkles className="absolute -top-1 -right-1 size-4 text-amber-500" />
+            <Sparkles className="absolute -bottom-0.5 -left-1 size-3.5 text-pink-500" />
           </div>
-          <SheetTitle className="text-lg leading-tight">¡Listo, compra registrada!</SheetTitle>
-          <SheetDescription id="purchase-success-description" className="text-center">
+          <SheetTitle className="text-base leading-tight">¡Listo, compra registrada!</SheetTitle>
+          <SheetDescription id="purchase-success-description" className="text-center text-xs">
             Boletos reservados. Guárdalos y verifica cuando sea aprobada.
           </SheetDescription>
         </SheetHeader>
@@ -65,6 +72,9 @@ export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialog
             <PurchaseSuccessPromoSection
               promo={promo}
               whatsappLinkRef={whatsappLinkRef}
+              logoSrc={branding?.images.logo}
+              raffleImageUrl={raffleImageUrl}
+              raffleName={result.raffleName}
               onWhatsappClick={() => markWhatsappClicked("drawer")}
               onInstagramClick={trackInstagramClick}
               onTiktokClick={trackTiktokClick}
@@ -82,13 +92,13 @@ export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialog
           </>
         ) : null}
 
-        <SheetFooter className="border-border shrink-0 gap-2 border-t px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:flex-col">
-          <Button variant="outline" className="min-h-10 w-full" asChild>
+        <SheetFooter className="border-border grid shrink-0 grid-cols-[1fr_auto] gap-2 border-t px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
+          <Button variant="outline" className="min-h-10" asChild>
             <Link to="/verificar">Verificar mis boletos</Link>
           </Button>
           <Button
             variant="ghost"
-            className="h-9 w-full text-sm"
+            className="h-10 px-5 text-sm"
             onClick={() => handleOpenChange(false)}
           >
             Cerrar

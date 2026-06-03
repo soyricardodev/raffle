@@ -14,6 +14,7 @@ export type RafflePaymentMethod = {
 export type RaffleForPurchase = {
   id: number | string
   name: string
+  image_url?: string | null
   status: string
   price_bs: number | string
   price_usd: number | string

@@ -18,7 +18,7 @@ const repeatPurchase: PurchaseResult = {
 }
 
 describe("resolvePurchaseSuccessPromo", () => {
-  it("hides when disabled even on first purchase", () => {
+  it("shows global social links even when promo is disabled", () => {
     const result = resolvePurchaseSuccessPromo({
       promo: {
         enabled: false,
@@ -31,10 +31,28 @@ describe("resolvePurchaseSuccessPromo", () => {
       social: { whatsapp: "584121234567", instagram: "", facebook: "", tiktok: "", telegram: "" },
       purchase: firstPurchase,
     })
+    expect(result.shouldShow).toBe(true)
+    expect(result.whatsappFinalizeHref).toBe("")
+    expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
+  })
+
+  it("hides when promo is disabled and there are no global socials", () => {
+    const result = resolvePurchaseSuccessPromo({
+      promo: {
+        enabled: false,
+        title: "Únete",
+        description: "Dinámicas",
+        whatsapp_channel_url: "https://whatsapp.com/channel/abc",
+        instagram_url: "@rifas",
+        tiktok_url: "@rifas",
+      },
+      social: { whatsapp: "", instagram: "", facebook: "", tiktok: "", telegram: "" },
+      purchase: firstPurchase,
+    })
     expect(result.shouldShow).toBe(false)
   })
 
-  it("hides on repeat purchase even when enabled", () => {
+  it("keeps social links visible on repeat purchase without finalization", () => {
     const result = resolvePurchaseSuccessPromo({
       promo: {
         enabled: true,
@@ -47,8 +65,9 @@ describe("resolvePurchaseSuccessPromo", () => {
       social: { whatsapp: "584121234567", instagram: "", facebook: "", tiktok: "", telegram: "" },
       purchase: repeatPurchase,
     })
-    expect(result.shouldShow).toBe(false)
+    expect(result.shouldShow).toBe(true)
     expect(result.whatsappFinalizeHref).toBe("")
+    expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
   })
 
   it("builds finalize WhatsApp link on first purchase", () => {
