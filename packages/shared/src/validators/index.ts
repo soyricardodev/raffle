@@ -110,6 +110,13 @@ export function customerLocationFieldError(
 
 // ─── Referencias de pago ─────────────────────────────────────
 
+export {
+  DEFAULT_PAYMENT_REFERENCE_MIN_LENGTH,
+  PAYMENT_REFERENCE_MAX_LENGTH,
+  paymentReferenceValidationMessage,
+  resolvePaymentReferenceMinLength,
+} from "./payment-reference.js"
+
 /** Métodos que se pagan en USD (price_usd) */
 export function isDollarMethod(method: PaymentMethod): boolean {
   return isDollarMethodType(method)
@@ -189,7 +196,7 @@ export const CreatePurchaseInput = z.object({
   payment_reference: z
     .string()
     .trim()
-    .min(10, "La referencia debe tener al menos 10 caracteres")
+    .min(1, "Ingresa la referencia de pago")
     .max(100),
   ticket_quantity: z.number().int().min(1).max(500),
 })
@@ -213,7 +220,7 @@ export const CreatePurchaseBody = z.object({
   paymentReference: z
     .string()
     .trim()
-    .min(10, "La referencia debe tener al menos 10 caracteres")
+    .min(1, "Ingresa la referencia de pago")
     .max(100),
   ticketQuantity: z.coerce.number().int().min(1).max(500),
   paymentProofUrl: z.string().trim().min(1, "Comprobante requerido").max(500),
@@ -295,6 +302,7 @@ export const CreateRaffleInput = z.object({
       z.object({
         account_id: z.number().int().positive(),
         min_tickets: z.number().int().nullable().optional(),
+        min_reference_length: z.number().int().min(1).max(100).nullable().optional(),
         is_active: z.boolean().default(true),
       }),
     )

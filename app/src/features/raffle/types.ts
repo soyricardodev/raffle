@@ -8,6 +8,7 @@ export type RafflePaymentMethod = {
   method_type: PaymentMethod
   account_info: Record<string, string>
   min_tickets?: number | null
+  min_reference_length?: number | null
   is_active?: boolean
 }
 

@@ -6,11 +6,11 @@ import { CheckCircleIcon, LockKeyIcon, ReceiptIcon } from "@phosphor-icons/react
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
 import { Separator } from "@/components/ui/separator"
 import type { MethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import { PaymentDetailsPanel } from "@/features/raffle/purchase-form/PaymentDetailsPanel"
 import { PaymentProofUpload } from "@/features/raffle/purchase-form/PaymentProofUpload"
+import { PaymentReferenceField } from "@/features/raffle/purchase-form/PaymentReferenceField"
 import {
   paymentCompletionBoxClassName,
   paymentMethodCardActiveClassName,
@@ -18,6 +18,7 @@ import {
   paymentMethodCardPromoClassName,
   paymentSectionCardClassName,
 } from "@/features/raffle/purchase-form/field-styles"
+import { resolvePaymentReferenceMinLength } from "@raffle/shared/validators"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { cn } from "@/lib/utils"
 
@@ -150,9 +151,9 @@ const PaymentMethodPicker = memo(function PaymentMethodPicker({
                   </Badge>
                 ) : null}
                 {locked ? (
-                  <span className="text-destructive flex shrink-0 items-center gap-1 text-[10px]">
+                  <span className="text-destructive flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px]">
                     <LockKeyIcon />
-                    min {minTickets}
+                    Mínimo {minTickets} boletos
                   </span>
                 ) : null}
               </span>
@@ -168,6 +169,7 @@ const PaymentMethodPicker = memo(function PaymentMethodPicker({
 type PaymentCompletionFieldsProps = {
   disabled: boolean
   paymentReference: string
+  referenceMinLength: number
   paymentProof: File | null
   referenceHint?: string
   proofHint?: string
@@ -178,6 +180,7 @@ type PaymentCompletionFieldsProps = {
 const PaymentCompletionFields = memo(function PaymentCompletionFields({
   disabled,
   paymentReference,
+  referenceMinLength,
   paymentProof,
   referenceHint,
   proofHint,
@@ -199,23 +202,13 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
         </div>
       </div>
 
-      <Field data-invalid={!!referenceHint}>
-        <FieldLabel htmlFor="payment-reference">Referencia del pago</FieldLabel>
-        <FieldDescription>Número que aparece en tu transferencia o pago móvil.</FieldDescription>
-        <Input
-          id="payment-reference"
-          value={paymentReference}
-          onChange={(event) => onPaymentReferenceChange(event.target.value)}
-          disabled={disabled}
-          aria-invalid={!!referenceHint}
-          className="h-11 text-base"
-          placeholder="Nº referencia (mín. 10 dígitos)"
-          inputMode="numeric"
-          minLength={10}
-          maxLength={100}
-        />
-        <FieldError>{referenceHint}</FieldError>
-      </Field>
+      <PaymentReferenceField
+        value={paymentReference}
+        minLength={referenceMinLength}
+        disabled={disabled}
+        error={referenceHint}
+        onChange={onPaymentReferenceChange}
+      />
 
       <Separator />
 
@@ -248,6 +241,10 @@ export const PaymentStep = memo(function PaymentStep({
   onPaymentReferenceChange,
   onPaymentProofChange,
 }: PaymentStepProps) {
+  const referenceMinLength = resolvePaymentReferenceMinLength(
+    selectedMethod?.min_reference_length,
+  )
+
   return (
     <section
       id="purchase-payment"
@@ -295,6 +292,7 @@ export const PaymentStep = memo(function PaymentStep({
               <PaymentCompletionFields
                 disabled={disabled}
                 paymentReference={paymentReference}
+                referenceMinLength={referenceMinLength}
                 paymentProof={paymentProof}
                 referenceHint={referenceHint}
                 proofHint={proofHint}

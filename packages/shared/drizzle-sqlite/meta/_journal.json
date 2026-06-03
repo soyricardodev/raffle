@@ -57,6 +57,13 @@
       "when": 1779900600000,
       "tag": "0007_rename_purchase_success_analytics",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1779900700000,
+      "tag": "0008_payment_reference_min_length",
+      "breakpoints": true
     }
   ]
 }

@@ -186,6 +186,7 @@ export async function updateRaffle(id: number, input: UpdateRaffleInput) {
         input.payment_method_assignments.map((a) => ({
           account_id: a.account_id,
           min_tickets: a.min_tickets,
+          min_reference_length: a.min_reference_length,
           is_active: a.is_active,
         })),
       )

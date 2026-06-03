@@ -40,7 +40,7 @@ export function RafflePaymentMethodsPicker({
       onChange(assignments.filter((a) => a.account_id !== accountId))
       return
     }
-    onChange([...assignments, { account_id: accountId, min_tickets: "", is_active: true }])
+    onChange([...assignments, { account_id: accountId, min_tickets: "", min_reference_length: "", is_active: true }])
   }
 
   function updateAssignment(accountId: number, patch: Partial<PaymentMethodAssignment>) {
@@ -113,7 +113,7 @@ export function RafflePaymentMethodsPicker({
                   </button>
 
                   {selected && assignment ? (
-                    <div className="mt-3 border-t pt-3">
+                    <div className="mt-3 flex flex-col gap-3 border-t pt-3">
                       <Field>
                         <FieldLabel htmlFor={`min-${account.id}`}>Mínimo de boletos</FieldLabel>
                         <Input
@@ -129,6 +129,27 @@ export function RafflePaymentMethodsPicker({
                         />
                         <FieldDescription>
                           El comprador solo podrá usar este método si compra al menos esta cantidad.
+                        </FieldDescription>
+                      </Field>
+                      <Field>
+                        <FieldLabel htmlFor={`ref-min-${account.id}`}>
+                          Mínimo de caracteres (referencia)
+                        </FieldLabel>
+                        <Input
+                          id={`ref-min-${account.id}`}
+                          type="number"
+                          min={1}
+                          max={100}
+                          placeholder="8 (predeterminado)"
+                          className="min-h-11"
+                          value={assignment.min_reference_length}
+                          onChange={(e) =>
+                            updateAssignment(account.id, { min_reference_length: e.target.value })
+                          }
+                        />
+                        <FieldDescription>
+                          Longitud mínima de la referencia de pago para este método. Déjalo vacío
+                          para usar 8 caracteres.
                         </FieldDescription>
                       </Field>
                     </div>

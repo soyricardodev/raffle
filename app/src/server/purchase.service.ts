@@ -12,7 +12,12 @@ import {
 } from "@raffle/shared/errors"
 import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
 import type { CustomerLocationType, PurchaseStatus } from "@raffle/shared/validators"
-import { formatCustomerCi, parseCustomerCi } from "@raffle/shared/validators/buyer-identity"
+import {
+  formatCustomerCi,
+  parseCustomerCi,
+  paymentReferenceValidationMessage,
+  resolvePaymentReferenceMinLength,
+} from "@raffle/shared/validators"
 import { withRetryTransaction } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
 import * as pauseService from "./pause.service"
@@ -78,6 +83,15 @@ export async function createPurchase(params: CreatePurchaseParams) {
       throw new ValidationError(
         `Para pagar con este método necesitas comprar al menos ${payMethod.min_tickets} boletos`,
       )
+    }
+
+    const referenceMinLength = resolvePaymentReferenceMinLength(payMethod.min_reference_length)
+    const referenceError = paymentReferenceValidationMessage(
+      params.paymentReference,
+      referenceMinLength,
+    )
+    if (referenceError) {
+      throw new ValidationError(referenceError)
     }
 
     const paymentMethod = payMethod.method_type

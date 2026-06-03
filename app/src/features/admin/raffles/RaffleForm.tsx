@@ -87,6 +87,9 @@ function buildPayload(state: RaffleFormState): CreateRaffleInput {
     payment_method_assignments: state.assignments.map((a) => ({
       account_id: a.account_id,
       min_tickets: a.min_tickets.trim() ? Number(a.min_tickets) : null,
+      min_reference_length: a.min_reference_length.trim()
+        ? Number(a.min_reference_length)
+        : null,
       is_active: a.is_active,
     })),
   }

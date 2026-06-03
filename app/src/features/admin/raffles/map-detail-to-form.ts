@@ -31,6 +31,8 @@ export function mapDetailToForm(detail: AdminRaffleDetail): RaffleFormState {
         (m): PaymentMethodAssignment => ({
           account_id: m.account_id,
           min_tickets: m.min_tickets != null ? String(m.min_tickets) : "",
+          min_reference_length:
+            m.min_reference_length != null ? String(m.min_reference_length) : "",
           is_active: m.is_active !== false,
         }),
       ) ?? [],

@@ -8,6 +8,8 @@ import {
   formatCustomerLocation,
   isValidCustomerCi,
   isValidCustomerPhone,
+  paymentReferenceValidationMessage,
+  resolvePaymentReferenceMinLength,
 } from "@raffle/shared/validators"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -175,6 +177,11 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     setQuantity((current) => clampQuantity(current, quantityMin, effectiveMax))
   }, [quantityMin, effectiveMax])
 
+  const referenceMinLength = useMemo(
+    () => resolvePaymentReferenceMinLength(selectedMethod?.min_reference_length),
+    [selectedMethod?.min_reference_length],
+  )
+
   const validationMessages = useMemo<PurchaseFormHints>(
     () => ({
       name: !customerName.trim() ? "Ingresa tu nombre completo" : undefined,
@@ -186,11 +193,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       email: emailHint(customerEmail),
       ci: ciHint(ciPrefix, ciNumber),
       location: customerLocationFieldError(locationType, selectedState, customLocation),
-      reference: !paymentReference.trim()
-        ? "Ingresa la referencia de pago"
-        : paymentReference.trim().length < 10
-          ? "La referencia debe tener al menos 10 caracteres"
-          : undefined,
+      reference: paymentReferenceValidationMessage(paymentReference, referenceMinLength),
       proof: !paymentProof ? "Sube el comprobante de pago" : undefined,
       method: !rafflePaymentMethodId
         ? "Elige un método de pago"
@@ -209,6 +212,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       selectedState,
       customLocation,
       paymentReference,
+      referenceMinLength,
       paymentProof,
       rafflePaymentMethodId,
       selectedBlockedReason,

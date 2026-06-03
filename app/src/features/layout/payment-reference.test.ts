@@ -14,18 +14,18 @@ describe("CreatePurchaseBody paymentReference", () => {
     paymentProofUrl: "/proof.jpg",
   }
 
-  it("rejects references shorter than 10 characters", () => {
+  it("rejects empty references", () => {
     const result = CreatePurchaseBody.safeParse({
       ...base,
-      paymentReference: "123456789",
+      paymentReference: "   ",
     })
     expect(result.success).toBe(false)
   })
 
-  it("accepts references with at least 10 characters", () => {
+  it("accepts non-empty references (length validated per method on server)", () => {
     const result = CreatePurchaseBody.safeParse({
       ...base,
-      paymentReference: "1234567890",
+      paymentReference: "1234567",
     })
     expect(result.success).toBe(true)
   })

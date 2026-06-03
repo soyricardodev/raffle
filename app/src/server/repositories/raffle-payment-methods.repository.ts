@@ -12,6 +12,7 @@ export type ResolvedRafflePaymentMethod = {
   account_info: Record<string, string>
   is_active: boolean
   min_tickets: number | null
+  min_reference_length: number | null
 }
 
 function parseAccountInfoJson(raw: string): Record<string, string> {
@@ -43,6 +44,7 @@ export async function listPaymentMethodsByRaffle(raffleId: number, activeOnly = 
     account_info: parseAccountInfoJson(account.accountInfo),
     is_active: rpm.isActive && account.isActive,
     min_tickets: rpm.minTickets,
+    min_reference_length: rpm.minReferenceLength,
   }))
 }
 
@@ -78,6 +80,7 @@ export async function findActiveRafflePaymentMethodById(
     account_info: parseAccountInfoJson(row.account.accountInfo),
     is_active: true,
     min_tickets: row.rpm.minTickets,
+    min_reference_length: row.rpm.minReferenceLength,
   }
 }
 
@@ -87,6 +90,7 @@ export async function syncRafflePaymentMethods(
   assignments: Array<{
     account_id: number
     min_tickets?: number | null
+    min_reference_length?: number | null
     is_active?: boolean
   }>,
 ) {
@@ -141,6 +145,7 @@ export async function syncRafflePaymentMethods(
         .update(rafflePaymentMethods)
         .set({
           minTickets: assignment.min_tickets ?? null,
+          minReferenceLength: assignment.min_reference_length ?? null,
           isActive: assignment.is_active ?? true,
         })
         .where(eq(rafflePaymentMethods.id, existingRow.id))
@@ -151,6 +156,7 @@ export async function syncRafflePaymentMethods(
       raffleId,
       accountId: assignment.account_id,
       minTickets: assignment.min_tickets ?? null,
+      minReferenceLength: assignment.min_reference_length ?? null,
       isActive: assignment.is_active ?? true,
     })
   }
@@ -162,6 +168,7 @@ export async function insertRafflePaymentMethodAssignments(
   assignments: Array<{
     account_id: number
     min_tickets?: number | null
+    min_reference_length?: number | null
     is_active?: boolean
   }>,
 ) {
@@ -170,6 +177,7 @@ export async function insertRafflePaymentMethodAssignments(
       raffleId,
       accountId: a.account_id,
       minTickets: a.min_tickets ?? null,
+      minReferenceLength: a.min_reference_length ?? null,
       isActive: a.is_active ?? true,
     })
   }

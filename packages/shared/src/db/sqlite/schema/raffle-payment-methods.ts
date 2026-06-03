@@ -14,6 +14,7 @@ export const rafflePaymentMethods = sqliteTable(
       .references(() => paymentAccounts.id, { onDelete: "restrict" }),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
     minTickets: integer("min_tickets"),
+    minReferenceLength: integer("min_reference_length"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

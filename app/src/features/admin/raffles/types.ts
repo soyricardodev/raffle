@@ -3,6 +3,7 @@ import type { CreateRaffleInput, RaffleStatus } from "@raffle/shared/validators"
 export type PaymentMethodAssignment = {
   account_id: number
   min_tickets: string
+  min_reference_length: string
   is_active: boolean
 }
 
