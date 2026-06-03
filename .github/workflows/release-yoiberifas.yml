@@ -1,0 +1,78 @@
+name: Release Yoiberifas
+
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.12.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      - name: Build
+        run: pnpm build
+        env:
+          NODE_ENV: production
+          NODE_OPTIONS: --max-old-space-size=4096
+
+      - name: Package runtime bundle
+        run: |
+          set -euo pipefail
+          SHA="$(git rev-parse --short HEAD)"
+          FULL_SHA="$(git rev-parse HEAD)"
+          STAGING="release-staging"
+          rm -rf "$STAGING"
+          mkdir -p "$STAGING/app"
+
+          cp package.json pnpm-workspace.yaml "$STAGING/"
+          cp app/package.json "$STAGING/app/"
+          cp -a app/.output "$STAGING/app/.output"
+          cp -a packages "$STAGING/packages"
+          cp -a node_modules "$STAGING/node_modules"
+          if [[ -d app/node_modules ]]; then
+            cp -a app/node_modules "$STAGING/app/node_modules"
+          fi
+
+          printf '%s\n' "$SHA" > "$STAGING/RELEASE_SHA"
+          printf '%s\n' "$FULL_SHA" > "$STAGING/RELEASE_FULL_SHA"
+
+          tar -czf raffle-release.tar.gz -C "$STAGING" .
+          echo "Bundle size: $(du -h raffle-release.tar.gz | cut -f1)"
+          echo "SHA=$SHA" >> "$GITHUB_ENV"
+
+      - name: Remove previous yoiberifas-latest release
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete yoiberifas-latest --yes 2>/dev/null || true
+          git push origin :refs/tags/yoiberifas-latest 2>/dev/null || true
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: yoiberifas-latest
+          name: yoiberifas-latest
+          body: |
+            Production bundle for yoiberifas VPS fast deploy.
+            Commit: ${{ github.sha }}
+            Short SHA: ${{ env.SHA }}
+          files: raffle-release.tar.gz
+          make_latest: true

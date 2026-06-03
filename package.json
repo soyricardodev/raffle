@@ -16,7 +16,8 @@
     "db:seed": "pnpm db:migrate && bun run scripts/seed.ts",
     "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts",
     "db:validate:migration": "bun run scripts/validate-migration.ts",
-    "deploy:yoiberifas": "bash deploy/vps-yoiberifas-full.sh"
+    "deploy:yoiberifas": "bash deploy/vps-yoiberifas-full.sh",
+    "deploy:fast": "bash deploy/vps-fast-deploy.sh"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",

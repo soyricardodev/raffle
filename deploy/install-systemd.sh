@@ -19,6 +19,14 @@ BUN_BIN="${BUN_BIN:-$HOME/.bun/bin/bun}"
 [[ -f "$ENV_FILE" ]] || { echo "Falta $ENV_FILE" >&2; exit 1; }
 [[ -x "$BUN_BIN" ]] || { echo "No encontré Bun en $BUN_BIN" >&2; exit 1; }
 
+# Fast deploy: ~/raffle/current/app — fallback: repo build en ~/raffle/app
+APP_DIR="${RAFFLE_ROOT}/app"
+if [[ -f "${RAFFLE_ROOT}/current/app/.output/server/index.mjs" ]]; then
+  APP_DIR="${RAFFLE_ROOT}/current/app"
+elif [[ -L "${RAFFLE_ROOT}/current" ]] && [[ -f "$(readlink -f "${RAFFLE_ROOT}/current")/app/.output/server/index.mjs" ]]; then
+  APP_DIR="$(readlink -f "${RAFFLE_ROOT}/current")/app"
+fi
+
 UNIT="/etc/systemd/system/${SERVICE_NAME}.service"
 
 sudo tee "$UNIT" > /dev/null <<EOF
@@ -30,7 +38,7 @@ After=network.target
 Type=simple
 User=${RUN_USER}
 Group=${RUN_USER}
-WorkingDirectory=${RAFFLE_ROOT}/app
+WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
 Environment=NODE_ENV=production
 Environment=PORT=3000
@@ -45,5 +53,6 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable "$SERVICE_NAME"
 echo "Instalado $UNIT"
+echo "  WorkingDirectory=${APP_DIR}"
 echo "  sudo systemctl start $SERVICE_NAME"
 echo "  journalctl -u $SERVICE_NAME -f"

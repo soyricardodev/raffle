@@ -1,88 +1,104 @@
-# yoiberifas.com — un solo comando
+# yoiberifas.com — despliegue
 
-## Migración + deploy completo
+## Layout en el VPS
 
-Desde el VPS como `admin`, con legacy en `~/raffle-app` y v2 en `~/raffle`:
+| Ruta | Contenido |
+|------|-----------|
+| `~/raffle-app` | Legacy (solo uploads / referencia) |
+| `~/raffle/.env` | Secrets y `DATABASE_URL` |
+| `~/raffle/data/raffle.db` | SQLite producción |
+| `~/raffle/current` | Symlink al release activo |
+| `~/raffle/releases/` | Historial de bundles descargados |
 
-```bash
-cd ~/raffle
-git pull origin master   # o clona la primera vez
-bash deploy/vps-yoiberifas-full.sh
-```
+---
 
-El script hace **todo**:
+## Despliegue rápido (recomendado)
 
-1. `git pull` vía HTTPS (repo público, sin SSH key)
-2. Lee `~/raffle-app/backend/.env` → genera `~/raffle/.env`
-3. Usa uploads legacy en `~/raffle-app/backend/uploads` (sin copiar)
-4. Backup MySQL + SQLite
-5. Schema SQLite + ETL MySQL → SQLite
-6. Validación de conteos
-7. `pnpm build` + systemd (Bun en :3000)
-8. Detiene legacy (pm2 en raffle-app) + nginx cutover
+GitHub Actions construye la app; el VPS solo descarga y reinicia (~1–3 min).
 
-## Probar sin tocar producción
+### 1. Publicar release (una vez por cambio de código)
 
-```bash
-bash deploy/vps-yoiberifas-full.sh --skip-nginx
-curl http://127.0.0.1:3000/api/health/db
-```
+Push a `master` dispara [`.github/workflows/release-yoiberifas.yml`](../.github/workflows/release-yoiberifas.yml).
 
-## Ver progreso mientras corre
+O manualmente en GitHub: **Actions → Release Yoiberifas → Run workflow**.
 
-En otro terminal SSH:
+Cuando termine, existirá el release `yoiberifas-latest` con `raffle-release.tar.gz`.
+
+### 2. Desplegar en el VPS
 
 ```bash
 cd ~/raffle
-cat logs/current-step
-tail -f logs/deploy_*.log
+git pull origin master   # solo para actualizar scripts deploy/
+bash deploy/vps-fast-deploy.sh
 ```
 
-Si el script actual fue iniciado antes de esta mejora:
+Con migración de schema (si hubo cambios Drizzle):
 
 ```bash
-ps -eo pid,etime,cmd | grep -E 'vps-yoiberifas|pnpm|bun|node|mysqldump' | grep -v grep
-du -h ~/raffle/data/raffle.db 2>/dev/null || true
+bash deploy/vps-fast-deploy.sh --migrate
+```
+
+### 3. Verificar
+
+```bash
+curl -s http://127.0.0.1:3000/api/health/db
 sudo systemctl status raffle --no-pager
-journalctl -u raffle -n 80 --no-pager
+readlink -f ~/raffle/current
 ```
 
-## Re-migrar desde cero
+### Rollback
 
 ```bash
-bash deploy/vps-yoiberifas-full.sh --force-db --skip-nginx
+bash deploy/vps-fast-deploy.sh --rollback
 ```
 
-## Solo redeploy de código
+Mantiene los últimos 5 releases en `~/raffle/releases/`.
+
+---
+
+## Migración inicial (una sola vez)
+
+Solo la primera vez desde legacy MySQL:
 
 ```bash
+cd ~/raffle
+bash deploy/vps-yoiberifas-full.sh --skip-nginx
+# validar, luego cutover nginx:
 bash deploy/vps-yoiberifas-full.sh --skip-migration
 ```
 
-## Si el build falla por memoria
-
-La migración ya queda en `~/raffle/data/raffle.db`; no la repitas. Trae el fix y reintenta solo build + servicio:
+O cutover completo en una ventana de mantenimiento:
 
 ```bash
-cd ~/raffle
-git pull origin master
-AUTO_SWAP=1 BUILD_SWAP_SIZE=4G NODE_MAX_OLD_SPACE_SIZE=3072 \
-  bash deploy/vps-yoiberifas-full.sh --skip-migration --skip-nginx
+bash deploy/vps-yoiberifas-full.sh
 ```
 
-El script crea `/swapfile` si RAM+swap es bajo y configura `NODE_OPTIONS` para Vite.
+---
 
-## Requisitos en el VPS
+## Si el build en VPS falla por memoria
 
-- `~/raffle-app/backend/.env` con `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
-- Node 22 + Bun (`vps-setup-admin.sh` instala Bun)
-- `mysql-client` para backup: `sudo apt install mysql-client`
-- sudo para nginx y systemd
+La migración ya queda en `~/raffle/data/raffle.db`. Usa **fast deploy** en lugar de rebuild en VPS:
 
-## Password admin post-migración
+```bash
+# Espera que GitHub termine el workflow Release Yoiberifas
+bash deploy/vps-fast-deploy.sh
+```
+
+---
+
+## Monitoreo
+
+```bash
+journalctl -u raffle -f
+cat ~/raffle/logs/previous-release   # ruta para rollback
+```
+
+---
+
+## Password admin
 
 ```bash
 grep MIGRATE_ADMIN_PASSWORD ~/raffle/.env
 ```
 
-Login en https://yoiberifas.com/login → cambiar en `/admin/cuenta`.
+Login: https://yoiberifas.com/login → cambiar en `/admin/cuenta`.
