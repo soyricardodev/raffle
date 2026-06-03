@@ -1,15 +1,16 @@
-import { Button } from "@/components/ui/button"
-import { formatCurrency } from "@/lib/format"
+import { CopyIcon } from "@phosphor-icons/react"
 import {
   formatAccountInfoForDisplay,
   paymentMethodDisplayLabel,
 } from "@raffle/shared/payment-methods"
 import { isDollarMethod } from "@raffle/shared/validators"
-import type { RafflePaymentMethod } from "@/features/raffle/types"
-import { CopyIcon } from "@phosphor-icons/react"
+import { memo, useCallback, useMemo } from "react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import type { RafflePaymentMethod } from "@/features/raffle/types"
+import { formatCurrency } from "@/lib/format"
 
-function CopyableRow({ label, value }: { label: string; value: string }) {
+const CopyableRow = memo(function CopyableRow({ label, value }: { label: string; value: string }) {
   async function copy() {
     try {
       await navigator.clipboard.writeText(value)
@@ -36,7 +37,7 @@ function CopyableRow({ label, value }: { label: string; value: string }) {
       </Button>
     </div>
   )
-}
+})
 
 type PaymentDetailsPanelProps = {
   method: RafflePaymentMethod
@@ -44,12 +45,22 @@ type PaymentDetailsPanelProps = {
   quantity: number
 }
 
-export function PaymentDetailsPanel({ method, total, quantity }: PaymentDetailsPanelProps) {
-  const lines = formatAccountInfoForDisplay(method.method_type, method.account_info)
-  const currency = isDollarMethod(method.method_type) ? "USD" : "Bs"
-  const displayName = paymentMethodDisplayLabel(method)
+export const PaymentDetailsPanel = memo(function PaymentDetailsPanel({
+  method,
+  total,
+  quantity,
+}: PaymentDetailsPanelProps) {
+  const lines = useMemo(
+    () => formatAccountInfoForDisplay(method.method_type, method.account_info),
+    [method.account_info, method.method_type],
+  )
+  const currency = useMemo(
+    () => (isDollarMethod(method.method_type) ? "USD" : "Bs"),
+    [method.method_type],
+  )
+  const displayName = useMemo(() => paymentMethodDisplayLabel(method), [method])
 
-  async function copyAll() {
+  const copyAll = useCallback(async () => {
     const text = [
       displayName,
       ...lines.map((l) => `${l.label}: ${l.value}`),
@@ -61,7 +72,7 @@ export function PaymentDetailsPanel({ method, total, quantity }: PaymentDetailsP
     } catch {
       toast.error("No se pudo copiar")
     }
-  }
+  }, [currency, displayName, lines, total])
 
   return (
     <div className="rounded-lg border bg-muted/30 p-3">
@@ -74,8 +85,12 @@ export function PaymentDetailsPanel({ method, total, quantity }: PaymentDetailsP
       </div>
 
       <div className="divide-border divide-y">
-        {lines.map((line, index) => (
-          <CopyableRow key={`${method.id}-${index}`} label={line.label} value={line.value} />
+        {lines.map((line) => (
+          <CopyableRow
+            key={`${method.id}-${line.label}-${line.value}`}
+            label={line.label}
+            value={line.value}
+          />
         ))}
       </div>
 
@@ -87,4 +102,4 @@ export function PaymentDetailsPanel({ method, total, quantity }: PaymentDetailsP
       </div>
     </div>
   )
-}
+})

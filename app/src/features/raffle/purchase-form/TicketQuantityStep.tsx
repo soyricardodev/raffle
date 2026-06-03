@@ -1,136 +1,251 @@
-import { useEffect, useState } from "react"
+import { MinusIcon, PlusIcon, TicketIcon } from "@phosphor-icons/react"
+import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
 import { Field, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import {
+  buildSmartQuickPicks,
+  clampQuantity,
+} from "@/features/raffle/purchase-form/ticket-quantity-utils"
 import { SectionHeader } from "@/features/raffle/purchase-form/ui"
-import { MinusIcon, PlusIcon } from "@phosphor-icons/react"
+import { formatCurrency } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 type TicketQuantityStepProps = {
   quantity: number
-  minPurchase: number
+  quantityMin: number
+  raffleMinPurchase: number
   effectiveMax: number
   available: number
+  paymentThresholds: number[]
+  unitPrice?: number
+  originalUnitPrice?: number
+  discountPerTicket?: number
+  currency?: "Bs" | "USD"
+  priceIsEstimate?: boolean
   disabled: boolean
   onChange: (quantity: number) => void
 }
 
-function clampQuantity(value: number, min: number, max: number): number {
-  if (!Number.isFinite(value)) return min
-  return Math.min(max, Math.max(min, Math.floor(value)))
-}
-
-function buildQuickPicks(min: number, max: number): number[] {
-  const candidates = [min, 2, 5, 10, 25, 50, max]
-  const unique = [...new Set(candidates.filter((n) => n >= min && n <= max))]
-  return unique.sort((a, b) => a - b)
-}
-
-export function TicketQuantityStep({
+export const TicketQuantityStep = memo(function TicketQuantityStep({
   quantity,
-  minPurchase,
+  quantityMin,
+  raffleMinPurchase,
   effectiveMax,
   available,
+  paymentThresholds,
+  unitPrice,
+  originalUnitPrice,
+  discountPerTicket,
+  currency = "Bs",
+  priceIsEstimate = false,
   disabled,
   onChange,
 }: TicketQuantityStepProps) {
   const [draft, setDraft] = useState(String(quantity))
-  const quickPicks = buildQuickPicks(minPurchase, effectiveMax)
+
+  const quickPicks = useMemo(
+    () =>
+      buildSmartQuickPicks(quantityMin, effectiveMax, {
+        paymentThresholds,
+        maxChips: 6,
+      }),
+    [quantityMin, effectiveMax, paymentThresholds],
+  )
+
+  const paymentMinAboveRaffle =
+    quantityMin > raffleMinPurchase &&
+    paymentThresholds.some((t) => t > raffleMinPurchase)
 
   useEffect(() => {
     setDraft(String(quantity))
   }, [quantity])
 
-  function commitDraft() {
+  const commitDraft = useCallback(() => {
     const parsed = Number.parseInt(draft, 10)
-    onChange(clampQuantity(parsed, minPurchase, effectiveMax))
-  }
+    onChange(clampQuantity(parsed, quantityMin, effectiveMax))
+  }, [draft, effectiveMax, onChange, quantityMin])
 
-  function handleQuickPick(value: string) {
-    if (!value) return
-    onChange(clampQuantity(Number.parseInt(value, 10), minPurchase, effectiveMax))
-  }
+  const handleQuickPick = useCallback(
+    (value: string) => {
+      if (!value) return
+      onChange(clampQuantity(Number.parseInt(value, 10), quantityMin, effectiveMax))
+    },
+    [effectiveMax, onChange, quantityMin],
+  )
+
+  const subtotal =
+    unitPrice != null && Number.isFinite(unitPrice) ? unitPrice * quantity : null
+  const savings =
+    discountPerTicket != null && discountPerTicket > 0
+      ? discountPerTicket * quantity
+      : null
+
+  const soldOut = available <= 0 || effectiveMax < quantityMin
 
   return (
-    <section className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <SectionHeader title="Cantidad" />
-        <span className="text-muted-foreground text-xs tabular-nums">
-          {available} disp. · {minPurchase}–{effectiveMax}
-        </span>
+    <section className="flex flex-col gap-3" aria-labelledby="ticket-quantity-heading">
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex flex-col gap-0.5">
+          <SectionHeader title="Cantidad" />
+          <p id="ticket-quantity-heading" className="sr-only">
+            Selecciona cuántos boletos comprar
+          </p>
+          <p className="text-muted-foreground text-xs leading-snug">
+            {soldOut ? (
+              "No hay boletos disponibles"
+            ) : (
+              <>
+                <span className="text-foreground font-medium tabular-nums">
+                  {available.toLocaleString("es-VE")}
+                </span>{" "}
+                disponibles · elige entre{" "}
+                <span className="tabular-nums">
+                  {quantityMin} y {effectiveMax.toLocaleString("es-VE")}
+                </span>
+              </>
+            )}
+          </p>
+        </div>
+        {quantityMin > 1 ? (
+          <Badge variant="secondary" className="shrink-0 tabular-nums">
+            Mín. {quantityMin}
+          </Badge>
+        ) : null}
       </div>
 
-      <div className="flex items-center gap-2">
+      {paymentMinAboveRaffle ? (
+        <p className="bg-muted/60 text-muted-foreground rounded-lg px-3 py-2 text-xs leading-snug">
+          Algunos métodos de pago piden más boletos. El mínimo para comprar aquí es{" "}
+          <span className="text-foreground font-medium tabular-nums">{quantityMin}</span>.
+        </p>
+      ) : null}
+
+      <div className="flex items-stretch gap-2">
         <Button
           type="button"
           variant="outline"
-          size="icon-sm"
-          disabled={quantity <= minPurchase || disabled}
-          onClick={() => onChange(Math.max(minPurchase, quantity - 1))}
-          aria-label="Menos"
+          size="icon"
+          className="size-11 shrink-0 rounded-full"
+          disabled={quantity <= quantityMin || disabled || soldOut}
+          onClick={() => onChange(Math.max(quantityMin, quantity - 1))}
+          aria-label="Un boleto menos"
         >
-          <MinusIcon />
+          <MinusIcon className="size-4" />
         </Button>
 
         <Field className="min-w-0 flex-1">
           <FieldLabel htmlFor="ticket-quantity" className="sr-only">
-            Cantidad
+            Cantidad de boletos
           </FieldLabel>
-          <Input
-            id="ticket-quantity"
-            type="number"
-            inputMode="numeric"
-            min={minPurchase}
-            max={effectiveMax}
-            value={draft}
-            disabled={disabled}
-            className="h-9 text-center text-lg font-semibold tabular-nums"
-            onChange={(event) => setDraft(event.target.value)}
-            onBlur={commitDraft}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault()
-                commitDraft()
-              }
-            }}
-          />
+          <div
+            className={cn(
+              "bg-muted/50 flex h-11 items-center justify-center rounded-full border px-3",
+              disabled && "opacity-60",
+            )}
+          >
+            <Input
+              id="ticket-quantity"
+              type="number"
+              inputMode="numeric"
+              min={quantityMin}
+              max={effectiveMax}
+              value={draft}
+              disabled={disabled || soldOut}
+              className="h-auto border-0 bg-transparent p-0 text-center font-serif text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
+              onChange={(event) => setDraft(event.target.value)}
+              onBlur={commitDraft}
+              onKeyDown={(event) => {
+                if (event.key === "Enter") {
+                  event.preventDefault()
+                  commitDraft()
+                }
+              }}
+            />
+          </div>
         </Field>
 
         <Button
           type="button"
           variant="outline"
-          size="icon-sm"
-          disabled={quantity >= effectiveMax || disabled}
+          size="icon"
+          className="size-11 shrink-0 rounded-full"
+          disabled={quantity >= effectiveMax || disabled || soldOut}
           onClick={() => onChange(Math.min(effectiveMax, quantity + 1))}
-          aria-label="Más"
+          aria-label="Un boleto más"
         >
-          <PlusIcon />
+          <PlusIcon className="size-4" />
         </Button>
       </div>
 
       {quickPicks.length > 1 ? (
-        <ToggleGroup
-          type="single"
-          variant="outline"
-          size="sm"
-          spacing={1}
-          value={String(quantity)}
-          onValueChange={handleQuickPick}
-          className="flex w-full flex-wrap"
-          disabled={disabled}
-        >
-          {quickPicks.map((pick) => (
-            <ToggleGroupItem
-              key={pick}
-              value={String(pick)}
-              aria-label={`${pick} boletos`}
-              className="min-w-9 px-2 text-xs tabular-nums"
-            >
-              {pick}
-            </ToggleGroupItem>
-          ))}
-        </ToggleGroup>
+        <div className="flex flex-col gap-1.5">
+          <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+            Accesos rápidos
+          </p>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            spacing={1}
+            value={String(quantity)}
+            onValueChange={handleQuickPick}
+            className="flex w-full gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            disabled={disabled || soldOut}
+          >
+            {quickPicks.map((pick) => (
+              <ToggleGroupItem
+                key={pick.value}
+                value={String(pick.value)}
+                aria-label={`${pick.value} boletos`}
+                className={cn(
+                  "h-9 min-w-10 shrink-0 rounded-full px-3 text-xs tabular-nums",
+                  pick.value === quantity && "font-semibold",
+                )}
+              >
+                {pick.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
       ) : null}
+
+      {subtotal != null ? (
+        <div className="bg-primary/5 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5">
+          <div className="text-muted-foreground flex min-w-0 flex-col gap-0.5 text-xs">
+            <span className="flex items-center gap-1.5">
+              <TicketIcon className="size-3.5 shrink-0" aria-hidden />
+              {quantity} boleto{quantity === 1 ? "" : "s"} ×{" "}
+              {originalUnitPrice != null && originalUnitPrice > unitPrice! ? (
+                <>
+                  <span className="line-through opacity-70">
+                    {formatCurrency(originalUnitPrice, currency)}
+                  </span>{" "}
+                </>
+              ) : null}
+              {formatCurrency(unitPrice!, currency)}
+            </span>
+            {savings != null && savings > 0 ? (
+              <span className="text-emerald-700 dark:text-emerald-300">
+                Ahorras {formatCurrency(savings, currency)}
+              </span>
+            ) : null}
+            {priceIsEstimate ? (
+              <span className="text-[10px]">Estimado en Bs (según método de pago)</span>
+            ) : null}
+          </div>
+          <span className="font-serif text-base font-semibold tabular-nums">
+            {formatCurrency(subtotal, currency)}
+          </span>
+        </div>
+      ) : (
+        <p className="text-muted-foreground text-center text-xs tabular-nums">
+          {quantity} boleto{quantity === 1 ? "" : "s"} seleccionado
+          {quantity === 1 ? "" : "s"}
+        </p>
+      )}
     </section>
   )
-}
+})

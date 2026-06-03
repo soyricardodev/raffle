@@ -12,13 +12,15 @@ import {
   InvalidQuantityError,
   ValidationError,
 } from "@raffle/shared/errors"
-import { type PaymentMethod, type PurchaseStatus } from "@raffle/shared/validators"
+import { type PurchaseStatus } from "@raffle/shared/validators"
 import * as pauseService from "./pause.service"
 import * as purchasesRepo from "./repositories/purchases.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import * as ticketsRepo from "./repositories/tickets.repository"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
+import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
 import * as customersRepo from "./repositories/customers.repository"
+import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
 import { formatCustomerCi, parseCustomerCi } from "@raffle/shared/validators/buyer-identity"
 import type { CustomerLocationType } from "@raffle/shared/validators"
 
@@ -98,8 +100,17 @@ export async function createPurchase(params: CreatePurchaseParams) {
       throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)
     }
 
-    const pricePerTicket = purchasesRepo.pricePerTicketCents(paymentMethod, raffle)
-    const totalAmountCents = pricePerTicket * params.ticketQuantity
+    const promotions = await rafflePromotionsRepo.listPromotionsByRaffle(params.raffleId, tx)
+    const unitPricing = resolveEffectiveUnitPrice({
+      paymentMethod,
+      prices: {
+        priceBsCents: raffle.priceBsCents,
+        priceUsdCents: raffle.priceUsdCents,
+      },
+      promotions,
+      rafflePaymentMethodId: params.rafflePaymentMethodId,
+    })
+    const totalAmountCents = unitPricing.finalUnitPriceCents * params.ticketQuantity
 
     const parsedCi = parseCustomerCi(params.customerCi)
     const customerCiStored = parsedCi
@@ -132,6 +143,10 @@ export async function createPurchase(params: CreatePurchaseParams) {
       ticketQuantity: params.ticketQuantity,
       totalAmountCents,
       currency: purchasesRepo.purchaseCurrency(paymentMethod),
+      promotionId: unitPricing.promotionId,
+      originalUnitPriceCents: unitPricing.originalUnitPriceCents,
+      discountUnitCents: unitPricing.discountUnitCents,
+      finalUnitPriceCents: unitPricing.finalUnitPriceCents,
     })
 
     const ticketNumbers = await ticketsRepo.allocateTicketsToPurchase(tx, {
@@ -259,10 +274,10 @@ export async function addTicketsToPurchase(purchaseId: number, quantity: number)
       ticketsAvailable: raffle.ticketsAvailable,
     })
 
-    const pricePerTicket = purchasesRepo.pricePerTicketCents(
-      purchase.paymentMethod as PaymentMethod,
-      purchase,
-    )
+    const pricePerTicket = purchasesRepo.unitPriceCentsForPurchase(purchase, {
+      priceBsCents: purchase.priceBsCents,
+      priceUsdCents: purchase.priceUsdCents,
+    })
     const additional = pricePerTicket * added.length
     const newQty = purchase.ticketQuantity + added.length
     const newTotal = purchase.totalAmountCents + additional
@@ -312,10 +327,10 @@ export async function removeTicketsFromPurchase(purchaseId: number, quantity: nu
       throw new Error("No se encontraron boletos para eliminar en esta compra")
     }
 
-    const pricePerTicket = purchasesRepo.pricePerTicketCents(
-      purchase.paymentMethod as PaymentMethod,
-      purchase,
-    )
+    const pricePerTicket = purchasesRepo.unitPriceCentsForPurchase(purchase, {
+      priceBsCents: purchase.priceBsCents,
+      priceUsdCents: purchase.priceUsdCents,
+    })
     const deduction = pricePerTicket * ticketNumbers.length
     const newQty = purchase.ticketQuantity - ticketNumbers.length
     const newTotal = purchase.totalAmountCents - deduction
@@ -363,10 +378,10 @@ export async function reassignTicketsToPurchase(purchaseId: number) {
     if (!raffle) throw new RaffleNotFoundError(purchase.raffleId)
 
     const qty = purchase.ticketQuantity
-    const pricePerTicket = purchasesRepo.pricePerTicketCents(
-      purchase.paymentMethod as PaymentMethod,
-      purchase,
-    )
+    const pricePerTicket = purchasesRepo.unitPriceCentsForPurchase(purchase, {
+      priceBsCents: purchase.priceBsCents,
+      priceUsdCents: purchase.priceUsdCents,
+    })
 
     const ticketNumbers = await ticketsRepo.allocateTicketsToPurchase(tx, {
       raffleId: purchase.raffleId,

@@ -1,0 +1,10 @@
+# Crontab del usuario root o raffle en el VPS
+#
+#   crontab -e
+#
+# Mantenimiento (pausas expiradas, rifas vencidas) — cada 5 minutos:
+SHELL=/bin/bash
+*/5 * * * * curl -sf -X POST -H "Authorization: Bearer TU_CRON_SECRET" https://tudominio.com/api/cron/maintenance >/dev/null 2>&1
+
+# Backup SQLite diario (ajusta rutas):
+# 0 3 * * * cp /opt/raffle/data/raffle.db /opt/raffle/backups/raffle_$(date +\%Y\%m\%d).db

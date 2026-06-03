@@ -3,12 +3,20 @@ import {
   buildSocialLinks,
   facebookHref,
   instagramHref,
+  whatsAppChannelHref,
   whatsAppHref,
 } from "@/features/layout/social-links"
 
 describe("social-links", () => {
   it("builds WhatsApp wa.me link", () => {
     expect(whatsAppHref("584121234567")).toBe("https://wa.me/584121234567")
+  })
+
+  it("keeps WhatsApp channel invite URLs intact", () => {
+    expect(whatsAppChannelHref("https://whatsapp.com/channel/abc")).toBe(
+      "https://whatsapp.com/channel/abc",
+    )
+    expect(whatsAppChannelHref("584121234567")).toBe("")
   })
 
   it("normalizes Instagram handle to URL", () => {

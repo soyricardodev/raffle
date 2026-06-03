@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
-import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
+import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
+import { LivePurchaseActivityTicker } from "@/features/raffle/LivePurchaseActivityTicker"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PrizesSection } from "@/features/raffle/PrizesSection"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
@@ -26,9 +27,9 @@ export const Route = createFileRoute("/_public/rifa/$id")({
 
 function RaffleDetailSkeleton() {
   return (
-    <div className="container mx-auto space-y-4 px-4 py-8">
-      <Skeleton className="aspect-[16/9] w-full rounded-xl" />
-      <Skeleton className="h-40 w-full rounded-xl" />
+    <div className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-4">
+      <Skeleton className="aspect-[4/3] w-full rounded-xl" />
+      <Skeleton className="h-44 w-full rounded-xl" />
       <Skeleton className="h-56 w-full rounded-xl" />
     </div>
   )
@@ -55,8 +56,8 @@ function RaffleDetailPage() {
   if (isError || !raffle) {
     return (
       <PublicLayout>
-        <div className="container mx-auto px-4 py-20 text-center">
-          <h1 className="text-2xl font-bold">Rifa no encontrada</h1>
+        <div className="mx-auto max-w-lg px-4 py-20 text-center">
+          <h1 className="font-heading text-2xl font-semibold">Rifa no encontrada</h1>
           <p className="text-muted-foreground mt-2 text-sm">
             El enlace puede estar incorrecto o la rifa ya no está disponible.
           </p>
@@ -65,19 +66,33 @@ function RaffleDetailPage() {
     )
   }
 
+  const liveEnabled = raffle.status === "active" || raffle.status === "paused"
+
   return (
     <PublicLayout>
-      <RaffleLiveProvider
-        raffleId={raffle.id}
-        enabled={raffle.status === "active" || raffle.status === "paused"}
-      >
-        <div className="container mx-auto space-y-6 px-4 py-8">
+      <RaffleLiveProvider raffleId={raffle.id} enabled={liveEnabled}>
+        {liveEnabled ? (
+          <LivePurchaseActivityTicker variant="live" raffleId={raffle.id} />
+        ) : (
+          <LivePurchaseActivityTicker variant="finished" />
+        )}
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pt-1 pb-24 sm:gap-4">
           <PauseBanner raffleId={raffle.id} />
-          <ActiveRaffleCard raffle={raffle} />
-          <PrizesSection prizes={raffle.prizes} />
-          <div id="comprar" className="scroll-mt-20">
-            <PurchaseForm raffle={raffle} />
-          </div>
+
+          <RaffleActiveSection
+            raffle={raffle}
+            liveEnabled={liveEnabled}
+            headingLevel={1}
+            descriptionLineClamp={false}
+          >
+            {raffle.prizes && raffle.prizes.length > 0 ? (
+              <PrizesSection prizes={raffle.prizes} />
+            ) : null}
+
+            <div id="comprar" className="scroll-mt-16">
+              <PurchaseForm raffle={raffle} />
+            </div>
+          </RaffleActiveSection>
         </div>
       </RaffleLiveProvider>
     </PublicLayout>

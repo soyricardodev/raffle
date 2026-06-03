@@ -18,6 +18,7 @@ import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as AdminRifasRouteImport } from './routes/admin/rifas'
 import { Route as AdminMetodosPagoRouteImport } from './routes/admin/metodos-pago'
 import { Route as AdminEmailsRouteImport } from './routes/admin/emails'
+import { Route as AdminCuentaRouteImport } from './routes/admin/cuenta'
 import { Route as AdminCrearRouteImport } from './routes/admin/crear'
 import { Route as AdminConfigRouteImport } from './routes/admin/config'
 import { Route as AdminComprasRouteImport } from './routes/admin/compras'
@@ -33,6 +34,7 @@ import { Route as ApiRafflesPublishedRouteImport } from './routes/api/raffles/pu
 import { Route as ApiRafflesFirstActiveRouteImport } from './routes/api/raffles/first-active'
 import { Route as ApiRafflesIdRouteImport } from './routes/api/raffles/$id'
 import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchases.top-clients'
+import { Route as ApiPurchaseSuccessAnalyticsRouteImport } from './routes/api/purchase-success/analytics'
 import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
 import { Route as ApiCronMaintenanceRouteImport } from './routes/api/cron/maintenance'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
@@ -55,10 +57,12 @@ import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admi
 import { Route as ApiAdminRafflesIdUnpauseRouteImport } from './routes/api/admin/raffles/$id.unpause'
 import { Route as ApiAdminRafflesIdStatusRouteImport } from './routes/api/admin/raffles/$id.status'
 import { Route as ApiAdminRafflesIdPublishRouteImport } from './routes/api/admin/raffles/$id.publish'
+import { Route as ApiAdminRafflesIdPromotionsRouteImport } from './routes/api/admin/raffles/$id.promotions'
 import { Route as ApiAdminRafflesIdPauseRouteImport } from './routes/api/admin/raffles/$id.pause'
 import { Route as ApiAdminRafflesIdLifecycleRouteImport } from './routes/api/admin/raffles/$id.lifecycle'
 import { Route as ApiAdminRafflesIdAutoPauseRouteImport } from './routes/api/admin/raffles/$id.auto-pause'
 import { Route as ApiAdminPurchasesIdStatusRouteImport } from './routes/api/admin/purchases/$id.status'
+import { Route as ApiAdminRafflesIdPromotionsPromotionIdRouteImport } from './routes/api/admin/raffles/$id.promotions.$promotionId'
 import { Route as ApiAdminPurchasesIdTicketsRemoveRouteImport } from './routes/api/admin/purchases/$id.tickets.remove'
 import { Route as ApiAdminPurchasesIdTicketsReassignRouteImport } from './routes/api/admin/purchases/$id.tickets.reassign'
 import { Route as ApiAdminPurchasesIdTicketsAddRouteImport } from './routes/api/admin/purchases/$id.tickets.add'
@@ -105,6 +109,11 @@ const AdminMetodosPagoRoute = AdminMetodosPagoRouteImport.update({
 const AdminEmailsRoute = AdminEmailsRouteImport.update({
   id: '/emails',
   path: '/emails',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
+const AdminCuentaRoute = AdminCuentaRouteImport.update({
+  id: '/cuenta',
+  path: '/cuenta',
   getParentRoute: () => AdminRouteRoute,
 } as any)
 const AdminCrearRoute = AdminCrearRouteImport.update({
@@ -182,6 +191,12 @@ const ApiPurchasesTopClientsRoute = ApiPurchasesTopClientsRouteImport.update({
   path: '/api/purchases/top-clients',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiPurchaseSuccessAnalyticsRoute =
+  ApiPurchaseSuccessAnalyticsRouteImport.update({
+    id: '/api/purchase-success/analytics',
+    path: '/api/purchase-success/analytics',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 const ApiHealthDbRoute = ApiHealthDbRouteImport.update({
   id: '/api/health/db',
   path: '/api/health/db',
@@ -296,6 +311,12 @@ const ApiAdminRafflesIdPublishRoute =
     path: '/publish',
     getParentRoute: () => ApiAdminRafflesIdRoute,
   } as any)
+const ApiAdminRafflesIdPromotionsRoute =
+  ApiAdminRafflesIdPromotionsRouteImport.update({
+    id: '/promotions',
+    path: '/promotions',
+    getParentRoute: () => ApiAdminRafflesIdRoute,
+  } as any)
 const ApiAdminRafflesIdPauseRoute = ApiAdminRafflesIdPauseRouteImport.update({
   id: '/pause',
   path: '/pause',
@@ -318,6 +339,12 @@ const ApiAdminPurchasesIdStatusRoute =
     id: '/status',
     path: '/status',
     getParentRoute: () => ApiAdminPurchasesIdRoute,
+  } as any)
+const ApiAdminRafflesIdPromotionsPromotionIdRoute =
+  ApiAdminRafflesIdPromotionsPromotionIdRouteImport.update({
+    id: '/$promotionId',
+    path: '/$promotionId',
+    getParentRoute: () => ApiAdminRafflesIdPromotionsRoute,
   } as any)
 const ApiAdminPurchasesIdTicketsRemoveRoute =
   ApiAdminPurchasesIdTicketsRemoveRouteImport.update({
@@ -348,6 +375,7 @@ export interface FileRoutesByFullPath {
   '/admin/compras': typeof AdminComprasRoute
   '/admin/config': typeof AdminConfigRoute
   '/admin/crear': typeof AdminCrearRoute
+  '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/metodos-pago': typeof AdminMetodosPagoRoute
   '/admin/rifas': typeof AdminRifasRouteWithChildren
@@ -366,6 +394,7 @@ export interface FileRoutesByFullPath {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
@@ -385,12 +414,14 @@ export interface FileRoutesByFullPath {
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
+  '/api/admin/raffles/$id/promotions': typeof ApiAdminRafflesIdPromotionsRouteWithChildren
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
   '/api/admin/purchases/$id/tickets/remove': typeof ApiAdminPurchasesIdTicketsRemoveRoute
+  '/api/admin/raffles/$id/promotions/$promotionId': typeof ApiAdminRafflesIdPromotionsPromotionIdRoute
 }
 export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
@@ -400,6 +431,7 @@ export interface FileRoutesByTo {
   '/admin/compras': typeof AdminComprasRoute
   '/admin/config': typeof AdminConfigRoute
   '/admin/crear': typeof AdminCrearRoute
+  '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/metodos-pago': typeof AdminMetodosPagoRoute
   '/api/config': typeof ApiConfigRoute
@@ -418,6 +450,7 @@ export interface FileRoutesByTo {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
@@ -437,12 +470,14 @@ export interface FileRoutesByTo {
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
+  '/api/admin/raffles/$id/promotions': typeof ApiAdminRafflesIdPromotionsRouteWithChildren
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
   '/api/admin/purchases/$id/tickets/remove': typeof ApiAdminPurchasesIdTicketsRemoveRoute
+  '/api/admin/raffles/$id/promotions/$promotionId': typeof ApiAdminRafflesIdPromotionsPromotionIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -455,6 +490,7 @@ export interface FileRoutesById {
   '/admin/compras': typeof AdminComprasRoute
   '/admin/config': typeof AdminConfigRoute
   '/admin/crear': typeof AdminCrearRoute
+  '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/emails': typeof AdminEmailsRoute
   '/admin/metodos-pago': typeof AdminMetodosPagoRoute
   '/admin/rifas': typeof AdminRifasRouteWithChildren
@@ -474,6 +510,7 @@ export interface FileRoutesById {
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
@@ -493,12 +530,14 @@ export interface FileRoutesById {
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
+  '/api/admin/raffles/$id/promotions': typeof ApiAdminRafflesIdPromotionsRouteWithChildren
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
   '/api/admin/purchases/$id/tickets/remove': typeof ApiAdminPurchasesIdTicketsRemoveRoute
+  '/api/admin/raffles/$id/promotions/$promotionId': typeof ApiAdminRafflesIdPromotionsPromotionIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -512,6 +551,7 @@ export interface FileRouteTypes {
     | '/admin/compras'
     | '/admin/config'
     | '/admin/crear'
+    | '/admin/cuenta'
     | '/admin/emails'
     | '/admin/metodos-pago'
     | '/admin/rifas'
@@ -530,6 +570,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/cron/maintenance'
     | '/api/health/db'
+    | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
@@ -549,12 +590,14 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
+    | '/api/admin/raffles/$id/promotions'
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
     | '/api/admin/purchases/$id/tickets/remove'
+    | '/api/admin/raffles/$id/promotions/$promotionId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/login'
@@ -564,6 +607,7 @@ export interface FileRouteTypes {
     | '/admin/compras'
     | '/admin/config'
     | '/admin/crear'
+    | '/admin/cuenta'
     | '/admin/emails'
     | '/admin/metodos-pago'
     | '/api/config'
@@ -582,6 +626,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/cron/maintenance'
     | '/api/health/db'
+    | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
@@ -601,12 +646,14 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
+    | '/api/admin/raffles/$id/promotions'
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
     | '/api/admin/purchases/$id/tickets/remove'
+    | '/api/admin/raffles/$id/promotions/$promotionId'
   id:
     | '__root__'
     | '/_public'
@@ -618,6 +665,7 @@ export interface FileRouteTypes {
     | '/admin/compras'
     | '/admin/config'
     | '/admin/crear'
+    | '/admin/cuenta'
     | '/admin/emails'
     | '/admin/metodos-pago'
     | '/admin/rifas'
@@ -637,6 +685,7 @@ export interface FileRouteTypes {
     | '/api/auth/$'
     | '/api/cron/maintenance'
     | '/api/health/db'
+    | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
@@ -656,12 +705,14 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
+    | '/api/admin/raffles/$id/promotions'
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
     | '/api/admin/purchases/$id/tickets/remove'
+    | '/api/admin/raffles/$id/promotions/$promotionId'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -678,6 +729,7 @@ export interface RootRouteChildren {
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronMaintenanceRoute: typeof ApiCronMaintenanceRoute
   ApiHealthDbRoute: typeof ApiHealthDbRoute
+  ApiPurchaseSuccessAnalyticsRoute: typeof ApiPurchaseSuccessAnalyticsRoute
   ApiPurchasesTopClientsRoute: typeof ApiPurchasesTopClientsRoute
   ApiRafflesIdRoute: typeof ApiRafflesIdRouteWithChildren
   ApiRafflesFirstActiveRoute: typeof ApiRafflesFirstActiveRoute
@@ -756,6 +808,13 @@ declare module '@tanstack/react-router' {
       path: '/emails'
       fullPath: '/admin/emails'
       preLoaderRoute: typeof AdminEmailsRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/cuenta': {
+      id: '/admin/cuenta'
+      path: '/cuenta'
+      fullPath: '/admin/cuenta'
+      preLoaderRoute: typeof AdminCuentaRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/crear': {
@@ -861,6 +920,13 @@ declare module '@tanstack/react-router' {
       path: '/api/purchases/top-clients'
       fullPath: '/api/purchases/top-clients'
       preLoaderRoute: typeof ApiPurchasesTopClientsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/purchase-success/analytics': {
+      id: '/api/purchase-success/analytics'
+      path: '/api/purchase-success/analytics'
+      fullPath: '/api/purchase-success/analytics'
+      preLoaderRoute: typeof ApiPurchaseSuccessAnalyticsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health/db': {
@@ -1017,6 +1083,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRafflesIdPublishRouteImport
       parentRoute: typeof ApiAdminRafflesIdRoute
     }
+    '/api/admin/raffles/$id/promotions': {
+      id: '/api/admin/raffles/$id/promotions'
+      path: '/promotions'
+      fullPath: '/api/admin/raffles/$id/promotions'
+      preLoaderRoute: typeof ApiAdminRafflesIdPromotionsRouteImport
+      parentRoute: typeof ApiAdminRafflesIdRoute
+    }
     '/api/admin/raffles/$id/pause': {
       id: '/api/admin/raffles/$id/pause'
       path: '/pause'
@@ -1044,6 +1117,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/purchases/$id/status'
       preLoaderRoute: typeof ApiAdminPurchasesIdStatusRouteImport
       parentRoute: typeof ApiAdminPurchasesIdRoute
+    }
+    '/api/admin/raffles/$id/promotions/$promotionId': {
+      id: '/api/admin/raffles/$id/promotions/$promotionId'
+      path: '/$promotionId'
+      fullPath: '/api/admin/raffles/$id/promotions/$promotionId'
+      preLoaderRoute: typeof ApiAdminRafflesIdPromotionsPromotionIdRouteImport
+      parentRoute: typeof ApiAdminRafflesIdPromotionsRoute
     }
     '/api/admin/purchases/$id/tickets/remove': {
       id: '/api/admin/purchases/$id/tickets/remove'
@@ -1107,6 +1187,7 @@ interface AdminRouteRouteChildren {
   AdminComprasRoute: typeof AdminComprasRoute
   AdminConfigRoute: typeof AdminConfigRoute
   AdminCrearRoute: typeof AdminCrearRoute
+  AdminCuentaRoute: typeof AdminCuentaRoute
   AdminEmailsRoute: typeof AdminEmailsRoute
   AdminMetodosPagoRoute: typeof AdminMetodosPagoRoute
   AdminRifasRoute: typeof AdminRifasRouteWithChildren
@@ -1120,6 +1201,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminComprasRoute: AdminComprasRoute,
   AdminConfigRoute: AdminConfigRoute,
   AdminCrearRoute: AdminCrearRoute,
+  AdminCuentaRoute: AdminCuentaRoute,
   AdminEmailsRoute: AdminEmailsRoute,
   AdminMetodosPagoRoute: AdminMetodosPagoRoute,
   AdminRifasRoute: AdminRifasRouteWithChildren,
@@ -1161,10 +1243,26 @@ const ApiAdminPurchasesIdRouteChildren: ApiAdminPurchasesIdRouteChildren = {
 const ApiAdminPurchasesIdRouteWithChildren =
   ApiAdminPurchasesIdRoute._addFileChildren(ApiAdminPurchasesIdRouteChildren)
 
+interface ApiAdminRafflesIdPromotionsRouteChildren {
+  ApiAdminRafflesIdPromotionsPromotionIdRoute: typeof ApiAdminRafflesIdPromotionsPromotionIdRoute
+}
+
+const ApiAdminRafflesIdPromotionsRouteChildren: ApiAdminRafflesIdPromotionsRouteChildren =
+  {
+    ApiAdminRafflesIdPromotionsPromotionIdRoute:
+      ApiAdminRafflesIdPromotionsPromotionIdRoute,
+  }
+
+const ApiAdminRafflesIdPromotionsRouteWithChildren =
+  ApiAdminRafflesIdPromotionsRoute._addFileChildren(
+    ApiAdminRafflesIdPromotionsRouteChildren,
+  )
+
 interface ApiAdminRafflesIdRouteChildren {
   ApiAdminRafflesIdAutoPauseRoute: typeof ApiAdminRafflesIdAutoPauseRoute
   ApiAdminRafflesIdLifecycleRoute: typeof ApiAdminRafflesIdLifecycleRoute
   ApiAdminRafflesIdPauseRoute: typeof ApiAdminRafflesIdPauseRoute
+  ApiAdminRafflesIdPromotionsRoute: typeof ApiAdminRafflesIdPromotionsRouteWithChildren
   ApiAdminRafflesIdPublishRoute: typeof ApiAdminRafflesIdPublishRoute
   ApiAdminRafflesIdStatusRoute: typeof ApiAdminRafflesIdStatusRoute
   ApiAdminRafflesIdUnpauseRoute: typeof ApiAdminRafflesIdUnpauseRoute
@@ -1174,6 +1272,8 @@ const ApiAdminRafflesIdRouteChildren: ApiAdminRafflesIdRouteChildren = {
   ApiAdminRafflesIdAutoPauseRoute: ApiAdminRafflesIdAutoPauseRoute,
   ApiAdminRafflesIdLifecycleRoute: ApiAdminRafflesIdLifecycleRoute,
   ApiAdminRafflesIdPauseRoute: ApiAdminRafflesIdPauseRoute,
+  ApiAdminRafflesIdPromotionsRoute:
+    ApiAdminRafflesIdPromotionsRouteWithChildren,
   ApiAdminRafflesIdPublishRoute: ApiAdminRafflesIdPublishRoute,
   ApiAdminRafflesIdStatusRoute: ApiAdminRafflesIdStatusRoute,
   ApiAdminRafflesIdUnpauseRoute: ApiAdminRafflesIdUnpauseRoute,
@@ -1196,6 +1296,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronMaintenanceRoute: ApiCronMaintenanceRoute,
   ApiHealthDbRoute: ApiHealthDbRoute,
+  ApiPurchaseSuccessAnalyticsRoute: ApiPurchaseSuccessAnalyticsRoute,
   ApiPurchasesTopClientsRoute: ApiPurchasesTopClientsRoute,
   ApiRafflesIdRoute: ApiRafflesIdRouteWithChildren,
   ApiRafflesFirstActiveRoute: ApiRafflesFirstActiveRoute,

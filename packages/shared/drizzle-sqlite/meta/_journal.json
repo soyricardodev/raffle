@@ -15,6 +15,48 @@
       "when": 1779900000000,
       "tag": "0001_payment_accounts_catalog",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1779900100000,
+      "tag": "0002_customers",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1779900200000,
+      "tag": "0003_customers_flexible_identity",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1779900300000,
+      "tag": "0004_raffle_buyer_presence",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1779900400000,
+      "tag": "0005_raffle_promotions",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1779900500000,
+      "tag": "0006_client_analytics_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1779900600000,
+      "tag": "0007_rename_purchase_success_analytics",
+      "breakpoints": true
     }
   ]
 }

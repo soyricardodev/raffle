@@ -3,12 +3,90 @@ import { z } from "zod"
 export const CedulaPrefix = z.enum(["V", "E", "J"])
 export type CedulaPrefix = z.infer<typeof CedulaPrefix>
 
+export const CountryScope = z.enum(["venezuela", "other"])
+export type CountryScope = z.infer<typeof CountryScope>
+
+/** Phone and location share the same venezuela vs abroad scope. */
+export type PhoneInputMode = CountryScope
+
 export const VENEZUELAN_MOBILE_PREFIXES = ["0412", "0414", "0422", "0424", "0426"] as const
 export type VenezuelanMobilePrefix = (typeof VENEZUELAN_MOBILE_PREFIXES)[number]
 
-export type PhoneInputMode = "venezuela" | "international"
+export const DEFAULT_VENEZUELAN_MOBILE_PREFIX: VenezuelanMobilePrefix = "0412"
 
 const CI_BODY_RE = /^(\d{6,9})$/
+
+export function isVenezuelanMobilePrefix(value: string): value is VenezuelanMobilePrefix {
+  return (VENEZUELAN_MOBILE_PREFIXES as readonly string[]).includes(value)
+}
+
+export function parseVenezuelanMobilePrefix(phone: string): VenezuelanMobilePrefix | null {
+  const prefix = phone.replace(/\D/g, "").slice(0, 4)
+  return isVenezuelanMobilePrefix(prefix) ? prefix : null
+}
+
+export type VenezuelanMobileParts = {
+  prefix: VenezuelanMobilePrefix
+  suffix: string
+}
+
+export function splitVenezuelanMobile(phone: string): VenezuelanMobileParts | null {
+  const digits = phone.replace(/\D/g, "")
+  const prefix = parseVenezuelanMobilePrefix(digits)
+  if (!prefix) return null
+  return { prefix, suffix: digits.slice(4, 11) }
+}
+
+export function formatVenezuelanMobile(prefix: VenezuelanMobilePrefix, suffix: string): string {
+  return `${prefix}${suffix.replace(/\D/g, "").slice(0, 7)}`
+}
+
+export function phoneDisplayValue(scope: CountryScope, phone: string): string {
+  if (scope === "other") return phone
+  return splitVenezuelanMobile(phone)?.suffix ?? ""
+}
+
+export function transitionPhoneScope(phone: string, toScope: CountryScope): string {
+  if (toScope === "other") {
+    const trimmed = phone.trim()
+    if (trimmed.startsWith("+")) return sanitizePhoneInput(trimmed, "other")
+    const digits = trimmed.replace(/\D/g, "")
+    return digits ? `+${digits}` : ""
+  }
+
+  const parts = splitVenezuelanMobile(phone)
+  return parts ? formatVenezuelanMobile(parts.prefix, parts.suffix) : ""
+}
+
+export function applyVenezuelanMobilePrefix(
+  phone: string,
+  prefix: VenezuelanMobilePrefix,
+): string {
+  const suffix = splitVenezuelanMobile(phone)?.suffix ?? ""
+  return suffix ? formatVenezuelanMobile(prefix, suffix) : prefix
+}
+
+export function updateVenezuelanMobileSuffix(
+  phone: string,
+  suffixInput: string,
+  selectedPrefix: VenezuelanMobilePrefix | null,
+): string {
+  const suffix = suffixInput.replace(/\D/g, "").slice(0, 7)
+  if (!suffix) return ""
+
+  const prefix =
+    selectedPrefix ??
+    parseVenezuelanMobilePrefix(phone) ??
+    DEFAULT_VENEZUELAN_MOBILE_PREFIX
+
+  return formatVenezuelanMobile(prefix, suffix)
+}
+
+export function normalizeCountryScope(value: string): CountryScope {
+  if (value === "international") return "other"
+  if (value === "venezuela" || value === "other") return value
+  return "venezuela"
+}
 
 export function parseCustomerCi(raw: string): { prefix: CedulaPrefix; number: string } | null {
   const trimmed = raw.trim()
@@ -53,8 +131,8 @@ export function sanitizeCiDigits(value: string): string {
   return value.replace(/\D/g, "").slice(0, 9)
 }
 
-export function sanitizePhoneInput(value: string, mode: PhoneInputMode): string {
-  if (mode === "international") {
+export function sanitizePhoneInput(value: string, mode: CountryScope): string {
+  if (mode === "other") {
     const hasPlus = value.startsWith("+")
     const digits = value.replace(/[^\d+]/g, "")
     if (!hasPlus && value.includes("+")) {
@@ -70,7 +148,7 @@ export function isValidVenezuelanMobile(phone: string): boolean {
   const digits = phone.replace(/\D/g, "")
   if (digits.length !== 11 || !digits.startsWith("0")) return false
   const prefix = digits.slice(0, 4)
-  return (VENEZUELAN_MOBILE_PREFIXES as readonly string[]).includes(prefix)
+  return isVenezuelanMobilePrefix(prefix)
 }
 
 export function isValidInternationalPhone(phone: string): boolean {
@@ -79,10 +157,10 @@ export function isValidInternationalPhone(phone: string): boolean {
   return digits.length >= 8 && digits.length <= 15
 }
 
-export function isValidCustomerPhone(phone: string, mode: PhoneInputMode): boolean {
+export function isValidCustomerPhone(phone: string, mode: CountryScope): boolean {
   const trimmed = phone.trim()
   if (!trimmed) return false
-  if (mode === "international") return isValidInternationalPhone(trimmed)
+  if (mode === "other") return isValidInternationalPhone(trimmed)
   return isValidVenezuelanMobile(trimmed)
 }
 

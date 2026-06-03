@@ -1,0 +1,40 @@
+# systemd — Raffle v2 (Bun)
+#
+# Instalación:
+#   sudo cp deploy/raffle.service.example /etc/systemd/system/raffle.service
+#   sudo nano /etc/systemd/system/raffle.service   # ajusta User y rutas
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now raffle
+#
+# Logs: journalctl -u raffle -f
+
+[Unit]
+Description=Raffle v2 (TanStack Start + libSQL)
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=raffle
+Group=raffle
+WorkingDirectory=/opt/raffle/src/app
+
+EnvironmentFile=/opt/raffle/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+
+# Bun ejecuta el bundle Nitro (alternativa: /usr/bin/node .output/server/index.mjs)
+ExecStart=/home/raffle/.bun/bin/bun run .output/server/index.mjs
+
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+
+# Hardening básico
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/opt/raffle/data /opt/raffle/uploads /opt/raffle/src/app/.output
+
+[Install]
+WantedBy=multi-user.target

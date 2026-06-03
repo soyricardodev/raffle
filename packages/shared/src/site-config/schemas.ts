@@ -10,6 +10,8 @@ export const HexColorSchema = z
 export const SiteInfoSchema = z.object({
   site_name: z.string().trim().max(120),
   tagline: z.string().trim().max(200),
+  /** RUNLOT authorization id for raffle sales (shown in footer when set). */
+  runlot_id: z.string().trim().max(60).default(""),
 })
 
 export const SiteColorsSchema = z.object({
@@ -56,6 +58,24 @@ export const SeoConfigSchema = z.object({
   indexable: z.boolean(),
 })
 
+const httpsUrlOrEmpty = z.union([
+  z.literal(""),
+  z.string().trim().url("URL inválida").refine((v) => /^https:\/\//i.test(v), {
+    message: "Debe empezar con https://",
+  }),
+])
+
+/** Promo block shown in the post-purchase success drawer (mobile-first). */
+export const PurchaseSuccessPromoSchema = z.object({
+  enabled: z.boolean().default(false),
+  title: z.string().trim().max(120).default(""),
+  description: z.string().trim().max(300).default(""),
+  /** Full WhatsApp channel/community invite URL (not wa.me digits). */
+  whatsapp_channel_url: httpsUrlOrEmpty.default(""),
+  /** Instagram handle or profile URL for community/promo. */
+  instagram_url: z.string().trim().max(200).default(""),
+})
+
 export const AdminSiteConfigPatchSchema = z.object({
   site_info: SiteInfoSchema.optional(),
   site_colors: SiteColorsSchema.optional(),
@@ -64,6 +84,7 @@ export const AdminSiteConfigPatchSchema = z.object({
   hero_config: HeroConfigSchema.optional(),
   site_images: SiteImagesSchema.optional(),
   seo_config: SeoConfigSchema.optional(),
+  purchase_success_promo: PurchaseSuccessPromoSchema.optional(),
 })
 
 export type SiteInfo = z.infer<typeof SiteInfoSchema>
@@ -74,6 +95,7 @@ export type HeroConfig = z.infer<typeof HeroConfigSchema>
 export type OfficialFooterLogo = z.infer<typeof OfficialFooterLogoSchema>
 export type SiteImages = z.infer<typeof SiteImagesSchema>
 export type SeoConfig = z.infer<typeof SeoConfigSchema>
+export type PurchaseSuccessPromo = z.infer<typeof PurchaseSuccessPromoSchema>
 export type AdminSiteConfigPatch = z.infer<typeof AdminSiteConfigPatchSchema>
 
 export const SITE_CONFIG_PUBLIC_KEYS = [
@@ -84,6 +106,7 @@ export const SITE_CONFIG_PUBLIC_KEYS = [
   "contact_info",
   "hero_config",
   "seo_config",
+  "purchase_success_promo",
 ] as const
 
 export type SiteConfigPublicKey = (typeof SITE_CONFIG_PUBLIC_KEYS)[number]

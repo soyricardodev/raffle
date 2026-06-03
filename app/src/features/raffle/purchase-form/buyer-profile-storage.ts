@@ -1,4 +1,8 @@
-import type { CedulaPrefix, CustomerLocationType } from "@raffle/shared/validators"
+import {
+  normalizeCountryScope,
+  type CedulaPrefix,
+  type CustomerLocationType,
+} from "@raffle/shared/validators"
 import type { PhoneInputMode } from "@raffle/shared/validators/buyer-identity"
 
 const STORAGE_KEY = "raffle:buyer-profile:v1"
@@ -21,7 +25,7 @@ export function loadSavedBuyerProfile(): SavedBuyerProfile | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<SavedBuyerProfile>
+    const parsed = JSON.parse(raw) as Partial<SavedBuyerProfile> & { phoneMode?: string }
     if (
       !parsed.customerName ||
       !parsed.customerPhone ||
@@ -39,8 +43,8 @@ export function loadSavedBuyerProfile(): SavedBuyerProfile | null {
       customerEmail: parsed.customerEmail,
       ciPrefix: parsed.ciPrefix,
       ciNumber: parsed.ciNumber,
-      phoneMode: parsed.phoneMode,
-      locationType: parsed.locationType,
+      phoneMode: normalizeCountryScope(parsed.phoneMode),
+      locationType: normalizeCountryScope(parsed.locationType),
       selectedState: parsed.selectedState ?? "",
       customLocation: parsed.customLocation ?? "",
       savedAt: parsed.savedAt ?? 0,
@@ -59,4 +63,10 @@ export function saveBuyerProfile(profile: Omit<SavedBuyerProfile, "savedAt">): v
 export function clearSavedBuyerProfile(): void {
   if (typeof window === "undefined") return
   localStorage.removeItem(STORAGE_KEY)
+}
+
+export function buyerFirstName(fullName: string, fallback = ""): string {
+  const trimmed = fullName.trim()
+  if (!trimmed) return fallback
+  return trimmed.split(/\s+/)[0] ?? trimmed
 }

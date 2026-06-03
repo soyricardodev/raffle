@@ -1,12 +1,13 @@
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import type { CedulaPrefix, CustomerLocationType, PhoneInputMode } from "@raffle/shared/validators"
+import { EnvelopeSimpleIcon, UserCircleIcon } from "@phosphor-icons/react"
+import { memo } from "react"
+import { FieldGroup } from "@/components/ui/field"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
+import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
+import { SavedBuyerProfileBanner } from "@/features/raffle/purchase-form/SavedBuyerProfileBanner"
 import { SectionHeader } from "@/features/raffle/purchase-form/ui"
-import type { CedulaPrefix, CustomerLocationType } from "@raffle/shared/validators"
-import type { PhoneInputMode } from "@raffle/shared/validators"
 
 type CustomerDetailsStepProps = {
   disabled: boolean
@@ -19,7 +20,8 @@ type CustomerDetailsStepProps = {
   locationType: CustomerLocationType
   selectedState: string
   customLocation: string
-  hasSavedProfile: boolean
+  savedProfileName: string | null
+  savedProfileDismissed: boolean
   hints: {
     name?: string
     phone?: string
@@ -36,10 +38,11 @@ type CustomerDetailsStepProps = {
   onLocationTypeChange: (type: CustomerLocationType) => void
   onSelectedStateChange: (state: string) => void
   onCustomLocationChange: (value: string) => void
-  onApplySavedProfile: () => void
+  onUseOtherSavedData: () => void
+  onRestoreSavedProfile: () => void
 }
 
-export function CustomerDetailsStep({
+export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   disabled,
   customerName,
   customerPhone,
@@ -50,7 +53,8 @@ export function CustomerDetailsStep({
   locationType,
   selectedState,
   customLocation,
-  hasSavedProfile,
+  savedProfileName,
+  savedProfileDismissed,
   hints,
   onCustomerNameChange,
   onCustomerPhoneChange,
@@ -61,40 +65,36 @@ export function CustomerDetailsStep({
   onLocationTypeChange,
   onSelectedStateChange,
   onCustomLocationChange,
-  onApplySavedProfile,
+  onUseOtherSavedData,
+  onRestoreSavedProfile,
 }: CustomerDetailsStepProps) {
   return (
     <section className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <SectionHeader title="Tus datos" />
-        {hasSavedProfile ? (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className="h-7 shrink-0 px-2 text-xs"
-            disabled={disabled}
-            onClick={onApplySavedProfile}
-          >
-            Autocompletar
-          </Button>
-        ) : null}
-      </div>
+      <SectionHeader title="Tus datos" />
+
+      {savedProfileName ? (
+        <SavedBuyerProfileBanner
+          customerName={savedProfileName}
+          dismissed={savedProfileDismissed}
+          disabled={disabled}
+          onUseOtherData={onUseOtherSavedData}
+          onRestoreSavedProfile={onRestoreSavedProfile}
+        />
+      ) : null}
 
       <FieldGroup className="gap-3">
-        <Field data-invalid={!!hints.name}>
-          <FieldLabel htmlFor="customer-name">Nombre</FieldLabel>
-          <Input
-            id="customer-name"
-            value={customerName}
-            onChange={(event) => onCustomerNameChange(event.target.value)}
-            disabled={disabled}
-            aria-invalid={!!hints.name}
-            className="h-9"
-            autoComplete="name"
-          />
-          <FieldError>{hints.name}</FieldError>
-        </Field>
+        <LabeledIconField
+          id="customer-name"
+          label="Nombre completo"
+          description="Como aparece en tu cédula o documento."
+          icon={<UserCircleIcon className="size-4" aria-hidden />}
+          value={customerName}
+          onChange={onCustomerNameChange}
+          disabled={disabled}
+          error={hints.name}
+          autoComplete="name"
+          placeholder="Ej. María González"
+        />
 
         <PhoneInputField
           value={customerPhone}
@@ -105,20 +105,19 @@ export function CustomerDetailsStep({
           onModeChange={onPhoneModeChange}
         />
 
-        <Field data-invalid={!!hints.email}>
-          <FieldLabel htmlFor="customer-email">Email</FieldLabel>
-          <Input
-            id="customer-email"
-            type="email"
-            value={customerEmail}
-            onChange={(event) => onCustomerEmailChange(event.target.value)}
-            disabled={disabled}
-            aria-invalid={!!hints.email}
-            className="h-9"
-            autoComplete="email"
-          />
-          <FieldError>{hints.email}</FieldError>
-        </Field>
+        <LabeledIconField
+          id="customer-email"
+          label="Correo electrónico"
+          description="Te enviaremos la confirmación de tu compra."
+          icon={<EnvelopeSimpleIcon className="size-4" aria-hidden />}
+          value={customerEmail}
+          onChange={onCustomerEmailChange}
+          disabled={disabled}
+          error={hints.email}
+          type="email"
+          autoComplete="email"
+          placeholder="tu@email.com"
+        />
 
         <CiInputField
           prefix={ciPrefix}
@@ -142,4 +141,4 @@ export function CustomerDetailsStep({
       </FieldGroup>
     </section>
   )
-}
+})

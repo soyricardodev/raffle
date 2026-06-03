@@ -49,6 +49,15 @@ SELECT raffle_id, ticket_number, COUNT(*) FROM purchase_tickets
 GROUP BY raffle_id, ticket_number HAVING COUNT(*) > 1;
 ```
 
+Validación de conteos (MySQL vs SQLite):
+
+```bash
+set SOURCE_DATABASE_URL=mysql://...
+set TARGET_DATABASE_URL=file:./data/raffle.db
+set UPLOAD_DIR=/opt/raffle/uploads
+pnpm db:validate:migration
+```
+
 Tests automáticos:
 
 ```bash

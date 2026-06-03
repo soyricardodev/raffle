@@ -5,6 +5,14 @@ export function whatsAppHref(digits: string): string {
   return normalized ? `https://wa.me/${normalized}` : ""
 }
 
+/** WhatsApp channel/community invite URL (must already be https). */
+export function whatsAppChannelHref(url: string): string {
+  const trimmed = url.trim()
+  if (!trimmed) return ""
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return ""
+}
+
 export function instagramHref(value: string): string {
   const trimmed = value.trim()
   if (!trimmed) return ""

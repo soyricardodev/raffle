@@ -9,7 +9,8 @@ import {
 import { PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 import type { PaymentMethod, PurchaseStatus } from "@raffle/shared/validators"
 import { isDollarMethod } from "@raffle/shared/validators"
-import { and, desc, eq, like, or, sql } from "drizzle-orm"
+import type { RecentPurchaseDbRow } from "@raffle/shared/public-recent-purchase"
+import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm"
 import { randomUUID } from "node:crypto"
 import { getDb, type DbTransaction } from "@/lib/db.server"
 
@@ -52,6 +53,10 @@ export async function insertPurchase(
     ticketQuantity: number
     totalAmountCents: number
     currency: string
+    promotionId?: number | null
+    originalUnitPriceCents?: number | null
+    discountUnitCents?: number | null
+    finalUnitPriceCents?: number | null
     status?: PurchaseStatus
   }
 ): Promise<number> {
@@ -74,6 +79,10 @@ export async function insertPurchase(
       ticketQuantity: data.ticketQuantity,
       totalAmountCents: data.totalAmountCents,
       currency: data.currency,
+      promotionId: data.promotionId ?? null,
+      originalUnitPriceCents: data.originalUnitPriceCents ?? null,
+      discountUnitCents: data.discountUnitCents ?? null,
+      finalUnitPriceCents: data.finalUnitPriceCents ?? null,
       status: data.status ?? "pending",
     })
     .returning({ id: purchases.id })
@@ -149,6 +158,29 @@ export function pricePerTicketCents(
   return isDollarMethod(paymentMethod)
     ? raffle.priceUsdCents
     : raffle.priceBsCents
+}
+
+/** Uses purchase snapshot when present; otherwise base raffle price. */
+export function unitPriceCentsForPurchase(
+  purchase: Pick<PurchaseRow, "paymentMethod" | "finalUnitPriceCents" | "raffleId"> & {
+    priceBsCents?: number
+    priceUsdCents?: number
+  },
+  raffle?: { priceBsCents: number; priceUsdCents: number },
+): number {
+  if (purchase.finalUnitPriceCents != null) {
+    return purchase.finalUnitPriceCents
+  }
+  if (raffle) {
+    return pricePerTicketCents(purchase.paymentMethod as PaymentMethod, raffle)
+  }
+  if (purchase.priceBsCents != null && purchase.priceUsdCents != null) {
+    return pricePerTicketCents(purchase.paymentMethod as PaymentMethod, {
+      priceBsCents: purchase.priceBsCents,
+      priceUsdCents: purchase.priceUsdCents,
+    })
+  }
+  throw new Error("unitPriceCentsForPurchase: missing price context")
 }
 
 export function purchaseCurrency(paymentMethod: PaymentMethod): string {
@@ -350,6 +382,32 @@ export async function getClientPurchases(params: {
     ...r,
     total: fromCents(Number(r.total)),
   }))
+}
+
+export async function listRecentPurchaseRows(
+  raffleId: number,
+  limit = 12,
+): Promise<RecentPurchaseDbRow[]> {
+  const db = getDb()
+  const safeLimit = Math.max(1, Math.min(limit, 30))
+
+  return db
+    .select({
+      publicId: purchases.publicId,
+      customerName: purchases.customerName,
+      ticketQuantity: purchases.ticketQuantity,
+      status: purchases.status,
+      createdAt: purchases.createdAt,
+    })
+    .from(purchases)
+    .where(
+      and(
+        eq(purchases.raffleId, raffleId),
+        inArray(purchases.status, ["pending", "approved"]),
+      ),
+    )
+    .orderBy(desc(purchases.createdAt))
+    .limit(safeLimit)
 }
 
 export async function assertUniquePaymentReference(

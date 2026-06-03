@@ -10,10 +10,15 @@
     "./db/ticket-number": "./src/db/ticket-number.ts",
     "./validators": "./src/validators/index.ts",
     "./validators/buyer-identity": "./src/validators/buyer-identity.ts",
+    "./validators/purchase-success-analytics": "./src/validators/purchase-success-analytics.ts",
     "./payment-methods": "./src/payment-methods/index.ts",
     "./errors": "./src/errors/index.ts",
     "./constants": "./src/constants/index.ts",
-    "./site-config": "./src/site-config/schemas.ts"
+    "./site-config": "./src/site-config/schemas.ts",
+    "./promotions": "./src/promotions/pricing.ts",
+    "./promotions/types": "./src/promotions/types.ts",
+    "./promotions/display": "./src/promotions/display.ts",
+    "./public-recent-purchase": "./src/public-recent-purchase.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
@@ -31,6 +36,7 @@
   "devDependencies": {
     "@types/node": "^22.15.29",
     "drizzle-kit": "^0.31.9",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
   }
 }

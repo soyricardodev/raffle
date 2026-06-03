@@ -2,12 +2,19 @@ import {
   AdminSiteConfigPatchSchema,
   type AdminSiteConfigPatch,
   type OfficialFooterLogo,
+  type PurchaseSuccessPromo,
 } from "@raffle/shared/site-config"
-import { normalizeHeroConfig, normalizeSeoConfig, normalizeSiteImages } from "@/stores/site-config"
+import {
+  normalizeHeroConfig,
+  normalizePurchaseSuccessPromo,
+  normalizeSeoConfig,
+  normalizeSiteImages,
+} from "@/stores/site-config"
 
 export type AdminSiteConfigDraft = {
   site_name: string
   tagline: string
+  runlot_id: string
   primary: string
   secondary: string
   accent: string
@@ -29,11 +36,13 @@ export type AdminSiteConfigDraft = {
   og_image: string
   canonical_url: string
   indexable: boolean
+  purchase_success_promo: PurchaseSuccessPromo
 }
 
 export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   site_name: "",
   tagline: "",
+  runlot_id: "",
   primary: "#8B7355",
   secondary: "#F5F5DC",
   accent: "#FFD700",
@@ -55,6 +64,7 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   og_image: "",
   canonical_url: "",
   indexable: true,
+  purchase_success_promo: normalizePurchaseSuccessPromo(undefined),
 })
 
 export function apiToDraft(data: Record<string, unknown> | undefined): AdminSiteConfigDraft {
@@ -72,6 +82,7 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
   return {
     site_name: String(siteInfo?.site_name ?? base.site_name),
     tagline: String(siteInfo?.tagline ?? base.tagline),
+    runlot_id: String(siteInfo?.runlot_id ?? base.runlot_id),
     primary: String(colors?.primary ?? base.primary),
     secondary: String(colors?.secondary ?? base.secondary),
     accent: String(colors?.accent ?? base.accent),
@@ -93,12 +104,27 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     og_image: seo.og_image,
     canonical_url: seo.canonical_url,
     indexable: seo.indexable,
+    purchase_success_promo: normalizePurchaseSuccessPromo(data.purchase_success_promo),
+  }
+}
+
+function trimPurchaseSuccessPromo(promo: PurchaseSuccessPromo): PurchaseSuccessPromo {
+  return {
+    enabled: promo.enabled,
+    title: promo.title.trim(),
+    description: promo.description.trim(),
+    whatsapp_channel_url: promo.whatsapp_channel_url.trim(),
+    instagram_url: promo.instagram_url.trim(),
   }
 }
 
 export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch {
   return {
-    site_info: { site_name: draft.site_name.trim(), tagline: draft.tagline.trim() },
+    site_info: {
+      site_name: draft.site_name.trim(),
+      tagline: draft.tagline.trim(),
+      runlot_id: draft.runlot_id.trim(),
+    },
     site_colors: {
       primary: draft.primary.trim(),
       secondary: draft.secondary.trim(),
@@ -137,6 +163,7 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
       canonical_url: draft.canonical_url.trim(),
       indexable: draft.indexable,
     },
+    purchase_success_promo: trimPurchaseSuccessPromo(draft.purchase_success_promo),
   }
 }
 
@@ -180,5 +207,6 @@ export function draftToPublicPayload(draft: AdminSiteConfigDraft) {
     hero_config: patch.hero_config,
     site_images: patch.site_images,
     seo_config: patch.seo_config,
+    purchase_success_promo: patch.purchase_success_promo,
   }
 }

@@ -5,6 +5,7 @@ import { getSiteConfigMap } from "@/server/site-config.service"
 import type {
   ContactInfo,
   HeroConfig,
+  PurchaseSuccessPromo,
   SeoConfig,
   SiteColors,
   SiteImages,
@@ -24,6 +25,7 @@ export type PublicSiteConfigPayload = {
   hero_config?: HeroConfig
   site_images?: SiteImages
   seo_config?: SeoConfig
+  purchase_success_promo?: PurchaseSuccessPromo
 }
 
 export const fetchPublicSiteConfig = createServerFn({ method: "GET" }).handler(async () => {

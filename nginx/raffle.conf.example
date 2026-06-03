@@ -1,38 +1,91 @@
-# Raffle v2 — nginx (host VPS, fuera del container)
+# Raffle v2 — nginx en el VPS (host, fuera de Bun/systemd)
+#
+# Instalación:
+#   sudo cp nginx/raffle.conf.example /etc/nginx/sites-available/raffle
+#   sudo ln -sf /etc/nginx/sites-available/raffle /etc/nginx/sites-enabled/
+#   sudo nginx -t && sudo systemctl reload nginx
+#
+# Rutas en disco:
+#   /opt/raffle/uploads/   ← copiar desde legacy (raffles, prizes, payments, config)
+#   App Bun escucha en      127.0.0.1:3000
 
 upstream raffle_app {
     server 127.0.0.1:3000;
     keepalive 32;
 }
 
+# Mantenimiento: touch /opt/raffle/maintenance.flag && nginx -s reload
+map $request_uri $raffle_maintenance {
+    default 0;
+    ~^/api/health 0;
+}
+# Activa manualmente descomentando el return 503 en location /
+
 server {
     listen 443 ssl http2;
-    server_name rifas.example.com;
+    server_name tudominio.com www.tudominio.com;
 
-    # ssl_certificate     /etc/letsencrypt/live/rifas.example.com/fullchain.pem;
-    # ssl_certificate_key /etc/letsencrypt/live/rifas.example.com/privkey.pem;
+    ssl_certificate     /etc/letsencrypt/live/tudominio.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/tudominio.com/privkey.pem;
+    ssl_session_timeout 1d;
+    ssl_protocols TLSv1.2 TLSv1.3;
 
+    # Comprobantes de pago (hasta 5 MB app + margen)
     client_max_body_size 6m;
 
+    # Estáticos: nginx sirve uploads directo (más eficiente que la app)
     location /uploads/ {
         alias /opt/raffle/uploads/;
         expires 30d;
-        add_header Cache-Control "public, immutable";
+        add_header Cache-Control "public";
         access_log off;
+
+        # Bloquear ejecución de scripts si alguien subió basura
+        location ~* \.(php|py|sh|exe)$ {
+            return 403;
+        }
     }
 
     location / {
+        # Durante cutover, descomenta:
+        # if (-f /opt/raffle/maintenance.flag) { return 503; }
+
         proxy_pass http://raffle_app;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header Connection "";
+
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+    }
+
+    # Assets del build Nitro (cache largo)
+    location /assets/ {
+        proxy_pass http://raffle_app;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        expires 7d;
+        add_header Cache-Control "public, immutable";
     }
 }
 
 server {
     listen 80;
-    server_name rifas.example.com;
+    server_name tudominio.com www.tudominio.com;
     return 301 https://$host$request_uri;
 }
+
+# ─── Cutover temporal: legacy en :5000, v2 en :3000 ─────────────────
+# Mientras pruebas v2 en subdominio:
+#
+# server {
+#     listen 443 ssl http2;
+#     server_name v2.tudominio.com;
+#     ...
+#     location /uploads/ { alias /opt/raffle/uploads/; }
+#     location / { proxy_pass http://127.0.0.1:3000; ... }
+# }

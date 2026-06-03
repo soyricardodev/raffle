@@ -8,11 +8,11 @@ describe("resolvePublicBranding", () => {
 
   it("clones nested objects so mutations do not leak", () => {
     const first = resolvePublicBranding({
-      site_info: { site_name: "A", tagline: "B" },
+      site_info: { site_name: "A", tagline: "B", runlot_id: "" },
       hero_config: { title: "T", subtitle: "S", show_particles: false },
     })
     const second = resolvePublicBranding({
-      site_info: { site_name: "A", tagline: "B" },
+      site_info: { site_name: "A", tagline: "B", runlot_id: "" },
       hero_config: { title: "T", subtitle: "S", show_particles: false },
     })
 
@@ -24,7 +24,7 @@ describe("resolvePublicBranding", () => {
 
   it("maps site config fields", () => {
     const branding = resolvePublicBranding({
-      site_info: { site_name: "Lotería", tagline: "Premios" },
+      site_info: { site_name: "Lotería", tagline: "Premios", runlot_id: "" },
       site_colors: { primary: "#111111", secondary: "#222222", accent: "#333333" },
     })
 

@@ -21,8 +21,7 @@ export function WhatsAppFab() {
         "border-border/80 bg-card border shadow-[0_4px_20px_rgba(0,0,0,0.12)]",
         "transition-[transform,box-shadow] hover:shadow-[0_6px_24px_rgba(0,0,0,0.16)] hover:scale-[1.03]",
         "focus-visible:ring-3 focus-visible:ring-[#25D366]/45 active:scale-[0.97]",
-        "bottom-[max(1rem,env(safe-area-inset-bottom))]",
-        "[[html[data-sticky-purchase-cta]_&]]:bottom-[calc(4.75rem+env(safe-area-inset-bottom))]",
+        "whatsapp-fab bottom-[max(1rem,env(safe-area-inset-bottom))]",
         "dark:shadow-[0_4px_24px_rgba(0,0,0,0.45)]",
       )}
     >

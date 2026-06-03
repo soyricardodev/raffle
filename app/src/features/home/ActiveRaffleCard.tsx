@@ -1,8 +1,10 @@
 import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
+import { SalesProgressBar } from "@/features/home/SalesProgressBar"
 import { ArrowRight, Pause } from "lucide-react"
 import { getRaffleStatusClass, getStatusLabel } from "@/lib/format"
+import { calculateRaffleSalesProgress } from "@/lib/raffle-progress"
 import { cn } from "@/lib/utils"
 
 type ActiveRaffle = {
@@ -30,6 +32,8 @@ type ActiveRaffleCardProps = {
   showTitle?: boolean
   /** Home: compacto. Detalle: card completa con imagen grande. */
   variant?: "compact" | "detail"
+  /** Ocultar si la portada ya muestra la barra animada. */
+  showProgress?: boolean
 }
 
 export function ActiveRaffleCard({
@@ -38,12 +42,9 @@ export function ActiveRaffleCard({
   showImage = true,
   showTitle = true,
   variant = "detail",
+  showProgress = true,
 }: ActiveRaffleCardProps) {
-  const sold = Number(raffle.tickets_sold) || 0
-  const reserved = Number(raffle.tickets_reserved) || 0
-  const total = Number(raffle.total_tickets) || 1
-  const occupied = sold + reserved
-  const progress = Math.min(100, Math.round((occupied / total) * 100))
+  const salesProgress = calculateRaffleSalesProgress(raffle)
   const isPaused = raffle.status === "paused"
   const isCompact = variant === "compact"
 
@@ -92,22 +93,13 @@ export function ActiveRaffleCard({
             </p>
           )}
 
-          <div className="space-y-1.5">
-            <div className="flex justify-between text-xs">
-              <span className="text-muted-foreground">Disponibilidad</span>
-              <span className="font-medium tabular-nums">{progress}%</span>
-            </div>
-            <div className="bg-secondary h-1.5 overflow-hidden rounded-full">
-              <div
-                className="bg-primary h-full rounded-full transition-all duration-500"
-                style={{ width: `${progress}%` }}
-              />
-            </div>
-            <p className="text-muted-foreground text-xs tabular-nums">
-              {raffle.tickets_available} boletos disponibles
-              {raffle.days_remaining != null ? ` · ${raffle.days_remaining} días` : ""}
-            </p>
-          </div>
+          {showProgress ? (
+            <SalesProgressBar progress={salesProgress} variant="inline" animated />
+          ) : null}
+          <p className="text-muted-foreground text-xs tabular-nums">
+            {raffle.tickets_available} boletos disponibles
+            {raffle.days_remaining != null ? ` · ${raffle.days_remaining} días` : ""}
+          </p>
 
           <div className="flex flex-wrap items-baseline justify-between gap-2 border-t pt-3 text-sm">
             <span className="text-muted-foreground text-xs">Desde</span>
@@ -163,18 +155,9 @@ export function ActiveRaffleCard({
           <p className="text-muted-foreground text-sm leading-relaxed">{raffle.description}</p>
         )}
 
-        <div className="space-y-2">
-          <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Progreso</span>
-            <span className="font-medium tabular-nums">{progress}%</span>
-          </div>
-          <div className="bg-secondary h-2 overflow-hidden rounded-full">
-            <div
-              className="bg-primary h-full rounded-full transition-all"
-              style={{ width: `${progress}%` }}
-            />
-          </div>
-        </div>
+        {showProgress ? (
+          <SalesProgressBar progress={salesProgress} variant="inline" animated />
+        ) : null}
 
         <div className="text-muted-foreground flex justify-between text-sm tabular-nums">
           <span>Bs {Number(raffle.price_bs).toFixed(2)}</span>

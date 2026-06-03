@@ -4,6 +4,7 @@ import { auditEvents } from "./audit-events"
 import { emailLogs } from "./email-logs"
 import { paymentAccounts } from "./payment-accounts"
 import { rafflePaymentMethods } from "./raffle-payment-methods"
+import { rafflePromotions } from "./raffle-promotions"
 import { purchaseTickets } from "./purchase-tickets"
 import { customers } from "./customers"
 import { purchases } from "./purchases"
@@ -27,8 +28,20 @@ export const accountRelations = relations(accounts, ({ one }) => ({
 export const raffleRelations = relations(raffles, ({ many }) => ({
   prizes: many(prizes),
   rafflePaymentMethods: many(rafflePaymentMethods),
+  rafflePromotions: many(rafflePromotions),
   purchases: many(purchases),
   purchaseTickets: many(purchaseTickets),
+}))
+
+export const rafflePromotionRelations = relations(rafflePromotions, ({ one }) => ({
+  raffle: one(raffles, {
+    fields: [rafflePromotions.raffleId],
+    references: [raffles.id],
+  }),
+  rafflePaymentMethod: one(rafflePaymentMethods, {
+    fields: [rafflePromotions.rafflePaymentMethodId],
+    references: [rafflePaymentMethods.id],
+  }),
 }))
 
 export const prizeRelations = relations(prizes, ({ one }) => ({

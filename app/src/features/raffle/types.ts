@@ -1,4 +1,5 @@
 import type { PaymentMethod } from "@raffle/shared/validators"
+import type { RafflePricing } from "@/features/raffle/promotion-types"
 
 /** Método de pago resuelto tal como lo expone la API de rifa. */
 export type RafflePaymentMethod = {
@@ -20,6 +21,7 @@ export type RaffleForPurchase = {
   max_purchase: number | string
   tickets_available: number | string
   payment_methods?: RafflePaymentMethod[]
+  pricing?: RafflePricing
 }
 
 export type PurchaseResult = {

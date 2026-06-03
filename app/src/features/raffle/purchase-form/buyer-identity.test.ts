@@ -19,7 +19,7 @@ describe("buyer identity", () => {
     expect(isValidVenezuelanMobile("04121234567")).toBe(true)
     expect(isValidVenezuelanMobile("04131234567")).toBe(false)
     expect(isValidCustomerPhone("04141234567", "venezuela")).toBe(true)
-    expect(isValidCustomerPhone("+34600111222", "international")).toBe(true)
+    expect(isValidCustomerPhone("+34600111222", "other")).toBe(true)
   })
 
   it("validates full CI string", () => {

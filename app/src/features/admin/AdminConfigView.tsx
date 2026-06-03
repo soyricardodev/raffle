@@ -11,6 +11,7 @@ import {
 } from "@/features/admin/config/admin-site-config"
 import { ColorField } from "@/features/admin/config/ColorField"
 import { OfficialLogosEditor } from "@/features/admin/config/OfficialLogosEditor"
+import { PostPurchasePromoConfigTab } from "@/features/admin/config/PostPurchasePromoConfigTab"
 import { SitePreviewCard } from "@/features/admin/config/SitePreviewCard"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
@@ -156,6 +157,9 @@ export function AdminConfigView() {
           </TabsTrigger>
           <TabsTrigger value="contact" className="min-h-9 flex-1 text-xs sm:text-sm">
             Contacto
+          </TabsTrigger>
+          <TabsTrigger value="post-purchase" className="min-h-9 flex-1 text-xs sm:text-sm">
+            Post-compra
           </TabsTrigger>
           <TabsTrigger value="footer" className="min-h-9 flex-1 text-xs sm:text-sm">
             Pie
@@ -348,16 +352,41 @@ export function AdminConfigView() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="post-purchase">
+          <PostPurchasePromoConfigTab
+            promo={draft.purchase_success_promo}
+            onChange={(purchase_success_promo) => update("purchase_success_promo", purchase_success_promo)}
+            fieldError={fieldError}
+          />
+        </TabsContent>
+
         <TabsContent value="footer">
           <Card>
             <CardHeader>
               <CardTitle>Pie de página</CardTitle>
               <CardDescription>
-                Logo del footer y sellos oficiales. Los enlaces sociales se configuran en Contacto.
+                Logo del footer, sellos oficiales y autorización RUNLOT. Los enlaces sociales se
+                configuran en Contacto.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <FieldGroup>
+                <Field data-invalid={!!fieldError("site_info.runlot_id")}>
+                  <FieldLabel htmlFor="runlot-id">ID RUNLOT (opcional)</FieldLabel>
+                  <Input
+                    id="runlot-id"
+                    className="min-h-11"
+                    value={draft.runlot_id}
+                    placeholder="Ej. 12345"
+                    onChange={(e) => update("runlot_id", e.target.value)}
+                    aria-invalid={!!fieldError("site_info.runlot_id")}
+                  />
+                  <FieldDescription>
+                    Número de autorización para venta de rifas. Se muestra en el pie del sitio cuando
+                    está configurado.
+                  </FieldDescription>
+                  <FieldError>{fieldError("site_info.runlot_id")}</FieldError>
+                </Field>
                 <AdminImageUploadField
                   id="footer-logo"
                   label="Logo del footer"

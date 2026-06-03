@@ -1,24 +1,36 @@
-import { Button } from "@/components/ui/button"
-import { InputGroup, InputGroupInput } from "@/components/ui/input-group"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import {
+  type CountryScope,
+  applyVenezuelanMobilePrefix,
+  parseVenezuelanMobilePrefix,
+  phoneDisplayValue,
+  sanitizePhoneInput,
+  transitionPhoneScope,
+  updateVenezuelanMobileSuffix,
+  VENEZUELAN_MOBILE_PREFIXES,
+  type VenezuelanMobilePrefix,
+} from "@raffle/shared/validators"
+import { PhoneIcon } from "@phosphor-icons/react"
+import { memo } from "react"
+import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
-  type PhoneInputMode,
-  VENEZUELAN_MOBILE_PREFIXES,
-  sanitizePhoneInput,
-} from "@raffle/shared/validators"
+  formInputHeightClassName,
+  prefixToggleItemClassName,
+} from "@/features/raffle/purchase-form/field-styles"
 import { cn } from "@/lib/utils"
 
 type PhoneInputFieldProps = {
   value: string
-  mode: PhoneInputMode
+  mode: CountryScope
   disabled?: boolean
   error?: string
   onChange: (value: string) => void
-  onModeChange: (mode: PhoneInputMode) => void
+  onModeChange: (mode: CountryScope) => void
 }
 
-export function PhoneInputField({
+export const PhoneInputField = memo(function PhoneInputField({
   value,
   mode,
   disabled,
@@ -26,77 +38,68 @@ export function PhoneInputField({
   onChange,
   onModeChange,
 }: PhoneInputFieldProps) {
-  const currentVenezuelanPrefix =
-    mode === "venezuela" &&
-    (VENEZUELAN_MOBILE_PREFIXES as readonly string[]).includes(value.slice(0, 4))
-      ? value.slice(0, 4)
-      : ""
+  const activePrefix = mode === "venezuela" ? parseVenezuelanMobilePrefix(value) : null
 
-  function switchMode(nextMode: PhoneInputMode) {
+  function switchMode(nextMode: CountryScope) {
     onModeChange(nextMode)
-    if (nextMode === "international") {
-      onChange(value.startsWith("+") ? value : `+${value.replace(/\D/g, "")}`)
-      return
-    }
-    onChange(sanitizePhoneInput(value, "venezuela"))
+    onChange(transitionPhoneScope(value, nextMode))
   }
 
-  function applyPrefix(prefix: string) {
+  function handlePrefixChange(prefix: string) {
+    if (!prefix) return
     onModeChange("venezuela")
-    const digits = value.replace(/\D/g, "")
-    const rest = (VENEZUELAN_MOBILE_PREFIXES as readonly string[]).includes(digits.slice(0, 4))
-      ? digits.slice(4)
-      : digits
-    onChange(`${prefix}${rest}`.slice(0, 11))
+    onChange(applyVenezuelanMobilePrefix(value, prefix as VenezuelanMobilePrefix))
   }
 
   function handlePhoneChange(raw: string) {
-    if (raw.trim().startsWith("+") && mode !== "international") {
-      onModeChange("international")
-      onChange(sanitizePhoneInput(raw, "international"))
+    if (raw.trim().startsWith("+") && mode !== "other") {
+      onModeChange("other")
+      onChange(sanitizePhoneInput(raw, "other"))
       return
     }
+
+    if (mode === "venezuela") {
+      onChange(updateVenezuelanMobileSuffix(value, raw, activePrefix))
+      return
+    }
+
     onChange(sanitizePhoneInput(raw, mode))
   }
 
   return (
     <Field data-invalid={!!error}>
-      <div className="flex items-center justify-between gap-2">
-        <FieldLabel htmlFor="customer-phone">Teléfono</FieldLabel>
-        <Button
-          type="button"
-          variant="link"
-          size="sm"
-          className="h-auto px-0 text-xs"
-          disabled={disabled}
-          onClick={() =>
-            switchMode(mode === "venezuela" ? "international" : "venezuela")
-          }
-        >
-          {mode === "venezuela" ? "Otro país" : "Venezuela"}
-        </Button>
-      </div>
+      <FieldLabel htmlFor="customer-phone">Teléfono</FieldLabel>
+      <FieldDescription>
+        {mode === "venezuela"
+          ? "Elige tu operador y escribe los 7 dígitos restantes."
+          : "Incluye el código de país, por ejemplo +57…"}
+      </FieldDescription>
+
+      <CountryScopeToggle
+        value={mode}
+        onChange={switchMode}
+        disabled={disabled}
+        ariaLabel="Tipo de teléfono"
+      />
 
       {mode === "venezuela" ? (
         <ToggleGroup
           type="single"
-          value={currentVenezuelanPrefix}
-          onValueChange={(prefix) => {
-            if (prefix) applyPrefix(prefix)
-          }}
+          value={activePrefix ?? ""}
+          onValueChange={handlePrefixChange}
           variant="outline"
           size="sm"
-          spacing={1}
-          className="flex w-full flex-wrap"
+          spacing={0}
+          className="grid w-full grid-cols-3 sm:grid-cols-5"
           disabled={disabled}
-          aria-label="Prefijo"
+          aria-label="Operador móvil"
         >
           {VENEZUELAN_MOBILE_PREFIXES.map((prefix) => (
             <ToggleGroupItem
               key={prefix}
               value={prefix}
-              aria-label={prefix}
-              className="px-2 font-mono text-[11px]"
+              aria-label={`Operador ${prefix}`}
+              className={prefixToggleItemClassName}
             >
               {prefix}
             </ToggleGroupItem>
@@ -104,14 +107,17 @@ export function PhoneInputField({
         </ToggleGroup>
       ) : null}
 
-      <InputGroup className={cn("h-9", mode === "international" && "font-mono")}>
+      <InputGroup className={cn(formInputHeightClassName, mode === "other" && "font-mono")}>
+        <InputGroupAddon align="inline-start">
+          <PhoneIcon className="size-4" aria-hidden />
+        </InputGroupAddon>
         <InputGroupInput
           id="customer-phone"
           type="tel"
-          inputMode={mode === "international" ? "tel" : "numeric"}
+          inputMode={mode === "other" ? "tel" : "numeric"}
           autoComplete="tel"
-          placeholder={mode === "international" ? "+58..." : "04121234567"}
-          value={value}
+          placeholder={mode === "other" ? "+58 412 1234567" : "1234567"}
+          value={phoneDisplayValue(mode, value)}
           disabled={disabled}
           aria-invalid={!!error}
           onChange={(event) => handlePhoneChange(event.target.value)}
@@ -120,4 +126,4 @@ export function PhoneInputField({
       <FieldError>{error}</FieldError>
     </Field>
   )
-}
+})

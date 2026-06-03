@@ -3,7 +3,16 @@ import {
   isBolivarMethodType,
   isDollarMethodType,
 } from "../payment-methods/definitions.js"
-import { isValidCustomerCi } from "./buyer-identity.js"
+import { isValidCustomerCi, CountryScope } from "./buyer-identity.js"
+import { passwordSchema } from "./password.js"
+
+export { passwordSchema } from "./password.js"
+export {
+  ChangePasswordFormInput,
+  validateChangePasswordForm,
+  type ChangePasswordPayload,
+} from "./change-password.js"
+export { zodIssuesToFieldErrors } from "./zod-utils.js"
 
 // ─── Enums ───────────────────────────────────────────────────
 
@@ -72,8 +81,8 @@ export const VENEZUELA_STATES = [
 export const VenezuelaState = z.enum(VENEZUELA_STATES)
 export type VenezuelaState = z.infer<typeof VenezuelaState>
 
-export const CustomerLocationType = z.enum(["venezuela", "other"])
-export type CustomerLocationType = z.infer<typeof CustomerLocationType>
+export const CustomerLocationType = CountryScope
+export type CustomerLocationType = CountryScope
 
 /** Formato enviado a la API: `Venezuela, {estado}` u otro texto libre. */
 export function formatCustomerLocation(
@@ -120,20 +129,32 @@ export const TicketNumber = z.string().regex(/^\d{4}$/, "Número de boleto invá
 
 export {
   CedulaPrefix,
+  CountryScope,
   VENEZUELAN_MOBILE_PREFIXES,
+  DEFAULT_VENEZUELAN_MOBILE_PREFIX,
   CustomerCi,
   CustomerEmail,
   CustomerPhone,
+  applyVenezuelanMobilePrefix,
   formatCustomerCi,
+  formatVenezuelanMobile,
   isValidCustomerCi,
   isValidCustomerPhone,
   isValidInternationalPhone,
   isValidVenezuelanMobile,
+  isVenezuelanMobilePrefix,
+  normalizeCountryScope,
   normalizeCustomerCi,
   parseCustomerCi,
+  parseVenezuelanMobilePrefix,
+  phoneDisplayValue,
   sanitizeCiDigits,
   sanitizePhoneInput,
+  splitVenezuelanMobile,
+  transitionPhoneScope,
+  updateVenezuelanMobileSuffix,
   type PhoneInputMode,
+  type VenezuelanMobileParts,
   type VenezuelanMobilePrefix,
 } from "./buyer-identity.js"
 
@@ -225,6 +246,22 @@ export const VerifyTicketInput = z
   })
 export type VerifyTicketInput = z.infer<typeof VerifyTicketInput>
 
+/** Public ticket verifier API row. */
+export const VerifiedTicketRow = z.object({
+  ticket_number: z.string(),
+  status: z.string(),
+  raffle_id: z.number(),
+  purchase_id: z.number().nullable(),
+  raffle_name: z.string(),
+  draw_date: z.string().nullable(),
+  customer_name: z.string().nullable(),
+  customer_phone: z.string().nullable(),
+  customer_email: z.string().nullable(),
+  customer_cedula: z.string().nullable(),
+  purchase_status: z.string().nullable(),
+})
+export type VerifiedTicketRow = z.infer<typeof VerifiedTicketRow>
+
 export const UpdatePurchaseStatusInput = z.object({
   status: z.enum(["approved", "rejected"]),
   notes: z.string().max(500).optional(),
@@ -280,6 +317,14 @@ export {
   CreatePaymentAccountInput,
   UpdatePaymentAccountInput,
 } from "../payment-methods/schemas.js"
+export {
+  CreateRafflePromotionInput,
+  UpdateRafflePromotionInput,
+  PromotionKindSchema,
+  PromotionScopeSchema,
+  discountPercentToBps,
+  discountBpsToPercent,
+} from "./promotions.js"
 export type CreateRaffleInput = z.infer<typeof CreateRaffleInput>
 
 /** Edit form must not change status; use admin lifecycle transitions instead. */
@@ -330,7 +375,7 @@ export type LoginInput = z.infer<typeof LoginInput>
 export const CreateUserInput = z.object({
   username: z.string().min(3).max(50),
   email: z.string().email().max(100),
-  password: z.string().min(6).max(100),
+  password: passwordSchema,
   role: UserRole.default("admin"),
 })
 export type CreateUserInput = z.infer<typeof CreateUserInput>

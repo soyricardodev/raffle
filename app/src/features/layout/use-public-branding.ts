@@ -7,10 +7,12 @@ import {
 import { usePublicSiteConfigFromLayout } from "@/features/layout/public-site-config-context"
 import {
   normalizeHeroConfig,
+  normalizePurchaseSuccessPromo,
   normalizeSeoConfig,
   normalizeSiteImages,
   type ContactInfo,
   type HeroConfig,
+  type PurchaseSuccessPromo,
   type SeoConfig,
   type SiteColors,
   type SiteImages,
@@ -19,7 +21,9 @@ import {
 } from "@/stores/site-config"
 
 function cloneSiteInfo(value?: SiteInfo): SiteInfo {
-  return value ? { ...value } : { site_name: "", tagline: "" }
+  return value
+    ? { site_name: value.site_name, tagline: value.tagline, runlot_id: value.runlot_id ?? "" }
+    : { site_name: "", tagline: "", runlot_id: "" }
 }
 
 function cloneHero(value?: HeroConfig): HeroConfig {
@@ -47,6 +51,10 @@ function cloneSeo(value?: SeoConfig): SeoConfig {
   return value ? { ...value } : normalizeSeoConfig(undefined)
 }
 
+function clonePurchaseSuccessPromo(value?: PurchaseSuccessPromo): PurchaseSuccessPromo {
+  return value ? { ...value } : normalizePurchaseSuccessPromo(undefined)
+}
+
 export type PublicBranding = {
   payload: PublicSiteConfigPayload
   siteInfo: SiteInfo
@@ -56,6 +64,7 @@ export type PublicBranding = {
   images: SiteImages
   colors: SiteColors | undefined
   seo: SeoConfig
+  purchaseSuccessPromo: PurchaseSuccessPromo
 }
 
 export function resolvePublicBranding(
@@ -72,6 +81,9 @@ export function resolvePublicBranding(
     images: payload.site_images ? normalizeSiteImages(payload.site_images) : cloneImages(),
     colors: payload.site_colors ? { ...payload.site_colors } : undefined,
     seo: payload.seo_config ? normalizeSeoConfig(payload.seo_config) : cloneSeo(),
+    purchaseSuccessPromo: payload.purchase_success_promo
+      ? normalizePurchaseSuccessPromo(payload.purchase_success_promo)
+      : clonePurchaseSuccessPromo(),
   }
 }
 

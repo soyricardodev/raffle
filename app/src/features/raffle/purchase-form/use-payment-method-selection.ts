@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { getMethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 
@@ -11,16 +11,18 @@ export function pickDefaultPaymentMethodId(
   if (eligible.length === 0) return null
 
   const pagoMovil = eligible.find((m) => m.method_type === "pago_movil")
-  return (pagoMovil ?? eligible[0])!.id
+  const fallback = eligible[0]
+  if (!fallback) return null
+  return (pagoMovil ?? fallback).id
 }
 
-export function usePaymentMethodSelection(
-  methods: RafflePaymentMethod[],
-  quantity: number,
-) {
+export function usePaymentMethodSelection(methods: RafflePaymentMethod[], quantity: number) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
-  const selectedMethod = methods.find((m) => m.id === selectedId) ?? null
+  const selectedMethod = useMemo(
+    () => methods.find((m) => m.id === selectedId) ?? null,
+    [methods, selectedId],
+  )
 
   useEffect(() => {
     if (selectedId != null) return
@@ -40,15 +42,22 @@ export function usePaymentMethodSelection(
     }
   }, [quantity, selectedId, methods])
 
-  const selectedBlockedReason = selectedMethod
-    ? getMethodEligibility(selectedMethod, quantity).blockedReason
-    : undefined
+  const selectedBlockedReason = useMemo(
+    () =>
+      selectedMethod ? getMethodEligibility(selectedMethod, quantity).blockedReason : undefined,
+    [selectedMethod, quantity],
+  )
+
+  const getEligibility = useCallback(
+    (method: RafflePaymentMethod) => getMethodEligibility(method, quantity),
+    [quantity],
+  )
 
   return {
     selectedId,
     setSelectedId,
     selectedMethod,
     selectedBlockedReason,
-    getEligibility: (method: RafflePaymentMethod) => getMethodEligibility(method, quantity),
+    getEligibility,
   }
 }

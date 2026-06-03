@@ -22,6 +22,8 @@ import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useAdminRaffleDetailQuery } from "@/features/admin/raffles/admin-raffle-detail-queries"
 import { AdminRaffleMissing } from "@/features/admin/raffles/AdminRaffleMissing"
+import { RafflePromotionsPanel } from "@/features/admin/raffles/RafflePromotionsPanel"
+import { paymentMethodDisplayLabel } from "@raffle/shared/payment-methods"
 export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
   const raffleQuery = useAdminRaffleDetailQuery(raffleId)
 
@@ -156,6 +158,16 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
               </CardContent>
             </Card>
           ) : null}
+
+          <RafflePromotionsPanel
+            raffleId={raffleId}
+            priceBs={raffle.price_bs}
+            priceUsd={raffle.price_usd}
+            paymentMethods={raffle.payment_methods.map((m) => ({
+              id: m.id,
+              label: paymentMethodDisplayLabel(m),
+            }))}
+          />
 
           {raffle.payment_methods.length > 0 ? (
             <Card>

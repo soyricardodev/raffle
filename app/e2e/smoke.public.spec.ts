@@ -8,11 +8,19 @@ test.describe("public smoke", () => {
     await expect(page.getByRole("navigation").getByRole("link", { name: "Verificar" })).toBeVisible()
   })
 
+  test("home shows live activity ticker when applicable", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" })
+    const ticker = page.getByTestId("live-purchase-activity-ticker")
+    await expect(ticker).toBeVisible()
+    await expect(ticker).toHaveAttribute("data-variant", /^(live|idle|finished)$/)
+  })
+
   test("/verificar page shows verifier UI", async ({ page }) => {
     await page.goto("/verificar", { waitUntil: "domcontentloaded" })
-    await expect(page.locator('[data-slot="card-title"]')).toHaveText("Verificar boletos")
-    await expect(page.getByRole("button", { name: "Verificar boletos" })).toBeVisible()
-    await expect(page.getByLabel("Teléfono")).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Verificar boletos" })).toBeVisible()
+    const quickSearch = page.getByRole("button", { name: /ver mis boletos/i })
+    const manualSearch = page.getByRole("button", { name: "Buscar boletos" })
+    await expect(quickSearch.or(manualSearch)).toBeVisible()
   })
 
   test("admin login page loads", async ({ page }) => {

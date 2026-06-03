@@ -1,5 +1,6 @@
 import {
   ContactInfoSchema,
+  PurchaseSuccessPromoSchema,
   SeoConfigSchema,
   SiteColorsSchema,
   SiteImagesSchema,
@@ -7,7 +8,12 @@ import {
   SocialMediaSchema,
 } from "@raffle/shared/site-config"
 import { z } from "zod"
-import { normalizeHeroConfig, normalizeSeoConfig, normalizeSiteImages } from "@/stores/site-config"
+import {
+  normalizeHeroConfig,
+  normalizePurchaseSuccessPromo,
+  normalizeSeoConfig,
+  normalizeSiteImages,
+} from "@/stores/site-config"
 import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 
 const HeroConfigRawSchema = z
@@ -28,7 +34,18 @@ export const PublicSiteConfigPayloadSchema = z.object({
   hero_config: HeroConfigRawSchema.optional(),
   site_images: SiteImagesSchema.optional(),
   seo_config: SeoConfigSchema.optional(),
+  purchase_success_promo: PurchaseSuccessPromoSchema.optional(),
 })
+
+function normalizeParsedField<T>(
+  parsed: T | undefined,
+  raw: unknown,
+  normalize: (value: unknown) => T,
+): T | undefined {
+  if (parsed !== undefined) return normalize(parsed)
+  if (raw !== undefined) return normalize(raw)
+  return undefined
+}
 
 export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSiteConfigPayload {
   const parsed = PublicSiteConfigPayloadSchema.safeParse(data)
@@ -40,12 +57,17 @@ export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSite
     site_info: parsed.data.site_info,
     contact_info: parsed.data.contact_info,
     social_media: parsed.data.social_media,
-    site_images: parsed.data.site_images
-      ? normalizeSiteImages(parsed.data.site_images)
-      : data.site_images
-        ? normalizeSiteImages(data.site_images)
-        : undefined,
+    site_images: normalizeParsedField(
+      parsed.data.site_images,
+      data.site_images,
+      normalizeSiteImages,
+    ),
     hero_config: hero ? normalizeHeroConfig(hero) : undefined,
     seo_config: parsed.data.seo_config ? normalizeSeoConfig(parsed.data.seo_config) : undefined,
+    purchase_success_promo: normalizeParsedField(
+      parsed.data.purchase_success_promo,
+      data.purchase_success_promo,
+      normalizePurchaseSuccessPromo,
+    ),
   }
 }

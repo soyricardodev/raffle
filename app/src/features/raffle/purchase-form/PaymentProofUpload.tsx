@@ -1,8 +1,8 @@
-import { useRef, useState } from "react"
+import { ImageIcon, UploadSimpleIcon, XIcon } from "@phosphor-icons/react"
+import { memo, useRef, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { cn } from "@/lib/utils"
-import { ImageIcon, UploadSimpleIcon, XIcon } from "@phosphor-icons/react"
 
 const MAX_MB = 5
 const ACCEPT = "image/jpeg,image/png,image/webp,image/gif,application/pdf"
@@ -15,7 +15,7 @@ type PaymentProofUploadProps = {
   onChange: (file: File | null) => void
 }
 
-export function PaymentProofUpload({
+export const PaymentProofUpload = memo(function PaymentProofUpload({
   file,
   disabled,
   error,
@@ -106,4 +106,4 @@ export function PaymentProofUpload({
       <FieldError>{displayError}</FieldError>
     </Field>
   )
-}
+})

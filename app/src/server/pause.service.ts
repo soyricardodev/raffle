@@ -5,6 +5,7 @@ import type { PauseReason, RaffleStatus } from "@raffle/shared/validators"
 import { and, eq, lte } from "drizzle-orm"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import type { RaffleLiveRow } from "./repositories/raffles.repository"
+import { getRaffleLiveActivity, type PublicRecentPurchase } from "./live-activity.service"
 
 const logger = getLogger()
 const PAUSE_DURATION_MINUTES = 15
@@ -176,7 +177,7 @@ export async function unpauseRaffle(raffleId: number): Promise<{
   }
 }
 
-export type RaffleLiveSnapshot = {
+export type RaffleLiveCoreSnapshot = {
   status: string
   isPaused: boolean
   remainingSeconds: number
@@ -184,6 +185,11 @@ export type RaffleLiveSnapshot = {
   pauseContext: PauseInfo["pauseContext"]
   minPurchase: number
   availability: Availability
+}
+
+export type RaffleLiveSnapshot = RaffleLiveCoreSnapshot & {
+  activeBuyersCount: number
+  recentPurchases: PublicRecentPurchase[]
 }
 
 function remainingPauseSeconds(pauseUntil: Date | null): number {
@@ -207,7 +213,7 @@ function buildPauseContext(
   return contexts[raffle.pauseReason] ?? null
 }
 
-function liveSnapshotFromRow(raffle: RaffleLiveRow): RaffleLiveSnapshot {
+function liveSnapshotFromRow(raffle: RaffleLiveRow): RaffleLiveCoreSnapshot {
   const isPaused = raffle.status === "paused"
   const remainingSeconds = remainingPauseSeconds(raffle.pauseUntil)
 
@@ -226,7 +232,13 @@ function liveSnapshotFromRow(raffle: RaffleLiveRow): RaffleLiveSnapshot {
 export async function getRaffleLiveSnapshot(raffleId: number): Promise<RaffleLiveSnapshot | null> {
   const raffle = await rafflesRepo.findRaffleLiveById(raffleId)
   if (!raffle) return null
-  return liveSnapshotFromRow(raffle)
+
+  const activity = await getRaffleLiveActivity(raffleId)
+
+  return {
+    ...liveSnapshotFromRow(raffle),
+    ...activity,
+  }
 }
 
 export async function getPauseInfo(raffleId: number): Promise<PauseInfo | null> {

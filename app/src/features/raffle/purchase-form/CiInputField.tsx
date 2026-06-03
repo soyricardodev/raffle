@@ -1,17 +1,22 @@
-import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupInput,
-} from "@/components/ui/input-group"
+import { type CedulaPrefix, sanitizeCiDigits } from "@raffle/shared/validators"
+import { IdentificationBadgeIcon } from "@phosphor-icons/react"
+import { memo } from "react"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import {
-  type CedulaPrefix,
-  sanitizeCiDigits,
-} from "@raffle/shared/validators"
+  formInputHeightClassName,
+  segmentToggleItemClassName,
+} from "@/features/raffle/purchase-form/field-styles"
 import { cn } from "@/lib/utils"
 
 const PREFIXES: CedulaPrefix[] = ["V", "E", "J"]
+
+const PREFIX_LABELS: Record<CedulaPrefix, string> = {
+  V: "Venezolano",
+  E: "Extranjero",
+  J: "Jurídico",
+}
 
 type CiInputFieldProps = {
   prefix: CedulaPrefix
@@ -22,7 +27,7 @@ type CiInputFieldProps = {
   onNumberChange: (number: string) => void
 }
 
-export function CiInputField({
+export const CiInputField = memo(function CiInputField({
   prefix,
   number,
   disabled,
@@ -37,8 +42,11 @@ export function CiInputField({
 
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor="customer-ci-number">CI</FieldLabel>
-      <InputGroup className="h-9">
+      <FieldLabel htmlFor="customer-ci-number">Cédula de identidad</FieldLabel>
+      <FieldDescription>
+        Tipo {PREFIX_LABELS[prefix].toLowerCase()} · solo números, sin puntos ni guiones.
+      </FieldDescription>
+      <InputGroup className={formInputHeightClassName}>
         <InputGroupAddon align="inline-start" className="px-1">
           <ToggleGroup
             type="single"
@@ -48,17 +56,17 @@ export function CiInputField({
             size="sm"
             spacing={0}
             disabled={disabled}
-            aria-label="Tipo CI"
+            aria-label="Tipo de cédula"
           >
             {PREFIXES.map((p) => (
               <ToggleGroupItem
                 key={p}
                 value={p}
-                aria-label={p}
+                aria-label={PREFIX_LABELS[p]}
+                title={PREFIX_LABELS[p]}
                 className={cn(
-                  "min-w-8 px-2 text-xs font-semibold transition-colors",
-                  "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground",
-                  "data-[state=on]:shadow-sm data-[state=off]:text-muted-foreground",
+                  "min-w-9 px-2.5 text-xs font-semibold",
+                  segmentToggleItemClassName,
                 )}
               >
                 {p}
@@ -76,8 +84,11 @@ export function CiInputField({
           aria-invalid={!!error}
           onChange={(event) => onNumberChange(sanitizeCiDigits(event.target.value))}
         />
+        <InputGroupAddon align="inline-end" className="pr-3">
+          <IdentificationBadgeIcon className="size-4" aria-hidden />
+        </InputGroupAddon>
       </InputGroup>
       <FieldError>{error}</FieldError>
     </Field>
   )
-}
+})

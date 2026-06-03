@@ -25,7 +25,7 @@ export function raffleLiveQueryOptions(raffleId: string) {
   })
 }
 
-const LIVE_POLL_MS = 8_000
+const LIVE_POLL_MS = 5_000
 
 function livePollIntervalMs(data: RaffleLiveStatus | null | undefined): number | false {
   if (typeof document !== "undefined" && document.hidden) return false

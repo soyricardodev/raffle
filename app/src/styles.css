@@ -1,12 +1,14 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
+@import "@fontsource-variable/plus-jakarta-sans";
+@import "@fontsource-variable/fraunces";
 @import "@fontsource-variable/geist-mono";
-@import "@fontsource-variable/geist";
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
+  --sticky-purchase-cta-height: 0px;
   --background: oklch(0.978 0.007 95);
   --foreground: oklch(0.153 0.006 107.1);
   --card: oklch(0.995 0.004 95);
@@ -76,8 +78,13 @@
 }
 
 @theme inline {
-    --font-mono: 'Geist Mono Variable', monospace;
-    --font-heading: 'Geist Variable', sans-serif;
+    --font-sans:
+      'Plus Jakarta Sans Variable', ui-sans-serif, system-ui, sans-serif,
+      'Apple Color Emoji', 'Segoe UI Emoji';
+    --font-heading:
+      'Fraunces Variable', 'Plus Jakarta Sans Variable', ui-serif, Georgia,
+      serif;
+    --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --color-sidebar-ring: var(--sidebar-ring);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -118,19 +125,172 @@
     --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+@keyframes sales-progress-shimmer {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(120%);
+  }
+}
+
+@keyframes sales-progress-gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+
+.sales-progress-fill {
+  background-image: linear-gradient(
+    105deg,
+    color-mix(in oklch, var(--brand-accent, var(--primary)) 92%, white 8%) 0%,
+    color-mix(in oklch, var(--brand-accent, var(--primary)) 70%, #ffd700 30%) 35%,
+    color-mix(in oklch, var(--brand-accent, var(--primary)) 85%, #f59e0b 15%) 70%,
+    color-mix(in oklch, var(--brand-accent, var(--primary)) 92%, white 8%) 100%
+  );
+  background-size: 200% 100%;
+  animation: sales-progress-gradient 2.8s linear infinite;
+}
+
+.sales-progress-shimmer {
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.45) 50%,
+    transparent 100%
+  );
+  animation: sales-progress-shimmer 2.2s ease-in-out infinite;
+}
+
+@keyframes sales-progress-track-glow {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      0 0 12px color-mix(in oklch, var(--brand-accent, var(--primary)) 35%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.2),
+      0 0 20px color-mix(in oklch, var(--brand-accent, var(--primary)) 55%, transparent);
+  }
+}
+
+@keyframes sales-progress-percent-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.88;
+  }
+}
+
+.sales-progress-track-overlay {
+  animation: sales-progress-track-glow 2.4s ease-in-out infinite;
+}
+
+.sales-progress-percent {
+  animation: sales-progress-percent-pulse 2s ease-in-out infinite;
+  text-shadow: 0 0 24px color-mix(in oklch, var(--brand-accent, var(--primary)) 45%, transparent);
+}
+
+@keyframes live-activity-marquee-scroll {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes live-activity-pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+.live-activity-marquee-viewport {
+  mask-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    black 4%,
+    black 96%,
+    transparent 100%
+  );
+}
+
+.live-activity-marquee-track {
+  flex-wrap: nowrap;
+  animation-name: live-activity-marquee-scroll;
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+}
+
+.live-activity-bar-live {
+  background: color-mix(in oklch, var(--primary) 4%, var(--background));
+}
+
+.live-activity-pulse-dot {
+  animation: live-activity-pulse-dot 1.4s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sales-progress-fill,
+  .sales-progress-shimmer,
+  .sales-progress-track-overlay,
+  .sales-progress-percent,
+  .live-activity-pulse-dot {
+    animation: none;
+  }
+
+  .live-activity-marquee-track {
+    animation-duration: 90s;
+  }
+}
+
+/* Sticky “Ir a comprar” bar: measured height + footer clearance (not Tailwind variants). */
+html[data-sticky-purchase-cta] {
+  scroll-padding-bottom: var(--sticky-purchase-cta-height);
+}
+
+html[data-sticky-purchase-cta] .public-site-footer {
+  padding-bottom: calc(var(--sticky-purchase-cta-height) + 1rem);
+}
+
+html[data-sticky-purchase-cta] .whatsapp-fab {
+  bottom: calc(var(--sticky-purchase-cta-height) + 1rem + env(safe-area-inset-bottom, 0px));
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply font-sans antialiased;
+    text-rendering: optimizeLegibility;
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1;
+  }
+  .font-heading {
+    font-optical-sizing: auto;
   }
   button:not(:disabled),
   [role="button"]:not(:disabled) {
     cursor: pointer;
-  }
-  html {
-    @apply font-mono;
   }
   a:focus-visible,
   button:focus-visible,

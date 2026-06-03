@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router"
 import {
   CaretUpDownIcon,
   DesktopIcon,
+  KeyIcon,
   MoonIcon,
   SignOutIcon,
   SunIcon,
@@ -75,9 +76,11 @@ function roleLabel(role: UserRole) {
 function AdminSidebarUserMenu({
   session,
   onLogout,
+  onNavigate,
 }: {
   session: AuthSession
   onLogout: () => void
+  onNavigate: () => void
 }) {
   const { user } = session
   const { mode, setMode } = useTheme()
@@ -145,6 +148,12 @@ function AdminSidebarUserMenu({
           <DropdownMenuSeparator />
 
           <DropdownMenuGroup>
+            <DropdownMenuItem asChild>
+              <Link to="/admin/cuenta" onClick={onNavigate}>
+                <KeyIcon />
+                Cambiar contraseña
+              </Link>
+            </DropdownMenuItem>
             <DropdownMenuItem variant="destructive" onSelect={onLogout}>
               <SignOutIcon />
               Cerrar sesión
@@ -212,7 +221,11 @@ export function AdminSidebarNav({
 
       <SidebarFooter>
         <SidebarMenu>
-          <AdminSidebarUserMenu session={session} onLogout={onLogout} />
+          <AdminSidebarUserMenu
+            session={session}
+            onLogout={onLogout}
+            onNavigate={handleNavigate}
+          />
         </SidebarMenu>
       </SidebarFooter>
 

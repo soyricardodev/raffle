@@ -14,7 +14,8 @@
     "db:generate": "pnpm --filter @raffle/shared db:generate",
     "db:studio": "pnpm --filter @raffle/shared db:studio",
     "db:seed": "pnpm db:migrate && bun run scripts/seed.ts",
-    "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts"
+    "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts",
+    "db:validate:migration": "bun run scripts/validate-migration.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",

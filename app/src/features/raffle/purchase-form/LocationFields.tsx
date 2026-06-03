@@ -1,5 +1,9 @@
-import { Field, FieldError, FieldLabel } from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
+import { type CustomerLocationType, VENEZUELA_STATES } from "@raffle/shared/validators"
+import { MapPinIcon } from "@phosphor-icons/react"
+import { memo } from "react"
+import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
+import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
   Select,
   SelectContent,
@@ -8,11 +12,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
-import {
-  type CustomerLocationType,
-  VENEZUELA_STATES,
-} from "@raffle/shared/validators"
+import { formInputHeightClassName } from "@/features/raffle/purchase-form/field-styles"
+import { cn } from "@/lib/utils"
 
 type LocationFieldsProps = {
   locationType: CustomerLocationType
@@ -25,7 +26,7 @@ type LocationFieldsProps = {
   onCustomLocationChange: (value: string) => void
 }
 
-export function LocationFields({
+export const LocationFields = memo(function LocationFields({
   locationType,
   selectedState,
   customLocation,
@@ -37,28 +38,24 @@ export function LocationFields({
 }: LocationFieldsProps) {
   return (
     <Field data-invalid={!!locationError}>
-      <FieldLabel htmlFor={locationType === "venezuela" ? "customer-state" : "customer-location-other"}>
+      <FieldLabel
+        htmlFor={locationType === "venezuela" ? "customer-state" : "customer-location-other"}
+      >
         Ubicación
       </FieldLabel>
-      <ToggleGroup
-        type="single"
+      <FieldDescription>
+        {locationType === "venezuela"
+          ? "Selecciona el estado donde vives."
+          : "Indica tu país y ciudad."}
+      </FieldDescription>
+
+      <CountryScopeToggle
         value={locationType}
-        onValueChange={(type) => {
-          if (type) onLocationTypeChange(type as CustomerLocationType)
-        }}
-        variant="outline"
-        size="sm"
-        spacing={1}
-        className="w-full"
+        onChange={onLocationTypeChange}
         disabled={disabled}
-      >
-        <ToggleGroupItem value="venezuela" className="flex-1 text-xs">
-          VE
-        </ToggleGroupItem>
-        <ToggleGroupItem value="other" className="flex-1 text-xs">
-          Otro
-        </ToggleGroupItem>
-      </ToggleGroup>
+        ariaLabel="Tipo de ubicación"
+      />
+
       {locationType === "venezuela" ? (
         <Select
           value={selectedState || undefined}
@@ -67,10 +64,10 @@ export function LocationFields({
         >
           <SelectTrigger
             id="customer-state"
-            className="h-9 w-full"
+            className={cn(formInputHeightClassName, "w-full")}
             aria-invalid={!!locationError}
           >
-            <SelectValue placeholder="Estado" />
+            <SelectValue placeholder="Selecciona tu estado" />
           </SelectTrigger>
           <SelectContent>
             <SelectGroup>
@@ -83,18 +80,23 @@ export function LocationFields({
           </SelectContent>
         </Select>
       ) : (
-        <Input
-          id="customer-location-other"
-          value={customLocation}
-          onChange={(event) => onCustomLocationChange(event.target.value)}
-          disabled={disabled}
-          aria-invalid={!!locationError}
-          className="h-9"
-          placeholder="País, ciudad"
-          maxLength={100}
-        />
+        <InputGroup className={formInputHeightClassName}>
+          <InputGroupAddon align="inline-start">
+            <MapPinIcon className="size-4" aria-hidden />
+          </InputGroupAddon>
+          <InputGroupInput
+            id="customer-location-other"
+            value={customLocation}
+            onChange={(event) => onCustomLocationChange(event.target.value)}
+            disabled={disabled}
+            aria-invalid={!!locationError}
+            placeholder="Ej. Colombia, Bogotá"
+            maxLength={100}
+            autoComplete="address-level2"
+          />
+        </InputGroup>
       )}
       <FieldError>{locationError}</FieldError>
     </Field>
   )
-}
+})

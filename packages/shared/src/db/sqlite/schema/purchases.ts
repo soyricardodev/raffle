@@ -31,6 +31,10 @@ export const purchases = sqliteTable(
     ticketQuantity: integer("ticket_quantity").notNull(),
     totalAmountCents: integer("total_amount_cents").notNull(),
     currency: text("currency").notNull(),
+    promotionId: integer("promotion_id"),
+    originalUnitPriceCents: integer("original_unit_price_cents"),
+    discountUnitCents: integer("discount_unit_cents"),
+    finalUnitPriceCents: integer("final_unit_price_cents"),
     status: text("status").notNull().default("pending"),
     notes: text("notes"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })

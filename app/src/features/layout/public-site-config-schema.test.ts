@@ -57,12 +57,32 @@ describe("parsePublicSiteConfig", () => {
   it("returns empty object for invalid shapes", () => {
     expect(parsePublicSiteConfig({ site_info: "not-an-object" })).toEqual({})
   })
+
+  it("parses purchase_success_promo", () => {
+    const result = parsePublicSiteConfig({
+      purchase_success_promo: {
+        enabled: true,
+        title: "Únete",
+        description: "Dinámicas",
+        whatsapp_channel_url: "https://whatsapp.com/channel/x",
+        instagram_url: "@rifas",
+      },
+    })
+
+    expect(result.purchase_success_promo).toEqual({
+      enabled: true,
+      title: "Únete",
+      description: "Dinámicas",
+      whatsapp_channel_url: "https://whatsapp.com/channel/x",
+      instagram_url: "@rifas",
+    })
+  })
 })
 
 describe("resolvePublicSeo", () => {
   it("falls back to site_info when seo fields are empty", () => {
     const seo = resolvePublicSeo({
-      site_info: { site_name: "Mi Rifa", tagline: "Gana hoy" },
+      site_info: { site_name: "Mi Rifa", tagline: "Gana hoy", runlot_id: "" },
     })
     expect(seo.title).toBe("Mi Rifa")
     expect(seo.description).toBe("Gana hoy")
@@ -70,7 +90,7 @@ describe("resolvePublicSeo", () => {
 
   it("prefers seo_config over site_info", () => {
     const seo = resolvePublicSeo({
-      site_info: { site_name: "Mi Rifa", tagline: "Gana hoy" },
+      site_info: { site_name: "Mi Rifa", tagline: "Gana hoy", runlot_id: "" },
       seo_config: {
         meta_title: "SEO Title",
         meta_description: "SEO Desc",

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { getDb } from "@/lib/db.server"
 import { rateLimit } from "@/lib/rate-limit"
 import { normalizePhone, purchaseTickets, purchases, raffles, ticketNumberToInt } from "@raffle/shared/db"
+import { VerifiedTicketRow, VerifyTicketInput } from "@raffle/shared/validators"
 import { and, eq, inArray, or, sql } from "drizzle-orm"
 
 export const Route = createFileRoute("/api/tickets/verify")({
@@ -10,11 +11,14 @@ export const Route = createFileRoute("/api/tickets/verify")({
       POST: async ({ request }) => {
         await rateLimit(request, { windowMs: 30_000, maxRequests: 10, keyPrefix: "verify" })
 
-        const body = (await request.json()) as {
-          phone?: string
-          ticketNumber?: string
-          cedula?: string
-          email?: string
+        let body: VerifyTicketInput
+        try {
+          body = VerifyTicketInput.parse(await request.json())
+        } catch {
+          return Response.json(
+            { error: "Debe proporcionar al menos un criterio de búsqueda" },
+            { status: 400 },
+          )
         }
 
         const conditions = []
@@ -35,13 +39,6 @@ export const Route = createFileRoute("/api/tickets/verify")({
         }
         if (body.email?.trim()) {
           conditions.push(sql`lower(${purchases.customerEmail}) = lower(${body.email.trim()})`)
-        }
-
-        if (conditions.length === 0) {
-          return Response.json(
-            { error: "Debe proporcionar al menos un criterio de búsqueda" },
-            { status: 400 },
-          )
         }
 
         const db = getDb()
@@ -78,7 +75,7 @@ export const Route = createFileRoute("/api/tickets/verify")({
           raffle_id: r.raffle_id,
           purchase_id: r.purchase_id,
           raffle_name: r.raffle_name,
-          draw_date: r.draw_date,
+          draw_date: r.draw_date == null ? null : String(r.draw_date),
           customer_name: r.customer_name,
           customer_phone: r.customer_phone,
           customer_email: r.customer_email,
@@ -86,7 +83,12 @@ export const Route = createFileRoute("/api/tickets/verify")({
           purchase_status: r.purchase_status,
         }))
 
-        return Response.json(mapped)
+        const parsed = VerifiedTicketRow.array().safeParse(mapped)
+        if (!parsed.success) {
+          return Response.json({ error: "Error al formatear resultados" }, { status: 500 })
+        }
+
+        return Response.json(parsed.data)
       },
     },
   },

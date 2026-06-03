@@ -10,7 +10,12 @@ import { and, desc, eq, inArray, sql } from "drizzle-orm"
 import { prizes, purchases, raffles } from "@raffle/shared/db"
 import { fromCents } from "@raffle/shared/db"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
+import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
+import {
+  buildPublicRafflePricing,
+  type PublicRafflePricing,
+} from "./promotion-pricing.service"
 import { getDb } from "@/lib/db.server"
 
 const logger = getLogger()
@@ -25,6 +30,7 @@ export type EnrichedRaffle = ReturnType<typeof mapRaffleLegacy> & {
   payment_methods: Awaited<
     ReturnType<typeof rafflePaymentMethodsRepo.listPaymentMethodsByRaffle>
   >
+  pricing: PublicRafflePricing
   tickets_sold: number
   tickets_available: number
   tickets_reserved: number
@@ -74,6 +80,16 @@ async function enrichRaffleDetail(
     row.id,
     !options?.includeInactivePaymentMethods
   )
+  const promotionRecords = await rafflePromotionsRepo.listPromotionsByRaffle(row.id)
+  const pricing = buildPublicRafflePricing(
+    { priceBsCents: row.priceBsCents, priceUsdCents: row.priceUsdCents },
+    promotionRecords,
+    payMethods.map((m) => ({
+      id: m.id,
+      method_type: m.method_type,
+      label: m.label,
+    })),
+  )
 
   return {
     ...mapRaffleLegacy(row),
@@ -84,6 +100,7 @@ async function enrichRaffleDetail(
       position: p.position,
     })),
     payment_methods: payMethods,
+    pricing,
     tickets_sold: av.sold,
     tickets_available: av.available,
     tickets_reserved: av.reserved,

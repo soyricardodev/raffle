@@ -3,6 +3,7 @@ import type {
   ContactInfo,
   HeroConfig,
   OfficialFooterLogo,
+  PurchaseSuccessPromo,
   SeoConfig,
   SiteColors,
   SiteImages,
@@ -14,6 +15,7 @@ export type {
   ContactInfo,
   HeroConfig,
   OfficialFooterLogo,
+  PurchaseSuccessPromo,
   SeoConfig,
   SiteColors,
   SiteImages,
@@ -61,6 +63,26 @@ export function normalizeHeroConfig(raw: unknown): HeroConfig {
     title: String(hero.title ?? hero.main_text ?? ""),
     subtitle: String(hero.subtitle ?? hero.accent_text ?? ""),
     show_particles: Boolean(hero.show_particles),
+  }
+}
+
+export function normalizePurchaseSuccessPromo(raw: unknown): PurchaseSuccessPromo {
+  if (!raw || typeof raw !== "object") {
+    return {
+      enabled: false,
+      title: "",
+      description: "",
+      whatsapp_channel_url: "",
+      instagram_url: "",
+    }
+  }
+  const promo = raw as Record<string, unknown>
+  return {
+    enabled: Boolean(promo.enabled),
+    title: String(promo.title ?? ""),
+    description: String(promo.description ?? ""),
+    whatsapp_channel_url: String(promo.whatsapp_channel_url ?? ""),
+    instagram_url: String(promo.instagram_url ?? ""),
   }
 }
 
@@ -119,6 +141,7 @@ const defaults: Pick<
   siteInfo: {
     site_name: "Rifas",
     tagline: "Tu oportunidad de ganar",
+    runlot_id: "",
   },
   contact: {
     phone: "",

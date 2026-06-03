@@ -3,15 +3,15 @@ import { useQuery } from "@tanstack/react-query"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { ActiveRaffleCard } from "@/features/home/ActiveRaffleCard"
-import { HomeRaffleCover } from "@/features/home/HomeRaffleCover"
 import { HomeSiteBanner } from "@/features/home/HomeSiteBanner"
 import { HomeStickyCta } from "@/features/home/HomeStickyCta"
+import { PublicHomeShell } from "@/features/home/public-home-shell"
 import { homeFirstActiveQueryOptions, homePublishedQueryOptions } from "@/features/home/home-queries"
 import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
-import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
+import type { LivePurchaseActivityVariant } from "@/features/raffle/live-activity-ticker-config"
+import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
 import { Search, Ticket } from "lucide-react"
@@ -34,6 +34,17 @@ export const Route = createFileRoute("/_public/")({
   component: HomePage,
 })
 
+function resolveHomeTickerVariant(
+  activeRaffle: { status: string } | null | undefined,
+  activeLoading: boolean,
+): LivePurchaseActivityVariant | null {
+  if (activeLoading && activeRaffle == null) return null
+  if (activeRaffle == null) return "idle"
+  return activeRaffle.status === "active" || activeRaffle.status === "paused"
+    ? "live"
+    : "finished"
+}
+
 function HomePage() {
   const { firstActive, published: initialPublished } = Route.useLoaderData()
 
@@ -53,73 +64,77 @@ function HomePage() {
   })
 
   const showStickyCta = activeRaffle != null && activeRaffle.status === "active"
+  const liveEnabled =
+    activeRaffle?.status === "active" || activeRaffle?.status === "paused"
+  const tickerVariant = resolveHomeTickerVariant(activeRaffle, activeLoading)
 
   return (
     <PublicLayout>
-      <div className="mx-auto flex w-full max-w-lg flex-col gap-5 px-4 py-4 pb-24 sm:gap-6 sm:py-6">
-        <HomeSiteBanner />
+      <PublicHomeShell
+        tickerVariant={tickerVariant}
+        raffleId={activeRaffle?.id}
+        livePollEnabled={activeRaffle != null && liveEnabled}
+      >
+        <div className="mx-auto flex w-full max-w-lg flex-col gap-3 px-4 pt-1 pb-24 sm:gap-4">
+          <HomeSiteBanner />
 
-        {activeLoading && (
-          <div className="space-y-4">
-            <Skeleton className="-mx-4 aspect-[4/3] w-auto rounded-none sm:mx-0 sm:rounded-xl" />
-            <Skeleton className="h-32 w-full rounded-xl" />
-            <Skeleton className="h-56 w-full rounded-xl" />
-          </div>
-        )}
-
-        {activeRaffle && (
-          <RaffleLiveProvider
-            raffleId={activeRaffle.id}
-            enabled={activeRaffle.status === "active" || activeRaffle.status === "paused"}
-          >
-            <div className="space-y-4">
-              <PauseBanner raffleId={activeRaffle.id} />
-              {activeRaffle.image_url ? (
-                <HomeRaffleCover
-                  name={activeRaffle.name}
-                  imageUrl={activeRaffle.image_url}
-                  status={activeRaffle.status}
-                />
-              ) : null}
-              <ActiveRaffleCard
-                raffle={activeRaffle}
-                variant="compact"
-                showCta={false}
-                showImage={!activeRaffle.image_url}
-                showTitle={!activeRaffle.image_url}
-              />
-              <div id="comprar" className="scroll-mt-16">
-                <PurchaseForm raffle={activeRaffle} />
-              </div>
+          {activeRaffle && activeLoading ? (
+            <div className="space-y-3">
+              <Skeleton className="-mx-4 aspect-[4/3] w-auto rounded-none sm:mx-0 sm:rounded-xl" />
+              <Skeleton className="h-40 w-full rounded-xl" />
+              <Skeleton className="h-56 w-full rounded-xl" />
             </div>
-          </RaffleLiveProvider>
-        )}
+          ) : null}
 
-        {activeRaffle === null && !activeLoading && (
-          <Card className="border-dashed shadow-none">
-            <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-              <Ticket className="text-muted-foreground/40 size-10" />
-              <div className="space-y-1">
-                <p className="font-medium">No hay rifas activas</p>
-                <p className="text-muted-foreground text-sm">Vuelve pronto o verifica tus boletos.</p>
-              </div>
-              <Button variant="outline" size="sm" className="min-h-10" asChild>
-                <Link to="/verificar">
-                  <Search className="mr-2 size-4" />
-                  Verificar boletos
+          {activeRaffle && !activeLoading ? (
+            <div className="space-y-3">
+              <PauseBanner raffleId={activeRaffle.id} />
+              <RaffleActiveSection
+                raffle={activeRaffle}
+                liveEnabled={liveEnabled}
+                edgeBleed
+                headingLevel={1}
+                descriptionLineClamp={5}
+              >
+                <div id="comprar" className="scroll-mt-16">
+                  <PurchaseForm raffle={activeRaffle} />
+                </div>
+              </RaffleActiveSection>
+            </div>
+          ) : null}
+
+          {!activeRaffle && !activeLoading ? (
+            <>
+              <Card className="border-dashed shadow-none">
+                <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
+                  <Ticket className="text-muted-foreground/40 size-10" />
+                  <div className="space-y-1">
+                    <p className="font-medium">No hay rifas activas</p>
+                    <p className="text-muted-foreground text-sm">
+                      Vuelve pronto o verifica tus boletos.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" className="min-h-10" asChild>
+                    <Link to="/verificar">
+                      <Search className="mr-2 size-4" />
+                      Verificar boletos
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
+              <p className="text-muted-foreground text-center text-sm">
+                ¿Ya compraste?{" "}
+                <Link
+                  to="/verificar"
+                  className="text-foreground font-medium underline-offset-4 hover:underline"
+                >
+                  Verifica tus boletos
                 </Link>
-              </Button>
-            </CardContent>
-          </Card>
-        )}
-
-        <p className="text-muted-foreground text-center text-sm">
-          ¿Ya compraste?{" "}
-          <Link to="/verificar" className="text-foreground font-medium underline-offset-4 hover:underline">
-            Verifica tus boletos
-          </Link>
-        </p>
-      </div>
+              </p>
+            </>
+          ) : null}
+        </div>
+      </PublicHomeShell>
 
       {published.raffles.length > 0 && (
         <div className="border-t">

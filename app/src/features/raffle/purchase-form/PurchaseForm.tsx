@@ -1,34 +1,45 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
-import { useCallback, useEffect, useMemo, useState } from "react"
-import { toast } from "sonner"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
-import {
-  loadSavedBuyerProfile,
-  saveBuyerProfile,
-  type SavedBuyerProfile,
-} from "@/features/raffle/purchase-form/buyer-profile-storage"
-import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
-import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
-import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
-import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
-import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-payment-method-selection"
-import type { PurchaseResult, RaffleForPurchase, RafflePaymentMethod } from "@/features/raffle/types"
-import { getApiErrorMessage, publicFetch } from "@/lib/admin-fetch"
-import { raffleQueryKeys } from "@/features/raffle/raffle-queries"
+import { SpinnerGapIcon } from "@phosphor-icons/react"
+import type { PhoneInputMode } from "@raffle/shared/validators"
 import {
   type CedulaPrefix,
   type CustomerLocationType,
   customerLocationFieldError,
   formatCustomerCi,
   formatCustomerLocation,
-  isDollarMethod,
   isValidCustomerCi,
   isValidCustomerPhone,
 } from "@raffle/shared/validators"
-import type { PhoneInputMode } from "@raffle/shared/validators"
-import { SpinnerGapIcon } from "@phosphor-icons/react"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { useCallback, useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  loadSavedBuyerProfile,
+  type SavedBuyerProfile,
+  saveBuyerProfile,
+} from "@/features/raffle/purchase-form/buyer-profile-storage"
+import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
+import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
+import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
+import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
+import {
+  clampQuantity,
+  getMinimumPurchasableQuantity,
+  getPaymentMethodThresholds,
+} from "@/features/raffle/purchase-form/ticket-quantity-utils"
+import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-payment-method-selection"
+import { usePurchasePricing } from "@/features/raffle/purchase-form/use-purchase-pricing"
+import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
+import { raffleLiveQueryKeys } from "@/features/raffle/raffle-live-queries"
+import { raffleQueryKeys } from "@/features/raffle/raffle-queries"
+import { useBuyerPresence } from "@/features/raffle/use-buyer-presence"
+import type {
+  PurchaseResult,
+  RaffleForPurchase,
+  RafflePaymentMethod,
+} from "@/features/raffle/types"
+import { getApiErrorMessage, publicFetch } from "@/lib/admin-fetch"
 
 export type PurchaseFormProps = {
   raffle: RaffleForPurchase
@@ -45,7 +56,10 @@ type PurchaseFormHints = {
   method?: string
 }
 
+type CustomerHints = Pick<PurchaseFormHints, "name" | "phone" | "email" | "ci" | "location">
+
 const EMPTY_HINTS: PurchaseFormHints = {}
+const EMPTY_CUSTOMER_HINTS: CustomerHints = {}
 
 function activePaymentMethods(raw: RafflePaymentMethod[] | undefined): RafflePaymentMethod[] {
   return (raw ?? []).filter((m) => m.is_active !== false && m.id > 0)
@@ -74,8 +88,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     enabled: raffle.status === "active" || raffle.status === "paused",
   })
 
-  const available =
-    live?.availability.available ?? (Number(raffle.tickets_available) || 0)
+  const available = live?.availability.available ?? (Number(raffle.tickets_available) || 0)
   const isPaused = live?.isPaused ?? raffle.status === "paused"
   const effectiveMax = Math.min(maxPurchase, available)
 
@@ -84,7 +97,17 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     [raffle.payment_methods],
   )
 
-  const [quantity, setQuantity] = useState(minPurchase)
+  const quantityMin = useMemo(
+    () => getMinimumPurchasableQuantity(minPurchase, methods),
+    [minPurchase, methods],
+  )
+
+  const paymentThresholds = useMemo(
+    () => getPaymentMethodThresholds(methods),
+    [methods],
+  )
+
+  const [quantity, setQuantity] = useState(quantityMin)
   const [customerName, setCustomerName] = useState("")
   const [customerPhone, setCustomerPhone] = useState("")
   const [customerEmail, setCustomerEmail] = useState("")
@@ -92,13 +115,14 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const [ciNumber, setCiNumber] = useState("")
   const [phoneMode, setPhoneMode] = useState<PhoneInputMode>("venezuela")
   const [locationType, setLocationType] = useState<CustomerLocationType>("venezuela")
-  const [selectedState, setSelectedState] = useState("Carabobo")
+  const [selectedState, setSelectedState] = useState("")
   const [customLocation, setCustomLocation] = useState("")
   const [paymentReference, setPaymentReference] = useState("")
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
   const [successResult, setSuccessResult] = useState<PurchaseResult | null>(null)
   const [touched, setTouched] = useState(false)
-  const [hasSavedProfile, setHasSavedProfile] = useState(false)
+  const [savedProfile, setSavedProfile] = useState<SavedBuyerProfile | null>(null)
+  const [savedProfileDismissed, setSavedProfileDismissed] = useState(false)
 
   const {
     selectedId: rafflePaymentMethodId,
@@ -108,13 +132,20 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     getEligibility,
   } = usePaymentMethodSelection(methods, quantity)
 
-  const total = useMemo(() => {
-    if (!selectedMethod) return 0
-    const unit = isDollarMethod(selectedMethod.method_type)
-      ? Number(raffle.price_usd)
-      : Number(raffle.price_bs)
-    return unit * quantity
-  }, [selectedMethod, quantity, raffle.price_bs, raffle.price_usd])
+  const {
+    unitPrice,
+    originalUnitPrice,
+    discountPerTicket,
+    priceCurrency,
+    priceIsEstimate,
+    methodPromotionBadges,
+    methodPromotionHint,
+    total,
+  } = usePurchasePricing({
+    raffle,
+    quantity,
+    selectedMethod,
+  })
 
   const customerCi = useMemo(
     () => (ciNumber ? formatCustomerCi(ciPrefix, ciNumber) : ""),
@@ -135,14 +166,20 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
 
   useEffect(() => {
     const saved = loadSavedBuyerProfile()
-    setHasSavedProfile(saved != null)
-  }, [])
+    if (!saved) return
+    setSavedProfile(saved)
+    applyProfile(saved)
+  }, [applyProfile])
+
+  useEffect(() => {
+    setQuantity((current) => clampQuantity(current, quantityMin, effectiveMax))
+  }, [quantityMin, effectiveMax])
 
   const validationMessages = useMemo<PurchaseFormHints>(
     () => ({
       name: !customerName.trim() ? "Ingresa tu nombre completo" : undefined,
       phone: !isValidCustomerPhone(customerPhone, phoneMode)
-        ? phoneMode === "international"
+        ? phoneMode === "other"
           ? "Usa formato internacional (+código y número)"
           : "Teléfono venezolano inválido (ej: 04121234567)"
         : undefined,
@@ -179,18 +216,34 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     ],
   )
 
-  const hints = touched ? validationMessages : EMPTY_HINTS
+  const customerHints = useMemo<CustomerHints>(() => {
+    if (!touched) return EMPTY_CUSTOMER_HINTS
+    return {
+      name: validationMessages.name,
+      phone: validationMessages.phone,
+      email: validationMessages.email,
+      ci: validationMessages.ci,
+      location: validationMessages.location,
+    }
+  }, [
+    touched,
+    validationMessages.name,
+    validationMessages.phone,
+    validationMessages.email,
+    validationMessages.ci,
+    validationMessages.location,
+  ])
+
+  const methodHint = touched ? validationMessages.method : EMPTY_HINTS.method
+  const referenceHint = touched ? validationMessages.reference : EMPTY_HINTS.reference
+  const proofHint = touched ? validationMessages.proof : EMPTY_HINTS.proof
 
   const purchaseMutation = useMutation({
     mutationFn: async () => {
       if (!rafflePaymentMethodId) throw new Error("Selecciona un método de pago")
       if (!paymentProof) throw new Error("Sube el comprobante de pago")
 
-      const customerLocation = formatCustomerLocation(
-        locationType,
-        selectedState,
-        customLocation,
-      )
+      const customerLocation = formatCustomerLocation(locationType, selectedState, customLocation)
 
       const form = new FormData()
       form.append("raffleId", String(raffle.id))
@@ -218,21 +271,33 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         selectedState,
         customLocation,
       })
-      setHasSavedProfile(true)
+      setSavedProfile({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+        customerEmail: customerEmail.trim(),
+        ciPrefix,
+        ciNumber,
+        phoneMode,
+        locationType,
+        selectedState,
+        customLocation,
+        savedAt: Date.now(),
+      })
+      setSavedProfileDismissed(false)
       setSuccessResult(result)
       setPaymentReference("")
       setRafflePaymentMethodId(null)
       setPaymentProof(null)
-      setQuantity(minPurchase)
+      setQuantity(quantityMin)
       setTouched(false)
+      void queryClient.invalidateQueries({
+        queryKey: raffleLiveQueryKeys.status(String(raffle.id)),
+      })
     },
     onError: (error: unknown) => {
       const message = getApiErrorMessage(error, "No se pudo procesar la compra")
       toast.error(message)
-      if (
-        message.includes("método de pago") ||
-        message.includes("Método de pago")
-      ) {
+      if (message.includes("método de pago") || message.includes("Método de pago")) {
         void queryClient.invalidateQueries({ queryKey: raffleQueryKeys.detail(String(raffle.id)) })
         void queryClient.invalidateQueries({ queryKey: ["raffle", "first-active"] })
       }
@@ -244,7 +309,35 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     isPaused ||
     available <= 0 ||
     purchaseMutation.isPending ||
-    effectiveMax < minPurchase
+    effectiveMax < quantityMin
+
+  useBuyerPresence({
+    raffleId: raffle.id,
+    enabled: raffle.status === "active" && !isPaused && available > 0,
+  })
+
+  const clearCustomerFields = useCallback(() => {
+    setCustomerName("")
+    setCustomerPhone("")
+    setCustomerEmail("")
+    setCiPrefix("V")
+    setCiNumber("")
+    setPhoneMode("venezuela")
+    setLocationType("venezuela")
+    setSelectedState("")
+    setCustomLocation("")
+  }, [])
+
+  const handleUseOtherSavedData = useCallback(() => {
+    clearCustomerFields()
+    setSavedProfileDismissed(true)
+  }, [clearCustomerFields])
+
+  const handleRestoreSavedProfile = useCallback(() => {
+    if (!savedProfile) return
+    applyProfile(savedProfile)
+    setSavedProfileDismissed(false)
+  }, [savedProfile, applyProfile])
 
   if (raffle.status === "finished") {
     return (
@@ -274,13 +367,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     purchaseMutation.mutate()
   }
 
-  function handleApplySavedProfile() {
-    const saved = loadSavedBuyerProfile()
-    if (!saved) return
-    applyProfile(saved)
-    toast.success("Datos cargados")
-  }
-
   const isSubmitting = purchaseMutation.isPending
 
   return (
@@ -297,9 +383,16 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         <CardContent className="flex flex-col gap-4">
           <TicketQuantityStep
             quantity={quantity}
-            minPurchase={minPurchase}
+            quantityMin={quantityMin}
+            raffleMinPurchase={minPurchase}
             effectiveMax={effectiveMax}
             available={available}
+            paymentThresholds={paymentThresholds}
+            unitPrice={unitPrice}
+            originalUnitPrice={discountPerTicket > 0 ? originalUnitPrice : undefined}
+            discountPerTicket={discountPerTicket > 0 ? discountPerTicket : undefined}
+            currency={priceCurrency}
+            priceIsEstimate={priceIsEstimate}
             disabled={disabled}
             onChange={setQuantity}
           />
@@ -315,8 +408,9 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             locationType={locationType}
             selectedState={selectedState}
             customLocation={customLocation}
-            hasSavedProfile={hasSavedProfile}
-            hints={hints}
+            savedProfileName={savedProfile?.customerName ?? null}
+            savedProfileDismissed={savedProfileDismissed}
+            hints={customerHints}
             onCustomerNameChange={setCustomerName}
             onCustomerPhoneChange={setCustomerPhone}
             onCustomerEmailChange={setCustomerEmail}
@@ -326,7 +420,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             onLocationTypeChange={setLocationType}
             onSelectedStateChange={setSelectedState}
             onCustomLocationChange={setCustomLocation}
-            onApplySavedProfile={handleApplySavedProfile}
+            onUseOtherSavedData={handleUseOtherSavedData}
+            onRestoreSavedProfile={handleRestoreSavedProfile}
           />
 
           <PaymentStep
@@ -335,12 +430,14 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             disabled={disabled}
             selectedId={rafflePaymentMethodId}
             selectedMethod={selectedMethod}
+            methodPromotionBadges={methodPromotionBadges}
+            methodPromotionHint={methodPromotionHint}
             total={total}
             paymentReference={paymentReference}
             paymentProof={paymentProof}
-            methodHint={hints.method}
-            referenceHint={hints.reference}
-            proofHint={hints.proof}
+            methodHint={methodHint}
+            referenceHint={referenceHint}
+            proofHint={proofHint}
             getEligibility={getEligibility}
             onSelectMethod={setRafflePaymentMethodId}
             onPaymentReferenceChange={setPaymentReference}
@@ -365,10 +462,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         </CardContent>
       </Card>
 
-      <PurchaseSuccessDialog
-        result={successResult}
-        onClose={() => setSuccessResult(null)}
-      />
+      <PurchaseSuccessDialog result={successResult} onClose={() => setSuccessResult(null)} />
     </>
   )
 }

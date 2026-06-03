@@ -30,7 +30,8 @@ export function OfficialLogosEditor({ logos, onChange }: OfficialLogosEditorProp
         <div>
           <p className="text-sm font-medium">Logos oficiales</p>
           <p className="text-muted-foreground text-xs">
-            Avalados u organismos (máx. 8). Se muestran en el pie del sitio.
+            Avalados u organismos (máx. 8). Si no agregas ninguno, se usan Táchira, Super Gana y
+            CONALOT por defecto.
           </p>
         </div>
         <Button
@@ -48,7 +49,8 @@ export function OfficialLogosEditor({ logos, onChange }: OfficialLogosEditorProp
 
       {logos.length === 0 ? (
         <p className="text-muted-foreground rounded-lg border border-dashed px-3 py-6 text-center text-xs">
-          Sin logos oficiales. Usa Agregar para incluir loterías o sellos de aval.
+          Sin logos personalizados. En el sitio se mostrarán Táchira, Super Gana y CONALOT por
+          defecto.
         </p>
       ) : (
         <ul className="flex flex-col gap-4">
