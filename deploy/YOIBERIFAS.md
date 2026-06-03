@@ -1,5 +1,20 @@
 # yoiberifas.com — despliegue
 
+## Modelo unificado
+
+Tanto **fast deploy** como **build en VPS** activan la app por el mismo camino:
+
+```
+~/raffle/current  →  ~/raffle/releases/<id>/app/.output/
+```
+
+`systemd` siempre arranca desde `current`. El repo git en `~/raffle/` solo se usa para scripts y migraciones Drizzle.
+
+| Comando | Build | Activa `current` | Rollback |
+|---------|-------|------------------|----------|
+| `vps-fast-deploy.sh` | GitHub Actions | sí | `--rollback` |
+| `vps-deploy.sh` | en el VPS | sí | `--rollback` (mismo script) |
+
 ## Layout en el VPS
 
 | Ruta | Contenido |
@@ -52,7 +67,24 @@ readlink -f ~/raffle/current
 bash deploy/vps-fast-deploy.sh --rollback
 ```
 
-Mantiene los últimos 5 releases en `~/raffle/releases/`.
+Mantiene los últimos 5 releases en `~/raffle/releases/`. Funciona igual si el release anterior fue fast o local.
+
+---
+
+## Build en el VPS (alternativa)
+
+```bash
+cd ~/raffle
+bash deploy/vps-deploy.sh
+```
+
+Empaqueta el build en `releases/local_<sha>_<timestamp>/` y activa `current` — mismo resultado que fast deploy.
+
+Solo cambio de `.env`:
+
+```bash
+SKIP_BUILD=1 SKIP_MIGRATE=1 bash deploy/vps-deploy.sh
+```
 
 ---
 

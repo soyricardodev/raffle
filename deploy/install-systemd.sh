@@ -10,6 +10,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/release-common.sh
+source "$SCRIPT_DIR/lib/release-common.sh"
+
 RAFFLE_ROOT="${RAFFLE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 SERVICE_NAME="${SERVICE_NAME:-raffle}"
 RUN_USER="${RUN_USER:-$(whoami)}"
@@ -19,12 +22,9 @@ BUN_BIN="${BUN_BIN:-$HOME/.bun/bin/bun}"
 [[ -f "$ENV_FILE" ]] || { echo "Falta $ENV_FILE" >&2; exit 1; }
 [[ -x "$BUN_BIN" ]] || { echo "No encontré Bun en $BUN_BIN" >&2; exit 1; }
 
-# Fast deploy: ~/raffle/current/app — fallback: repo build en ~/raffle/app
-APP_DIR="${RAFFLE_ROOT}/app"
-if [[ -f "${RAFFLE_ROOT}/current/app/.output/server/index.mjs" ]]; then
-  APP_DIR="${RAFFLE_ROOT}/current/app"
-elif [[ -L "${RAFFLE_ROOT}/current" ]] && [[ -f "$(readlink -f "${RAFFLE_ROOT}/current")/app/.output/server/index.mjs" ]]; then
-  APP_DIR="$(readlink -f "${RAFFLE_ROOT}/current")/app"
+if ! APP_DIR="$(release_resolve_app_dir "$RAFFLE_ROOT")"; then
+  echo "No hay release activo. Ejecuta deploy/vps-deploy.sh o deploy/vps-fast-deploy.sh primero." >&2
+  exit 1
 fi
 
 UNIT="/etc/systemd/system/${SERVICE_NAME}.service"

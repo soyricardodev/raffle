@@ -263,12 +263,16 @@ export NODE_ENV=production
 ensure_build_resources
 pnpm build
 
+# shellcheck source=lib/release-common.sh
+source "$RAFFLE_ROOT/deploy/lib/release-common.sh"
+TARGET_DIR="$(release_create_from_repo "$RAFFLE_ROOT" "$RAFFLE_ROOT" "full")"
+log "Activando release: $TARGET_DIR"
+release_activate "$RAFFLE_ROOT" "$TARGET_DIR" 0
+
 if [[ "$NO_SYSTEMD" != "1" ]]; then
   RAFFLE_ROOT="$RAFFLE_ROOT" ENV_FILE="$ENV_FILE" bash "$RAFFLE_ROOT/deploy/install-systemd.sh"
-  sudo systemctl restart "$SERVICE_NAME" 2>/dev/null || sudo systemctl start "$SERVICE_NAME"
-  sleep 3
-  curl -sf "http://127.0.0.1:3000/api/health/db" | grep -q '"ok":true' \
-    || die "Health :3000 falló — journalctl -u $SERVICE_NAME -n 80"
+  release_restart_service "$SERVICE_NAME"
+  release_health_check || die "Health :3000 falló — journalctl -u $SERVICE_NAME -n 80"
   log "Health OK :3000"
 fi
 

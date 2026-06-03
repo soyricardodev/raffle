@@ -17,7 +17,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=lib/release-common.sh
+source "$SCRIPT_DIR/lib/release-common.sh"
 DEFAULT_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
+KEEP_RELEASES="${KEEP_RELEASES:-5}"
 
 RAFFLE_ROOT="${RAFFLE_ROOT:-$DEFAULT_REPO}"
 GIT_REPO="${GIT_REPO:-}"
@@ -144,25 +147,34 @@ if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   export NODE_ENV=production
   ensure_build_resources
   pnpm build
+
+  log "Empaquetando release local (mismo layout que fast deploy)"
+  TARGET_DIR="$(release_create_from_repo "$SRC_DIR" "$RAFFLE_ROOT" "local")"
+  log "Activando release: $TARGET_DIR"
+  release_activate "$RAFFLE_ROOT" "$TARGET_DIR" 1
+  release_layout_init "$RAFFLE_ROOT"
+  while IFS= read -r old; do
+    [[ -n "$old" ]] && log "Eliminando release antiguo: $old"
+  done < <(release_prune_old "$KEEP_RELEASES" "$RELEASES_DIR" "$CURRENT_LINK" "$PREVIOUS_FILE" "$TARGET_DIR")
 fi
 
 log "Reiniciando servicio $SERVICE_NAME"
-if systemctl is-active --quiet "$SERVICE_NAME" 2>/dev/null; then
-  sudo systemctl restart "$SERVICE_NAME"
+if systemctl list-unit-files "$SERVICE_NAME.service" &>/dev/null 2>&1 || systemctl cat "$SERVICE_NAME" &>/dev/null 2>&1; then
+  release_restart_service "$SERVICE_NAME"
 elif command -v pm2 >/dev/null 2>&1 && pm2 describe "$SERVICE_NAME" &>/dev/null; then
   pm2 restart "$SERVICE_NAME"
 else
-  log "Servicio no configurado — arranque manual:"
-  log "  cd $SRC_DIR/app && bun run .output/server/index.mjs"
-  log "O instala systemd: bash deploy/install-systemd.sh"
-  exit 0
+  log "Servicio no configurado — instala systemd:"
+  RAFFLE_ROOT="$RAFFLE_ROOT" ENV_FILE="$ENV_FILE" bash "$SCRIPT_DIR/install-systemd.sh"
+  release_restart_service "$SERVICE_NAME"
 fi
 
-sleep 2
 HEALTH_URL="${APP_URL:-http://127.0.0.1:3000}"
 log "Health check $HEALTH_URL/api/health/db"
-if curl -sf "$HEALTH_URL/api/health/db" | grep -q '"ok":true'; then
+if release_health_check "$HEALTH_URL"; then
   log "✅ Deploy OK"
+  release_layout_init "$RAFFLE_ROOT"
+  log "   current → $(readlink -f "$CURRENT_LINK")"
 else
   die "Health check falló — revisa: journalctl -u $SERVICE_NAME -n 50 (o pm2 logs)"
 fi
