@@ -14,7 +14,6 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -135,14 +134,19 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   } = usePaymentMethodSelection(methods, quantity)
 
   const {
-    unitPrice,
-    originalUnitPrice,
-    discountPerTicket,
     priceCurrency,
     priceIsEstimate,
     methodPromotionBadges,
     methodPromotionHint,
     total,
+    unitPriceBs,
+    originalUnitPriceBs,
+    discountPerTicketBs,
+    totalBs,
+    unitPriceUsd,
+    originalUnitPriceUsd,
+    discountPerTicketUsd,
+    totalUsd,
   } = usePurchasePricing({
     raffle,
     quantity,
@@ -381,27 +385,12 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
           </div>
         ) : null}
         <CardHeader className="border-b border-border/60 pb-4">
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0">
-              <CardTitle className="text-lg">Compra tus boletos</CardTitle>
-              <p className="text-muted-foreground mt-1 text-xs leading-snug">
-                <span className="text-foreground font-medium tabular-nums">{quantity}</span> boleto
-                {quantity === 1 ? "" : "s"} · completa los 3 pasos
-              </p>
-            </div>
-            <div className="shrink-0 text-right">
-              <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
-                Total
-              </p>
-              <p className="font-serif text-xl font-bold tabular-nums">
-                {formatCurrency(total, priceCurrency)}
-              </p>
-              {priceIsEstimate ? (
-                <Badge variant="outline" className="mt-1 text-[10px]">
-                  Estimado
-                </Badge>
-              ) : null}
-            </div>
+          <div className="min-w-0">
+            <CardTitle className="text-lg">Compra tus boletos</CardTitle>
+            <p className="text-muted-foreground mt-1 text-xs leading-snug">
+              <span className="text-foreground font-medium tabular-nums">{quantity}</span> boleto
+              {quantity === 1 ? "" : "s"} · completa los 3 pasos
+            </p>
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-5 pb-2">
@@ -412,10 +401,15 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             effectiveMax={effectiveMax}
             available={available}
             paymentThresholds={paymentThresholds}
-            unitPrice={unitPrice}
-            originalUnitPrice={discountPerTicket > 0 ? originalUnitPrice : undefined}
-            discountPerTicket={discountPerTicket > 0 ? discountPerTicket : undefined}
-            currency={priceCurrency}
+            unitPrice={unitPriceBs}
+            originalUnitPrice={discountPerTicketBs > 0 ? originalUnitPriceBs : undefined}
+            discountPerTicket={discountPerTicketBs > 0 ? discountPerTicketBs : undefined}
+            unitPriceUsd={unitPriceUsd}
+            originalUnitPriceUsd={discountPerTicketUsd > 0 ? originalUnitPriceUsd : undefined}
+            discountPerTicketUsd={discountPerTicketUsd > 0 ? discountPerTicketUsd : undefined}
+            totalBs={totalBs}
+            totalUsd={totalUsd}
+            currency="Bs"
             priceIsEstimate={priceIsEstimate}
             disabled={disabled}
             onChange={setQuantity}

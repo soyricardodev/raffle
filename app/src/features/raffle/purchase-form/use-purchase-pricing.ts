@@ -20,19 +20,25 @@ export function usePurchasePricing({ raffle, quantity, selectedMethod }: UsePurc
     return map
   }, [pricing?.method_quotes])
 
-  const globalEstimate = useMemo(() => {
-    const currency: "Bs" | "USD" = "Bs"
+  const globalEstimateBs = useMemo(() => {
+    const unitPrice = pricing?.effective_price_bs ?? Number(raffle.price_bs)
+    const originalUnitPrice = pricing?.price_bs ?? Number(raffle.price_bs)
     return {
-      unitPrice: pricing?.effective_price_bs ?? Number(raffle.price_bs),
-      originalUnitPrice: pricing?.price_bs ?? Number(raffle.price_bs),
-      discountPerTicket: Math.max(
-        0,
-        (pricing?.price_bs ?? Number(raffle.price_bs)) -
-          (pricing?.effective_price_bs ?? Number(raffle.price_bs)),
-      ),
-      priceCurrency: currency,
+      unitPrice,
+      originalUnitPrice,
+      discountPerTicket: Math.max(0, originalUnitPrice - unitPrice),
     }
   }, [pricing, raffle.price_bs])
+
+  const globalEstimateUsd = useMemo(() => {
+    const unitPrice = pricing?.effective_price_usd ?? Number(raffle.price_usd)
+    const originalUnitPrice = pricing?.price_usd ?? Number(raffle.price_usd)
+    return {
+      unitPrice,
+      originalUnitPrice,
+      discountPerTicket: Math.max(0, originalUnitPrice - unitPrice),
+    }
+  }, [pricing, raffle.price_usd])
 
   const methodPricing = useMemo(() => {
     if (!selectedMethod) return null
@@ -60,11 +66,33 @@ export function usePurchasePricing({ raffle, quantity, selectedMethod }: UsePurc
     }
   }, [quotesByMethodId, selectedMethod, pricing, raffle.price_bs, raffle.price_usd])
 
-  const unitPrice = methodPricing?.unitPrice ?? globalEstimate.unitPrice
-  const originalUnitPrice = methodPricing?.originalUnitPrice ?? globalEstimate.originalUnitPrice
-  const discountPerTicket = methodPricing?.discountPerTicket ?? globalEstimate.discountPerTicket
-  const priceCurrency = methodPricing?.priceCurrency ?? globalEstimate.priceCurrency
+  const unitPrice = methodPricing?.unitPrice ?? globalEstimateBs.unitPrice
+  const originalUnitPrice = methodPricing?.originalUnitPrice ?? globalEstimateBs.originalUnitPrice
+  const discountPerTicket = methodPricing?.discountPerTicket ?? globalEstimateBs.discountPerTicket
+  const priceCurrency = methodPricing?.priceCurrency ?? ("Bs" as const)
   const priceIsEstimate = selectedMethod == null
+
+  const methodQuote = selectedMethod ? quotesByMethodId.get(selectedMethod.id) : undefined
+  const unitPriceBs =
+    methodQuote?.currency === "Bs" ? methodQuote.final_unit_price : globalEstimateBs.unitPrice
+  const originalUnitPriceBs =
+    methodQuote?.currency === "Bs"
+      ? methodQuote.original_unit_price
+      : globalEstimateBs.originalUnitPrice
+  const discountPerTicketBs =
+    methodQuote?.currency === "Bs"
+      ? methodQuote.discount_per_ticket
+      : globalEstimateBs.discountPerTicket
+  const unitPriceUsd =
+    methodQuote?.currency === "USD" ? methodQuote.final_unit_price : globalEstimateUsd.unitPrice
+  const originalUnitPriceUsd =
+    methodQuote?.currency === "USD"
+      ? methodQuote.original_unit_price
+      : globalEstimateUsd.originalUnitPrice
+  const discountPerTicketUsd =
+    methodQuote?.currency === "USD"
+      ? methodQuote.discount_per_ticket
+      : globalEstimateUsd.discountPerTicket
 
   const methodPromotionBadges = useMemo(
     () => buildMethodPromotionBadgeMap(pricing?.method_quotes ?? []),
@@ -95,6 +123,8 @@ export function usePurchasePricing({ raffle, quantity, selectedMethod }: UsePurc
   ])
 
   const total = unitPrice * quantity
+  const totalBs = unitPriceBs * quantity
+  const totalUsd = unitPriceUsd * quantity
 
   return {
     unitPrice,
@@ -105,5 +135,13 @@ export function usePurchasePricing({ raffle, quantity, selectedMethod }: UsePurc
     methodPromotionBadges,
     methodPromotionHint,
     total,
+    unitPriceBs,
+    originalUnitPriceBs,
+    discountPerTicketBs,
+    totalBs,
+    unitPriceUsd,
+    originalUnitPriceUsd,
+    discountPerTicketUsd,
+    totalUsd,
   }
 }

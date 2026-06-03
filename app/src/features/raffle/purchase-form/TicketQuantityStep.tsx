@@ -22,17 +22,22 @@ type TicketQuantityStepProps = {
   raffleMinPurchase: number
   effectiveMax: number
   available: number
-  paymentThresholds: number[]
+  paymentThresholds: Array<number>
   unitPrice?: number
   originalUnitPrice?: number
   discountPerTicket?: number
+  unitPriceUsd?: number
+  originalUnitPriceUsd?: number
+  discountPerTicketUsd?: number
+  totalBs?: number
+  totalUsd?: number
   currency?: "Bs" | "USD"
   priceIsEstimate?: boolean
   disabled: boolean
   onChange: (quantity: number) => void
 }
 
-export const TicketQuantityStep = memo(function TicketQuantityStep({
+export const TicketQuantityStep = memo(function TicketQuantityStepInner({
   quantity,
   quantityMin,
   raffleMinPurchase,
@@ -42,6 +47,11 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
   unitPrice,
   originalUnitPrice,
   discountPerTicket,
+  unitPriceUsd,
+  originalUnitPriceUsd,
+  discountPerTicketUsd,
+  totalBs,
+  totalUsd,
   currency = "Bs",
   priceIsEstimate = false,
   disabled,
@@ -78,9 +88,19 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
     [effectiveMax, onChange, quantityMin],
   )
 
-  const subtotal = unitPrice != null && Number.isFinite(unitPrice) ? unitPrice * quantity : null
+  const subtotal =
+    totalBs ?? (unitPrice != null && Number.isFinite(unitPrice) ? unitPrice * quantity : null)
+  const subtotalUsd =
+    totalUsd ??
+    (unitPriceUsd != null && Number.isFinite(unitPriceUsd) ? unitPriceUsd * quantity : null)
   const savings =
     discountPerTicket != null && discountPerTicket > 0 ? discountPerTicket * quantity : null
+  const savingsUsd =
+    discountPerTicketUsd != null && discountPerTicketUsd > 0
+      ? discountPerTicketUsd * quantity
+      : null
+  const hasSavings = savings != null && savings > 0
+  const hasUsdSavings = savingsUsd != null && savingsUsd > 0
 
   const soldOut = available <= 0 || effectiveMax < quantityMin
 
@@ -216,34 +236,78 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
       ) : null}
 
       {subtotal != null ? (
-        <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/15 px-3 py-3">
-          <div className="text-muted-foreground flex min-w-0 flex-col gap-0.5 text-xs">
-            <span className="flex items-center gap-1.5 font-medium text-foreground">
-              <TicketIcon className="text-primary size-4 shrink-0" aria-hidden />
-              {quantity} boleto{quantity === 1 ? "" : "s"} ×{" "}
-              {originalUnitPrice != null && originalUnitPrice > unitPrice! ? (
-                <>
-                  <span className="line-through opacity-70">
-                    {formatCurrency(originalUnitPrice, currency)}
-                  </span>{" "}
-                </>
+        <div
+          className={cn(
+            "overflow-hidden rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/8 to-card shadow-sm shadow-primary/10",
+            hasSavings && "border-emerald-500/35 from-emerald-500/15 via-primary/10",
+          )}
+        >
+          <div className="flex flex-col gap-4 p-3 sm:flex-row sm:items-end sm:justify-between">
+            <div className="flex min-w-0 flex-col gap-2.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
+                  <TicketIcon className="text-primary size-4 shrink-0" aria-hidden />
+                  {quantity} boleto{quantity === 1 ? "" : "s"}
+                </span>
+                {hasSavings ? (
+                  <Badge variant="secondary" className="bg-emerald-500/15 text-emerald-700">
+                    Promo aplicada
+                  </Badge>
+                ) : null}
+              </div>
+
+              <div className="grid max-w-sm grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-xs">
+                <span className="text-muted-foreground">Precio por boleto</span>
+                <span className="text-right font-medium tabular-nums text-foreground">
+                  {originalUnitPrice != null && originalUnitPrice > unitPrice! ? (
+                    <span className="text-muted-foreground mr-1 line-through">
+                      {formatCurrency(originalUnitPrice, currency)}
+                    </span>
+                  ) : null}
+                  {formatCurrency(unitPrice!, currency)}
+                </span>
+
+                {unitPriceUsd != null ? (
+                  <>
+                    <span className="text-muted-foreground">Equivalente USD</span>
+                    <span className="text-right font-medium tabular-nums text-foreground">
+                      {originalUnitPriceUsd != null && originalUnitPriceUsd > unitPriceUsd ? (
+                        <span className="text-muted-foreground mr-1 line-through">
+                          {formatCurrency(originalUnitPriceUsd, "USD")}
+                        </span>
+                      ) : null}
+                      {formatCurrency(unitPriceUsd, "USD")}
+                    </span>
+                  </>
+                ) : null}
+              </div>
+
+              {hasSavings ? (
+                <p className="text-xs font-medium text-emerald-700">
+                  Ahorras {formatCurrency(savings, currency)}
+                  {hasUsdSavings ? ` · ${formatCurrency(savingsUsd, "USD")}` : ""}
+                </p>
               ) : null}
-              {formatCurrency(unitPrice!, currency)}
-            </span>
-            {savings != null && savings > 0 ? (
-              <span className="font-medium text-emerald-700 dark:text-emerald-300">
-                Ahorras {formatCurrency(savings, currency)}
-              </span>
-            ) : null}
-            {priceIsEstimate ? (
-              <span className="text-[10px]">Estimado en Bs (según método de pago)</span>
-            ) : null}
-          </div>
-          <div className="shrink-0 text-right">
-            <p className="text-muted-foreground text-[10px] font-medium uppercase">Subtotal</p>
-            <p className="font-serif text-xl font-bold tabular-nums">
-              {formatCurrency(subtotal, currency)}
-            </p>
+              {priceIsEstimate ? (
+                <p className="text-muted-foreground text-[10px] leading-snug">
+                  Estimado hasta elegir el método de pago.
+                </p>
+              ) : null}
+            </div>
+
+            <div className="rounded-xl border border-primary/20 bg-background/70 px-3 py-2 text-right shadow-inner sm:min-w-36">
+              <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
+                Subtotal
+              </p>
+              <p className="font-serif text-2xl font-bold leading-tight tabular-nums text-foreground">
+                {formatCurrency(subtotal, currency)}
+              </p>
+              {subtotalUsd != null ? (
+                <p className="text-muted-foreground mt-1 text-sm font-semibold tabular-nums">
+                  {formatCurrency(subtotalUsd, "USD")}
+                </p>
+              ) : null}
+            </div>
           </div>
         </div>
       ) : (

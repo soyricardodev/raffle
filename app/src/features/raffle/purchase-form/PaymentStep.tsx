@@ -5,7 +5,7 @@ import {
 import { CheckCircleIcon, LockKeyIcon, ReceiptIcon } from "@phosphor-icons/react"
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
-import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import type { MethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import { PaymentDetailsPanel } from "@/features/raffle/purchase-form/PaymentDetailsPanel"
