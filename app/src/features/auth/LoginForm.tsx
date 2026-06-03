@@ -1,3 +1,4 @@
+import { EyeIcon, EyeSlashIcon } from "@phosphor-icons/react"
 import { useNavigate } from "@tanstack/react-router"
 import { useState } from "react"
 import { toast } from "sonner"
@@ -16,6 +17,7 @@ export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
   const navigate = useNavigate()
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 
   async function handleSubmit(event: React.FormEvent) {
@@ -72,14 +74,32 @@ export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
           </div>
           <div className="space-y-2">
             <Label htmlFor="password">Contraseña</Label>
-            <Input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              disabled={loading}
-            />
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="pr-10"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                className="text-muted-foreground absolute top-1/2 right-1 -translate-y-1/2"
+                onClick={() => setShowPassword((visible) => !visible)}
+                disabled={loading}
+                aria-label={showPassword ? "Ocultar contraseña" : "Mostrar contraseña"}
+              >
+                {showPassword ? (
+                  <EyeSlashIcon className="size-4" />
+                ) : (
+                  <EyeIcon className="size-4" />
+                )}
+              </Button>
+            </div>
           </div>
           <Button className="w-full" type="submit" disabled={loading}>
             {loading ? "Entrando…" : "Entrar"}
