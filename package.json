@@ -17,6 +17,7 @@
     "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts",
     "db:repair:payment-accounts": "bun run scripts/repair-payment-accounts.ts",
     "db:validate:migration": "bun run scripts/validate-migration.ts",
+    "env:sync-email": "bun run scripts/sync-email-env.ts",
     "deploy:yoiberifas": "bash deploy/vps-yoiberifas-full.sh",
     "deploy:fast": "bash deploy/vps-fast-deploy.sh"
   },

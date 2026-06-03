@@ -9,6 +9,7 @@
 
 import { randomBytes } from "node:crypto"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { isUsableResendKey, parseDotenv, readEnvFile } from "./lib/dotenv"
 
 function parseArgs(argv: string[]) {
   const out: Record<string, string> = {
@@ -29,28 +30,6 @@ function parseArgs(argv: string[]) {
     else if (a === "--regenerate-secrets") out.regenerateSecrets = "1"
   }
   return out
-}
-
-function parseDotenv(content: string): Record<string, string> {
-  const env: Record<string, string> = {}
-  for (const line of content.split("\n")) {
-    const trimmed = line.trim()
-    if (!trimmed || trimmed.startsWith("#")) continue
-    const eq = trimmed.indexOf("=")
-    if (eq <= 0) continue
-    const key = trimmed.slice(0, eq).trim()
-    let val = trimmed.slice(eq + 1).trim()
-    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-      val = val.slice(1, -1)
-    }
-    env[key] = val
-  }
-  return env
-}
-
-function readExistingSecrets(path: string): Record<string, string> {
-  if (!existsSync(path)) return {}
-  return parseDotenv(readFileSync(path, "utf8"))
 }
 
 function secret(len = 32): string {
@@ -78,17 +57,16 @@ function main() {
   }
 
   const legacy = parseDotenv(readFileSync(legacyPath, "utf8"))
-  const existing = readExistingSecrets(outputPath)
+  const existing = readEnvFile(outputPath)
 
   const uploadsDir = `${args.legacyRoot}/backend/uploads`
   const dbPath = `${args.raffleRoot}/data/raffle.db`
   const appUrl = `https://${args.domain.replace(/^https?:\/\//, "")}`
 
   const resendKey = legacy.RESEND_API_KEY ?? existing.RESEND_API_KEY ?? ""
-  const emailProvider =
-    resendKey && !resendKey.startsWith("re_placeholder")
-      ? "resend"
-      : (existing.EMAIL_PROVIDER ?? "noop")
+  const emailProvider = isUsableResendKey(resendKey)
+    ? "resend"
+    : (existing.EMAIL_PROVIDER ?? "noop")
 
   const pick = (key: string, fallback: string) =>
     regen || !existing[key] ? fallback : existing[key]
