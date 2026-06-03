@@ -17,12 +17,16 @@ async function loadPurchaseEmailContext(purchaseId: number): Promise<PurchaseEma
     .select({
       customerName: purchases.customerName,
       customerEmail: purchases.customerEmail,
+      customerPhone: purchases.customerPhone,
+      customerCi: purchases.customerCi,
       ticketQuantity: purchases.ticketQuantity,
       totalAmountCents: purchases.totalAmountCents,
       paymentMethod: purchases.paymentMethod,
+      paymentReference: purchases.paymentReference,
       status: purchases.status,
       notes: purchases.notes,
       raffleName: raffles.name,
+      raffleImageUrl: raffles.imageUrl,
     })
     .from(purchases)
     .innerJoin(raffles, eq(purchases.raffleId, raffles.id))
@@ -52,7 +56,7 @@ export async function sendPurchaseConfirmationEmail(purchaseId: number): Promise
   if (!ctx) return
 
   try {
-    const built = buildEmailForType("purchase_confirmation", ctx)
+    const built = await buildEmailForType("purchase_confirmation", ctx)
     await deliverAndLogEmail({
       to: ctx.customerEmail,
       built,
@@ -75,7 +79,7 @@ export async function sendPurchaseStatusEmail(
   if (!ctx) return
 
   try {
-    const built = buildEmailForType("status_update", ctx, { status })
+    const built = await buildEmailForType("status_update", ctx, { status })
     await deliverAndLogEmail({
       to: ctx.customerEmail,
       built,
@@ -99,10 +103,10 @@ export async function sendPurchaseEmailByType(
 
   const built =
     type === "status_update"
-      ? buildEmailForType("status_update", ctx, {
+      ? await buildEmailForType("status_update", ctx, {
           status: options?.status ?? (ctx.status === "approved" ? "approved" : "rejected"),
         })
-      : buildEmailForType("purchase_confirmation", ctx)
+      : await buildEmailForType("purchase_confirmation", ctx)
 
   const result = await deliverAndLogEmail({
     to: ctx.customerEmail,

@@ -1,6 +1,6 @@
 import { EmailType } from "@raffle/shared/validators"
 import { z } from "zod"
-import type { BuiltEmail } from "./email-templates"
+import type { BuiltEmail } from "./email-types"
 import { buildEmailForType, type PurchaseEmailContext } from "./email-templates"
 import { RESENDABLE_EMAIL_TYPES } from "./email-delivery"
 
@@ -25,11 +25,11 @@ export function parseEmailLogType(raw: string):
   return { ok: true, type: parsed.data }
 }
 
-export function buildResendEmail(
+export async function buildResendEmail(
   emailType: z.infer<typeof EmailType>,
   ctx: PurchaseEmailContext,
   metadata: Record<string, unknown> | null,
-): BuiltEmail {
+): Promise<BuiltEmail> {
   const meta = EmailLogMetadata.safeParse(metadata ?? {}).data
 
   switch (emailType) {

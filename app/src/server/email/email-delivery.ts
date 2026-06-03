@@ -1,7 +1,7 @@
 import type { EmailType } from "@raffle/shared/validators"
 import { getLogger } from "@/lib/logger"
 import { sendEmail } from "./email.service"
-import type { BuiltEmail } from "./email-templates"
+import type { BuiltEmail } from "./email-types"
 import * as emailLogsRepo from "../repositories/email-logs.repository"
 
 const logger = getLogger()

@@ -1,34 +1,76 @@
-import { describe, expect, it } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { clearEmailBrandingCache } from "./email-branding.server"
 import { buildEmailForType, buildSampleTestEmail } from "./email-templates"
+import type { PurchaseEmailContext } from "./email-types"
+
+const mockBranding = {
+  appUrl: "https://rifas.example.com",
+  siteName: "Rifas Test",
+  tagline: "Tu oportunidad de ganar",
+  colors: { primary: "#8B7355", secondary: "#F5F5DC", accent: "#FFD700" },
+  logoUrl: "https://rifas.example.com/uploads/site/logo.png",
+  contact: { phone: "04141234567", email: "contacto@rifas.test", address: "" },
+}
+
+vi.mock("./email-branding.server", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./email-branding.server")>()
+  return {
+    ...actual,
+    loadEmailBranding: vi.fn(async () => mockBranding),
+  }
+})
 
 describe("email-templates", () => {
-  const ctx = {
+  const ctx: PurchaseEmailContext = {
     purchaseId: 42,
     customerName: "María",
     customerEmail: "maria@test.com",
+    customerPhone: "04149876543",
     ticketQuantity: 2,
     totalAmountCents: 2000,
     paymentMethod: "pago_movil",
+    paymentMethodLabel: "Pago móvil",
     raffleName: "Rifa Test",
+    raffleImageUrl: "/uploads/raffles/hero.jpg",
     ticketNumbers: ["1", "2"],
   }
 
-  it("builds purchase confirmation", () => {
-    const email = buildEmailForType("purchase_confirmation", ctx)
-    expect(email.subject).toContain("Confirmación")
-    expect(email.html).toContain("María")
-    expect(email.html).toContain("#42")
+  beforeEach(() => {
+    clearEmailBrandingCache()
   })
 
-  it("builds status update with metadata", () => {
-    const email = buildEmailForType("status_update", ctx, { status: "approved" })
+  it("builds purchase confirmation with branded HTML", async () => {
+    const email = await buildEmailForType("purchase_confirmation", ctx)
+    expect(email.subject).toContain("Confirmación")
+    expect(email.html).toContain("<!DOCTYPE html>")
+    expect(email.html).toContain("María")
+    expect(email.html).toContain("#42")
+    expect(email.html).toContain("#8B7355")
+    expect(email.html).toContain("https://rifas.example.com/uploads/site/logo.png")
+    expect(email.html).toContain("https://rifas.example.com/uploads/raffles/hero.jpg")
+    expect(email.html).toContain("<td")
+    expect(email.html).toContain("verificar?phone=")
+    expect(email.html).not.toContain("Boletos: 1, 2")
+  })
+
+  it("escapes malicious customer name", async () => {
+    const email = await buildEmailForType("purchase_confirmation", {
+      ...ctx,
+      customerName: '<script>alert("x")</script>',
+    })
+    expect(email.html).not.toContain("<script>")
+    expect(email.html).toContain("&lt;script&gt;")
+  })
+
+  it("builds status update with metadata", async () => {
+    const email = await buildEmailForType("status_update", ctx, { status: "approved" })
     expect(email.metadata?.new_status).toBe("approved")
     expect(email.subject).toContain("aprobada")
     expect(email.html).not.toContain("Motivo:")
   })
 
-  it("includes rejection reason in status email when notes exist", () => {
-    const email = buildEmailForType(
+  it("includes rejection reason in status email when notes exist", async () => {
+    const email = await buildEmailForType(
       "status_update",
       { ...ctx, notes: "Pago duplicado" },
       { status: "rejected" },
@@ -38,14 +80,30 @@ describe("email-templates", () => {
     expect(email.html).toContain("Pago duplicado")
   })
 
-  it("omits rejection reason when notes are empty", () => {
-    const email = buildEmailForType("status_update", { ...ctx, notes: "" }, { status: "rejected" })
+  it("omits rejection reason when notes are empty", async () => {
+    const email = await buildEmailForType("status_update", { ...ctx, notes: "" }, { status: "rejected" })
     expect(email.html).not.toContain("Motivo:")
   })
 
-  it("builds sample test email", () => {
-    const email = buildSampleTestEmail("test", "admin@test.com")
+  it("builds ticket modification email", async () => {
+    const email = await buildEmailForType("ticket_modification", ctx, {
+      modification: "add",
+      quantity: 5,
+    })
+    expect(email.subject).toContain("agregados")
+    expect(email.metadata).toEqual({ modification: "add", quantity: 5 })
+  })
+
+  it("builds purchase reassign email", async () => {
+    const email = await buildEmailForType("purchase_reassign", ctx)
+    expect(email.subject).toContain("reasignados")
+    expect(email.html).toContain("0001")
+  })
+
+  it("builds sample test email", async () => {
+    const email = await buildSampleTestEmail("test", "admin@test.com")
     expect(email.type).toBe("test")
     expect(email.subject).toContain("prueba")
+    expect(email.html).toContain("<!DOCTYPE html>")
   })
 })

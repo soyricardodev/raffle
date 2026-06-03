@@ -58,7 +58,7 @@ const TestEmailInput = z.object({
 
 export async function sendAdminTestEmail(body: unknown) {
   const parsed = TestEmailInput.parse(body)
-  const built = buildSampleTestEmail(parsed.type, parsed.to, {
+  const built = await buildSampleTestEmail(parsed.type, parsed.to, {
     status: parsed.status,
     modification: parsed.modification,
   })
@@ -91,7 +91,7 @@ export async function resendEmailFromLog(logId: number) {
     return { success: false, error: "Compra sin correo del cliente", status: 400 as const }
   }
 
-  const built = buildResendEmail(typeResult.type, ctx, metadata)
+  const built = await buildResendEmail(typeResult.type, ctx, metadata)
 
   const result = await deliverAndLogEmail({
     to: row.recipient_email,
