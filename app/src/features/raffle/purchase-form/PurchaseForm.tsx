@@ -12,6 +12,7 @@ import {
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -40,6 +41,7 @@ import type {
 } from "@/features/raffle/types"
 import { useBuyerPresence } from "@/features/raffle/use-buyer-presence"
 import { getApiErrorMessage, publicFetch } from "@/lib/admin-fetch"
+import { formatCurrency } from "@/lib/format"
 
 export type PurchaseFormProps = {
   raffle: RaffleForPurchase
@@ -374,10 +376,31 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             <SpinnerGapIcon className="animate-spin" />
           </div>
         ) : null}
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Comprar</CardTitle>
+        <CardHeader className="border-b border-border/60 pb-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <CardTitle className="text-lg">Compra tus boletos</CardTitle>
+              <p className="text-muted-foreground mt-1 text-xs leading-snug">
+                <span className="text-foreground font-medium tabular-nums">{quantity}</span> boleto
+                {quantity === 1 ? "" : "s"} · completa los 3 pasos
+              </p>
+            </div>
+            <div className="shrink-0 text-right">
+              <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
+                Total
+              </p>
+              <p className="font-serif text-xl font-bold tabular-nums">
+                {formatCurrency(total, priceCurrency)}
+              </p>
+              {priceIsEstimate ? (
+                <Badge variant="outline" className="mt-1 text-[10px]">
+                  Estimado
+                </Badge>
+              ) : null}
+            </div>
+          </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-4">
+        <CardContent className="flex flex-col gap-5 pb-2">
           <TicketQuantityStep
             quantity={quantity}
             quantityMin={quantityMin}
@@ -441,21 +464,27 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             onPaymentProofChange={setPaymentProof}
           />
 
-          <Button
-            className="w-full"
-            data-testid="purchase-submit"
-            disabled={disabled || isSubmitting || methods.length === 0}
-            onClick={handleSubmit}
-          >
-            {isSubmitting ? (
-              <>
-                <SpinnerGapIcon data-icon="inline-start" className="animate-spin" />
-                Procesando…
-              </>
-            ) : (
-              "Confirmar compra"
-            )}
-          </Button>
+          <div className="sticky bottom-0 z-20 -mx-6 border-t border-border/80 bg-background/95 px-6 py-3 backdrop-blur-sm sm:static sm:z-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
+            <Button
+              size="lg"
+              className="h-12 w-full text-base font-semibold shadow-md sm:h-10 sm:text-sm sm:shadow-none"
+              data-testid="purchase-submit"
+              disabled={disabled || isSubmitting || methods.length === 0}
+              onClick={handleSubmit}
+            >
+              {isSubmitting ? (
+                <>
+                  <SpinnerGapIcon data-icon="inline-start" className="animate-spin" />
+                  Procesando…
+                </>
+              ) : (
+                <>
+                  Confirmar compra
+                  <span className="opacity-90">· {formatCurrency(total, priceCurrency)}</span>
+                </>
+              )}
+            </Button>
+          </div>
         </CardContent>
       </Card>
 

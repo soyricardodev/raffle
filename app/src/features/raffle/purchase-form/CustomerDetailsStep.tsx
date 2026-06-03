@@ -1,13 +1,16 @@
-import { EnvelopeSimpleIcon, UserCircleIcon } from "@phosphor-icons/react"
+import { EnvelopeSimpleIcon, ShieldCheckIcon, UserCircleIcon } from "@phosphor-icons/react"
 import type { CedulaPrefix, CustomerLocationType, PhoneInputMode } from "@raffle/shared/validators"
 import { memo } from "react"
+import { Badge } from "@/components/ui/badge"
 import { FieldGroup } from "@/components/ui/field"
+import { Separator } from "@/components/ui/separator"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
+import { purchaseSectionCardClassName } from "@/features/raffle/purchase-form/field-styles"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
 import { SavedBuyerProfileBanner } from "@/features/raffle/purchase-form/SavedBuyerProfileBanner"
-import { SectionHeader } from "@/features/raffle/purchase-form/ui"
+import { cn } from "@/lib/utils"
 
 type CustomerDetailsStepProps = {
   disabled: boolean
@@ -69,8 +72,21 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   onRestoreSavedProfile,
 }: CustomerDetailsStepProps) {
   return (
-    <section className="flex flex-col gap-2">
-      <SectionHeader title="Tus datos" />
+    <section className={cn(purchaseSectionCardClassName, "flex flex-col gap-3")}>
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="shrink-0 tabular-nums">
+              2
+            </Badge>
+            <h3 className="text-sm font-semibold">Tus datos para los boletos</h3>
+          </div>
+          <p className="text-muted-foreground mt-1 flex items-start gap-1.5 text-xs leading-snug">
+            <ShieldCheckIcon className="text-primary mt-0.5 size-3.5 shrink-0" aria-hidden />
+            Usamos esta información solo para asignarte los números y enviarte la confirmación.
+          </p>
+        </div>
+      </div>
 
       {savedProfileName ? (
         <SavedBuyerProfileBanner
@@ -82,7 +98,7 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
         />
       ) : null}
 
-      <FieldGroup className="gap-3">
+      <FieldGroup className="gap-4">
         <LabeledIconField
           id="customer-name"
           label="Nombre completo"
@@ -104,6 +120,8 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           onChange={onCustomerPhoneChange}
           onModeChange={onPhoneModeChange}
         />
+
+        <Separator />
 
         <LabeledIconField
           id="customer-email"

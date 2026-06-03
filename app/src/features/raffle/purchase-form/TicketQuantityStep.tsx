@@ -9,7 +9,10 @@ import {
   buildSmartQuickPicks,
   clampQuantity,
 } from "@/features/raffle/purchase-form/ticket-quantity-utils"
-import { SectionHeader } from "@/features/raffle/purchase-form/ui"
+import {
+  purchaseSectionCardClassName,
+  quickPickToggleItemClassName,
+} from "@/features/raffle/purchase-form/field-styles"
 import { formatCurrency } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -82,13 +85,20 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
   const soldOut = available <= 0 || effectiveMax < quantityMin
 
   return (
-    <section className="flex flex-col gap-3" aria-labelledby="ticket-quantity-heading">
+    <section
+      className={cn(purchaseSectionCardClassName, "flex flex-col gap-3")}
+      aria-labelledby="ticket-quantity-heading"
+    >
       <div className="flex items-start justify-between gap-2">
-        <div className="flex flex-col gap-0.5">
-          <SectionHeader title="Cantidad" />
-          <p id="ticket-quantity-heading" className="sr-only">
-            Selecciona cuántos boletos comprar
-          </p>
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <div className="flex items-center gap-2">
+            <Badge variant="secondary" className="shrink-0 tabular-nums">
+              1
+            </Badge>
+            <h3 id="ticket-quantity-heading" className="text-sm font-semibold">
+              Cantidad de boletos
+            </h3>
+          </div>
           <p className="text-muted-foreground text-xs leading-snug">
             {soldOut ? (
               "No hay boletos disponibles"
@@ -106,30 +116,30 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
           </p>
         </div>
         {quantityMin > 1 ? (
-          <Badge variant="secondary" className="shrink-0 tabular-nums">
+          <Badge variant="outline" className="shrink-0 tabular-nums">
             Mín. {quantityMin}
           </Badge>
         ) : null}
       </div>
 
       {paymentMinAboveRaffle ? (
-        <p className="bg-muted/60 text-muted-foreground rounded-lg px-3 py-2 text-xs leading-snug">
+        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-950 dark:text-amber-100">
           Algunos métodos de pago piden más boletos. El mínimo para comprar aquí es{" "}
-          <span className="text-foreground font-medium tabular-nums">{quantityMin}</span>.
+          <span className="font-semibold tabular-nums">{quantityMin}</span>.
         </p>
       ) : null}
 
-      <div className="flex items-stretch gap-2">
+      <div className="flex items-stretch gap-2.5">
         <Button
           type="button"
           variant="outline"
           size="icon"
-          className="size-11 shrink-0 rounded-full"
+          className="size-12 shrink-0 rounded-full border-primary/30 bg-background shadow-sm"
           disabled={quantity <= quantityMin || disabled || soldOut}
           onClick={() => onChange(Math.max(quantityMin, quantity - 1))}
           aria-label="Un boleto menos"
         >
-          <MinusIcon className="size-4" />
+          <MinusIcon className="size-5" />
         </Button>
 
         <Field className="min-w-0 flex-1">
@@ -138,7 +148,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
           </FieldLabel>
           <div
             className={cn(
-              "bg-muted/50 flex h-11 items-center justify-center rounded-full border px-3",
+              "flex h-12 items-center justify-center rounded-2xl border-2 border-primary/30 bg-background/80 px-3 shadow-inner",
               disabled && "opacity-60",
             )}
           >
@@ -150,7 +160,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
               max={effectiveMax}
               value={draft}
               disabled={disabled || soldOut}
-              className="h-auto border-0 bg-transparent p-0 text-center font-serif text-2xl font-semibold tabular-nums shadow-none focus-visible:ring-0"
+              className="h-auto border-0 bg-transparent p-0 text-center font-serif text-3xl font-bold tabular-nums shadow-none focus-visible:ring-0"
               onChange={(event) => setDraft(event.target.value)}
               onBlur={commitDraft}
               onKeyDown={(event) => {
@@ -165,20 +175,20 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
 
         <Button
           type="button"
-          variant="outline"
+          variant="default"
           size="icon"
-          className="size-11 shrink-0 rounded-full"
+          className="size-12 shrink-0 rounded-full shadow-md"
           disabled={quantity >= effectiveMax || disabled || soldOut}
           onClick={() => onChange(Math.min(effectiveMax, quantity + 1))}
           aria-label="Un boleto más"
         >
-          <PlusIcon className="size-4" />
+          <PlusIcon className="size-5" />
         </Button>
       </div>
 
       {quickPicks.length > 1 ? (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
+        <div className="flex flex-col gap-2">
+          <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
             Accesos rápidos
           </p>
           <ToggleGroup
@@ -188,7 +198,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
             spacing={1}
             value={String(quantity)}
             onValueChange={handleQuickPick}
-            className="flex w-full gap-1.5 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            className="flex w-full gap-2 overflow-x-auto pb-0.5 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
             disabled={disabled || soldOut}
           >
             {quickPicks.map((pick) => (
@@ -196,10 +206,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
                 key={pick.value}
                 value={String(pick.value)}
                 aria-label={`${pick.value} boletos`}
-                className={cn(
-                  "h-9 min-w-10 shrink-0 rounded-full px-3 text-xs tabular-nums",
-                  pick.value === quantity && "font-semibold",
-                )}
+                className={quickPickToggleItemClassName}
               >
                 {pick.label}
               </ToggleGroupItem>
@@ -209,10 +216,10 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
       ) : null}
 
       {subtotal != null ? (
-        <div className="bg-primary/5 flex items-center justify-between gap-2 rounded-xl px-3 py-2.5">
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-primary/20 bg-primary/15 px-3 py-3">
           <div className="text-muted-foreground flex min-w-0 flex-col gap-0.5 text-xs">
-            <span className="flex items-center gap-1.5">
-              <TicketIcon className="size-3.5 shrink-0" aria-hidden />
+            <span className="flex items-center gap-1.5 font-medium text-foreground">
+              <TicketIcon className="text-primary size-4 shrink-0" aria-hidden />
               {quantity} boleto{quantity === 1 ? "" : "s"} ×{" "}
               {originalUnitPrice != null && originalUnitPrice > unitPrice! ? (
                 <>
@@ -224,7 +231,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
               {formatCurrency(unitPrice!, currency)}
             </span>
             {savings != null && savings > 0 ? (
-              <span className="text-emerald-700 dark:text-emerald-300">
+              <span className="font-medium text-emerald-700 dark:text-emerald-300">
                 Ahorras {formatCurrency(savings, currency)}
               </span>
             ) : null}
@@ -232,12 +239,15 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
               <span className="text-[10px]">Estimado en Bs (según método de pago)</span>
             ) : null}
           </div>
-          <span className="font-serif text-base font-semibold tabular-nums">
-            {formatCurrency(subtotal, currency)}
-          </span>
+          <div className="shrink-0 text-right">
+            <p className="text-muted-foreground text-[10px] font-medium uppercase">Subtotal</p>
+            <p className="font-serif text-xl font-bold tabular-nums">
+              {formatCurrency(subtotal, currency)}
+            </p>
+          </div>
         </div>
       ) : (
-        <p className="text-muted-foreground text-center text-xs tabular-nums">
+        <p className="text-muted-foreground text-center text-sm font-medium tabular-nums">
           {quantity} boleto{quantity === 1 ? "" : "s"} seleccionado
           {quantity === 1 ? "" : "s"}
         </p>

@@ -7,6 +7,7 @@ import { isDollarMethod } from "@raffle/shared/validators"
 import { memo, useCallback, useMemo } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
+import { paymentDetailsPanelClassName } from "@/features/raffle/purchase-form/field-styles"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { formatCurrency } from "@/lib/format"
 
@@ -30,6 +31,7 @@ const CopyableRow = memo(function CopyableRow({ label, value }: { label: string;
         type="button"
         variant="ghost"
         size="icon-xs"
+        className="text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
         aria-label={`Copiar ${label}`}
         onClick={() => void copy()}
       >
@@ -75,16 +77,27 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanel({
   }, [currency, displayName, lines, total])
 
   return (
-    <div className="rounded-lg border bg-muted/30 p-3">
-      <div className="mb-2 flex items-center justify-between gap-2">
-        <p className="truncate text-sm font-medium">{displayName}</p>
-        <Button type="button" variant="outline" size="xs" onClick={() => void copyAll()}>
+    <div className={paymentDetailsPanelClassName}>
+      <div className="mb-3 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-[10px] font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-300">
+            Datos para transferir
+          </p>
+          <p className="truncate text-base font-bold">{displayName}</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="xs"
+          className="border-emerald-500/40 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/20 dark:text-emerald-50"
+          onClick={() => void copyAll()}
+        >
           <CopyIcon data-icon="inline-start" />
           Copiar
         </Button>
       </div>
 
-      <div className="divide-border divide-y">
+      <div className="divide-border overflow-hidden rounded-xl border border-emerald-500/20 bg-background/70 px-3">
         {lines.map((line) => (
           <CopyableRow
             key={`${method.id}-${line.label}-${line.value}`}
@@ -94,11 +107,13 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanel({
         ))}
       </div>
 
-      <div className="mt-2 flex items-baseline justify-between border-t pt-2">
+      <div className="mt-3 flex items-baseline justify-between rounded-xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/20 to-teal-500/15 px-3 py-2.5">
         <span className="text-muted-foreground text-xs">
           {quantity} boleto{quantity === 1 ? "" : "s"}
         </span>
-        <span className="text-lg font-bold tabular-nums">{formatCurrency(total, currency)}</span>
+        <span className="text-xl font-extrabold text-emerald-950 tabular-nums dark:text-emerald-50">
+          {formatCurrency(total, currency)}
+        </span>
       </div>
     </div>
   )

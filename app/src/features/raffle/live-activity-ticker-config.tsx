@@ -1,8 +1,3 @@
-import {
-  formatRecentPurchaseMessage,
-  formatRecentPurchaseMessageCompact,
-  type PublicRecentPurchase,
-} from "@raffle/shared/public-recent-purchase"
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
 import { marqueeDurationSec } from "@/features/raffle/PurchaseActivityMarquee"
@@ -22,26 +17,13 @@ const IDLE_MARQUEE = ["Sin rifa activa", "Verifica tus boletos", "Rifas publicad
 
 const FINISHED_MARQUEE = ["Rifa finalizada", "Verifica tus boletos", "Más rifas en inicio"]
 
-function purchasesToMarqueeItems(purchases: PublicRecentPurchase[]): string[] {
-  return purchases.map((p) =>
-    formatRecentPurchaseMessageCompact(p.displayName, p.ticketQuantity, p.status),
-  )
-}
-
-function liveAriaSummary(activeBuyersCount: number, purchases: PublicRecentPurchase[]): string {
-  const first = purchases[0]
-  if (first) {
-    return formatRecentPurchaseMessage(first.displayName, first.ticketQuantity, first.status)
-  }
-  if (activeBuyersCount > 0) {
-    return `${activeBuyersCount} persona${activeBuyersCount === 1 ? "" : "s"} comprando en este momento`
-  }
-  return "Compra en vivo"
+function peopleOnlineMessage(count: number): string {
+  return `${count} persona${count === 1 ? "" : "s"} en línea ahora`
 }
 
 export function buildTickerViewModel(
   variant: LivePurchaseActivityVariant,
-  ctx: { activeBuyersCount: number; purchases: PublicRecentPurchase[] },
+  ctx: { activeBuyersCount: number },
 ): TickerViewModel {
   if (variant === "idle") {
     return {
@@ -71,23 +53,17 @@ export function buildTickerViewModel(
     }
   }
 
-  const purchaseMessages = purchasesToMarqueeItems(ctx.purchases)
-  const marqueeItems =
-    purchaseMessages.length > 0
-      ? purchaseMessages
-      : ctx.activeBuyersCount > 0
-        ? ["Comprando ahora…", "Eligiendo boletos…"]
-        : ["Sé el primero en comprar"]
+  const marqueeItems = [peopleOnlineMessage(ctx.activeBuyersCount)]
 
   return {
     label: (
       <LiveActivityLabel
         count={ctx.activeBuyersCount}
-        pulse={ctx.activeBuyersCount > 0 || purchaseMessages.length > 0}
+        pulse={ctx.activeBuyersCount > 0}
       />
     ),
     marqueeItems,
-    ariaSummary: liveAriaSummary(ctx.activeBuyersCount, ctx.purchases),
+    ariaSummary: peopleOnlineMessage(ctx.activeBuyersCount),
     marqueeDurationSec: marqueeDurationSec(marqueeItems.length),
     isLiveBar: true,
   }
@@ -112,7 +88,7 @@ function LiveActivityLabel({ count, pulse }: { count: number; pulse: boolean }) 
       />
       <span className="text-emerald-700 dark:text-emerald-400">En vivo</span>
       {count > 0 ? (
-        <span className="text-muted-foreground font-normal">· {count} comprando</span>
+        <span className="text-muted-foreground font-normal">· {count} en línea</span>
       ) : null}
     </span>
   )
