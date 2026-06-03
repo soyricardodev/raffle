@@ -43,6 +43,26 @@ describe("payment account schemas", () => {
     expect(data.holder_name).toBe("Juan")
   })
 
+  it("validates zelle phone", () => {
+    const data = parseAccountInfo("zelle", {
+      phone: "5551234567",
+      holder_name: "Juan",
+    })
+    expect(data.phone).toBe("5551234567")
+    expect(data.holder_name).toBe("Juan")
+  })
+
+  it("validates zelle contact field as email or phone", () => {
+    expect(parseAccountInfo("zelle", { contact: "pay@example.com" }).email).toBe("pay@example.com")
+    expect(parseAccountInfo("zelle", { contact: "5551234567" }).phone).toBe("5551234567")
+  })
+
+  it("maps legacy zelle account phone to phone key", () => {
+    const data = parseAccountInfo("zelle", { account: "5559876543" })
+    expect(data.phone).toBe("5559876543")
+    expect(data.email).toBeUndefined()
+  })
+
   it("validates binance email only", () => {
     const data = parseAccountInfo("binance", { email: "a@b.com" })
     expect(data.email).toBe("a@b.com")

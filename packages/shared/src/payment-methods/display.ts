@@ -45,6 +45,16 @@ export function formatAccountInfoForDisplay(
 
   for (const field of fields) {
     if (field.key === "cedula_type" || field.key === "cedula_number") continue
+
+    if (field.input === "email_or_phone") {
+      if (normalized.email) {
+        lines.push({ label: "Correo", value: normalized.email })
+      } else if (normalized.phone) {
+        lines.push({ label: "Teléfono", value: normalized.phone })
+      }
+      continue
+    }
+
     const value = normalized[field.key]
     if (!value) continue
     lines.push({ label: field.label, value })

@@ -4,6 +4,10 @@ import {
   listCreatablePaymentMethodTypes,
   PAYMENT_METHOD_DEFINITIONS,
   safeParseAccountInfo,
+  getZelleContactLabel,
+  getZelleContactInputType,
+  getZelleContactValue,
+  zelleContactDraftPatch,
 } from "@raffle/shared/payment-methods"
 import { PaymentMethod } from "@raffle/shared/validators"
 import { useMemo, useState } from "react"
@@ -152,6 +156,40 @@ export function PaymentAccountForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {fieldError ? (
+                  <FieldDescription className="text-destructive">{fieldError}</FieldDescription>
+                ) : null}
+              </Field>
+            )
+          }
+
+          if (field.input === "email_or_phone") {
+            const contactValue = getZelleContactValue(values.account_info)
+            const contactLabel = getZelleContactLabel(contactValue)
+            const inputType = getZelleContactInputType(contactValue)
+
+            return (
+              <Field
+                key={field.key}
+                className="sm:col-span-2"
+                data-invalid={!!fieldError}
+              >
+                <FieldLabel htmlFor={`field-${field.key}`}>{contactLabel}</FieldLabel>
+                <Input
+                  id={`field-${field.key}`}
+                  type={inputType}
+                  inputMode={inputType === "tel" ? "numeric" : undefined}
+                  className="min-h-11"
+                  placeholder={field.placeholder}
+                  value={contactValue}
+                  onChange={(e) => {
+                    setValues((prev) => ({
+                      ...prev,
+                      account_info: zelleContactDraftPatch(prev.account_info, e.target.value),
+                    }))
+                  }}
+                />
+                {field.hint ? <FieldDescription>{field.hint}</FieldDescription> : null}
                 {fieldError ? (
                   <FieldDescription className="text-destructive">{fieldError}</FieldDescription>
                 ) : null}

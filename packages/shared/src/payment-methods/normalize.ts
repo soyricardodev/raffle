@@ -1,4 +1,5 @@
 import type { PaymentMethod } from "./types.js"
+import { looksLikeZelleEmail } from "./zelle-contact.js"
 
 /** Map legacy / Spanish keys to canonical English keys per method type. */
 const KEY_ALIASES: Record<string, string> = {
@@ -59,12 +60,24 @@ export function normalizeAccountInfoKeys(
     return splitCedula(out)
   }
 
-  // Legacy zelle/zinli/binance used `account` for email
-  if (
-    (methodType === "zelle" || methodType === "zinli" || methodType === "binance") &&
-    out.account &&
-    !out.email
-  ) {
+  if (methodType === "zelle") {
+    const rawContact = out.contact ?? out.email ?? out.phone ?? out.account
+    if (rawContact) {
+      if (looksLikeZelleEmail(rawContact)) {
+        out.email = rawContact.trim()
+        delete out.phone
+      } else {
+        out.phone = rawContact.replace(/\D/g, "")
+        delete out.email
+      }
+      delete out.account
+      delete out.contact
+    }
+    return out
+  }
+
+  // Legacy zinli/binance used `account` for email
+  if ((methodType === "zinli" || methodType === "binance") && out.account && !out.email) {
     out.email = out.account
     delete out.account
   }

@@ -2,6 +2,10 @@ import { z } from "zod"
 import { getFieldsForType } from "./definitions.js"
 import { normalizeAccountInfoKeys } from "./normalize.js"
 import { PaymentMethod } from "./types.js"
+import {
+  getZelleContactValue,
+  looksLikeZelleEmail,
+} from "./zelle-contact.js"
 
 const digitsOnly = (label: string) =>
   z.string().min(1, `${label} requerido`).regex(/^\d+$/, `${label}: solo números`)
@@ -19,10 +23,39 @@ const usdEmailSchema = z.object({
   email: emailField,
 })
 
-const zelleSchema = z.object({
-  email: emailField,
-  holder_name: z.string().optional(),
-})
+const zellePhoneField = z
+  .string()
+  .min(1, "Teléfono requerido")
+  .regex(/^\d{10,15}$/, "Teléfono inválido (10-15 dígitos)")
+
+function parseZelleAccountInfo(raw: Record<string, string>): Record<string, string> {
+  const normalized = normalizeAccountInfoKeys("zelle", raw)
+  const contact = getZelleContactValue(normalized)
+
+  if (!contact) {
+    throw new z.ZodError([
+      {
+        code: "custom",
+        message: "Correo o teléfono requerido",
+        path: ["contact"],
+      },
+    ])
+  }
+
+  const cleaned: Record<string, string> = {}
+
+  if (looksLikeZelleEmail(contact)) {
+    cleaned.email = emailField.parse(contact)
+  } else {
+    cleaned.phone = zellePhoneField.parse(contact.replace(/\D/g, ""))
+  }
+
+  if (normalized.holder_name?.trim()) {
+    cleaned.holder_name = normalized.holder_name.trim()
+  }
+
+  return cleaned
+}
 
 const bankTransferSchema = z.object({
   bank: z.string().min(1, "Banco requerido"),
@@ -30,10 +63,10 @@ const bankTransferSchema = z.object({
   holder: z.string().min(1, "Titular requerido"),
 })
 
-const ACCOUNT_INFO_SCHEMAS: Record<PaymentMethod, z.ZodType<Record<string, string>>> = {
+const ACCOUNT_INFO_SCHEMAS: Record<PaymentMethod, z.ZodType<Record<string, string>> | null> = {
   binance: usdEmailSchema,
   zinli: usdEmailSchema,
-  zelle: zelleSchema,
+  zelle: null,
   pago_movil: pagoMovilSchema,
   bs: bankTransferSchema,
   usd: bankTransferSchema,
@@ -43,17 +76,21 @@ export function parseAccountInfo(
   methodType: PaymentMethod,
   raw: Record<string, string>,
 ): Record<string, string> {
+  if (methodType === "zelle") {
+    return parseZelleAccountInfo(raw)
+  }
+
   const normalized = normalizeAccountInfoKeys(methodType, raw)
   const schema = ACCOUNT_INFO_SCHEMAS[methodType]
+  if (!schema) {
+    throw new Error(`No schema for payment method: ${methodType}`)
+  }
   const parsed = schema.parse(normalized) as Record<string, string>
   const cleaned: Record<string, string> = {}
   for (const [k, v] of Object.entries(parsed)) {
     if (v !== undefined && v !== null && String(v).trim() !== "") {
       cleaned[k] = String(v).trim()
     }
-  }
-  if (methodType === "zelle" && parsed.holder_name) {
-    cleaned.holder_name = String(parsed.holder_name).trim()
   }
   return cleaned
 }

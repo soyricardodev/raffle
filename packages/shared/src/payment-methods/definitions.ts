@@ -2,7 +2,7 @@ import type { PaymentMethod } from "./types.js"
 
 export type PaymentCurrency = "USD" | "VES"
 
-export type FieldInputType = "text" | "email" | "tel" | "digits" | "select"
+export type FieldInputType = "text" | "email" | "tel" | "digits" | "select" | "email_or_phone"
 
 export type FieldDef = {
   key: string
@@ -57,7 +57,16 @@ export const PAYMENT_METHOD_DEFINITIONS: Record<PaymentMethod, PaymentMethodDefi
     code: "zelle",
     label: "Zelle",
     currency: "USD",
-    fields: [EMAIL_FIELD, HOLDER_FIELD],
+    fields: [
+      {
+        key: "contact",
+        label: "Correo o teléfono",
+        input: "email_or_phone",
+        required: true,
+        placeholder: "correo@ejemplo.com o 5551234567",
+      },
+      HOLDER_FIELD,
+    ],
   },
   pago_movil: {
     code: "pago_movil",
