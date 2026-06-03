@@ -475,6 +475,26 @@ export function AdminConfigView() {
                     placeholder="URL o página"
                   />
                 </Field>
+                <Field>
+                  <FieldLabel htmlFor="tiktok">TikTok</FieldLabel>
+                  <Input
+                    id="tiktok"
+                    className="min-h-11"
+                    value={draft.tiktok}
+                    onChange={(e) => update("tiktok", e.target.value)}
+                    placeholder="@usuario o URL"
+                  />
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="telegram">Telegram</FieldLabel>
+                  <Input
+                    id="telegram"
+                    className="min-h-11"
+                    value={draft.telegram}
+                    onChange={(e) => update("telegram", e.target.value)}
+                    placeholder="@canal o URL"
+                  />
+                </Field>
               </FieldGroup>
             </CardContent>
           </Card>

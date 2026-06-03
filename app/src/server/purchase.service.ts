@@ -110,7 +110,7 @@ export async function createPurchase(params: CreatePurchaseParams) {
       : params.customerCi.trim()
 
     const locationType = params.locationType ?? "venezuela"
-    const customerId = await customersRepo.findOrCreateCustomer(tx, {
+    const { customerId, isReturningCustomer } = await customersRepo.findOrCreateCustomer(tx, {
       customerName: params.customerName,
       customerPhone: params.customerPhone,
       customerEmail: params.customerEmail,
@@ -119,6 +119,7 @@ export async function createPurchase(params: CreatePurchaseParams) {
       locationType,
       venezuelaState: params.venezuelaState,
     })
+    const isFirstPurchase = !isReturningCustomer
 
     const purchaseId = await purchasesRepo.insertPurchase(tx, {
       raffleId: params.raffleId,
@@ -150,7 +151,15 @@ export async function createPurchase(params: CreatePurchaseParams) {
       ticketsAvailable: raffle.ticketsAvailable,
     })
 
-    return { purchaseId, ticketNumbers, totalAmount: totalAmountCents / 100 }
+    return {
+      purchaseId,
+      ticketNumbers,
+      totalAmount: totalAmountCents / 100,
+      isFirstPurchase,
+      customerName: params.customerName.trim(),
+      raffleName: raffle.name,
+      ticketCount: params.ticketQuantity,
+    }
   })
 
   logger.info(

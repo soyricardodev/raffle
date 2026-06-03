@@ -4,12 +4,15 @@ import type { ResolvedPurchaseSuccessPromo } from "@/features/raffle/purchase-fo
 
 const WHATSAPP_ICON = "/brand/social/whatsapp.svg"
 const INSTAGRAM_ICON = "/brand/social/instagram.svg"
+const TIKTOK_ICON = "/brand/social/tiktok.svg"
 
 type PurchaseSuccessPromoSectionProps = {
   promo: ResolvedPurchaseSuccessPromo
   whatsappLinkRef: RefObject<HTMLAnchorElement | null>
   onWhatsappClick: () => void
   onInstagramClick: () => void
+  onTiktokClick: () => void
+  onSocialLinkClick: (id: string) => void
 }
 
 export function PurchaseSuccessPromoSection({
@@ -17,8 +20,21 @@ export function PurchaseSuccessPromoSection({
   whatsappLinkRef,
   onWhatsappClick,
   onInstagramClick,
+  onTiktokClick,
+  onSocialLinkClick,
 }: PurchaseSuccessPromoSectionProps) {
   if (!promo.shouldShow) return null
+
+  const finalizeTitle = promo.title || "Para finalizar tu compra"
+  const finalizeDescription =
+    promo.description || "Escríbeme por WhatsApp con tus datos y te confirmo la compra."
+
+  const promoInstagram =
+    promo.instagramHref &&
+    !promo.socialLinks.some((link) => link.id === "instagram" && link.href === promo.instagramHref)
+  const promoTiktok =
+    promo.tiktokHref &&
+    !promo.socialLinks.some((link) => link.id === "tiktok" && link.href === promo.tiktokHref)
 
   return (
     <section
@@ -43,26 +59,24 @@ export function PurchaseSuccessPromoSection({
             id="purchase-success-promo-title"
             className="text-sm leading-tight font-semibold text-foreground"
           >
-            {promo.title || "Únete a nuestra comunidad"}
+            {finalizeTitle}
           </h3>
-          {promo.description ? (
-            <p className="text-muted-foreground mt-0.5 text-xs leading-snug">{promo.description}</p>
-          ) : null}
+          <p className="text-muted-foreground mt-0.5 text-xs leading-snug">{finalizeDescription}</p>
         </div>
       </div>
 
       <div className="mt-2.5 flex flex-col gap-2">
-        {promo.whatsappHref ? (
+        {promo.whatsappFinalizeHref ? (
           <Button
             className="min-h-11 w-full border-0 bg-[#25D366] text-white shadow-sm hover:bg-[#1ebe5d] focus-visible:ring-[#25D366]/50"
             asChild
           >
             <a
               ref={whatsappLinkRef}
-              href={promo.whatsappHref}
+              href={promo.whatsappFinalizeHref}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Unirme al canal de WhatsApp"
+              aria-label="Finalizar compra por WhatsApp"
               onClick={onWhatsappClick}
             >
               <img
@@ -73,11 +87,33 @@ export function PurchaseSuccessPromoSection({
                 height={16}
                 aria-hidden
               />
-              Unirme al WhatsApp
+              Finalizar por WhatsApp
             </a>
           </Button>
         ) : null}
-        {promo.instagramHref ? (
+
+        {promo.whatsappChannelHref ? (
+          <Button variant="outline" size="sm" className="min-h-9 w-full" asChild>
+            <a
+              href={promo.whatsappChannelHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Unirme al canal de WhatsApp"
+            >
+              <img
+                src={WHATSAPP_ICON}
+                alt=""
+                className="mr-2 size-4"
+                width={16}
+                height={16}
+                aria-hidden
+              />
+              Unirme al canal de WhatsApp
+            </a>
+          </Button>
+        ) : null}
+
+        {promoInstagram ? (
           <Button variant="outline" size="sm" className="min-h-9 w-full" asChild>
             <a
               href={promo.instagramHref}
@@ -97,6 +133,52 @@ export function PurchaseSuccessPromoSection({
               Seguir en Instagram
             </a>
           </Button>
+        ) : null}
+
+        {promoTiktok ? (
+          <Button variant="outline" size="sm" className="min-h-9 w-full" asChild>
+            <a
+              href={promo.tiktokHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Seguir en TikTok"
+              onClick={onTiktokClick}
+            >
+              <img src={TIKTOK_ICON} alt="" className="mr-2 size-4" width={16} height={16} aria-hidden />
+              Seguir en TikTok
+            </a>
+          </Button>
+        ) : null}
+
+        {promo.socialLinks.length > 0 ? (
+          <div className="flex flex-col gap-2 border-t border-border/60 pt-2">
+            <p className="text-muted-foreground text-xs font-medium">Síguenos en redes</p>
+            <div className="flex flex-wrap gap-2">
+              {promo.socialLinks.map((link) => (
+                <Button key={link.id} variant="outline" size="sm" className="min-h-9" asChild>
+                  <a
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    aria-label={link.label}
+                    onClick={() => onSocialLinkClick(link.id)}
+                  >
+                    {link.iconSrc ? (
+                      <img
+                        src={link.iconSrc}
+                        alt=""
+                        className="mr-2 size-4"
+                        width={16}
+                        height={16}
+                        aria-hidden
+                      />
+                    ) : null}
+                    {link.label}
+                  </a>
+                </Button>
+              ))}
+            </div>
+          </div>
         ) : null}
       </div>
     </section>

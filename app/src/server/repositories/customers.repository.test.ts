@@ -23,9 +23,9 @@ describe.skipIf(!hasDatabase)("customers.repository", () => {
 
   async function createInTx(input: Parameters<typeof findOrCreateCustomer>[1]) {
     const db = getDb()
-    const id = await db.transaction((tx) => findOrCreateCustomer(tx, input))
-    createdIds.push(id)
-    return id
+    const result = await db.transaction((tx) => findOrCreateCustomer(tx, input))
+    createdIds.push(result.customerId)
+    return result
   }
 
   const base = {
@@ -37,46 +37,48 @@ describe.skipIf(!hasDatabase)("customers.repository", () => {
   }
 
   it("reuses the same row when phone and CI match", async () => {
-    const id1 = await createInTx({
+    const first = await createInTx({
       ...base,
       customerPhone: "04121234567",
       customerCi: "V12345678",
     })
-    const id2 = await createInTx({
+    const second = await createInTx({
       ...base,
       customerName: "Test Buyer Updated",
       customerPhone: "04121234567",
       customerCi: "V12345678",
       customerEmail: "new@test.local",
     })
-    expect(id2).toBe(id1)
+    expect(second.customerId).toBe(first.customerId)
+    expect(first.isReturningCustomer).toBe(false)
+    expect(second.isReturningCustomer).toBe(true)
   })
 
   it("creates separate rows for same phone with different CI", async () => {
-    const id1 = await createInTx({
+    const first = await createInTx({
       ...base,
       customerPhone: "04141234567",
       customerCi: "V11111111",
     })
-    const id2 = await createInTx({
+    const second = await createInTx({
       ...base,
       customerPhone: "04141234567",
       customerCi: "V22222222",
     })
-    expect(id2).not.toBe(id1)
+    expect(second.customerId).not.toBe(first.customerId)
   })
 
   it("creates separate rows for same CI with different phone", async () => {
-    const id1 = await createInTx({
+    const first = await createInTx({
       ...base,
       customerPhone: "04161234567",
       customerCi: "E33333333",
     })
-    const id2 = await createInTx({
+    const second = await createInTx({
       ...base,
       customerPhone: "04241234567",
       customerCi: "E33333333",
     })
-    expect(id2).not.toBe(id1)
+    expect(second.customerId).not.toBe(first.customerId)
   })
 })

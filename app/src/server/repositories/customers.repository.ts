@@ -42,6 +42,12 @@ function toCustomerValues(
   }
 }
 
+export type FindOrCreateCustomerResult = {
+  customerId: number
+  /** True when a row already existed for this phone + CI (prior purchase identity). */
+  isReturningCustomer: boolean
+}
+
 /**
  * Match repeat buyers on phone + CI together only.
  * Same phone with a different CI (or same CI with a different phone) creates a new row.
@@ -49,7 +55,7 @@ function toCustomerValues(
 export async function findOrCreateCustomer(
   tx: DbTransaction,
   input: UpsertCustomerInput,
-): Promise<number> {
+): Promise<FindOrCreateCustomerResult> {
   const phoneNorm = normalizePhone(input.customerPhone)
   const ciNorm = normalizeCustomerCi(input.customerCi)
   const ciDisplay = customerCiForStorage(input.customerCi)
@@ -71,10 +77,10 @@ export async function findOrCreateCustomer(
       .update(customers)
       .set({ ...values, updatedAt: new Date() })
       .where(eq(customers.id, existing.id))
-    return existing.id
+    return { customerId: existing.id, isReturningCustomer: true }
   }
 
   const [row] = await tx.insert(customers).values(values).returning({ id: customers.id })
 
-  return row!.id
+  return { customerId: row!.id, isReturningCustomer: false }
 }

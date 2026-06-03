@@ -58,7 +58,7 @@ function SocialFollowLinks({ links }: { links: SocialLink[] }) {
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2">
       <span className="text-foreground/80 min-w-0 truncate text-xs font-medium sm:text-[13px]">
-        Únete a nuestras redes
+        Únete a mis redes sociales
       </span>
       <div className="ml-auto flex shrink-0 items-center gap-1.5">
         {links.map((link) => (
@@ -75,7 +75,13 @@ function SocialFollowLinks({ links }: { links: SocialLink[] }) {
               "focus-visible:ring-ring/40 focus-visible:ring-2 focus-visible:outline-none active:scale-95",
             )}
           >
-            <img src={link.iconSrc} alt="" className="size-4" width={16} height={16} />
+            {link.iconSrc ? (
+              <img src={link.iconSrc} alt="" className="size-4" width={16} height={16} />
+            ) : (
+              <span className="text-[10px] font-semibold" aria-hidden>
+                {link.label.slice(0, 1)}
+              </span>
+            )}
           </a>
         ))}
       </div>
@@ -93,7 +99,8 @@ function LivePurchaseActivityTickerLive({
   const live = useRaffleLiveDataOrFetch(raffleId)
   const branding = usePublicBranding()
   const socialLinks = buildSocialLinks(
-    branding?.social ?? { whatsapp: "", instagram: "", facebook: "" },
+    branding?.social ?? { whatsapp: "", instagram: "", facebook: "", tiktok: "", telegram: "" },
+    { whatsappChannelUrl: branding?.purchaseSuccessPromo.whatsapp_channel_url ?? "" },
   )
   const view = buildTickerViewModel("live", {
     activeBuyersCount: live.data?.activeBuyersCount ?? 0,

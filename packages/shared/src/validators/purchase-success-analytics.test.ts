@@ -19,6 +19,21 @@ describe("PurchaseSuccessAnalyticsInputSchema", () => {
     expect(parsed.success).toBe(true)
   })
 
+  it("accepts tiktok and social cta clicks", () => {
+    expect(
+      PurchaseSuccessAnalyticsInputSchema.safeParse({
+        event: "tiktok_cta_click",
+        properties: { purchaseId: 26 },
+      }).success,
+    ).toBe(true)
+    expect(
+      PurchaseSuccessAnalyticsInputSchema.safeParse({
+        event: "social_cta_click",
+        properties: { purchaseId: 26, socialId: "facebook" },
+      }).success,
+    ).toBe(true)
+  })
+
   it("rejects unknown events", () => {
     const parsed = PurchaseSuccessAnalyticsInputSchema.safeParse({
       event: "unknown_event",

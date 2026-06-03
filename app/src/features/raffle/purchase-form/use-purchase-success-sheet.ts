@@ -7,23 +7,31 @@ import {
 } from "@/features/raffle/purchase-form/purchase-success-reminder"
 import { resolvePurchaseSuccessPromo } from "@/features/raffle/purchase-form/resolve-purchase-success-promo"
 import type { PurchaseResult } from "@/features/raffle/types"
-import type { PurchaseSuccessPromo } from "@/stores/site-config"
+import type { PurchaseSuccessPromo, SocialMedia } from "@/stores/site-config"
 
 type UsePurchaseSuccessSheetParams = {
   result: PurchaseResult | null
   purchaseSuccessPromo: PurchaseSuccessPromo | undefined
+  social: SocialMedia | undefined
   onClose: () => void
 }
 
 export function usePurchaseSuccessSheet({
   result,
   purchaseSuccessPromo,
+  social,
   onClose,
 }: UsePurchaseSuccessSheetParams) {
-  const promo = resolvePurchaseSuccessPromo(purchaseSuccessPromo)
+  const promo = resolvePurchaseSuccessPromo({
+    promo: purchaseSuccessPromo,
+    social,
+    purchase: result,
+  })
   const [whatsappClicked, setWhatsappClicked] = useState(false)
   const whatsappLinkRef = useRef<HTMLAnchorElement>(null)
   const openedPurchaseIdRef = useRef<number | null>(null)
+
+  const whatsappReminderHref = promo.whatsappFinalizeHref
 
   useEffect(() => {
     setWhatsappClicked(false)
@@ -40,12 +48,12 @@ export function usePurchaseSuccessSheet({
   }, [result, promo.shouldShow])
 
   useEffect(() => {
-    if (!result || !promo.shouldShow || !promo.whatsappHref) return
+    if (!result || !promo.shouldShow || !promo.whatsappFinalizeHref) return
     const timer = window.setTimeout(() => {
       whatsappLinkRef.current?.focus({ preventScroll: true })
     }, 150)
     return () => window.clearTimeout(timer)
-  }, [result?.purchaseId, promo.shouldShow, promo.whatsappHref])
+  }, [result?.purchaseId, promo.shouldShow, promo.whatsappFinalizeHref])
 
   const copyTickets = useCallback(async () => {
     if (!result) return
@@ -88,20 +96,20 @@ export function usePurchaseSuccessSheet({
       if (
         shouldShowPromoReminder({
           promoEnabled: promo.shouldShow,
-          whatsappHref: promo.whatsappHref,
+          whatsappHref: whatsappReminderHref,
           whatsappClicked,
           purchaseId: result.purchaseId,
         })
       ) {
         markPromoReminderShown(result.purchaseId)
-        toast("¿Te uniste al WhatsApp?", {
-          description: "Ahí avisamos dinámicas y ganadores.",
+        toast("¿Finalizaste por WhatsApp?", {
+          description: "Escríbenos para confirmar tu compra y guardar tus datos.",
           duration: 10_000,
           action: {
-            label: "Unirme",
+            label: "Escribir",
             onClick: () => {
               markWhatsappClicked("reminder_toast")
-              window.open(promo.whatsappHref, "_blank", "noopener,noreferrer")
+              window.open(whatsappReminderHref, "_blank", "noopener,noreferrer")
             },
           },
         })
@@ -109,7 +117,7 @@ export function usePurchaseSuccessSheet({
 
       onClose()
     },
-    [result, promo.shouldShow, promo.whatsappHref, whatsappClicked, markWhatsappClicked, onClose],
+    [result, promo.shouldShow, whatsappReminderHref, whatsappClicked, markWhatsappClicked, onClose],
   )
 
   return {
@@ -123,5 +131,19 @@ export function usePurchaseSuccessSheet({
       if (!result) return
       trackPurchaseSuccessEvent("instagram_cta_click", { purchaseId: result.purchaseId })
     }, [result]),
+    trackTiktokClick: useCallback(() => {
+      if (!result) return
+      trackPurchaseSuccessEvent("tiktok_cta_click", { purchaseId: result.purchaseId })
+    }, [result]),
+    trackSocialLinkClick: useCallback(
+      (socialId: string) => {
+        if (!result) return
+        trackPurchaseSuccessEvent("social_cta_click", {
+          purchaseId: result.purchaseId,
+          socialId,
+        })
+      },
+      [result],
+    ),
   }
 }

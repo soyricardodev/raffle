@@ -4,6 +4,8 @@ export const PURCHASE_SUCCESS_ANALYTICS_EVENTS = [
   "purchase_success_open",
   "whatsapp_cta_click",
   "instagram_cta_click",
+  "tiktok_cta_click",
+  "social_cta_click",
   "tickets_expand",
   "tickets_collapse",
   "copy_tickets",
@@ -39,6 +41,19 @@ export const PurchaseSuccessAnalyticsInputSchema = z.discriminatedUnion("event",
   z.object({
     event: z.literal("instagram_cta_click"),
     properties: z.object({ purchaseId: baseProps.purchaseId }),
+    sessionId: z.string().trim().max(64).optional(),
+  }),
+  z.object({
+    event: z.literal("tiktok_cta_click"),
+    properties: z.object({ purchaseId: baseProps.purchaseId }),
+    sessionId: z.string().trim().max(64).optional(),
+  }),
+  z.object({
+    event: z.literal("social_cta_click"),
+    properties: z.object({
+      purchaseId: baseProps.purchaseId,
+      socialId: z.string().trim().min(1).max(40),
+    }),
     sessionId: z.string().trim().max(64).optional(),
   }),
   z.object({

@@ -64,6 +64,7 @@ describe("parsePublicSiteConfig", () => {
         description: "Dinámicas",
         whatsapp_channel_url: "https://whatsapp.com/channel/x",
         instagram_url: "@rifas",
+        tiktok_url: "@rifas",
       },
     })
 
@@ -73,6 +74,7 @@ describe("parsePublicSiteConfig", () => {
       description: "Dinámicas",
       whatsapp_channel_url: "https://whatsapp.com/channel/x",
       instagram_url: "@rifas",
+      tiktok_url: "@rifas",
     })
   })
 })

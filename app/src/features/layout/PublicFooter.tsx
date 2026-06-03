@@ -19,7 +19,13 @@ export function PublicFooter() {
 
   const siteInfo = branding?.siteInfo ?? { site_name: "", tagline: "", runlot_id: "" }
   const contact = branding?.contact ?? { phone: "", email: "", address: "" }
-  const social = branding?.social ?? { whatsapp: "", instagram: "", facebook: "" }
+  const social = branding?.social ?? {
+    whatsapp: "",
+    instagram: "",
+    facebook: "",
+    tiktok: "",
+    telegram: "",
+  }
   const images = branding?.images
   const colors = branding?.colors
 
@@ -132,7 +138,13 @@ export function PublicFooter() {
                       aria-label={link.label}
                       className="bg-background/80 border-border/80 hover:bg-background flex size-11 items-center justify-center rounded-full border shadow-sm transition-colors"
                     >
-                      <img src={link.iconSrc} alt="" className="size-5" width={20} height={20} />
+                      {link.iconSrc ? (
+                        <img src={link.iconSrc} alt="" className="size-5" width={20} height={20} />
+                      ) : (
+                        <span className="text-xs font-semibold" aria-hidden>
+                          {link.label.slice(0, 1)}
+                        </span>
+                      )}
                     </a>
                   ))}
                 </div>

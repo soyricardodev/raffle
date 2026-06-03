@@ -30,9 +30,12 @@ export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialog
     handleTicketsExpandedChange,
     handleOpenChange,
     trackInstagramClick,
+    trackTiktokClick,
+    trackSocialLinkClick,
   } = usePurchaseSuccessSheet({
     result,
     purchaseSuccessPromo: branding?.purchaseSuccessPromo,
+    social: branding?.social,
     onClose,
   })
 
@@ -64,6 +67,8 @@ export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialog
               whatsappLinkRef={whatsappLinkRef}
               onWhatsappClick={() => markWhatsappClicked("drawer")}
               onInstagramClick={trackInstagramClick}
+              onTiktokClick={trackTiktokClick}
+              onSocialLinkClick={trackSocialLinkClick}
             />
 
             <div className="flex min-h-0 flex-1 flex-col px-4 pb-2">

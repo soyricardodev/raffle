@@ -36,6 +36,10 @@ export async function fetchFirstRafflePaymentMethodId(
 export type PurchaseResult = {
   purchaseId: number
   ticketNumbers: string[]
+  isFirstPurchase: boolean
+  customerName: string
+  raffleName: string
+  ticketCount: number
 }
 
 export async function fetchFirstActiveRaffle(

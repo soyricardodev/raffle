@@ -49,8 +49,9 @@ export function PostPurchasePromoConfigTab({
       <CardHeader>
         <CardTitle>Drawer post-compra</CardTitle>
         <CardDescription>
-          Mensaje y redes que aparecen al confirmar una compra (optimizado para móvil). El WhatsApp
-          de soporte sigue en Contacto.
+          Se muestra solo en la primera compra del comprador. El botón de finalización usa el WhatsApp
+          de la pestaña Contacto con un mensaje prellenado. Las redes de Contacto también aparecen
+          en el drawer.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -59,7 +60,7 @@ export function PostPurchasePromoConfigTab({
             <FieldContentSwitch
               id="purchase-success-promo-enabled"
               label="Mostrar bloque promocional"
-              description="Se muestra en el drawer de éxito cuando hay título, mensaje o al menos un enlace."
+              description="Visible en la primera compra cuando hay título, mensaje o enlaces configurados."
               checked={promo.enabled}
               onCheckedChange={(checked) => patch("enabled", checked)}
             />
@@ -119,6 +120,21 @@ export function PostPurchasePromoConfigTab({
               aria-invalid={!!fieldError("purchase_success_promo.instagram_url")}
             />
             <FieldError>{fieldError("purchase_success_promo.instagram_url")}</FieldError>
+          </Field>
+          <Field data-invalid={!!fieldError("purchase_success_promo.tiktok_url")}>
+            <FieldLabel htmlFor="purchase-success-promo-tiktok">TikTok</FieldLabel>
+            <Input
+              id="purchase-success-promo-tiktok"
+              className="min-h-11"
+              value={promo.tiktok_url}
+              onChange={(e) => patch("tiktok_url", e.target.value)}
+              placeholder="@usuario o URL"
+              aria-invalid={!!fieldError("purchase_success_promo.tiktok_url")}
+            />
+            <FieldDescription>
+              Opcional si ya configuraste TikTok en Contacto; se usa como respaldo en el drawer.
+            </FieldDescription>
+            <FieldError>{fieldError("purchase_success_promo.tiktok_url")}</FieldError>
           </Field>
         </FieldGroup>
       </CardContent>

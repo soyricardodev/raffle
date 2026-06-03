@@ -26,6 +26,8 @@ export type AdminSiteConfigDraft = {
   whatsapp: string
   instagram: string
   facebook: string
+  tiktok: string
+  telegram: string
   hero_title: string
   hero_subtitle: string
   show_particles: boolean
@@ -55,6 +57,8 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   whatsapp: "",
   instagram: "",
   facebook: "",
+  tiktok: "",
+  telegram: "",
   hero_title: "",
   hero_subtitle: "",
   show_particles: false,
@@ -96,6 +100,8 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     whatsapp: String(social?.whatsapp ?? base.whatsapp),
     instagram: String(social?.instagram ?? base.instagram),
     facebook: String(social?.facebook ?? base.facebook),
+    tiktok: String(social?.tiktok ?? base.tiktok),
+    telegram: String(social?.telegram ?? base.telegram),
     hero_title: hero.title,
     hero_subtitle: hero.subtitle,
     show_particles: hero.show_particles,
@@ -120,6 +126,7 @@ function trimPurchaseSuccessPromo(promo: PurchaseSuccessPromo): PurchaseSuccessP
     description: promo.description.trim(),
     whatsapp_channel_url: promo.whatsapp_channel_url.trim(),
     instagram_url: promo.instagram_url.trim(),
+    tiktok_url: promo.tiktok_url.trim(),
   }
 }
 
@@ -144,6 +151,8 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
       whatsapp: draft.whatsapp.replace(/\D/g, ""),
       instagram: draft.instagram.trim(),
       facebook: draft.facebook.trim(),
+      tiktok: draft.tiktok.trim(),
+      telegram: draft.telegram.trim(),
     },
     hero_config: {
       title: draft.hero_title.trim(),

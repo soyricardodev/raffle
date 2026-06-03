@@ -27,4 +27,8 @@ export type RaffleForPurchase = {
 export type PurchaseResult = {
   purchaseId: number
   ticketNumbers: string[]
+  isFirstPurchase: boolean
+  customerName: string
+  raffleName: string
+  ticketCount: number
 }

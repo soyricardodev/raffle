@@ -35,7 +35,13 @@ function cloneContact(value?: ContactInfo): ContactInfo {
 }
 
 function cloneSocial(value?: SocialMedia): SocialMedia {
-  return value ? { ...value } : { whatsapp: "", instagram: "", facebook: "" }
+  return {
+    whatsapp: value?.whatsapp ?? "",
+    instagram: value?.instagram ?? "",
+    facebook: value?.facebook ?? "",
+    tiktok: value?.tiktok ?? "",
+    telegram: value?.telegram ?? "",
+  }
 }
 
 function cloneImages(value?: SiteImages): SiteImages {

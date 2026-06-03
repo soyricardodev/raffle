@@ -30,6 +30,8 @@ export const SocialMediaSchema = z.object({
   whatsapp: z.string().trim().max(20),
   instagram: z.string().trim().max(200),
   facebook: z.string().trim().max(200),
+  tiktok: z.string().trim().max(200).default(""),
+  telegram: z.string().trim().max(200).default(""),
 })
 
 export const HeroConfigSchema = z.object({
@@ -78,6 +80,8 @@ export const PurchaseSuccessPromoSchema = z.object({
   whatsapp_channel_url: httpsUrlOrEmpty.default(""),
   /** Instagram handle or profile URL for community/promo. */
   instagram_url: z.string().trim().max(200).default(""),
+  /** TikTok handle or profile URL for community/promo. */
+  tiktok_url: z.string().trim().max(200).default(""),
 })
 
 /** Admin-only: transactional email sender and automation toggles. */
