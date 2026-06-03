@@ -1,4 +1,4 @@
-import { DotsThreeVertical, Eye, PencilSimple } from "@phosphor-icons/react"
+import { DotsThreeVertical, SlidersHorizontal } from "@phosphor-icons/react"
 import type { TransitionRaffleInput } from "@raffle/shared/validators"
 import { Link } from "@tanstack/react-router"
 import { useState } from "react"
@@ -7,10 +7,10 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { adminRaffleHubLink } from "@/features/admin/raffles/admin-raffle-hub"
 import {
   getConfirmCopy,
   getPrimaryLifecycleActions,
@@ -31,8 +31,8 @@ export function RaffleRowActions({
   density = "comfortable",
 }: RaffleRowActionsProps) {
   const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(null)
-  const buttonSize = density === "compact" ? "icon-xs" : "icon-sm"
-  const buttonClassName = density === "compact" ? undefined : "size-11"
+  const buttonSize = density === "compact" ? "icon-xs" : "sm"
+  const manageLabel = "Gestionar rifa"
 
   const published = Boolean(raffle.publish)
   const menuActions = getPrimaryLifecycleActions(raffle.status, published)
@@ -45,33 +45,23 @@ export function RaffleRowActions({
           asChild
           size={buttonSize}
           variant="outline"
-          className={buttonClassName}
-          title="Ver administración"
+          className={density === "comfortable" ? "min-h-11" : undefined}
+          title={manageLabel}
         >
-          <Link to="/admin/rifas/$id" params={{ id: String(raffle.id) }}>
-            <Eye />
-          </Link>
-        </Button>
-        <Button
-          asChild
-          size={buttonSize}
-          variant="outline"
-          className={buttonClassName}
-          title="Editar"
-        >
-          <Link to="/admin/edit/$id" params={{ id: String(raffle.id) }}>
-            <PencilSimple />
+          <Link {...adminRaffleHubLink(raffle.id)} aria-label={manageLabel}>
+            <SlidersHorizontal data-icon="inline-start" />
+            {density === "comfortable" ? "Gestionar" : null}
           </Link>
         </Button>
         {menuActions.length > 0 ? (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
-                size={buttonSize}
+                size={density === "compact" ? "icon-xs" : "icon-sm"}
                 variant="outline"
-                className={buttonClassName}
+                className={density === "comfortable" ? "size-11" : undefined}
                 disabled={pending}
-                title="Acciones de estado"
+                title="Cambiar estado"
               >
                 <DotsThreeVertical />
               </Button>
@@ -90,12 +80,6 @@ export function RaffleRowActions({
                   </DropdownMenuItem>
                 )
               })}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link to="/admin/rifas/$id" params={{ id: String(raffle.id) }}>
-                  Gestionar ciclo completo…
-                </Link>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         ) : null}

@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { AdminRaffleDetail } from "@/features/admin/raffles/AdminRaffleDetail"
 import { adminRaffleDetailQueryOptions } from "@/features/admin/raffles/admin-raffle-detail-queries"
+import { parseAdminRaffleHubSearch } from "@/features/admin/raffles/admin-raffle-hub"
 
 export const Route = createFileRoute("/admin/rifas/$id")({
+  validateSearch: parseAdminRaffleHubSearch,
   loader: ({ params, context: { queryClient } }) =>
     queryClient.ensureQueryData(adminRaffleDetailQueryOptions(params.id)),
   component: AdminRaffleDetailPage,

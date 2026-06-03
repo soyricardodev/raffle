@@ -1,8 +1,10 @@
 import type { TransitionRaffleInput } from "@raffle/shared/validators"
+import { Link } from "@tanstack/react-router"
 import type { ColumnDef } from "@tanstack/react-table"
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
 import { useMemo } from "react"
 import { Skeleton } from "@/components/ui/skeleton"
+import { adminRaffleHubLink } from "@/features/admin/raffles/admin-raffle-hub"
 import { RaffleRowActions } from "@/features/admin/raffles/RaffleRowActions"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import type { RaffleRow } from "@/features/admin/raffles/types"
@@ -36,7 +38,12 @@ export function RafflesDataTable({
         header: "Rifa",
         cell: ({ row }) => (
           <div className="min-w-44">
-            <p className="max-w-52 truncate font-medium">{row.original.name}</p>
+            <Link
+              {...adminRaffleHubLink(row.original.id)}
+              className="max-w-52 truncate font-medium hover:underline"
+            >
+              {row.original.name}
+            </Link>
             <p className="text-[11px] text-muted-foreground tabular-nums">
               {row.original.tickets_sold}/{row.original.total_tickets} vendidos
             </p>
@@ -132,7 +139,9 @@ export function RafflesMobileList({
         <div key={raffle.id} className="rounded-xl border p-4">
           <div className="mb-2 flex items-start justify-between gap-2">
             <div>
-              <p className="font-medium">{raffle.name}</p>
+              <Link {...adminRaffleHubLink(raffle.id)} className="font-medium hover:underline">
+                {raffle.name}
+              </Link>
               <p className="text-xs text-muted-foreground">ID {raffle.id}</p>
             </div>
             <RaffleStatusBadge status={raffle.status} />

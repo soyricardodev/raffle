@@ -31,7 +31,7 @@ export function CreateRaffleForm() {
       description="Configura tu rifa paso a paso. Los boletos son siempre 10.000 (0000-9999)."
       initial={initialState()}
       isPending={createMutation.isPending}
-      onSubmit={(payload) => createMutation.mutate(payload as CreateRaffleInput)}
+      onSubmit={(payload) => createMutation.mutate(payload)}
       onCancel={() => void navigate({ to: "/admin/rifas" })}
     />
   )

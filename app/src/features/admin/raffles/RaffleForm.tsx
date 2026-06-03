@@ -33,16 +33,27 @@ import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadF
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { cn } from "@/lib/utils"
 
-type RaffleFormProps = {
-  mode: "create" | "edit"
-  title: string
-  description?: string
+type RaffleFormPropsBase = {
   initial: RaffleFormState
-  raffleId?: string
   isPending?: boolean
-  onSubmit: (payload: CreateRaffleInput | UpdateRaffleInput) => void
   onCancel?: () => void
 }
+
+type RaffleFormProps =
+  | (RaffleFormPropsBase & {
+      mode: "create"
+      title: string
+      description?: string
+      raffleId?: undefined
+      onSubmit: (payload: CreateRaffleInput) => void
+    })
+  | (RaffleFormPropsBase & {
+      mode: "edit"
+      title?: string
+      description?: string
+      raffleId: string
+      onSubmit: (payload: UpdateRaffleInput) => void
+    })
 
 function buildPayload(state: RaffleFormState): CreateRaffleInput {
   return {
@@ -74,16 +85,11 @@ function buildPayload(state: RaffleFormState): CreateRaffleInput {
   }
 }
 
-export function RaffleForm({
-  mode,
-  title,
-  description,
-  initial,
-  raffleId,
-  isPending = false,
-  onSubmit,
-  onCancel,
-}: RaffleFormProps) {
+export function RaffleForm(props: RaffleFormProps) {
+  const { mode, initial, isPending = false, onSubmit, onCancel } = props
+  const title = "title" in props ? props.title : undefined
+  const description = "description" in props ? props.description : undefined
+  const raffleId = props.mode === "edit" ? props.raffleId : undefined
   const [state, setState] = useState<RaffleFormState>(initial)
   const [errors, setErrors] = useState<Record<string, string>>({})
 
@@ -119,7 +125,7 @@ export function RaffleForm({
 
   return (
     <div className="mx-auto flex max-w-6xl flex-col gap-6 pb-24 lg:pb-8">
-      <AdminPageHeader title={title} description={description} />
+      {title ? <AdminPageHeader title={title} description={description} /> : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_300px]">
         <div className="flex flex-col gap-6">
@@ -371,7 +377,7 @@ export function RaffleForm({
                       </p>
                       {raffleId ? (
                         <Button asChild variant="outline" className="min-h-11 w-full">
-                          <Link to="/admin/rifas/$id" params={{ id: raffleId }}>
+                          <Link to="/admin/rifas/$id" params={{ id: raffleId }} search={{}}>
                             Ir al ciclo de venta
                           </Link>
                         </Button>

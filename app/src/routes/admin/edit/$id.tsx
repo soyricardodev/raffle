@@ -1,14 +1,11 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { EditRaffleForm } from "@/features/admin/EditRaffleForm"
-import { adminRaffleDetailQueryOptions } from "@/features/admin/raffles/admin-raffle-detail-queries"
+import { createFileRoute, redirect } from "@tanstack/react-router"
 
 export const Route = createFileRoute("/admin/edit/$id")({
-  loader: ({ params, context: { queryClient } }) =>
-    queryClient.ensureQueryData(adminRaffleDetailQueryOptions(params.id)),
-  component: AdminEditRafflePage,
+  beforeLoad: ({ params }) => {
+    throw redirect({
+      to: "/admin/rifas/$id",
+      params: { id: params.id },
+      search: { tab: "editar" },
+    })
+  },
 })
-
-function AdminEditRafflePage() {
-  const { id } = Route.useParams()
-  return <EditRaffleForm raffleId={id} />
-}
