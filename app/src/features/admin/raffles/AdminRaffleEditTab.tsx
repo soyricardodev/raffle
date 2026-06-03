@@ -2,10 +2,8 @@ import type { UpdateRaffleInput } from "@raffle/shared/validators"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
 import { toast } from "sonner"
-import {
-  type AdminRaffleDetail,
-  adminRaffleQueryKeys,
-} from "@/features/admin/raffles/admin-raffle-detail-queries"
+import type { AdminRaffleDetail } from "@/features/admin/raffles/admin-raffle-detail-queries"
+import { invalidateAdminRaffleCaches } from "@/features/admin/raffles/admin-raffle-cache"
 import { mapDetailToForm } from "@/features/admin/raffles/map-detail-to-form"
 import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -29,7 +27,7 @@ export function AdminRaffleEditTab({ raffleId, detail, formKey, onDone }: AdminR
       }),
     onSuccess: async () => {
       toast.success("Rifa actualizada")
-      await queryClient.invalidateQueries({ queryKey: adminRaffleQueryKeys.detail(raffleId) })
+      await invalidateAdminRaffleCaches(queryClient, raffleId)
       onDone()
     },
     onError: (error: Error) => toast.error(error.message),

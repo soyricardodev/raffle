@@ -1,10 +1,7 @@
 import type { TransitionRaffleInput } from "@raffle/shared/validators"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
-import {
-  adminRaffleDetailQueryOptions,
-  adminRaffleQueryKeys,
-} from "@/features/admin/raffles/admin-raffle-detail-queries"
+import { invalidateAdminRaffleCaches } from "@/features/admin/raffles/admin-raffle-cache"
 import { adminFetch } from "@/lib/admin-fetch"
 
 export async function executeRaffleLifecycle(
@@ -20,26 +17,12 @@ export async function executeRaffleLifecycle(
 export function useAdminRaffleLifecycle(raffleId?: string) {
   const queryClient = useQueryClient()
 
-  const invalidate = () => {
-    if (raffleId) {
-      void queryClient.invalidateQueries({
-        queryKey: adminRaffleDetailQueryOptions(raffleId).queryKey,
-      })
-    }
-    void queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] })
-  }
-
   const mutation = useMutation({
     mutationFn: async ({ id, request }: { id: number; request: TransitionRaffleInput }) =>
       executeRaffleLifecycle(id, request),
     onSuccess: (_data, variables) => {
       toast.success("Rifa actualizada")
-      if (raffleId && variables.id === Number(raffleId)) {
-        void queryClient.invalidateQueries({
-          queryKey: adminRaffleQueryKeys.detail(raffleId),
-        })
-      }
-      invalidate()
+      void invalidateAdminRaffleCaches(queryClient, raffleId ?? variables.id)
     },
     onError: (error: Error) => toast.error(error.message),
   })
