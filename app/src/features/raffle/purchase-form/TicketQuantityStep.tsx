@@ -242,7 +242,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
             hasSavings && "border-emerald-500/35 from-emerald-500/15 via-primary/10",
           )}
         >
-          <div className="flex flex-col gap-4 p-3 sm:flex-row sm:items-end sm:justify-between">
+          <div className="grid gap-3 p-3 sm:grid-cols-[minmax(0,1fr)_minmax(12rem,max-content)] sm:items-end">
             <div className="flex min-w-0 flex-col gap-2.5">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="flex items-center gap-1.5 text-sm font-semibold text-foreground">
@@ -256,9 +256,9 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
                 ) : null}
               </div>
 
-              <div className="grid max-w-sm grid-cols-[auto_1fr] items-baseline gap-x-3 gap-y-1 text-xs">
+              <div className="grid max-w-sm grid-cols-[minmax(0,1fr)_max-content] items-baseline gap-x-3 gap-y-1 text-xs">
                 <span className="text-muted-foreground">Precio por boleto</span>
-                <span className="text-right font-medium tabular-nums text-foreground">
+                <span className="whitespace-nowrap text-right font-medium tabular-nums text-foreground">
                   {originalUnitPrice != null && originalUnitPrice > unitPrice! ? (
                     <span className="text-muted-foreground mr-1 line-through">
                       {formatCurrency(originalUnitPrice, currency)}
@@ -270,7 +270,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
                 {unitPriceUsd != null ? (
                   <>
                     <span className="text-muted-foreground">Equivalente USD</span>
-                    <span className="text-right font-medium tabular-nums text-foreground">
+                    <span className="whitespace-nowrap text-right font-medium tabular-nums text-foreground">
                       {originalUnitPriceUsd != null && originalUnitPriceUsd > unitPriceUsd ? (
                         <span className="text-muted-foreground mr-1 line-through">
                           {formatCurrency(originalUnitPriceUsd, "USD")}
@@ -295,15 +295,15 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
               ) : null}
             </div>
 
-            <div className="rounded-xl border border-primary/20 bg-background/70 px-3 py-2 text-right shadow-inner sm:min-w-36">
+            <div className="rounded-xl border border-primary/20 bg-background/70 px-3 py-2 text-right shadow-inner">
               <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
                 Subtotal
               </p>
-              <p className="font-serif text-2xl font-bold leading-tight tabular-nums text-foreground">
+              <p className="whitespace-nowrap font-serif text-[clamp(1.5rem,5vw,2rem)] font-bold leading-tight tabular-nums text-foreground">
                 {formatCurrency(subtotal, currency)}
               </p>
               {subtotalUsd != null ? (
-                <p className="text-muted-foreground mt-1 text-sm font-semibold tabular-nums">
+                <p className="text-muted-foreground mt-1 whitespace-nowrap text-sm font-semibold tabular-nums">
                   {formatCurrency(subtotalUsd, "USD")}
                 </p>
               ) : null}

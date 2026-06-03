@@ -1,10 +1,21 @@
 import { isDollarMethod, type PaymentMethod } from "@raffle/shared/validators"
 
-export function formatCurrency(amount: number | string, currency: "Bs" | "USD" = "Bs") {
+function formatAmountWithThousands(amount: number | string) {
   const value = Number(amount)
-  if (Number.isNaN(value)) return "—"
-  if (currency === "USD") return `$ ${value.toFixed(2)}`
-  return `Bs ${value.toFixed(2)}`
+  if (!Number.isFinite(value)) return "—"
+
+  const sign = value < 0 ? "-" : ""
+  const [integer = "0", decimals = "00"] = Math.abs(value).toFixed(2).split(".")
+  const groupedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+
+  return `${sign}${groupedInteger}.${decimals}`
+}
+
+export function formatCurrency(amount: number | string, currency: "Bs" | "USD" = "Bs") {
+  const formatted = formatAmountWithThousands(amount)
+  if (formatted === "—") return formatted
+  if (currency === "USD") return `$ ${formatted}`
+  return `Bs ${formatted}`
 }
 
 export function formatCurrencyForMethod(amount: number | string, paymentMethod: string): string {

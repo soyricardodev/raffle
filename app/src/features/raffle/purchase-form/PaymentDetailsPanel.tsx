@@ -6,15 +6,29 @@ import {
 import { isDollarMethod } from "@raffle/shared/validators"
 import { memo, useCallback, useMemo } from "react"
 import { toast } from "sonner"
+import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { Button } from "@/components/ui/button"
 import { paymentDetailsPanelClassName } from "@/features/raffle/purchase-form/field-styles"
-import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { formatCurrency } from "@/lib/format"
 
-const CopyableRow = memo(function CopyableRow({ label, value }: { label: string; value: string }) {
+function formatPaymentDetailForClipboard(value: string) {
+  const trimmed = value.trim()
+  if (/^[vje]-?\s*[\d.\s]+$/i.test(trimmed)) {
+    return trimmed.replace(/\D/g, "")
+  }
+  return value
+}
+
+const CopyableRow = memo(function CopyablePaymentDetailRow({
+  label,
+  value,
+}: {
+  label: string
+  value: string
+}) {
   async function copy() {
     try {
-      await navigator.clipboard.writeText(value)
+      await navigator.clipboard.writeText(formatPaymentDetailForClipboard(value))
       toast.success("Copiado")
     } catch {
       toast.error("No se pudo copiar")
@@ -47,7 +61,7 @@ type PaymentDetailsPanelProps = {
   quantity: number
 }
 
-export const PaymentDetailsPanel = memo(function PaymentDetailsPanel({
+export const PaymentDetailsPanel = memo(function PaymentDetailsPanelInner({
   method,
   total,
   quantity,
@@ -65,7 +79,7 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanel({
   const copyAll = useCallback(async () => {
     const text = [
       displayName,
-      ...lines.map((l) => `${l.label}: ${l.value}`),
+      ...lines.map((l) => `${l.label}: ${formatPaymentDetailForClipboard(l.value)}`),
       formatCurrency(total, currency),
     ].join("\n")
     try {
