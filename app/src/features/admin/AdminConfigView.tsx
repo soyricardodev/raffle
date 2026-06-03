@@ -18,6 +18,7 @@ import {
   validateDraft,
 } from "@/features/admin/config/admin-site-config"
 import { ColorField } from "@/features/admin/config/ColorField"
+import { EmailConfigTab } from "@/features/admin/config/EmailConfigTab"
 import { OfficialLogosEditor } from "@/features/admin/config/OfficialLogosEditor"
 import { PostPurchasePromoConfigTab } from "@/features/admin/config/PostPurchasePromoConfigTab"
 import { SitePreviewCard } from "@/features/admin/config/SitePreviewCard"
@@ -131,7 +132,7 @@ export function AdminConfigView() {
     <div className="mx-auto max-w-3xl space-y-6 pb-28 lg:pb-6">
       <AdminPageHeader
         title={adminNavTitle("/admin/config")}
-        description="Marca, inicio, SEO, colores y contacto. La vista previa se actualiza al instante."
+        description="Marca, inicio, SEO, colores, contacto y correos. La vista previa se actualiza al instante."
       />
 
       <SitePreviewCard draft={draft} />
@@ -152,6 +153,9 @@ export function AdminConfigView() {
           </TabsTrigger>
           <TabsTrigger value="contact" className="min-h-9 flex-1 text-xs sm:text-sm">
             Contacto
+          </TabsTrigger>
+          <TabsTrigger value="email" className="min-h-9 flex-1 text-xs sm:text-sm">
+            Correos
           </TabsTrigger>
           <TabsTrigger value="post-purchase" className="min-h-9 flex-1 text-xs sm:text-sm">
             Post-compra
@@ -474,6 +478,15 @@ export function AdminConfigView() {
               </FieldGroup>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="email">
+          <EmailConfigTab
+            settings={draft.email_settings}
+            siteName={draft.site_name}
+            onChange={(email_settings) => update("email_settings", email_settings)}
+            fieldError={fieldError}
+          />
         </TabsContent>
       </Tabs>
 

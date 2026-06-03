@@ -64,6 +64,8 @@ export default defineConfig({
       BETTER_AUTH_URL: baseURL,
       APP_URL: baseURL,
       EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? "noop",
+      EMAIL_FROM: process.env.EMAIL_FROM ?? "noreply@rifas.test",
+      EMAIL_FROM_NAME: process.env.EMAIL_FROM_NAME ?? "Rifas Test",
     },
   },
 })

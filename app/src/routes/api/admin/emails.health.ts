@@ -8,7 +8,7 @@ export const Route = createFileRoute("/api/admin/emails/health")({
     handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
-        return Response.json(getEmailProviderHealth())
+        return Response.json(await getEmailProviderHealth())
       },
     }),
   },

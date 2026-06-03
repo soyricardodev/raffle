@@ -1,6 +1,7 @@
 import { EmailSendError } from "@raffle/shared/errors"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
+import { resolveEmailSenderConfig } from "./email-from"
 import type { EmailAdapter, SendEmailParams, SendEmailResult } from "./types"
 
 const logger = getLogger()
@@ -14,6 +15,8 @@ export class BrevoEmailAdapter implements EmailAdapter {
       throw new Error("BREVO_API_KEY is required when EMAIL_PROVIDER=brevo")
     }
 
+    const sender = await resolveEmailSenderConfig()
+
     try {
       const response = await fetch("https://api.brevo.com/v3/smtp/email", {
         method: "POST",
@@ -22,7 +25,8 @@ export class BrevoEmailAdapter implements EmailAdapter {
           "content-type": "application/json",
         },
         body: JSON.stringify({
-          sender: { name: "Rifas", email: "noreply@rifas.com" },
+          sender: { name: sender.fromName ?? "Rifas", email: sender.fromEmail },
+          replyTo: sender.replyTo ? { email: sender.replyTo } : undefined,
           to: [{ email: params.to }],
           subject: params.subject,
           htmlContent: params.html,

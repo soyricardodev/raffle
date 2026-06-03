@@ -25,14 +25,27 @@ export async function getEmailLogDetail(id: number) {
   return { ...row, metadata }
 }
 
-export function getEmailProviderHealth() {
+export async function getEmailProviderHealth() {
   const env = getEnv()
   const adapter = getEmailAdapter()
+  let fromEmail: string | null = null
+  let fromName: string | null = null
+  try {
+    const { resolveEmailSenderConfig } = await import("./email/email-settings.server")
+    const sender = await resolveEmailSenderConfig()
+    fromEmail = sender.fromEmail
+    fromName = sender.fromName ?? null
+  } catch {
+    fromEmail = env.EMAIL_FROM?.trim() ?? null
+    fromName = env.EMAIL_FROM_NAME?.trim() ?? null
+  }
   return {
     provider: env.EMAIL_PROVIDER,
     adapter: adapter.provider,
     is_noop: env.EMAIL_PROVIDER === "noop",
     delivers_real_email: env.EMAIL_PROVIDER !== "noop",
+    from_email: fromEmail,
+    from_name: fromName,
   }
 }
 

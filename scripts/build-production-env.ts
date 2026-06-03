@@ -9,6 +9,7 @@
 
 import { randomBytes } from "node:crypto"
 import { existsSync, readFileSync, writeFileSync } from "node:fs"
+import { resolveEmailSenderConfig, senderToEnvUpdates } from "./lib/email-env"
 import { isUsableResendKey, parseDotenv, readEnvFile } from "./lib/dotenv"
 
 function parseArgs(argv: string[]) {
@@ -45,7 +46,7 @@ function mysqlUrl(legacy: Record<string, string>): string {
   return `mysql://${user}:${pass}@${host}:${port}/${db}`
 }
 
-function main() {
+async function run() {
   const args = parseArgs(process.argv.slice(2))
   const legacyPath = args.legacyEnv
   const outputPath = args.output
@@ -67,6 +68,12 @@ function main() {
   const emailProvider = isUsableResendKey(resendKey)
     ? "resend"
     : (existing.EMAIL_PROVIDER ?? "noop")
+
+  const sender = await resolveEmailSenderConfig({
+    legacyEnv: legacy,
+    targetEnv: existing,
+    databaseUrl: existing.DATABASE_URL ?? `file:${dbPath}`,
+  })
 
   const pick = (key: string, fallback: string) =>
     regen || !existing[key] ? fallback : existing[key]
@@ -95,6 +102,11 @@ function main() {
   if (legacy.BREVO_API_KEY ?? existing.BREVO_API_KEY) {
     lines.push(`BREVO_API_KEY=${legacy.BREVO_API_KEY ?? existing.BREVO_API_KEY}`)
   }
+  if (sender) {
+    for (const [key, value] of Object.entries(senderToEnvUpdates(sender))) {
+      lines.push(`${key}=${value}`)
+    }
+  }
 
   lines.push(
     "",
@@ -113,6 +125,16 @@ function main() {
     `   MySQL: ${legacy.DB_HOST ?? "127.0.0.1"}:${legacy.DB_PORT ?? "3306"}/${legacy.DB_NAME ?? "raffle_db"}`,
   )
   console.log(`   Uploads: ${uploadsDir}`)
+  if (sender) {
+    console.log(
+      `   From: ${sender.fromName ? `${sender.fromName} ` : ""}<${sender.fromEmail}>`,
+    )
+  } else if (emailProvider !== "noop") {
+    console.log("   WARN: EMAIL_FROM no resuelto — configura remitente antes de enviar correos")
+  }
 }
 
-main()
+run().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})

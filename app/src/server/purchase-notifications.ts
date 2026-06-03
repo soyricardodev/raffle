@@ -44,6 +44,9 @@ async function loadPurchaseEmailContext(purchaseId: number): Promise<PurchaseEma
 }
 
 export async function sendPurchaseConfirmationEmail(purchaseId: number): Promise<void> {
+  const { shouldSendAutomatedEmail } = await import("./email/email-settings.server")
+  if (!(await shouldSendAutomatedEmail("purchase_confirmation"))) return
+
   const ctx = await loadPurchaseEmailContext(purchaseId)
   if (!ctx) return
 
@@ -64,6 +67,9 @@ export async function sendPurchaseStatusEmail(
   purchaseId: number,
   status: "approved" | "rejected",
 ): Promise<void> {
+  const { shouldSendAutomatedEmail } = await import("./email/email-settings.server")
+  if (!(await shouldSendAutomatedEmail("status_update"))) return
+
   const ctx = await loadPurchaseEmailContext(purchaseId)
   if (!ctx) return
 

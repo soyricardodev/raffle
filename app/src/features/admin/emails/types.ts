@@ -38,4 +38,6 @@ export type EmailProviderHealth = {
   adapter: string
   is_noop: boolean
   delivers_real_email: boolean
+  from_email: string | null
+  from_name: string | null
 }

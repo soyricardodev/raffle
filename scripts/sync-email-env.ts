@@ -11,11 +11,21 @@
  *   2. LEGACY_ENV / backend-legacy/.env
  *   3. ../raffle-app/backend/.env (layout típico en VPS)
  *   4. --output (ya configurado)
+ *
+ * Busca EMAIL_FROM en (en orden):
+ *   1. legacy .env (EMAIL_FROM, FROM_EMAIL, RESEND_FROM_EMAIL, …)
+ *   2. MySQL legacy site_config.email_settings
+ *   3. SQLite app_settings.email_settings (DATABASE_URL del destino)
+ *   4. valores ya presentes en destino
  */
 
 import { existsSync } from "node:fs"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
+import {
+  resolveEmailSenderConfig,
+  senderToEnvUpdates,
+} from "./lib/email-env"
 import { isUsableResendKey, readEnvFile, upsertEnvFile } from "./lib/dotenv"
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -70,7 +80,7 @@ function resolveLegacyEnv(explicit: string): string | null {
   return null
 }
 
-function resolveEmailConfig(args: ReturnType<typeof parseArgs>) {
+async function resolveEmailConfig(args: ReturnType<typeof parseArgs>) {
   const targetBefore = readEnvFile(args.output)
   const legacyPath = resolveLegacyEnv(args.legacyEnv)
   const legacy = legacyPath ? readEnvFile(legacyPath) : {}
@@ -94,19 +104,27 @@ function resolveEmailConfig(args: ReturnType<typeof parseArgs>) {
     provider = targetBefore.EMAIL_PROVIDER
   }
 
+  const databaseUrl = targetBefore.DATABASE_URL
+  const sender = await resolveEmailSenderConfig({
+    legacyEnv: legacy,
+    targetEnv: targetBefore,
+    databaseUrl,
+  })
+
   const updates: Record<string, string> = {
     EMAIL_PROVIDER: provider,
   }
   if (resendKey) updates.RESEND_API_KEY = resendKey
   if (brevoKey) updates.BREVO_API_KEY = brevoKey
+  if (sender) Object.assign(updates, senderToEnvUpdates(sender))
 
-  return { legacyPath, resendKey, brevoKey, provider, updates, targetBefore }
+  return { legacyPath, resendKey, brevoKey, provider, sender, updates, targetBefore }
 }
 
-function main() {
+async function main() {
   const args = parseArgs(process.argv.slice(2))
-  const { legacyPath, resendKey, brevoKey, provider, updates, targetBefore } =
-    resolveEmailConfig(args)
+  const { legacyPath, resendKey, brevoKey, provider, sender, updates, targetBefore } =
+    await resolveEmailConfig(args)
 
   console.log("📧 sync-email-env")
   console.log(`   destino: ${args.output}`)
@@ -125,6 +143,18 @@ function main() {
     console.error("❌ No hay RESEND_API_KEY ni BREVO_API_KEY.")
     console.error("   Pon RESEND_API_KEY en backend-legacy/.env o pásala con --legacy-env.")
     process.exit(1)
+  }
+
+  if (!args.disable && !sender) {
+    console.error("")
+    console.error("❌ Falta EMAIL_FROM (remitente verificado).")
+    console.error("   Pon EMAIL_FROM en legacy .env, o configura email_settings.from_email en la DB.")
+    process.exit(1)
+  }
+
+  if (sender) {
+    console.log(`   from:    ${sender.fromName ? `${sender.fromName} ` : ""}<${sender.fromEmail}>`)
+    if (sender.replyTo) console.log(`   reply:   ${sender.replyTo}`)
   }
 
   const preview = Object.entries(updates).map(([key, value]) => {
@@ -156,4 +186,7 @@ function main() {
   console.log("   Reinicia `pnpm dev` para aplicar los cambios.")
 }
 
-main()
+main().catch((error) => {
+  console.error(error)
+  process.exit(1)
+})

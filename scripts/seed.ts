@@ -91,8 +91,11 @@ async function seedAppSettings(db: ReturnType<typeof createScriptDb>) {
     email_settings: {
       enabled: false,
       from_name: "Rifas Premium",
-      from_email: "noreply@rifas.com",
+      from_email: "",
+      reply_to: "",
       send_confirmation: false,
+      send_status_updates: true,
+      send_modifications: true,
     },
   }
 

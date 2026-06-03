@@ -1,8 +1,10 @@
 import {
   type AdminSiteConfigPatch,
   AdminSiteConfigPatchSchema,
+  type EmailSettings,
   type OfficialFooterLogo,
   type PurchaseSuccessPromo,
+  normalizeEmailSettings,
 } from "@raffle/shared/site-config"
 import {
   normalizeHeroConfig,
@@ -37,6 +39,7 @@ export type AdminSiteConfigDraft = {
   canonical_url: string
   indexable: boolean
   purchase_success_promo: PurchaseSuccessPromo
+  email_settings: EmailSettings
 }
 
 export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
@@ -65,6 +68,7 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   canonical_url: "",
   indexable: true,
   purchase_success_promo: normalizePurchaseSuccessPromo(undefined),
+  email_settings: normalizeEmailSettings(undefined),
 })
 
 export function apiToDraft(data: Record<string, unknown> | undefined): AdminSiteConfigDraft {
@@ -105,6 +109,7 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     canonical_url: seo.canonical_url,
     indexable: seo.indexable,
     purchase_success_promo: normalizePurchaseSuccessPromo(data.purchase_success_promo),
+    email_settings: normalizeEmailSettings(data.email_settings),
   }
 }
 
@@ -164,6 +169,15 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
       indexable: draft.indexable,
     },
     purchase_success_promo: trimPurchaseSuccessPromo(draft.purchase_success_promo),
+    email_settings: {
+      enabled: draft.email_settings.enabled,
+      from_name: draft.email_settings.from_name.trim(),
+      from_email: draft.email_settings.from_email.trim(),
+      reply_to: draft.email_settings.reply_to.trim(),
+      send_confirmation: draft.email_settings.send_confirmation,
+      send_status_updates: draft.email_settings.send_status_updates,
+      send_modifications: draft.email_settings.send_modifications,
+    },
   }
 }
 
@@ -187,6 +201,15 @@ export function validateDraft(draft: AdminSiteConfigDraft): DraftValidationResul
     const emailOk = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(patch.contact_info.email)
     if (!emailOk) {
       return { ok: false, fieldErrors: { "contact_info.email": "Email inválido" } }
+    }
+  }
+
+  if (patch.email_settings?.enabled && !patch.email_settings.from_email) {
+    return {
+      ok: false,
+      fieldErrors: {
+        "email_settings.from_email": "Indica el email del remitente para enviar correos",
+      },
     }
   }
 

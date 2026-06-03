@@ -80,6 +80,17 @@ export const PurchaseSuccessPromoSchema = z.object({
   instagram_url: z.string().trim().max(200).default(""),
 })
 
+/** Admin-only: transactional email sender and automation toggles. */
+export const EmailSettingsSchema = z.object({
+  enabled: z.boolean().default(true),
+  from_name: z.string().trim().max(100).default(""),
+  from_email: z.union([z.literal(""), z.string().trim().email("Email del remitente inválido")]).default(""),
+  reply_to: z.union([z.literal(""), z.string().trim().email("Reply-to inválido")]).default(""),
+  send_confirmation: z.boolean().default(true),
+  send_status_updates: z.boolean().default(true),
+  send_modifications: z.boolean().default(true),
+})
+
 export const AdminSiteConfigPatchSchema = z.object({
   site_info: SiteInfoSchema.optional(),
   site_colors: SiteColorsSchema.optional(),
@@ -89,6 +100,7 @@ export const AdminSiteConfigPatchSchema = z.object({
   site_images: SiteImagesSchema.optional(),
   seo_config: SeoConfigSchema.optional(),
   purchase_success_promo: PurchaseSuccessPromoSchema.optional(),
+  email_settings: EmailSettingsSchema.optional(),
 })
 
 export type SiteInfo = z.infer<typeof SiteInfoSchema>
@@ -100,7 +112,20 @@ export type OfficialFooterLogo = z.infer<typeof OfficialFooterLogoSchema>
 export type SiteImages = z.infer<typeof SiteImagesSchema>
 export type SeoConfig = z.infer<typeof SeoConfigSchema>
 export type PurchaseSuccessPromo = z.infer<typeof PurchaseSuccessPromoSchema>
+export type EmailSettings = z.infer<typeof EmailSettingsSchema>
 export type AdminSiteConfigPatch = z.infer<typeof AdminSiteConfigPatchSchema>
+
+const ONBOARDING_FALLBACK_EMAIL = "onboarding@resend.dev"
+
+export function normalizeEmailSettings(raw: unknown): EmailSettings {
+  return EmailSettingsSchema.parse(raw ?? {})
+}
+
+export function isUsableSenderEmail(email: string | undefined): boolean {
+  const trimmed = email?.trim()
+  if (!trimmed || !trimmed.includes("@")) return false
+  return trimmed.toLowerCase() !== ONBOARDING_FALLBACK_EMAIL
+}
 
 export const SITE_CONFIG_PUBLIC_KEYS = [
   "site_info",

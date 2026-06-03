@@ -6,6 +6,10 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.ts"],
+    env: {
+      EMAIL_FROM: "noreply@rifas.test",
+      EMAIL_FROM_NAME: "Rifas Test",
+    },
     /** Tests de BD comparten un archivo SQLite local — no paralelizar archivos. */
     fileParallelism: false,
     pool: "forks",
