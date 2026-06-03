@@ -1,280 +1,224 @@
 import {
   ArrowClockwiseIcon,
+  DownloadSimpleIcon,
   EnvelopeSimpleIcon,
-  MagnifyingGlassIcon,
-  XIcon,
 } from "@phosphor-icons/react"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useQuery } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
+import { Card, CardContent } from "@/components/ui/card"
 import {
-  InputGroup,
-  InputGroupAddon,
-  InputGroupButton,
-  InputGroupInput,
-} from "@/components/ui/input-group"
-import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import {
-  ADMIN_EMAILS_PAGE_SIZE,
+  adminEmailHealthQueryOptions,
   adminEmailsQueryOptions,
+  adminEmailStatsQueryOptions,
   normalizeAdminEmailFilters,
+  type AdminEmailsSearchParams,
 } from "@/features/admin/emails/admin-emails-queries"
+import { AdminEmailsFilters } from "@/features/admin/emails/AdminEmailsFilters"
+import { downloadEmailLogsCsv } from "@/features/admin/emails/export-emails-csv"
+import { EmailLogDetailSheet } from "@/features/admin/emails/EmailLogDetailSheet"
 import { EmailLogsDataTable, EmailLogsMobileList } from "@/features/admin/emails/EmailLogsDataTable"
+import { EmailProviderBanner } from "@/features/admin/emails/EmailProviderBanner"
+import { EmailStatsCards } from "@/features/admin/emails/EmailStatsCards"
+import { EmailTestDialog } from "@/features/admin/emails/EmailTestDialog"
 import type { EmailLogRow } from "@/features/admin/emails/types"
+import { useResendEmailLog } from "@/features/admin/emails/use-resend-email-log"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
-import { DateRangePicker } from "@/components/ui/date-range-picker"
-import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { adminFetch } from "@/lib/admin-fetch"
 import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/emails")
+const POLL_MS = 30_000
 
 export function AdminEmailsPanel() {
   const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/emails" })
-  const queryClient = useQueryClient()
 
-  const [testEmail, setTestEmail] = useState("")
-  const [confirmSend, setConfirmSend] = useState(false)
+  const [testOpen, setTestOpen] = useState(false)
+  const [exporting, setExporting] = useState(false)
+
+  const selectedLogId =
+    routeSearch.log != null && routeSearch.log > 0 ? routeSearch.log : null
 
   const filters = useMemo(() => normalizeAdminEmailFilters(routeSearch), [routeSearch])
-  const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
-  const debouncedSearch = useDebouncedValue(searchDraft)
+  const resend = useResendEmailLog()
 
-  useEffect(() => {
-    setSearchDraft(filters.search ?? "")
-  }, [filters.search])
+  const updateSearch = useCallback(
+    (patch: Partial<AdminEmailsSearchParams>) => {
+      void navigate({
+        replace: true,
+        search: (previous) => ({
+          ...previous,
+          ...patch,
+        }),
+      })
+    },
+    [navigate],
+  )
 
-  useEffect(() => {
-    const nextSearch = debouncedSearch.trim()
-    if (nextSearch === (filters.search ?? "")) return
-
-    void navigate({
-      replace: true,
-      search: (previous) => ({
-        ...previous,
-        q: nextSearch || undefined,
-        page: 1,
-      }),
-    })
-  }, [debouncedSearch, filters.search, navigate])
+  const hasPendingFilter = filters.status === "pending"
 
   const logsQuery = useQuery({
     ...adminEmailsQueryOptions(filters),
     refetchOnMount: false,
+    refetchInterval: (query) => {
+      const rows = query.state.data?.data ?? []
+      const hasPending = rows.some((r) => r.status === "pending") || hasPendingFilter
+      return hasPending ? POLL_MS : false
+    },
   })
 
-  const testMutation = useMutation({
-    mutationFn: () =>
-      adminFetch("/api/admin/emails", {
-        method: "POST",
-        body: JSON.stringify({ to: testEmail.trim() }),
-      }),
-    onSuccess: () => {
-      toast.success("Email de prueba enviado")
-      setConfirmSend(false)
-      void queryClient.invalidateQueries({ queryKey: ["admin", "emails"] })
-    },
-    onError: (error: Error) => toast.error(error.message),
+  const statsQuery = useQuery({
+    ...adminEmailStatsQueryOptions(filters),
+    refetchOnMount: false,
   })
+
+  const healthQuery = useQuery(adminEmailHealthQueryOptions())
 
   const logs: Array<EmailLogRow> = logsQuery.data?.data ?? []
   const total = logsQuery.data?.total ?? 0
-  const pageSize = filters.limit ?? ADMIN_EMAILS_PAGE_SIZE
-  const hasCustomFilters = Boolean(
-    filters.search || filters.start || filters.end || filters.status !== "all",
-  )
+  const pageSize = filters.limit
 
-  function updateSearch(patch: Partial<typeof routeSearch>) {
-    void navigate({
-      replace: true,
-      search: (previous) => ({
-        ...previous,
-        ...patch,
-      }),
-    })
+  function openLogDetail(log: EmailLogRow) {
+    updateSearch({ log: log.id })
+  }
+
+  function closeLogDetail() {
+    updateSearch({ log: undefined })
+  }
+
+  async function handleExport() {
+    setExporting(true)
+    try {
+      const result = await downloadEmailLogsCsv(filters)
+      if (result.truncated) {
+        toast.warning(
+          `Exportación limitada: se descargaron filas pero hay más de ${result.total?.toLocaleString("es-VE") ?? "?" } registros con estos filtros.`,
+        )
+      } else {
+        toast.success("Exportación descargada")
+      }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Error al exportar")
+    } finally {
+      setExporting(false)
+    }
   }
 
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title={adminNavTitle("/admin/emails")}
-        description="Historial de envíos y pruebas"
+        description="Historial de envíos, métricas y pruebas"
         actions={
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={logsQuery.isFetching}
-            onClick={() => void logsQuery.refetch()}
-          >
-            <ArrowClockwiseIcon
-              data-icon="inline-start"
-              className={cn(logsQuery.isFetching && "animate-spin")}
-            />
-            Actualizar
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" onClick={() => setTestOpen(true)}>
+              <EnvelopeSimpleIcon data-icon="inline-start" />
+              Prueba
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              onClick={() => void handleExport()}
+            >
+              <DownloadSimpleIcon data-icon="inline-start" />
+              CSV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={logsQuery.isFetching}
+              onClick={() => void logsQuery.refetch()}
+            >
+              <ArrowClockwiseIcon
+                data-icon="inline-start"
+                className={cn(logsQuery.isFetching && "animate-spin")}
+              />
+              Actualizar
+            </Button>
+          </div>
         }
       />
 
-      <Card>
-        <CardHeader className="border-b p-3 sm:p-4">
-          <CardTitle className="flex items-center gap-2 text-base">
-            <EnvelopeSimpleIcon />
-            Email de prueba
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 p-3 sm:flex-row sm:flex-wrap sm:items-end sm:p-4">
-          <div className="min-w-0 flex-1 sm:min-w-[240px]">
-            <Label htmlFor="test-email">Destinatario</Label>
-            <Input
-              id="test-email"
-              type="email"
-              className="mt-1.5"
-              value={testEmail}
-              onChange={(e) => setTestEmail(e.target.value)}
-              placeholder="correo@ejemplo.com"
-            />
-          </div>
-          <Button
-            className="w-full sm:w-auto"
-            disabled={!testEmail.trim() || testMutation.isPending}
-            onClick={() => setConfirmSend(true)}
-          >
-            Enviar prueba
-          </Button>
-        </CardContent>
-      </Card>
+      <EmailProviderBanner
+        health={healthQuery.data}
+        stats={statsQuery.data}
+        onFilterFailed={() => updateSearch({ status: "failed", page: 1 })}
+      />
+
+      <EmailStatsCards stats={statsQuery.data} loading={statsQuery.isPending} />
 
       <Card className="overflow-hidden">
-        <CardHeader className="gap-3 border-b p-3 sm:p-4">
-          <div>
-            <CardTitle className="text-base">Historial</CardTitle>
-            <p className="text-xs text-muted-foreground tabular-nums">
-              {total.toLocaleString("es-VE")} registro{total === 1 ? "" : "s"}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
-            <InputGroup className="lg:max-w-80">
-              <InputGroupAddon>
-                <MagnifyingGlassIcon />
-              </InputGroupAddon>
-              <InputGroupInput
-                placeholder="Asunto, destinatario o cliente"
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
-              />
-              {searchDraft ? (
-                <InputGroupAddon align="inline-end">
-                  <InputGroupButton
-                    size="icon-xs"
-                    aria-label="Limpiar búsqueda"
-                    onClick={() => setSearchDraft("")}
-                  >
-                    <XIcon />
-                  </InputGroupButton>
-                </InputGroupAddon>
-              ) : null}
-            </InputGroup>
-
-            <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <Select
-                value={filters.status}
-                onValueChange={(status) => updateSearch({ status, page: 1 })}
-              >
-                <SelectTrigger size="sm" className="w-[136px]">
-                  <SelectValue placeholder="Estado" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="all">Todos</SelectItem>
-                    <SelectItem value="sent">Enviados</SelectItem>
-                    <SelectItem value="failed">Fallidos</SelectItem>
-                    <SelectItem value="pending">Pendientes</SelectItem>
-                    <SelectItem value="error">Error</SelectItem>
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
-
-              <DateRangePicker
-                start={filters.start}
-                end={filters.end}
-                presets={adminDateRangePresets}
-                align="end"
-                size="sm"
-                className="min-w-0"
-                onChange={(range) =>
-                  updateSearch({
-                    start: range.start,
-                    end: range.end,
-                    page: 1,
-                  })
-                }
-              />
-
-              {hasCustomFilters ? (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() =>
-                    updateSearch({
-                      status: undefined,
-                      q: undefined,
-                      start: undefined,
-                      end: undefined,
-                      page: 1,
-                    })
-                  }
-                >
-                  Limpiar
-                </Button>
-              ) : null}
-            </div>
-          </div>
-        </CardHeader>
+        <AdminEmailsFilters filters={filters} total={total} onPatchSearch={updateSearch} />
 
         <CardContent className="p-0">
-          <div className="hidden md:block">
-            <EmailLogsDataTable logs={logs} loading={logsQuery.isPending} />
-          </div>
-          <div className="p-3 md:hidden">
-            <EmailLogsMobileList logs={logs} loading={logsQuery.isPending} />
-          </div>
-          <AdminDataGridPagination
-            page={filters.page}
-            pageSize={pageSize}
-            total={total}
-            loading={logsQuery.isFetching}
-            onPageChange={(page) => updateSearch({ page })}
-          />
+          {logsQuery.isError ? (
+            <div className="flex flex-col items-center gap-2 p-8 text-center">
+              <p className="text-sm text-muted-foreground">No se pudo cargar el historial.</p>
+              <Button variant="outline" size="sm" onClick={() => void logsQuery.refetch()}>
+                Reintentar
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div className="hidden md:block">
+                <EmailLogsDataTable
+                  logs={logs}
+                  loading={logsQuery.isPending}
+                  sortBy={filters.sortBy}
+                  sortDir={filters.sortDir}
+                  onSortChange={(sortBy, sortDir) =>
+                    updateSearch({ sortBy, sortDir, page: 1 })
+                  }
+                  onRowClick={openLogDetail}
+                  onResend={resend.requestResend}
+                />
+              </div>
+              <div className="p-3 md:hidden">
+                <EmailLogsMobileList
+                  logs={logs}
+                  loading={logsQuery.isPending}
+                  onRowClick={openLogDetail}
+                  onResend={resend.requestResend}
+                />
+              </div>
+              <AdminDataGridPagination
+                page={filters.page}
+                pageSize={pageSize}
+                total={total}
+                loading={logsQuery.isFetching}
+                onPageChange={(page) => updateSearch({ page })}
+              />
+            </>
+          )}
         </CardContent>
       </Card>
 
+      <EmailTestDialog open={testOpen} onOpenChange={setTestOpen} />
+
+      <EmailLogDetailSheet
+        logId={selectedLogId}
+        open={selectedLogId != null}
+        onOpenChange={(open) => {
+          if (!open) closeLogDetail()
+        }}
+        onRequestResend={resend.requestResend}
+        resendPending={resend.isPending}
+      />
+
       <ConfirmAction
-        open={confirmSend}
-        onOpenChange={setConfirmSend}
-        title="Enviar email de prueba"
-        description={`¿Enviar un correo de prueba a ${testEmail.trim()}?`}
-        confirmLabel="Enviar"
-        pending={testMutation.isPending}
-        onConfirm={() => testMutation.mutate()}
+        open={resend.target != null}
+        onOpenChange={(open) => !open && resend.cancelResend()}
+        title="Reenviar correo"
+        description={resend.description}
+        confirmLabel="Reenviar"
+        pending={resend.isPending}
+        onConfirm={() => resend.confirmResend()}
       />
     </div>
   )

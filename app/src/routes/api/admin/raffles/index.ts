@@ -1,4 +1,5 @@
 import { ValidationError } from "@raffle/shared/errors"
+import { apiHandlers } from "@/lib/api-handler"
 import { CreateRaffleInput } from "@raffle/shared/validators"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
@@ -6,7 +7,7 @@ import { createRaffle, getAllRaffles } from "@/server/raffle.service"
 
 export const Route = createFileRoute("/api/admin/raffles/")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
         const url = new URL(request.url)
@@ -23,6 +24,6 @@ export const Route = createFileRoute("/api/admin/raffles/")({
         }
         return Response.json(await createRaffle(parsed.data), { status: 201 })
       },
-    },
+    }),
   },
 })

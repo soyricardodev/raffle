@@ -27,7 +27,7 @@ import {
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { adminFetch } from "@/lib/admin-fetch"
+import { adminFetch, getApiErrorMessage } from "@/lib/admin-fetch"
 
 type PaymentAccount = {
   id: number
@@ -38,6 +38,84 @@ type PaymentAccount = {
 }
 
 const QUERY_KEY = ["admin", "payment-accounts"]
+
+type PaymentAccountUsage = {
+  raffles: Array<{ id: number; name: string }>
+  promotions: Array<{ id: number; name: string; raffle_id: number; is_active: boolean }>
+}
+
+function DeletePaymentAccountDescription({
+  accountLabel,
+  usage,
+  loading,
+}: {
+  accountLabel: string | undefined
+  usage: PaymentAccountUsage | undefined
+  loading: boolean
+}) {
+  if (loading) {
+    return <span>Revisando en qué rifas está asignado…</span>
+  }
+
+  if (!usage || usage.raffles.length === 0) {
+    return (
+      <span>
+        {accountLabel ? (
+          <>
+            <strong>{accountLabel}</strong> no está asignado a ninguna rifa. Se eliminará del
+            catálogo.
+          </>
+        ) : (
+          "Este método no está asignado a ninguna rifa. Se eliminará del catálogo."
+        )}
+      </span>
+    )
+  }
+
+  return (
+    <span className="block space-y-3 text-left">
+      <span className="block">
+        {accountLabel ? (
+          <>
+            <strong>{accountLabel}</strong> está asignado a{" "}
+            {usage.raffles.length === 1 ? "una rifa" : `${usage.raffles.length} rifas`}:
+          </>
+        ) : (
+          <>
+            Este método está asignado a{" "}
+            {usage.raffles.length === 1 ? "una rifa" : `${usage.raffles.length} rifas`}:
+          </>
+        )}
+      </span>
+      <ul className="list-disc space-y-1 pl-5">
+        {usage.raffles.map((raffle) => (
+          <li key={raffle.id}>
+            {raffle.name} (#{raffle.id})
+          </li>
+        ))}
+      </ul>
+      {usage.promotions.length > 0 ? (
+        <>
+          <span className="block">
+            También se desactivarán {usage.promotions.length}{" "}
+            {usage.promotions.length === 1 ? "promoción" : "promociones"} que dependen de este
+            método:
+          </span>
+          <ul className="list-disc space-y-1 pl-5">
+            {usage.promotions.map((promotion) => (
+              <li key={promotion.id}>
+                {promotion.name} (rifa #{promotion.raffle_id})
+              </li>
+            ))}
+          </ul>
+        </>
+      ) : null}
+      <span className="block">
+        Puedes quitarlo de esas rifas y eliminarlo del catálogo en un solo paso.
+      </span>
+    </span>
+  )
+}
 
 function defaultFormValues(): PaymentAccountFormValues {
   return {
@@ -58,6 +136,17 @@ export function PaymentAccountsView() {
     queryKey: QUERY_KEY,
     queryFn: () => adminFetch<PaymentAccount[]>("/api/admin/payment-accounts"),
   })
+
+  const deleteTarget = accountsQuery.data?.find((account) => account.id === deleteId)
+
+  const usageQuery = useQuery({
+    queryKey: ["admin", "payment-account-usage", deleteId],
+    queryFn: () =>
+      adminFetch<PaymentAccountUsage>(`/api/admin/payment-accounts/${deleteId}/usage`),
+    enabled: deleteId !== null,
+  })
+
+  const hasRaffleUsage = (usageQuery.data?.raffles.length ?? 0) > 0
 
   const saveMutation = useMutation({
     mutationFn: async (values: PaymentAccountFormValues) => {
@@ -84,18 +173,26 @@ export function PaymentAccountsView() {
       setSheetOpen(false)
       setEditing(null)
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(getApiErrorMessage(e)),
   })
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) =>
-      adminFetch(`/api/admin/payment-accounts/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
-      toast.success("Método eliminado")
+    mutationFn: ({ id, force }: { id: number; force?: boolean }) =>
+      adminFetch(
+        `/api/admin/payment-accounts/${id}${force ? "?force=true" : ""}`,
+        { method: "DELETE" },
+      ),
+    onSuccess: (_data, variables) => {
+      toast.success(
+        variables.force
+          ? "Método quitado de las rifas y eliminado del catálogo"
+          : "Método eliminado",
+      )
       void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+      void queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] })
       setDeleteId(null)
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error) => toast.error(getApiErrorMessage(e)),
   })
 
   function openCreate() {
@@ -223,12 +320,20 @@ export function PaymentAccountsView() {
       <ConfirmAction
         open={deleteId !== null}
         onOpenChange={(open) => !open && setDeleteId(null)}
-        title="Eliminar método de pago"
-        description="Solo puedes eliminar métodos que no estén asignados a ninguna rifa."
-        confirmLabel="Eliminar"
+        title={hasRaffleUsage ? "Quitar de rifas y eliminar" : "Eliminar método de pago"}
+        description={
+          <DeletePaymentAccountDescription
+            accountLabel={deleteTarget?.label}
+            usage={usageQuery.data}
+            loading={usageQuery.isLoading}
+          />
+        }
+        confirmLabel={hasRaffleUsage ? "Quitar y eliminar" : "Eliminar"}
         destructive
+        pending={deleteMutation.isPending || usageQuery.isLoading}
         onConfirm={() => {
-          if (deleteId !== null) deleteMutation.mutate(deleteId)
+          if (deleteId === null || usageQuery.isLoading) return
+          deleteMutation.mutate({ id: deleteId, force: hasRaffleUsage })
         }}
       />
     </div>

@@ -1,11 +1,12 @@
 import { parseAnalyticsDateRange } from "@raffle/shared/analytics"
+import { apiHandlers } from "@/lib/api-handler"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import { getFullAnalyticsReport } from "@/server/analytics.service"
 
 export const Route = createFileRoute("/api/admin/analytics")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
         const url = new URL(request.url)
@@ -16,6 +17,6 @@ export const Route = createFileRoute("/api/admin/analytics")({
 
         return Response.json(await getFullAnalyticsReport(range, raffleId))
       },
-    },
+    }),
   },
 })

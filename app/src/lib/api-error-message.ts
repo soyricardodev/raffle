@@ -3,9 +3,22 @@ type ErrorBody = {
   code?: unknown
   error?: unknown
   cause?: { message?: unknown }
+  details?: { fieldErrors?: Record<string, string[]> }
+}
+
+function firstFieldError(details: ErrorBody["details"]): string | undefined {
+  if (!details?.fieldErrors) return undefined
+  for (const messages of Object.values(details.fieldErrors)) {
+    const first = messages?.[0]
+    if (typeof first === "string" && first) return first
+  }
+  return undefined
 }
 
 function messageFromBody(body: ErrorBody): string | undefined {
+  const fieldError = firstFieldError(body.details)
+  if (fieldError) return fieldError
+
   if (typeof body.message === "string" && body.message && body.message !== "HTTPError") {
     return body.message
   }

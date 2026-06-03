@@ -1,4 +1,5 @@
 import { ValidationError } from "@raffle/shared/errors"
+import { apiHandlers } from "@/lib/api-handler"
 import { CreateRafflePromotionInput } from "@raffle/shared/validators"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
@@ -6,7 +7,7 @@ import { createRafflePromotion, listRafflePromotions } from "@/server/raffle-pro
 
 export const Route = createFileRoute("/api/admin/raffles/$id/promotions")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request, params }) => {
         await requireAdmin(request)
         return Response.json(await listRafflePromotions(Number(params.id)))
@@ -22,6 +23,6 @@ export const Route = createFileRoute("/api/admin/raffles/$id/promotions")({
         }
         return Response.json(await createRafflePromotion(Number(params.id), parsed.data))
       },
-    },
+    }),
   },
 })

@@ -1,4 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { getLogger } from "@/lib/logger"
 import { rateLimit } from "@/lib/rate-limit"
 import {
@@ -10,7 +11,7 @@ const logger = getLogger()
 
 export const Route = createFileRoute("/api/purchase-success/analytics")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       POST: async ({ request }) => {
         await rateLimit(request, {
           windowMs: 60_000,
@@ -36,6 +37,6 @@ export const Route = createFileRoute("/api/purchase-success/analytics")({
           return Response.json({ error: "No se pudo registrar el evento" }, { status: 500 })
         }
       },
-    },
+    }),
   },
 })

@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { getPublishedRaffles } from "@/server/raffle.service"
 
 export const Route = createFileRoute("/api/raffles/published")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         const url = new URL(request.url)
         const limit = Number(url.searchParams.get("limit") || 10)
@@ -11,6 +12,6 @@ export const Route = createFileRoute("/api/raffles/published")({
         const result = await getPublishedRaffles(limit, page)
         return Response.json(result)
       },
-    },
+    }),
   },
 })

@@ -1,60 +1,54 @@
+import {
+  ADMIN_EMAILS_PAGE_SIZE,
+  AdminEmailListInput,
+  type AdminEmailListInput as AdminEmailFilters,
+  type AdminEmailsRouteSearch,
+  normalizeAdminEmailListFilters,
+} from "@raffle/shared/admin/email-list-filters"
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
-import { z } from "zod"
 import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
-import { listEmailLogs } from "@/server/email-logs.service"
+import type { EmailLogDetail, EmailLogStats, EmailProviderHealth } from "@/features/admin/emails/types"
+import {
+  getEmailLogStats,
+  listEmailLogs,
+} from "@/server/email-admin.service"
+import { adminFetch } from "@/lib/admin-fetch"
 
-export const ADMIN_EMAILS_PAGE_SIZE = 50
-
-const EmailStatusFilter = z.enum(["all", "sent", "failed", "pending", "error"]).catch("all")
-
-const AdminEmailsInput = z.object({
-  limit: z.number().int().min(1).max(100).catch(ADMIN_EMAILS_PAGE_SIZE),
-  page: z.number().int().min(1).catch(1),
-  status: EmailStatusFilter,
-  search: z.string().nullable().optional(),
-  start: z.string().nullable().optional(),
-  end: z.string().nullable().optional(),
-})
-
-export type AdminEmailFilters = z.infer<typeof AdminEmailsInput>
-
-export type AdminEmailsSearchParams = {
-  status?: string
-  q?: string
-  start?: string
-  end?: string
-  page?: number
-  limit?: number
-}
+export { ADMIN_EMAILS_PAGE_SIZE }
+export type AdminEmailsSearchParams = AdminEmailsRouteSearch
+export type { AdminEmailFilters }
 
 export const adminEmailsQueryKeys = {
   list: (filters: AdminEmailFilters) => ["admin", "emails", "list", filters] as const,
+  stats: (filters: AdminEmailFilters) => ["admin", "emails", "stats", filters] as const,
+  health: ["admin", "emails", "health"] as const,
+  detail: (id: number) => ["admin", "emails", "detail", id] as const,
+  purchase: (purchaseId: number) => ["admin", "emails", "purchase", purchaseId] as const,
+}
+
+function statsFilterSlice(filters: AdminEmailFilters) {
+  return {
+    search: filters.search,
+    start: filters.start,
+    end: filters.end,
+    emailType: filters.emailType,
+    purchaseId: filters.purchaseId,
+  }
 }
 
 export const fetchAdminEmails = createServerFn({ method: "POST" })
   .middleware([requireAdminMiddleware])
-  .inputValidator(AdminEmailsInput)
-  .handler(async ({ data }) => {
-    return listEmailLogs({
-      limit: data.limit,
-      page: data.page,
-      status: data.status,
-      search: data.search,
-      start: data.start,
-      end: data.end,
-    })
-  })
+  .inputValidator(AdminEmailListInput)
+  .handler(async ({ data }) => listEmailLogs(data))
+
+export const fetchAdminEmailStats = createServerFn({ method: "POST" })
+  .middleware([requireAdminMiddleware])
+  .inputValidator(AdminEmailListInput)
+  .handler(async ({ data }) => getEmailLogStats(statsFilterSlice(data)))
 
 export function normalizeAdminEmailFilters(search: AdminEmailsSearchParams): AdminEmailFilters {
-  return AdminEmailsInput.parse({
-    limit: search.limit ?? ADMIN_EMAILS_PAGE_SIZE,
-    page: search.page ?? 1,
-    status: search.status ?? "all",
-    search: search.q?.trim() || null,
-    start: search.start || null,
-    end: search.end || null,
-  })
+  return normalizeAdminEmailListFilters(search)
 }
 
 export function adminEmailsQueryOptions(filters: AdminEmailFilters) {
@@ -64,3 +58,40 @@ export function adminEmailsQueryOptions(filters: AdminEmailFilters) {
     staleTime: 15_000,
   })
 }
+
+export function adminEmailStatsQueryOptions(filters: AdminEmailFilters) {
+  return queryOptions({
+    queryKey: adminEmailsQueryKeys.stats(filters),
+    queryFn: () => fetchAdminEmailStats({ data: filters }),
+    staleTime: 15_000,
+  })
+}
+
+export function adminEmailHealthQueryOptions() {
+  return queryOptions({
+    queryKey: adminEmailsQueryKeys.health,
+    queryFn: () => adminFetch<EmailProviderHealth>("/api/admin/emails/health"),
+    staleTime: 60_000,
+  })
+}
+
+export function adminEmailDetailQueryOptions(logId: number) {
+  return queryOptions({
+    queryKey: adminEmailsQueryKeys.detail(logId),
+    queryFn: () => adminFetch<EmailLogDetail>(`/api/admin/emails/${logId}`),
+    enabled: logId > 0,
+  })
+}
+
+export function adminPurchaseEmailsQueryOptions(purchaseId: number) {
+  return queryOptions({
+    queryKey: adminEmailsQueryKeys.purchase(purchaseId),
+    queryFn: () =>
+      adminFetch<{ data: import("@/features/admin/emails/types").EmailLogRow[] }>(
+        `/api/admin/purchases/${purchaseId}/emails`,
+      ),
+    enabled: purchaseId > 0,
+  })
+}
+
+export type { EmailLogStats }

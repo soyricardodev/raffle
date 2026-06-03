@@ -1,4 +1,5 @@
-import { paymentAccounts, rafflePaymentMethods } from "@raffle/shared/db"
+import { paymentAccounts, rafflePaymentMethods, rafflePromotions } from "@raffle/shared/db"
+import { ValidationError } from "@raffle/shared/errors"
 import type { PaymentMethod } from "@raffle/shared/validators"
 import { and, eq } from "drizzle-orm"
 import { type DbTransaction, getDb } from "@/lib/db.server"
@@ -89,14 +90,68 @@ export async function syncRafflePaymentMethods(
     is_active?: boolean
   }>,
 ) {
-  await tx.delete(rafflePaymentMethods).where(eq(rafflePaymentMethods.raffleId, raffleId))
+  const existing = await tx
+    .select({
+      id: rafflePaymentMethods.id,
+      accountId: rafflePaymentMethods.accountId,
+    })
+    .from(rafflePaymentMethods)
+    .where(eq(rafflePaymentMethods.raffleId, raffleId))
 
-  for (const a of assignments) {
+  const existingByAccountId = new Map(existing.map((row) => [row.accountId, row]))
+  const desiredAccountIds = new Set(assignments.map((assignment) => assignment.account_id))
+
+  for (const row of existing) {
+    if (desiredAccountIds.has(row.accountId)) continue
+
+    const [linkedPromotion] = await tx
+      .select({
+        id: rafflePromotions.id,
+        name: rafflePromotions.name,
+      })
+      .from(rafflePromotions)
+      .where(
+        and(
+          eq(rafflePromotions.raffleId, raffleId),
+          eq(rafflePromotions.rafflePaymentMethodId, row.id),
+          eq(rafflePromotions.isActive, true),
+        ),
+      )
+      .limit(1)
+
+    if (linkedPromotion) {
+      const [account] = await tx
+        .select({ label: paymentAccounts.label })
+        .from(paymentAccounts)
+        .where(eq(paymentAccounts.id, row.accountId))
+        .limit(1)
+
+      throw new ValidationError(
+        `No puedes quitar "${account?.label ?? "este método"}" de la rifa: la promoción "${linkedPromotion.name}" depende de él. Edita o desactiva la promoción primero.`,
+      )
+    }
+
+    await tx.delete(rafflePaymentMethods).where(eq(rafflePaymentMethods.id, row.id))
+  }
+
+  for (const assignment of assignments) {
+    const existingRow = existingByAccountId.get(assignment.account_id)
+    if (existingRow) {
+      await tx
+        .update(rafflePaymentMethods)
+        .set({
+          minTickets: assignment.min_tickets ?? null,
+          isActive: assignment.is_active ?? true,
+        })
+        .where(eq(rafflePaymentMethods.id, existingRow.id))
+      continue
+    }
+
     await tx.insert(rafflePaymentMethods).values({
       raffleId,
-      accountId: a.account_id,
-      minTickets: a.min_tickets ?? null,
-      isActive: a.is_active ?? true,
+      accountId: assignment.account_id,
+      minTickets: assignment.min_tickets ?? null,
+      isActive: assignment.is_active ?? true,
     })
   }
 }

@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { getEnv } from "@/lib/env"
 import { runMaintenanceJobs } from "@/server/scheduler.service"
 
 export const Route = createFileRoute("/api/cron/maintenance")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       POST: async ({ request }) => {
         const secret = request.headers.get("x-cron-secret")
         const env = getEnv()
@@ -15,6 +16,6 @@ export const Route = createFileRoute("/api/cron/maintenance")({
         const result = await runMaintenanceJobs()
         return Response.json({ success: true, ...result })
       },
-    },
+    }),
   },
 })

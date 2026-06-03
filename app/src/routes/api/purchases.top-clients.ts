@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { rateLimit } from "@/lib/rate-limit"
 import { getClientPurchases } from "@/server/purchase.service"
 
 export const Route = createFileRoute("/api/purchases/top-clients")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         await rateLimit(request, { windowMs: 60_000, maxRequests: 10, keyPrefix: "top-clients" })
         const url = new URL(request.url)
@@ -15,6 +16,6 @@ export const Route = createFileRoute("/api/purchases/top-clients")({
         const limit = Number(url.searchParams.get("limit") || 10)
         return Response.json(await getClientPurchases({ status, raffleId, limit }))
       },
-    },
+    }),
   },
 })

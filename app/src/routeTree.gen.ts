@@ -54,6 +54,9 @@ import { Route as ApiRafflesIdPauseInfoRouteImport } from './routes/api/raffles/
 import { Route as ApiAdminRafflesIdRouteImport } from './routes/api/admin/raffles/$id'
 import { Route as ApiAdminPurchasesIdRouteImport } from './routes/api/admin/purchases/$id'
 import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admin/payment-accounts/$id'
+import { Route as ApiAdminEmailsStatsRouteImport } from './routes/api/admin/emails.stats'
+import { Route as ApiAdminEmailsHealthRouteImport } from './routes/api/admin/emails.health'
+import { Route as ApiAdminEmailsLogIdRouteImport } from './routes/api/admin/emails.$logId'
 import { Route as ApiAdminAnalyticsSummaryRouteImport } from './routes/api/admin/analytics.summary'
 import { Route as ApiAdminRafflesIdUnpauseRouteImport } from './routes/api/admin/raffles/$id.unpause'
 import { Route as ApiAdminRafflesIdStatusRouteImport } from './routes/api/admin/raffles/$id.status'
@@ -63,10 +66,14 @@ import { Route as ApiAdminRafflesIdPauseRouteImport } from './routes/api/admin/r
 import { Route as ApiAdminRafflesIdLifecycleRouteImport } from './routes/api/admin/raffles/$id.lifecycle'
 import { Route as ApiAdminRafflesIdAutoPauseRouteImport } from './routes/api/admin/raffles/$id.auto-pause'
 import { Route as ApiAdminPurchasesIdStatusRouteImport } from './routes/api/admin/purchases/$id.status'
+import { Route as ApiAdminPurchasesIdEmailsRouteImport } from './routes/api/admin/purchases.$id.emails'
+import { Route as ApiAdminPaymentAccountsIdUsageRouteImport } from './routes/api/admin/payment-accounts/$id.usage'
+import { Route as ApiAdminEmailsLogIdResendRouteImport } from './routes/api/admin/emails.$logId.resend'
 import { Route as ApiAdminRafflesIdPromotionsPromotionIdRouteImport } from './routes/api/admin/raffles/$id.promotions.$promotionId'
 import { Route as ApiAdminPurchasesIdTicketsRemoveRouteImport } from './routes/api/admin/purchases/$id.tickets.remove'
 import { Route as ApiAdminPurchasesIdTicketsReassignRouteImport } from './routes/api/admin/purchases/$id.tickets.reassign'
 import { Route as ApiAdminPurchasesIdTicketsAddRouteImport } from './routes/api/admin/purchases/$id.tickets.add'
+import { Route as ApiAdminPurchasesIdEmailsSendRouteImport } from './routes/api/admin/purchases.$id.emails.send'
 
 const AdminRouteRoute = AdminRouteRouteImport.update({
   id: '/admin',
@@ -295,6 +302,21 @@ const ApiAdminPaymentAccountsIdRoute =
     path: '/api/admin/payment-accounts/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminEmailsStatsRoute = ApiAdminEmailsStatsRouteImport.update({
+  id: '/stats',
+  path: '/stats',
+  getParentRoute: () => ApiAdminEmailsRoute,
+} as any)
+const ApiAdminEmailsHealthRoute = ApiAdminEmailsHealthRouteImport.update({
+  id: '/health',
+  path: '/health',
+  getParentRoute: () => ApiAdminEmailsRoute,
+} as any)
+const ApiAdminEmailsLogIdRoute = ApiAdminEmailsLogIdRouteImport.update({
+  id: '/$logId',
+  path: '/$logId',
+  getParentRoute: () => ApiAdminEmailsRoute,
+} as any)
 const ApiAdminAnalyticsSummaryRoute =
   ApiAdminAnalyticsSummaryRouteImport.update({
     id: '/summary',
@@ -347,6 +369,24 @@ const ApiAdminPurchasesIdStatusRoute =
     path: '/status',
     getParentRoute: () => ApiAdminPurchasesIdRoute,
   } as any)
+const ApiAdminPurchasesIdEmailsRoute =
+  ApiAdminPurchasesIdEmailsRouteImport.update({
+    id: '/emails',
+    path: '/emails',
+    getParentRoute: () => ApiAdminPurchasesIdRoute,
+  } as any)
+const ApiAdminPaymentAccountsIdUsageRoute =
+  ApiAdminPaymentAccountsIdUsageRouteImport.update({
+    id: '/usage',
+    path: '/usage',
+    getParentRoute: () => ApiAdminPaymentAccountsIdRoute,
+  } as any)
+const ApiAdminEmailsLogIdResendRoute =
+  ApiAdminEmailsLogIdResendRouteImport.update({
+    id: '/resend',
+    path: '/resend',
+    getParentRoute: () => ApiAdminEmailsLogIdRoute,
+  } as any)
 const ApiAdminRafflesIdPromotionsPromotionIdRoute =
   ApiAdminRafflesIdPromotionsPromotionIdRouteImport.update({
     id: '/$promotionId',
@@ -370,6 +410,12 @@ const ApiAdminPurchasesIdTicketsAddRoute =
     id: '/tickets/add',
     path: '/tickets/add',
     getParentRoute: () => ApiAdminPurchasesIdRoute,
+  } as any)
+const ApiAdminPurchasesIdEmailsSendRoute =
+  ApiAdminPurchasesIdEmailsSendRouteImport.update({
+    id: '/send',
+    path: '/send',
+    getParentRoute: () => ApiAdminPurchasesIdEmailsRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -395,7 +441,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/analytics': typeof ApiAdminAnalyticsRouteWithChildren
   '/api/admin/config': typeof ApiAdminConfigRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
-  '/api/admin/emails': typeof ApiAdminEmailsRoute
+  '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -411,13 +457,19 @@ export interface FileRoutesByFullPath {
   '/api/purchases/': typeof ApiPurchasesIndexRoute
   '/api/raffles/': typeof ApiRafflesIndexRoute
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
-  '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRoute
+  '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
+  '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
+  '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
+  '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts/': typeof ApiAdminPaymentAccountsIndexRoute
   '/api/admin/purchases/': typeof ApiAdminPurchasesIndexRoute
   '/api/admin/raffles/': typeof ApiAdminRafflesIndexRoute
+  '/api/admin/emails/$logId/resend': typeof ApiAdminEmailsLogIdResendRoute
+  '/api/admin/payment-accounts/$id/usage': typeof ApiAdminPaymentAccountsIdUsageRoute
+  '/api/admin/purchases/$id/emails': typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
@@ -426,6 +478,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
+  '/api/admin/purchases/$id/emails/send': typeof ApiAdminPurchasesIdEmailsSendRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
   '/api/admin/purchases/$id/tickets/remove': typeof ApiAdminPurchasesIdTicketsRemoveRoute
@@ -452,7 +505,7 @@ export interface FileRoutesByTo {
   '/api/admin/analytics': typeof ApiAdminAnalyticsRouteWithChildren
   '/api/admin/config': typeof ApiAdminConfigRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
-  '/api/admin/emails': typeof ApiAdminEmailsRoute
+  '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -468,13 +521,19 @@ export interface FileRoutesByTo {
   '/api/purchases': typeof ApiPurchasesIndexRoute
   '/api/raffles': typeof ApiRafflesIndexRoute
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
-  '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRoute
+  '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
+  '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
+  '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
+  '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts': typeof ApiAdminPaymentAccountsIndexRoute
   '/api/admin/purchases': typeof ApiAdminPurchasesIndexRoute
   '/api/admin/raffles': typeof ApiAdminRafflesIndexRoute
+  '/api/admin/emails/$logId/resend': typeof ApiAdminEmailsLogIdResendRoute
+  '/api/admin/payment-accounts/$id/usage': typeof ApiAdminPaymentAccountsIdUsageRoute
+  '/api/admin/purchases/$id/emails': typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
@@ -483,6 +542,7 @@ export interface FileRoutesByTo {
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
+  '/api/admin/purchases/$id/emails/send': typeof ApiAdminPurchasesIdEmailsSendRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
   '/api/admin/purchases/$id/tickets/remove': typeof ApiAdminPurchasesIdTicketsRemoveRoute
@@ -513,7 +573,7 @@ export interface FileRoutesById {
   '/api/admin/analytics': typeof ApiAdminAnalyticsRouteWithChildren
   '/api/admin/config': typeof ApiAdminConfigRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
-  '/api/admin/emails': typeof ApiAdminEmailsRoute
+  '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
@@ -529,13 +589,19 @@ export interface FileRoutesById {
   '/api/purchases/': typeof ApiPurchasesIndexRoute
   '/api/raffles/': typeof ApiRafflesIndexRoute
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
-  '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRoute
+  '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
+  '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
+  '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
+  '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts/': typeof ApiAdminPaymentAccountsIndexRoute
   '/api/admin/purchases/': typeof ApiAdminPurchasesIndexRoute
   '/api/admin/raffles/': typeof ApiAdminRafflesIndexRoute
+  '/api/admin/emails/$logId/resend': typeof ApiAdminEmailsLogIdResendRoute
+  '/api/admin/payment-accounts/$id/usage': typeof ApiAdminPaymentAccountsIdUsageRoute
+  '/api/admin/purchases/$id/emails': typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
@@ -544,6 +610,7 @@ export interface FileRoutesById {
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
+  '/api/admin/purchases/$id/emails/send': typeof ApiAdminPurchasesIdEmailsSendRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
   '/api/admin/purchases/$id/tickets/remove': typeof ApiAdminPurchasesIdTicketsRemoveRoute
@@ -590,6 +657,9 @@ export interface FileRouteTypes {
     | '/api/purchases/'
     | '/api/raffles/'
     | '/api/admin/analytics/summary'
+    | '/api/admin/emails/$logId'
+    | '/api/admin/emails/health'
+    | '/api/admin/emails/stats'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -597,6 +667,9 @@ export interface FileRouteTypes {
     | '/api/admin/payment-accounts/'
     | '/api/admin/purchases/'
     | '/api/admin/raffles/'
+    | '/api/admin/emails/$logId/resend'
+    | '/api/admin/payment-accounts/$id/usage'
+    | '/api/admin/purchases/$id/emails'
     | '/api/admin/purchases/$id/status'
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
@@ -605,6 +678,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
+    | '/api/admin/purchases/$id/emails/send'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
     | '/api/admin/purchases/$id/tickets/remove'
@@ -647,6 +721,9 @@ export interface FileRouteTypes {
     | '/api/purchases'
     | '/api/raffles'
     | '/api/admin/analytics/summary'
+    | '/api/admin/emails/$logId'
+    | '/api/admin/emails/health'
+    | '/api/admin/emails/stats'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -654,6 +731,9 @@ export interface FileRouteTypes {
     | '/api/admin/payment-accounts'
     | '/api/admin/purchases'
     | '/api/admin/raffles'
+    | '/api/admin/emails/$logId/resend'
+    | '/api/admin/payment-accounts/$id/usage'
+    | '/api/admin/purchases/$id/emails'
     | '/api/admin/purchases/$id/status'
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
@@ -662,6 +742,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
+    | '/api/admin/purchases/$id/emails/send'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
     | '/api/admin/purchases/$id/tickets/remove'
@@ -707,6 +788,9 @@ export interface FileRouteTypes {
     | '/api/purchases/'
     | '/api/raffles/'
     | '/api/admin/analytics/summary'
+    | '/api/admin/emails/$logId'
+    | '/api/admin/emails/health'
+    | '/api/admin/emails/stats'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -714,6 +798,9 @@ export interface FileRouteTypes {
     | '/api/admin/payment-accounts/'
     | '/api/admin/purchases/'
     | '/api/admin/raffles/'
+    | '/api/admin/emails/$logId/resend'
+    | '/api/admin/payment-accounts/$id/usage'
+    | '/api/admin/purchases/$id/emails'
     | '/api/admin/purchases/$id/status'
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
@@ -722,6 +809,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
+    | '/api/admin/purchases/$id/emails/send'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
     | '/api/admin/purchases/$id/tickets/remove'
@@ -736,7 +824,7 @@ export interface RootRouteChildren {
   ApiAdminAnalyticsRoute: typeof ApiAdminAnalyticsRouteWithChildren
   ApiAdminConfigRoute: typeof ApiAdminConfigRoute
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
-  ApiAdminEmailsRoute: typeof ApiAdminEmailsRoute
+  ApiAdminEmailsRoute: typeof ApiAdminEmailsRouteWithChildren
   ApiAdminMaintenanceRoute: typeof ApiAdminMaintenanceRoute
   ApiAdminUploadRoute: typeof ApiAdminUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -750,7 +838,7 @@ export interface RootRouteChildren {
   ApiTicketsVerifyRoute: typeof ApiTicketsVerifyRoute
   ApiPurchasesIndexRoute: typeof ApiPurchasesIndexRoute
   ApiRafflesIndexRoute: typeof ApiRafflesIndexRoute
-  ApiAdminPaymentAccountsIdRoute: typeof ApiAdminPaymentAccountsIdRoute
+  ApiAdminPaymentAccountsIdRoute: typeof ApiAdminPaymentAccountsIdRouteWithChildren
   ApiAdminPurchasesIdRoute: typeof ApiAdminPurchasesIdRouteWithChildren
   ApiAdminRafflesIdRoute: typeof ApiAdminRafflesIdRouteWithChildren
   ApiAdminPaymentAccountsIndexRoute: typeof ApiAdminPaymentAccountsIndexRoute
@@ -1075,6 +1163,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminPaymentAccountsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/emails/stats': {
+      id: '/api/admin/emails/stats'
+      path: '/stats'
+      fullPath: '/api/admin/emails/stats'
+      preLoaderRoute: typeof ApiAdminEmailsStatsRouteImport
+      parentRoute: typeof ApiAdminEmailsRoute
+    }
+    '/api/admin/emails/health': {
+      id: '/api/admin/emails/health'
+      path: '/health'
+      fullPath: '/api/admin/emails/health'
+      preLoaderRoute: typeof ApiAdminEmailsHealthRouteImport
+      parentRoute: typeof ApiAdminEmailsRoute
+    }
+    '/api/admin/emails/$logId': {
+      id: '/api/admin/emails/$logId'
+      path: '/$logId'
+      fullPath: '/api/admin/emails/$logId'
+      preLoaderRoute: typeof ApiAdminEmailsLogIdRouteImport
+      parentRoute: typeof ApiAdminEmailsRoute
+    }
     '/api/admin/analytics/summary': {
       id: '/api/admin/analytics/summary'
       path: '/summary'
@@ -1138,6 +1247,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminPurchasesIdStatusRouteImport
       parentRoute: typeof ApiAdminPurchasesIdRoute
     }
+    '/api/admin/purchases/$id/emails': {
+      id: '/api/admin/purchases/$id/emails'
+      path: '/emails'
+      fullPath: '/api/admin/purchases/$id/emails'
+      preLoaderRoute: typeof ApiAdminPurchasesIdEmailsRouteImport
+      parentRoute: typeof ApiAdminPurchasesIdRoute
+    }
+    '/api/admin/payment-accounts/$id/usage': {
+      id: '/api/admin/payment-accounts/$id/usage'
+      path: '/usage'
+      fullPath: '/api/admin/payment-accounts/$id/usage'
+      preLoaderRoute: typeof ApiAdminPaymentAccountsIdUsageRouteImport
+      parentRoute: typeof ApiAdminPaymentAccountsIdRoute
+    }
+    '/api/admin/emails/$logId/resend': {
+      id: '/api/admin/emails/$logId/resend'
+      path: '/resend'
+      fullPath: '/api/admin/emails/$logId/resend'
+      preLoaderRoute: typeof ApiAdminEmailsLogIdResendRouteImport
+      parentRoute: typeof ApiAdminEmailsLogIdRoute
+    }
     '/api/admin/raffles/$id/promotions/$promotionId': {
       id: '/api/admin/raffles/$id/promotions/$promotionId'
       path: '/$promotionId'
@@ -1165,6 +1295,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/purchases/$id/tickets/add'
       preLoaderRoute: typeof ApiAdminPurchasesIdTicketsAddRouteImport
       parentRoute: typeof ApiAdminPurchasesIdRoute
+    }
+    '/api/admin/purchases/$id/emails/send': {
+      id: '/api/admin/purchases/$id/emails/send'
+      path: '/send'
+      fullPath: '/api/admin/purchases/$id/emails/send'
+      preLoaderRoute: typeof ApiAdminPurchasesIdEmailsSendRouteImport
+      parentRoute: typeof ApiAdminPurchasesIdEmailsRoute
     }
   }
 }
@@ -1244,6 +1381,33 @@ const ApiAdminAnalyticsRouteChildren: ApiAdminAnalyticsRouteChildren = {
 const ApiAdminAnalyticsRouteWithChildren =
   ApiAdminAnalyticsRoute._addFileChildren(ApiAdminAnalyticsRouteChildren)
 
+interface ApiAdminEmailsLogIdRouteChildren {
+  ApiAdminEmailsLogIdResendRoute: typeof ApiAdminEmailsLogIdResendRoute
+}
+
+const ApiAdminEmailsLogIdRouteChildren: ApiAdminEmailsLogIdRouteChildren = {
+  ApiAdminEmailsLogIdResendRoute: ApiAdminEmailsLogIdResendRoute,
+}
+
+const ApiAdminEmailsLogIdRouteWithChildren =
+  ApiAdminEmailsLogIdRoute._addFileChildren(ApiAdminEmailsLogIdRouteChildren)
+
+interface ApiAdminEmailsRouteChildren {
+  ApiAdminEmailsLogIdRoute: typeof ApiAdminEmailsLogIdRouteWithChildren
+  ApiAdminEmailsHealthRoute: typeof ApiAdminEmailsHealthRoute
+  ApiAdminEmailsStatsRoute: typeof ApiAdminEmailsStatsRoute
+}
+
+const ApiAdminEmailsRouteChildren: ApiAdminEmailsRouteChildren = {
+  ApiAdminEmailsLogIdRoute: ApiAdminEmailsLogIdRouteWithChildren,
+  ApiAdminEmailsHealthRoute: ApiAdminEmailsHealthRoute,
+  ApiAdminEmailsStatsRoute: ApiAdminEmailsStatsRoute,
+}
+
+const ApiAdminEmailsRouteWithChildren = ApiAdminEmailsRoute._addFileChildren(
+  ApiAdminEmailsRouteChildren,
+)
+
 interface ApiRafflesIdRouteChildren {
   ApiRafflesIdPauseInfoRoute: typeof ApiRafflesIdPauseInfoRoute
 }
@@ -1256,7 +1420,36 @@ const ApiRafflesIdRouteWithChildren = ApiRafflesIdRoute._addFileChildren(
   ApiRafflesIdRouteChildren,
 )
 
+interface ApiAdminPaymentAccountsIdRouteChildren {
+  ApiAdminPaymentAccountsIdUsageRoute: typeof ApiAdminPaymentAccountsIdUsageRoute
+}
+
+const ApiAdminPaymentAccountsIdRouteChildren: ApiAdminPaymentAccountsIdRouteChildren =
+  {
+    ApiAdminPaymentAccountsIdUsageRoute: ApiAdminPaymentAccountsIdUsageRoute,
+  }
+
+const ApiAdminPaymentAccountsIdRouteWithChildren =
+  ApiAdminPaymentAccountsIdRoute._addFileChildren(
+    ApiAdminPaymentAccountsIdRouteChildren,
+  )
+
+interface ApiAdminPurchasesIdEmailsRouteChildren {
+  ApiAdminPurchasesIdEmailsSendRoute: typeof ApiAdminPurchasesIdEmailsSendRoute
+}
+
+const ApiAdminPurchasesIdEmailsRouteChildren: ApiAdminPurchasesIdEmailsRouteChildren =
+  {
+    ApiAdminPurchasesIdEmailsSendRoute: ApiAdminPurchasesIdEmailsSendRoute,
+  }
+
+const ApiAdminPurchasesIdEmailsRouteWithChildren =
+  ApiAdminPurchasesIdEmailsRoute._addFileChildren(
+    ApiAdminPurchasesIdEmailsRouteChildren,
+  )
+
 interface ApiAdminPurchasesIdRouteChildren {
+  ApiAdminPurchasesIdEmailsRoute: typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   ApiAdminPurchasesIdStatusRoute: typeof ApiAdminPurchasesIdStatusRoute
   ApiAdminPurchasesIdTicketsAddRoute: typeof ApiAdminPurchasesIdTicketsAddRoute
   ApiAdminPurchasesIdTicketsReassignRoute: typeof ApiAdminPurchasesIdTicketsReassignRoute
@@ -1264,6 +1457,7 @@ interface ApiAdminPurchasesIdRouteChildren {
 }
 
 const ApiAdminPurchasesIdRouteChildren: ApiAdminPurchasesIdRouteChildren = {
+  ApiAdminPurchasesIdEmailsRoute: ApiAdminPurchasesIdEmailsRouteWithChildren,
   ApiAdminPurchasesIdStatusRoute: ApiAdminPurchasesIdStatusRoute,
   ApiAdminPurchasesIdTicketsAddRoute: ApiAdminPurchasesIdTicketsAddRoute,
   ApiAdminPurchasesIdTicketsReassignRoute:
@@ -1321,7 +1515,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminAnalyticsRoute: ApiAdminAnalyticsRouteWithChildren,
   ApiAdminConfigRoute: ApiAdminConfigRoute,
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
-  ApiAdminEmailsRoute: ApiAdminEmailsRoute,
+  ApiAdminEmailsRoute: ApiAdminEmailsRouteWithChildren,
   ApiAdminMaintenanceRoute: ApiAdminMaintenanceRoute,
   ApiAdminUploadRoute: ApiAdminUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
@@ -1335,7 +1529,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTicketsVerifyRoute: ApiTicketsVerifyRoute,
   ApiPurchasesIndexRoute: ApiPurchasesIndexRoute,
   ApiRafflesIndexRoute: ApiRafflesIndexRoute,
-  ApiAdminPaymentAccountsIdRoute: ApiAdminPaymentAccountsIdRoute,
+  ApiAdminPaymentAccountsIdRoute: ApiAdminPaymentAccountsIdRouteWithChildren,
   ApiAdminPurchasesIdRoute: ApiAdminPurchasesIdRouteWithChildren,
   ApiAdminRafflesIdRoute: ApiAdminRafflesIdRouteWithChildren,
   ApiAdminPaymentAccountsIndexRoute: ApiAdminPaymentAccountsIndexRoute,

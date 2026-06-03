@@ -1,4 +1,5 @@
 import { ValidationError } from "@raffle/shared/errors"
+import { apiHandlers } from "@/lib/api-handler"
 import { PublishRaffleInput } from "@raffle/shared/validators"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
@@ -7,7 +8,7 @@ import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 
 export const Route = createFileRoute("/api/admin/raffles/$id/publish")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       PUT: async ({ request, params }) => {
         await requireAdmin(request)
         const parsed = PublishRaffleInput.safeParse(await request.json())
@@ -23,6 +24,6 @@ export const Route = createFileRoute("/api/admin/raffles/$id/publish")({
         }
         return Response.json(await publishRaffle(id, false))
       },
-    },
+    }),
   },
 })

@@ -13,6 +13,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
+import { PurchaseEmailsSection } from "@/features/admin/emails/PurchaseEmailsSection"
 import { PurchaseCustomerFacts } from "@/features/admin/purchases/PurchaseCustomerFacts"
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
@@ -185,6 +186,7 @@ export function PurchaseDetailDrawer({
             <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
               <div className="flex min-h-0 flex-col gap-3 overflow-y-auto border-b p-4 lg:border-b-0 lg:border-r">
                 <PurchaseCustomerFacts purchase={purchase} />
+                <PurchaseEmailsSection purchase={purchase} />
                 <PurchaseTicketsPanel
                   ticketNumbers={purchase.ticketNumbers}
                   ticketNumbersCsv={purchase.ticket_numbers}

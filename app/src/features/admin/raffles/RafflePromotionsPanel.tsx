@@ -22,7 +22,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import type { RafflePromotionApi } from "@/features/raffle/promotion-types"
 import { mapApiPromotionToRecord } from "@/features/raffle/promotion-utils"
-import { adminFetch } from "@/lib/admin-fetch"
+import { adminFetch, getApiErrorMessage } from "@/lib/admin-fetch"
 import { datetimeLocalToIso, isoToDatetimeLocal, parseDatetimeLocal } from "@/lib/date-input"
 import { cn } from "@/lib/utils"
 
@@ -161,7 +161,7 @@ export function RafflePromotionsPanel({
       setEditingId(null)
       setForm(defaultForm())
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error(getApiErrorMessage(err)),
   })
 
   const deleteMutation = useMutation({
@@ -175,8 +175,9 @@ export function RafflePromotionsPanel({
       void queryClient.invalidateQueries({
         queryKey: ["admin", "raffle", raffleId, "promotions"],
       })
+      setDeleteId(null)
     },
-    onError: (err: Error) => toast.error(err.message),
+    onError: (err: Error) => toast.error(getApiErrorMessage(err)),
   })
 
   const baseBs = Number(priceBs)
@@ -556,7 +557,6 @@ export function RafflePromotionsPanel({
         pending={deleteMutation.isPending}
         onConfirm={() => {
           if (deleteId !== null) deleteMutation.mutate(deleteId)
-          setDeleteId(null)
         }}
       />
     </Card>

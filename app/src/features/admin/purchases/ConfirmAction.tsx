@@ -1,3 +1,4 @@
+import type { ReactNode } from "react"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -13,7 +14,7 @@ type ConfirmActionProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
-  description: string
+  description: ReactNode
   confirmLabel?: string
   cancelLabel?: string
   onConfirm: () => void

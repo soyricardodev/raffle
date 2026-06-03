@@ -1,4 +1,5 @@
 import { ValidationError } from "@raffle/shared/errors"
+import { apiHandlers } from "@/lib/api-handler"
 import { TransitionRaffleInput } from "@raffle/shared/validators"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
@@ -6,7 +7,7 @@ import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 
 export const Route = createFileRoute("/api/admin/raffles/$id/lifecycle")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       POST: async ({ request, params }) => {
         await requireAdmin(request)
         const parsed = TransitionRaffleInput.safeParse(await request.json())
@@ -18,6 +19,6 @@ export const Route = createFileRoute("/api/admin/raffles/$id/lifecycle")({
         }
         return Response.json(await transitionRaffle(Number(params.id), parsed.data))
       },
-    },
+    }),
   },
 })

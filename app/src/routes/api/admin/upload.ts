@@ -1,4 +1,5 @@
 import { ValidationError } from "@raffle/shared/errors"
+import { apiHandlers } from "@/lib/api-handler"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import { type AdminImageKind, saveAdminImage } from "@/lib/upload.server"
@@ -7,7 +8,7 @@ const KINDS = new Set<AdminImageKind>(["raffles", "prizes", "site"])
 
 export const Route = createFileRoute("/api/admin/upload")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       POST: async ({ request }) => {
         await requireAdmin(request)
         const form = await request.formData()
@@ -24,6 +25,6 @@ export const Route = createFileRoute("/api/admin/upload")({
         const url = await saveAdminImage(file, kind as AdminImageKind)
         return Response.json({ url })
       },
-    },
+    }),
   },
 })

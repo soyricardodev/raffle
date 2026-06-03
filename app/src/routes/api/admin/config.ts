@@ -1,4 +1,5 @@
 import { AdminSiteConfigPatchSchema } from "@raffle/shared/site-config"
+import { apiHandlers } from "@/lib/api-handler"
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/auth-utils.server"
@@ -19,7 +20,7 @@ const BatchUpdateConfigInput = z.object({
 
 export const Route = createFileRoute("/api/admin/config")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
         return Response.json(await getSiteConfigMap())
@@ -36,6 +37,6 @@ export const Route = createFileRoute("/api/admin/config")({
         const result = await updateSiteConfigPatch(body.patch)
         return Response.json({ ok: true, patch: result })
       },
-    },
+    }),
   },
 })

@@ -1,14 +1,17 @@
-import { fromCents, purchases, raffles } from "@raffle/shared/db"
-import { isDollarMethod, type PaymentMethod } from "@raffle/shared/validators"
+import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
-import { sendEmail } from "./email/email.service"
-import * as emailLogsRepo from "./repositories/email-logs.repository"
+import {
+  buildEmailForType,
+  buildPurchaseEmailContext,
+  type PurchaseEmailContext,
+} from "./email/email-templates"
+import { deliverAndLogEmail } from "./email/email-delivery"
 
 const logger = getLogger()
 
-async function loadPurchaseEmailContext(purchaseId: number) {
+async function loadPurchaseEmailContext(purchaseId: number): Promise<PurchaseEmailContext | null> {
   const db = getDb()
   const [row] = await db
     .select({
@@ -17,47 +20,40 @@ async function loadPurchaseEmailContext(purchaseId: number) {
       ticketQuantity: purchases.ticketQuantity,
       totalAmountCents: purchases.totalAmountCents,
       paymentMethod: purchases.paymentMethod,
+      status: purchases.status,
       raffleName: raffles.name,
     })
     .from(purchases)
     .innerJoin(raffles, eq(purchases.raffleId, raffles.id))
     .where(eq(purchases.id, purchaseId))
     .limit(1)
-  return row
+
+  if (!row) return null
+
+  const ticketRows = await db
+    .select({ ticketNumber: purchaseTickets.ticketNumber })
+    .from(purchaseTickets)
+    .where(eq(purchaseTickets.purchaseId, purchaseId))
+    .orderBy(purchaseTickets.ticketNumber)
+
+  return buildPurchaseEmailContext(
+    purchaseId,
+    row,
+    ticketRows.map((t) => String(t.ticketNumber)),
+  )
 }
 
 export async function sendPurchaseConfirmationEmail(purchaseId: number): Promise<void> {
-  const row = await loadPurchaseEmailContext(purchaseId)
-  if (!row?.customerEmail) return
-
-  const email = String(row.customerEmail).trim()
-  if (!email) return
-
-  const method = row.paymentMethod as PaymentMethod
-  const currency = isDollarMethod(method) ? "USD" : "Bs"
-  const total = fromCents(row.totalAmountCents)
+  const ctx = await loadPurchaseEmailContext(purchaseId)
+  if (!ctx) return
 
   try {
-    const result = await sendEmail({
-      to: email,
-      type: "purchase_confirmation",
-      subject: `Confirmación de compra — ${row.raffleName}`,
-      html: `
-        <p>Hola ${row.customerName},</p>
-        <p>Tu compra #${purchaseId} fue registrada y está <strong>pendiente de verificación</strong>.</p>
-        <p>Rifa: <strong>${row.raffleName}</strong></p>
-        <p>Boletos: ${row.ticketQuantity} · Total: ${currency} ${total}</p>
-        <p>Gracias por participar.</p>
-      `,
-    })
-
-    await emailLogsRepo.insertEmailLog({
+    const built = buildEmailForType("purchase_confirmation", ctx)
+    await deliverAndLogEmail({
+      to: ctx.customerEmail,
+      built,
       purchaseId,
-      recipientEmail: email,
-      emailType: "purchase_confirmation",
-      subject: `Confirmación de compra — ${row.raffleName}`,
-      status: result.success ? "sent" : "failed",
-      resendEmailId: result.providerMessageId ?? null,
+      idempotencyKey: `purchase_confirmation:${purchaseId}`,
     })
   } catch (error) {
     logger.error({ purchaseId, err: error }, "email:purchase_confirmation_failed")
@@ -68,28 +64,47 @@ export async function sendPurchaseStatusEmail(
   purchaseId: number,
   status: "approved" | "rejected",
 ): Promise<void> {
-  const row = await loadPurchaseEmailContext(purchaseId)
-  const email = row?.customerEmail ? String(row.customerEmail).trim() : ""
-  if (!email || !row) return
+  const ctx = await loadPurchaseEmailContext(purchaseId)
+  if (!ctx) return
 
-  const label = status === "approved" ? "aprobada" : "rechazada"
   try {
-    const result = await sendEmail({
-      to: email,
-      type: "status_update",
-      subject: `Compra ${label} — ${row.raffleName}`,
-      html: `<p>Hola ${row.customerName}, tu compra #${purchaseId} fue <strong>${label}</strong>.</p>`,
-    })
-
-    await emailLogsRepo.insertEmailLog({
+    const built = buildEmailForType("status_update", ctx, { status })
+    await deliverAndLogEmail({
+      to: ctx.customerEmail,
+      built,
       purchaseId,
-      recipientEmail: email,
-      emailType: "status_update",
-      subject: `Compra ${label}`,
-      status: result.success ? "sent" : "failed",
-      resendEmailId: result.providerMessageId ?? null,
+      idempotencyKey: `status_update:${purchaseId}:${status}`,
     })
   } catch (error) {
     logger.error({ purchaseId, status, err: error }, "email:status_update_failed")
   }
 }
+
+export async function sendPurchaseEmailByType(
+  purchaseId: number,
+  type: "purchase_confirmation" | "status_update",
+  options?: { status?: "approved" | "rejected" },
+): Promise<{ success: boolean; error?: string }> {
+  const ctx = await loadPurchaseEmailContext(purchaseId)
+  if (!ctx) {
+    return { success: false, error: "La compra no tiene correo del cliente" }
+  }
+
+  const built =
+    type === "status_update"
+      ? buildEmailForType("status_update", ctx, {
+          status: options?.status ?? (ctx.status === "approved" ? "approved" : "rejected"),
+        })
+      : buildEmailForType("purchase_confirmation", ctx)
+
+  const result = await deliverAndLogEmail({
+    to: ctx.customerEmail,
+    built,
+    purchaseId,
+    idempotencyKey: `${type}:${purchaseId}:manual:${Date.now()}`,
+  })
+
+  return { success: result.success, error: result.error }
+}
+
+export { loadPurchaseEmailContext }

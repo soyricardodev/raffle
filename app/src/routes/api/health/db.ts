@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export const Route = createFileRoute("/api/health/db")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async () => {
         try {
           const db = getDb()
@@ -21,6 +22,6 @@ export const Route = createFileRoute("/api/health/db")({
           )
         }
       },
-    },
+    }),
   },
 })

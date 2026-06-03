@@ -1,3 +1,4 @@
+import { apiHandlers } from "@/lib/api-handler"
 import {
   normalizePhone,
   purchases,
@@ -13,7 +14,7 @@ import { rateLimit } from "@/lib/rate-limit"
 
 export const Route = createFileRoute("/api/tickets/verify")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       POST: async ({ request }) => {
         await rateLimit(request, { windowMs: 30_000, maxRequests: 10, keyPrefix: "verify" })
 
@@ -101,6 +102,6 @@ export const Route = createFileRoute("/api/tickets/verify")({
 
         return Response.json(parsed.data)
       },
-    },
+    }),
   },
 })

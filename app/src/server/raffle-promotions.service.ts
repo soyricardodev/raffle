@@ -7,7 +7,23 @@ import { withImmediateTransaction } from "@/lib/db.server"
 import { mergePromotionInput } from "./promotion-input"
 import { assertPromotionAgainstBasePrices } from "./promotion-pricing.service"
 import * as promotionsRepo from "./repositories/raffle-promotions.repository"
+import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
+
+async function assertPromotionPaymentMethod(
+  raffleId: number,
+  input: Pick<CreateRafflePromotionInput, "scope" | "raffle_payment_method_id">,
+) {
+  if (input.scope !== "payment_method" || !input.raffle_payment_method_id) return
+
+  const methods = await rafflePaymentMethodsRepo.listPaymentMethodsByRaffle(raffleId, false)
+  const match = methods.find((method) => method.id === input.raffle_payment_method_id)
+  if (!match) {
+    throw new ValidationError(
+      "El método de pago de esta promoción no está asignado a la rifa. Actualiza la rifa o elige otro método.",
+    )
+  }
+}
 
 export async function listRafflePromotions(raffleId: number) {
   const raffle = await rafflesRepo.findRaffleById(raffleId)
@@ -23,6 +39,7 @@ export async function createRafflePromotion(raffleId: number, input: CreateRaffl
     priceBsCents: raffle.priceBsCents,
     priceUsdCents: raffle.priceUsdCents,
   })
+  await assertPromotionPaymentMethod(raffleId, input)
 
   const id = await withImmediateTransaction((tx) =>
     promotionsRepo.insertPromotion(tx, raffleId, input),
@@ -49,6 +66,7 @@ export async function updateRafflePromotion(
     priceBsCents: raffle.priceBsCents,
     priceUsdCents: raffle.priceUsdCents,
   })
+  await assertPromotionPaymentMethod(raffleId, merged)
 
   await withImmediateTransaction((tx) =>
     promotionsRepo.updatePromotionRow(tx, raffleId, promotionId, merged),

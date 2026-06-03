@@ -1,10 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import { listAdminPurchases } from "@/server/purchase.service"
 
 export const Route = createFileRoute("/api/admin/purchases/")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
         const url = new URL(request.url)
@@ -22,6 +23,6 @@ export const Route = createFileRoute("/api/admin/purchases/")({
 
         return Response.json(result)
       },
-    },
+    }),
   },
 })

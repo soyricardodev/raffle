@@ -1,39 +1,45 @@
+import { parseAdminEmailListFromUrl } from "@raffle/shared/admin/email-list-filters"
 import { createFileRoute } from "@tanstack/react-router"
+import { apiHandlers } from "@/lib/api-handler"
 import { requireAdmin } from "@/lib/auth-utils.server"
-import { sendEmail } from "@/server/email/email.service"
-import { listEmailLogs } from "@/server/email-logs.service"
+import {
+  exportEmailLogs,
+  listEmailLogs,
+  sendAdminTestEmail,
+} from "@/server/email-admin.service"
 
 export const Route = createFileRoute("/api/admin/emails")({
   server: {
-    handlers: {
+    handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
         const url = new URL(request.url)
-        return Response.json(
-          await listEmailLogs({
-            limit: Number(url.searchParams.get("limit") || 50),
-            page: Number(url.searchParams.get("page") || 1),
-            status: url.searchParams.get("status") ?? "all",
-            search: url.searchParams.get("search"),
-            start: url.searchParams.get("start"),
-            end: url.searchParams.get("end"),
-          }),
-        )
+
+        if (url.searchParams.get("export") === "csv") {
+          const params = parseAdminEmailListFromUrl(url)
+          const { csv, rowCount, truncated, total } = await exportEmailLogs(params)
+          return new Response(csv, {
+            headers: {
+              "Content-Type": "text/csv; charset=utf-8",
+              "Content-Disposition": `attachment; filename="email-logs-${rowCount}.csv"`,
+              ...(truncated
+                ? { "X-Export-Truncated": "true", "X-Export-Total": String(total) }
+                : {}),
+            },
+          })
+        }
+
+        return Response.json(await listEmailLogs(parseAdminEmailListFromUrl(url)))
       },
       POST: async ({ request }) => {
         await requireAdmin(request)
-        const body = (await request.json()) as { to: string; subject?: string }
-        if (!body.to?.trim()) {
-          return Response.json({ error: "Email requerido" }, { status: 400 })
+        const body = await request.json()
+        const result = await sendAdminTestEmail(body)
+        if (!result.success) {
+          return Response.json({ error: result.error ?? "Error al enviar" }, { status: 500 })
         }
-        const result = await sendEmail({
-          to: body.to.trim(),
-          type: "purchase_confirmation",
-          subject: body.subject ?? "Email de prueba — Raffle",
-          html: "<p>Este es un correo de prueba del sistema de rifas.</p>",
-        })
         return Response.json(result)
       },
-    },
+    }),
   },
 })
