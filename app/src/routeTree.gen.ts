@@ -54,6 +54,7 @@ import { Route as ApiRafflesIdPauseInfoRouteImport } from './routes/api/raffles/
 import { Route as ApiAdminRafflesIdRouteImport } from './routes/api/admin/raffles/$id'
 import { Route as ApiAdminPurchasesIdRouteImport } from './routes/api/admin/purchases/$id'
 import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admin/payment-accounts/$id'
+import { Route as ApiAdminAnalyticsSummaryRouteImport } from './routes/api/admin/analytics.summary'
 import { Route as ApiAdminRafflesIdUnpauseRouteImport } from './routes/api/admin/raffles/$id.unpause'
 import { Route as ApiAdminRafflesIdStatusRouteImport } from './routes/api/admin/raffles/$id.status'
 import { Route as ApiAdminRafflesIdPublishRouteImport } from './routes/api/admin/raffles/$id.publish'
@@ -294,6 +295,12 @@ const ApiAdminPaymentAccountsIdRoute =
     path: '/api/admin/payment-accounts/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminAnalyticsSummaryRoute =
+  ApiAdminAnalyticsSummaryRouteImport.update({
+    id: '/summary',
+    path: '/summary',
+    getParentRoute: () => ApiAdminAnalyticsRoute,
+  } as any)
 const ApiAdminRafflesIdUnpauseRoute =
   ApiAdminRafflesIdUnpauseRouteImport.update({
     id: '/unpause',
@@ -385,7 +392,7 @@ export interface FileRoutesByFullPath {
   '/rifa/$id': typeof PublicRifaIdRoute
   '/admin/edit/$id': typeof AdminEditIdRoute
   '/admin/rifas/$id': typeof AdminRifasIdRoute
-  '/api/admin/analytics': typeof ApiAdminAnalyticsRoute
+  '/api/admin/analytics': typeof ApiAdminAnalyticsRouteWithChildren
   '/api/admin/config': typeof ApiAdminConfigRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRoute
@@ -403,6 +410,7 @@ export interface FileRoutesByFullPath {
   '/admin/rifas/': typeof AdminRifasIndexRoute
   '/api/purchases/': typeof ApiPurchasesIndexRoute
   '/api/raffles/': typeof ApiRafflesIndexRoute
+  '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRoute
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
@@ -441,7 +449,7 @@ export interface FileRoutesByTo {
   '/rifa/$id': typeof PublicRifaIdRoute
   '/admin/edit/$id': typeof AdminEditIdRoute
   '/admin/rifas/$id': typeof AdminRifasIdRoute
-  '/api/admin/analytics': typeof ApiAdminAnalyticsRoute
+  '/api/admin/analytics': typeof ApiAdminAnalyticsRouteWithChildren
   '/api/admin/config': typeof ApiAdminConfigRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRoute
@@ -459,6 +467,7 @@ export interface FileRoutesByTo {
   '/admin/rifas': typeof AdminRifasIndexRoute
   '/api/purchases': typeof ApiPurchasesIndexRoute
   '/api/raffles': typeof ApiRafflesIndexRoute
+  '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRoute
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
@@ -501,7 +510,7 @@ export interface FileRoutesById {
   '/_public/rifa/$id': typeof PublicRifaIdRoute
   '/admin/edit/$id': typeof AdminEditIdRoute
   '/admin/rifas/$id': typeof AdminRifasIdRoute
-  '/api/admin/analytics': typeof ApiAdminAnalyticsRoute
+  '/api/admin/analytics': typeof ApiAdminAnalyticsRouteWithChildren
   '/api/admin/config': typeof ApiAdminConfigRoute
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRoute
@@ -519,6 +528,7 @@ export interface FileRoutesById {
   '/admin/rifas/': typeof AdminRifasIndexRoute
   '/api/purchases/': typeof ApiPurchasesIndexRoute
   '/api/raffles/': typeof ApiRafflesIndexRoute
+  '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRoute
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
@@ -579,6 +589,7 @@ export interface FileRouteTypes {
     | '/admin/rifas/'
     | '/api/purchases/'
     | '/api/raffles/'
+    | '/api/admin/analytics/summary'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -635,6 +646,7 @@ export interface FileRouteTypes {
     | '/admin/rifas'
     | '/api/purchases'
     | '/api/raffles'
+    | '/api/admin/analytics/summary'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -694,6 +706,7 @@ export interface FileRouteTypes {
     | '/admin/rifas/'
     | '/api/purchases/'
     | '/api/raffles/'
+    | '/api/admin/analytics/summary'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -720,7 +733,7 @@ export interface RootRouteChildren {
   AdminRouteRoute: typeof AdminRouteRouteWithChildren
   ApiConfigRoute: typeof ApiConfigRoute
   UploadsSplatRoute: typeof UploadsSplatRoute
-  ApiAdminAnalyticsRoute: typeof ApiAdminAnalyticsRoute
+  ApiAdminAnalyticsRoute: typeof ApiAdminAnalyticsRouteWithChildren
   ApiAdminConfigRoute: typeof ApiAdminConfigRoute
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
   ApiAdminEmailsRoute: typeof ApiAdminEmailsRoute
@@ -1062,6 +1075,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminPaymentAccountsIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/analytics/summary': {
+      id: '/api/admin/analytics/summary'
+      path: '/summary'
+      fullPath: '/api/admin/analytics/summary'
+      preLoaderRoute: typeof ApiAdminAnalyticsSummaryRouteImport
+      parentRoute: typeof ApiAdminAnalyticsRoute
+    }
     '/api/admin/raffles/$id/unpause': {
       id: '/api/admin/raffles/$id/unpause'
       path: '/unpause'
@@ -1213,6 +1233,17 @@ const AdminRouteRouteWithChildren = AdminRouteRoute._addFileChildren(
   AdminRouteRouteChildren,
 )
 
+interface ApiAdminAnalyticsRouteChildren {
+  ApiAdminAnalyticsSummaryRoute: typeof ApiAdminAnalyticsSummaryRoute
+}
+
+const ApiAdminAnalyticsRouteChildren: ApiAdminAnalyticsRouteChildren = {
+  ApiAdminAnalyticsSummaryRoute: ApiAdminAnalyticsSummaryRoute,
+}
+
+const ApiAdminAnalyticsRouteWithChildren =
+  ApiAdminAnalyticsRoute._addFileChildren(ApiAdminAnalyticsRouteChildren)
+
 interface ApiRafflesIdRouteChildren {
   ApiRafflesIdPauseInfoRoute: typeof ApiRafflesIdPauseInfoRoute
 }
@@ -1287,7 +1318,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdminRouteRoute: AdminRouteRouteWithChildren,
   ApiConfigRoute: ApiConfigRoute,
   UploadsSplatRoute: UploadsSplatRoute,
-  ApiAdminAnalyticsRoute: ApiAdminAnalyticsRoute,
+  ApiAdminAnalyticsRoute: ApiAdminAnalyticsRouteWithChildren,
   ApiAdminConfigRoute: ApiAdminConfigRoute,
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
   ApiAdminEmailsRoute: ApiAdminEmailsRoute,

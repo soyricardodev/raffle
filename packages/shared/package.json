@@ -18,7 +18,8 @@
     "./promotions": "./src/promotions/pricing.ts",
     "./promotions/types": "./src/promotions/types.ts",
     "./promotions/display": "./src/promotions/display.ts",
-    "./public-recent-purchase": "./src/public-recent-purchase.ts"
+    "./public-recent-purchase": "./src/public-recent-purchase.ts",
+    "./analytics": "./src/analytics/index.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

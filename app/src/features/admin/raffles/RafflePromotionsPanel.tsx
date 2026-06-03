@@ -7,6 +7,7 @@ import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -22,6 +23,7 @@ import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import type { RafflePromotionApi } from "@/features/raffle/promotion-types"
 import { mapApiPromotionToRecord } from "@/features/raffle/promotion-utils"
 import { adminFetch } from "@/lib/admin-fetch"
+import { datetimeLocalToIso, isoToDatetimeLocal, parseDatetimeLocal } from "@/lib/date-input"
 import { cn } from "@/lib/utils"
 
 type PaymentMethodOption = {
@@ -101,11 +103,11 @@ function buildPayload(state: PromoFormState) {
     discount_percent: state.discount_percent.trim() ? Number(state.discount_percent) : null,
     starts_at:
       state.duration_mode === "scheduled" && state.starts_at
-        ? new Date(state.starts_at).toISOString()
+        ? datetimeLocalToIso(state.starts_at)
         : null,
     ends_at:
       state.duration_mode === "scheduled" && state.ends_at
-        ? new Date(state.ends_at).toISOString()
+        ? datetimeLocalToIso(state.ends_at)
         : null,
   }
 }
@@ -128,6 +130,7 @@ export function RafflePromotionsPanel({
   const [editingId, setEditingId] = useState<number | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [form, setForm] = useState<PromoFormState>(defaultForm)
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({})
 
   const promotionsQuery = useQuery({
     queryKey: ["admin", "raffle", raffleId, "promotions"],
@@ -218,14 +221,39 @@ export function RafflePromotionsPanel({
       promo_price_usd: promo.promo_price_usd != null ? String(promo.promo_price_usd) : "",
       discount_percent: promo.discount_percent != null ? String(promo.discount_percent) : "",
       duration_mode: promo.starts_at || promo.ends_at ? "scheduled" : "permanent",
-      starts_at: promo.starts_at ? promo.starts_at.slice(0, 16) : "",
-      ends_at: promo.ends_at ? promo.ends_at.slice(0, 16) : "",
+      starts_at: promo.starts_at ? isoToDatetimeLocal(promo.starts_at) : "",
+      ends_at: promo.ends_at ? isoToDatetimeLocal(promo.ends_at) : "",
     })
+    setFormErrors({})
     setFormOpen(true)
   }
 
   function patch<K extends keyof PromoFormState>(key: K, value: PromoFormState[K]) {
+    setFormErrors((prev) => {
+      if (key === "starts_at" || key === "ends_at") {
+        if (!prev.ends_at) return prev
+        const { ends_at: _removed, ...rest } = prev
+        return rest
+      }
+      if (!(key in prev)) return prev
+      const next = { ...prev }
+      delete next[key as string]
+      return next
+    })
     setForm((prev) => ({ ...prev, [key]: value }))
+  }
+
+  function validateForm(): boolean {
+    const next: Record<string, string> = {}
+    if (form.duration_mode === "scheduled" && form.starts_at && form.ends_at) {
+      const start = parseDatetimeLocal(form.starts_at)
+      const end = parseDatetimeLocal(form.ends_at)
+      if (start && end && end <= start) {
+        next.ends_at = "La fecha de fin debe ser posterior a la de inicio"
+      }
+    }
+    setFormErrors(next)
+    return Object.keys(next).length === 0
   }
 
   const list = promotionsQuery.data ?? []
@@ -247,6 +275,7 @@ export function RafflePromotionsPanel({
           onClick={() => {
             setEditingId(null)
             setForm(defaultForm())
+            setFormErrors({})
             setFormOpen((v) => !v)
           }}
         >
@@ -382,20 +411,26 @@ export function RafflePromotionsPanel({
               {form.duration_mode === "scheduled" ? (
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field>
-                    <FieldLabel>Inicio (opcional)</FieldLabel>
-                    <Input
-                      type="datetime-local"
+                    <FieldLabel htmlFor="promo-starts-at">Inicio (opcional)</FieldLabel>
+                    <DateTimePicker
+                      id="promo-starts-at"
                       value={form.starts_at}
-                      onChange={(e) => patch("starts_at", e.target.value)}
+                      onChange={(starts_at) => patch("starts_at", starts_at)}
                     />
                   </Field>
-                  <Field>
-                    <FieldLabel>Fin (opcional)</FieldLabel>
-                    <Input
-                      type="datetime-local"
+                  <Field data-invalid={!!formErrors.ends_at}>
+                    <FieldLabel htmlFor="promo-ends-at">Fin (opcional)</FieldLabel>
+                    <DateTimePicker
+                      id="promo-ends-at"
                       value={form.ends_at}
-                      onChange={(e) => patch("ends_at", e.target.value)}
+                      onChange={(ends_at) => patch("ends_at", ends_at)}
+                      aria-invalid={!!formErrors.ends_at}
                     />
+                    {formErrors.ends_at ? (
+                      <FieldDescription className="text-destructive">
+                        {formErrors.ends_at}
+                      </FieldDescription>
+                    ) : null}
                   </Field>
                 </div>
               ) : null}
@@ -431,7 +466,10 @@ export function RafflePromotionsPanel({
                   type="button"
                   className="min-h-11"
                   disabled={saveMutation.isPending}
-                  onClick={() => saveMutation.mutate()}
+                  onClick={() => {
+                    if (!validateForm()) return
+                    saveMutation.mutate()
+                  }}
                 >
                   {editingId ? "Guardar cambios" : "Crear promoción"}
                 </Button>
@@ -443,6 +481,7 @@ export function RafflePromotionsPanel({
                     setFormOpen(false)
                     setEditingId(null)
                     setForm(defaultForm())
+                    setFormErrors({})
                   }}
                 >
                   Cancelar

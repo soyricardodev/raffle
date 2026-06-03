@@ -1,3 +1,4 @@
+import { parseCustomerLocation } from "@raffle/shared/analytics"
 import { type CreatePurchaseBody, parseCreatePurchaseBody } from "@raffle/shared/validators"
 import type { CreatePurchaseParams } from "@/server/purchase.service"
 
@@ -15,20 +16,8 @@ export function formDataToPurchaseRecord(form: FormData): Record<string, unknown
   }
 }
 
-function parseLocationMeta(location: string): {
-  locationType: "venezuela" | "other"
-  venezuelaState: string | null
-} {
-  const trimmed = location.trim()
-  if (trimmed.toLowerCase().startsWith("venezuela,")) {
-    const state = trimmed.slice("venezuela,".length).trim()
-    return { locationType: "venezuela", venezuelaState: state || null }
-  }
-  return { locationType: "other", venezuelaState: null }
-}
-
 export function toCreatePurchaseParams(body: CreatePurchaseBody): CreatePurchaseParams {
-  const { locationType, venezuelaState } = parseLocationMeta(body.customerLocation)
+  const parsed = parseCustomerLocation(body.customerLocation)
   return {
     raffleId: body.raffleId,
     customerName: body.customerName,
@@ -36,8 +25,8 @@ export function toCreatePurchaseParams(body: CreatePurchaseBody): CreatePurchase
     customerEmail: body.customerEmail,
     customerCi: body.customerCi,
     customerLocation: body.customerLocation,
-    locationType,
-    venezuelaState,
+    locationType: parsed.kind === "international" ? "other" : "venezuela",
+    venezuelaState: parsed.state,
     rafflePaymentMethodId: body.rafflePaymentMethodId,
     paymentReference: body.paymentReference,
     ticketQuantity: body.ticketQuantity,

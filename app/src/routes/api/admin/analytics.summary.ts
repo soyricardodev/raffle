@@ -1,9 +1,9 @@
 import { parseAnalyticsDateRange } from "@raffle/shared/analytics"
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
-import { getFullAnalyticsReport } from "@/server/analytics.service"
+import { getDashboardAnalyticsSummary } from "@/server/analytics.service"
 
-export const Route = createFileRoute("/api/admin/analytics")({
+export const Route = createFileRoute("/api/admin/analytics/summary")({
   server: {
     handlers: {
       GET: async ({ request }) => {
@@ -14,7 +14,7 @@ export const Route = createFileRoute("/api/admin/analytics")({
         const raffleId =
           raffleIdParam && !Number.isNaN(Number(raffleIdParam)) ? Number(raffleIdParam) : undefined
 
-        return Response.json(await getFullAnalyticsReport(range, raffleId))
+        return Response.json(await getDashboardAnalyticsSummary(range, raffleId))
       },
     },
   },

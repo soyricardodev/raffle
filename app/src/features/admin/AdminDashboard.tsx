@@ -12,19 +12,24 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { AnalyticsPeriodPresets } from "@/features/admin/analytics/AnalyticsPeriodPresets"
 import { MethodRevenueChart } from "@/features/admin/analytics/MethodRevenueChart"
-import { PeriodFilter } from "@/features/admin/analytics/PeriodFilter"
 import { SalesTrendChart } from "@/features/admin/analytics/SalesTrendChart"
 import { StatusPieChart } from "@/features/admin/analytics/StatusPieChart"
+import {
+  periodToSearchParams,
+  type AnalyticsPeriodState,
+} from "@/features/admin/analytics/types"
+import type { getDashboardAnalyticsSummary } from "@/server/analytics.service"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrency } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const POLL_MS = 30_000
-const DEFAULT_ANALYTICS_DAYS = 30
 
-type RevenueByMethod = { method: string; count: number; revenue: number }
+type DashboardAnalyticsSummary = Awaited<ReturnType<typeof getDashboardAnalyticsSummary>>
+
 type ActiveRaffle = { id: number; name: string }
 
 type DashboardStats = {
@@ -32,17 +37,9 @@ type DashboardStats = {
   tickets: Record<string, number>
   sales: Record<string, number>
   users: Record<string, number>
-  revenue_by_method: Array<RevenueByMethod>
+  revenue_by_method: Array<{ method: string; count: number; revenue: number }>
   active_raffles: Array<ActiveRaffle>
   filtered_raffle_id: number | null
-}
-
-type AnalyticsResponse = {
-  salesOverTime: Array<{ date: string; count: number; revenue: number }>
-  revenueByMethod: Array<RevenueByMethod>
-  statusDistribution: Array<{ status: string; count: number }>
-  dailyAverage: number
-  totalRevenue: number
 }
 
 function formatLastUpdated(date: Date | null) {
@@ -52,7 +49,7 @@ function formatLastUpdated(date: Date | null) {
 
 export function AdminDashboard() {
   const [raffleId, setRaffleId] = useState<string>("")
-  const [days, setDays] = useState(DEFAULT_ANALYTICS_DAYS)
+  const [period, setPeriod] = useState<AnalyticsPeriodState>({ kind: "preset", days: 30 })
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
   const [raffleInitialized, setRaffleInitialized] = useState(false)
 
@@ -66,11 +63,10 @@ export function AdminDashboard() {
   })
 
   const analyticsQuery = useQuery({
-    queryKey: ["admin", "analytics", days, raffleId],
+    queryKey: ["admin", "analytics", "summary", period, raffleId],
     queryFn: () => {
-      const params = new URLSearchParams({ days: String(days) })
-      if (raffleId) params.set("raffleId", raffleId)
-      return adminFetch<AnalyticsResponse>(`/api/admin/analytics?${params}`)
+      const params = periodToSearchParams(period, raffleId)
+      return adminFetch<DashboardAnalyticsSummary>(`/api/admin/analytics/summary?${params}`)
     },
     refetchInterval: POLL_MS,
   })
@@ -166,7 +162,12 @@ export function AdminDashboard() {
               ))}
             </SelectContent>
           </Select>
-          <PeriodFilter value={days} onChange={setDays} />
+          <div className="flex flex-col items-end gap-2">
+            <AnalyticsPeriodPresets value={period} onChange={setPeriod} />
+            <Button asChild variant="link" size="sm" className="h-auto px-0 text-xs">
+              <Link to="/admin/analytics">Rango personalizado →</Link>
+            </Button>
+          </div>
         </div>
         {raffleId && (
           <p className="text-muted-foreground mt-2 text-xs">
@@ -301,7 +302,7 @@ export function AdminDashboard() {
         </Card>
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Distribución por estado</CardTitle>
+            <CardTitle className="text-base">Estado de compra</CardTitle>
           </CardHeader>
           <CardContent className="h-[240px] md:h-[300px]">
             <StatusPieChart
@@ -329,15 +330,17 @@ export function AdminDashboard() {
                 </p>
               </div>
               <div>
-                <p className="text-muted-foreground text-xs">Clientes únicos</p>
+                <p className="text-muted-foreground text-xs">Clientes únicos (período)</p>
                 <p className="text-xl font-semibold tabular-nums">
-                  {stats?.users.total_customers ?? 0}
+                  {analytics?.summary.uniqueCustomers ?? 0}
                 </p>
               </div>
               <div>
                 <p className="text-muted-foreground text-xs">Ventas en período</p>
                 <p className="text-xl font-semibold tabular-nums">
-                  {analytics?.salesOverTime.reduce((sum, row) => sum + row.count, 0) ?? 0}
+                  {analytics?.summary.totalSales ??
+                    analytics?.salesOverTime.reduce((sum, row) => sum + row.count, 0) ??
+                    0}
                 </p>
               </div>
             </div>

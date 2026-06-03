@@ -2,7 +2,7 @@ import { Plus, Trash } from "@phosphor-icons/react"
 import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
 import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
 import { Link } from "@tanstack/react-router"
-import { useState } from "react"
+import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -13,6 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
+import { DateTimePicker } from "@/components/ui/date-time-picker"
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
@@ -26,11 +27,17 @@ import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { RafflePaymentMethodsPicker } from "@/features/admin/payment-methods/RafflePaymentMethodsPicker"
+import { drawDatePresets } from "@/features/admin/raffles/draw-date-presets"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import type { RaffleFormState } from "@/features/admin/raffles/types"
 import { defaultPrize } from "@/features/admin/raffles/types"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import {
+  datetimeLocalToIso,
+  isCalendarDayBefore,
+  startOfDay,
+} from "@/lib/date-input"
 import { cn } from "@/lib/utils"
 
 type RaffleFormPropsBase = {
@@ -66,7 +73,7 @@ function buildPayload(state: RaffleFormState): CreateRaffleInput {
     min_purchase: Number(state.minPurchase),
     max_purchase: Number(state.maxPurchase),
     draw_date:
-      state.drawDateEnabled && state.drawDate ? new Date(state.drawDate).toISOString() : null,
+      state.drawDateEnabled && state.drawDate ? datetimeLocalToIso(state.drawDate) : null,
     status: state.status,
     auto_pause_enabled: true,
     prizes: state.prizes
@@ -92,6 +99,7 @@ export function RaffleForm(props: RaffleFormProps) {
   const raffleId = props.mode === "edit" ? props.raffleId : undefined
   const [state, setState] = useState<RaffleFormState>(initial)
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const drawMinDay = useMemo(() => startOfDay(new Date()), [])
 
   function patch<K extends keyof RaffleFormState>(key: K, value: RaffleFormState[K]) {
     setState((prev) => ({ ...prev, [key]: value }))
@@ -105,6 +113,8 @@ export function RaffleForm(props: RaffleFormProps) {
     if (state.assignments.length === 0) next.methods = "Selecciona al menos un método de pago"
     if (state.drawDateEnabled && !state.drawDate) {
       next.drawDate = "Indica la fecha del sorteo o desactívala"
+    } else if (state.drawDateEnabled && state.drawDate && isCalendarDayBefore(state.drawDate, drawMinDay)) {
+      next.drawDate = "La fecha del sorteo no puede ser en el pasado"
     }
     setErrors(next)
     return Object.keys(next).length === 0
@@ -405,12 +415,12 @@ export function RaffleForm(props: RaffleFormProps) {
                 {state.drawDateEnabled ? (
                   <Field data-invalid={!!errors.drawDate}>
                     <FieldLabel htmlFor="draw-date">Fecha y hora del sorteo</FieldLabel>
-                    <Input
+                    <DateTimePicker
                       id="draw-date"
-                      type="datetime-local"
-                      className="min-h-11"
                       value={state.drawDate}
-                      onChange={(e) => patch("drawDate", e.target.value)}
+                      minDay={drawMinDay}
+                      presets={drawDatePresets}
+                      onChange={(drawDate) => patch("drawDate", drawDate)}
                       aria-invalid={!!errors.drawDate}
                     />
                     {errors.drawDate ? (

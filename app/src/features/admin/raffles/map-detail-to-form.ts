@@ -2,6 +2,7 @@ import { RaffleStatus } from "@raffle/shared/validators"
 import type { AdminRaffleDetail } from "@/features/admin/raffles/admin-raffle-detail-queries"
 import type { PaymentMethodAssignment, RaffleFormState } from "@/features/admin/raffles/types"
 import { defaultPrize, defaultRaffleFormState } from "@/features/admin/raffles/types"
+import { isoToDatetimeLocal } from "@/lib/date-input"
 
 export function mapDetailToForm(detail: AdminRaffleDetail): RaffleFormState {
   const base = defaultRaffleFormState()
@@ -15,7 +16,7 @@ export function mapDetailToForm(detail: AdminRaffleDetail): RaffleFormState {
     minPurchase: String(detail.min_purchase),
     maxPurchase: String(detail.max_purchase),
     drawDateEnabled: Boolean(detail.draw_date),
-    drawDate: detail.draw_date ? new Date(detail.draw_date).toISOString().slice(0, 16) : "",
+    drawDate: detail.draw_date ? isoToDatetimeLocal(detail.draw_date) : "",
     status: RaffleStatus.parse(detail.status),
     prizes: detail.prizes?.length
       ? detail.prizes.map((p) => ({

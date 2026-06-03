@@ -32,7 +32,8 @@ import {
 } from "@/features/admin/purchases/PurchasesDataTable"
 import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
-import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
+import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
@@ -266,9 +267,13 @@ export function AdminPurchasesView() {
                 </SelectContent>
               </Select>
 
-              <AdminDateRangeFilter
+              <DateRangePicker
                 start={filters.start}
                 end={filters.end}
+                presets={adminDateRangePresets}
+                align="end"
+                size="sm"
+                className="min-w-0"
                 onChange={(range) =>
                   updateSearch({
                     start: range.start,
