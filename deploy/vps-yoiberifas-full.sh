@@ -49,9 +49,22 @@ done
 ENV_FILE="$RAFFLE_ROOT/.env"
 BACKUP_DIR="$RAFFLE_ROOT/backups"
 TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
+LOG_DIR="$RAFFLE_ROOT/logs"
+LOG_FILE="$LOG_DIR/deploy_${TIMESTAMP}.log"
+STATE_FILE="$LOG_DIR/current-step"
+
+mkdir -p "$LOG_DIR"
+if [[ -z "${RAFFLE_LOG_ACTIVE:-}" ]]; then
+  export RAFFLE_LOG_ACTIVE=1
+  exec > >(awk '{ print strftime("[%Y-%m-%d %H:%M:%S]"), $0; fflush(); }' | tee -a "$LOG_FILE") 2>&1
+fi
 
 log() { echo "[full] $*"; }
 die() { echo "[full] ERROR: $*" >&2; exit 1; }
+phase() {
+  echo "$*" > "$STATE_FILE"
+  log "$*"
+}
 
 stop_legacy_backend() {
   if command -v pm2 >/dev/null 2>&1; then
@@ -85,7 +98,9 @@ sqlite_user_count() {
   " 2>/dev/null || echo "0"
 }
 
-log "=== Raffle v2 — migración completa ==="
+phase "=== Raffle v2 — migración completa ==="
+log "Log:     $LOG_FILE"
+log "Estado:  $STATE_FILE"
 log "Repo:    $RAFFLE_ROOT"
 log "Legacy:  $LEGACY_ROOT"
 log "Dominio: $DOMAIN"
@@ -107,7 +122,7 @@ cd "$RAFFLE_ROOT"
 
 # ─── 1. Git (HTTPS, repo público) ────────────────────────────────
 if [[ "$SKIP_GIT" != "1" ]]; then
-  log "=== 1/9 git pull ==="
+  phase "=== 1/9 git pull ==="
   git remote set-url origin "$GIT_REPO" 2>/dev/null || git remote add origin "$GIT_REPO"
   if ! git ls-remote --exit-code --heads origin "$GIT_BRANCH" >/dev/null 2>&1; then
     FALLBACK_BRANCH="$(git ls-remote --symref origin HEAD | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2; exit }')"
@@ -122,11 +137,11 @@ if [[ "$SKIP_GIT" != "1" ]]; then
   git checkout "$GIT_BRANCH" 2>/dev/null || git checkout -b "$GIT_BRANCH"
   git pull --ff-only origin "$GIT_BRANCH"
 else
-  log "=== 1/9 git omitido ==="
+  phase "=== 1/9 git omitido ==="
 fi
 
 # ─── 2. .env desde legacy ────────────────────────────────────────
-log "=== 2/9 .env desde legacy ==="
+phase "=== 2/9 .env desde legacy ==="
 ENV_ARGS=(--legacy-env "$LEGACY_ENV" --output "$ENV_FILE" --domain "$DOMAIN" --raffle-root "$RAFFLE_ROOT" --legacy-root "$LEGACY_ROOT")
 [[ "$REGENERATE_SECRETS" == "1" ]] && ENV_ARGS+=(--regenerate-secrets)
 bun run scripts/build-production-env.ts "${ENV_ARGS[@]}"
@@ -136,7 +151,7 @@ set -a && source "$ENV_FILE" && set +a
 [[ -d "$UPLOAD_DIR" ]] || die "No existe UPLOAD_DIR=$UPLOAD_DIR"
 
 # ─── 3. Dependencias ─────────────────────────────────────────────
-log "=== 3/9 pnpm install ==="
+phase "=== 3/9 pnpm install ==="
 pnpm install --frozen-lockfile
 
 DB_PATH="${TARGET_DATABASE_URL#file:}"
@@ -146,7 +161,7 @@ export SOURCE_DATABASE_URL
 
 if [[ "$SKIP_MIGRATION" != "1" ]]; then
   # ─── 4. Backups ────────────────────────────────────────────────
-  log "=== 4/9 backups ==="
+  phase "=== 4/9 backups ==="
   if command -v mysqldump >/dev/null 2>&1; then
     DUMP="$BACKUP_DIR/mysql_${TIMESTAMP}.sql"
     read -r MU MP MH MPORT MDB <<EOF
@@ -175,40 +190,40 @@ EOF
   # ─── 5-6. SQLite + ETL ─────────────────────────────────────────
   RUN_ETL=0
   if [[ "$FORCE_DB" == "1" ]]; then
-    log "=== 5/9 SQLite (--force-db) ==="
+    phase "=== 5/9 SQLite (--force-db) ==="
     rm -f "$DB_PATH"
     RUN_ETL=1
   elif [[ ! -f "$DB_PATH" ]]; then
-    log "=== 5/9 SQLite (nuevo) ==="
+    phase "=== 5/9 SQLite (nuevo) ==="
     RUN_ETL=1
   else
     USERS="$(sqlite_user_count "$DB_PATH")"
     if [[ "$USERS" == "0" ]]; then
-      log "=== 5/9 SQLite (vacío) ==="
+      phase "=== 5/9 SQLite (vacío) ==="
       RUN_ETL=1
     else
-      log "=== 5/9 SQLite ya migrado ($USERS admins) — skip ETL ==="
+      phase "=== 5/9 SQLite ya migrado ($USERS admins) — skip ETL ==="
     fi
   fi
 
   pnpm db:migrate
 
   if [[ "$RUN_ETL" == "1" ]]; then
-    log "=== 6/9 ETL MySQL → SQLite ==="
+    phase "=== 6/9 ETL MySQL → SQLite ==="
     bun run scripts/migrate-mysql-to-libsql.ts
   else
-    log "=== 6/9 ETL omitido (usa --force-db para re-migrar) ==="
+    phase "=== 6/9 ETL omitido (usa --force-db para re-migrar) ==="
   fi
 
-  log "=== 7/9 validación ==="
+  phase "=== 7/9 validación ==="
   bun run scripts/validate-migration.ts
 else
-  log "=== 4-7/9 migración omitida ==="
+  phase "=== 4-7/9 migración omitida ==="
   pnpm db:migrate
 fi
 
 # ─── 8. Build + systemd ──────────────────────────────────────────
-log "=== 8/9 build + servicio ==="
+phase "=== 8/9 build + servicio ==="
 export NODE_ENV=production
 pnpm build
 
@@ -223,7 +238,7 @@ fi
 
 # ─── 9. nginx + legacy ─────────────────────────────────────────────
 if [[ "$SKIP_NGINX" != "1" ]]; then
-  log "=== 9/9 cutover nginx ==="
+  phase "=== 9/9 cutover nginx ==="
   stop_legacy_backend
   [[ -f "$NGINX_SITE" ]] && sudo cp "$NGINX_SITE" "$BACKUP_DIR/nginx_${TIMESTAMP}.bak"
   sudo cp "$RAFFLE_ROOT/deploy/nginx-yoiberifas.conf" "$NGINX_SITE"
@@ -236,10 +251,11 @@ if [[ "$SKIP_NGINX" != "1" ]]; then
     log "WARN: prueba manual: curl -s https://${DOMAIN}/api/health/db"
   fi
 else
-  log "=== 9/9 nginx omitido (--skip-nginx) ==="
+  phase "=== 9/9 nginx omitido (--skip-nginx) ==="
 fi
 
 log ""
+echo "done $(date '+%Y-%m-%d %H:%M:%S')" > "$STATE_FILE"
 log "✅ Listo"
 log "   Admin password temporal:"
 grep '^MIGRATE_ADMIN_PASSWORD=' "$ENV_FILE" | sed 's/^/   /'

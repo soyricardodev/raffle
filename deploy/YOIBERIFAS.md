@@ -28,6 +28,25 @@ bash deploy/vps-yoiberifas-full.sh --skip-nginx
 curl http://127.0.0.1:3000/api/health/db
 ```
 
+## Ver progreso mientras corre
+
+En otro terminal SSH:
+
+```bash
+cd ~/raffle
+cat logs/current-step
+tail -f logs/deploy_*.log
+```
+
+Si el script actual fue iniciado antes de esta mejora:
+
+```bash
+ps -eo pid,etime,cmd | grep -E 'vps-yoiberifas|pnpm|bun|node|mysqldump' | grep -v grep
+du -h ~/raffle/data/raffle.db 2>/dev/null || true
+sudo systemctl status raffle --no-pager
+journalctl -u raffle -n 80 --no-pager
+```
+
 ## Re-migrar desde cero
 
 ```bash
