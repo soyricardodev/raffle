@@ -1,3 +1,5 @@
+import type { VerifiedTicketRow, VerifyTicketInput } from "@raffle/shared/validators"
+import { VerifyTicketInput as VerifyTicketSchema } from "@raffle/shared/validators"
 import { useMutation } from "@tanstack/react-query"
 import { useCallback, useRef, useState } from "react"
 import { toast } from "sonner"
@@ -11,8 +13,6 @@ import {
   type VerifyUiMode,
 } from "@/features/verify/verify-profile"
 import { publicFetch } from "@/lib/admin-fetch"
-import type { VerifiedTicketRow, VerifyTicketInput } from "@raffle/shared/validators"
-import { VerifyTicketInput as VerifyTicketSchema } from "@raffle/shared/validators"
 
 export function useTicketVerify() {
   const resultsRef = useRef<HTMLDivElement>(null)

@@ -20,7 +20,10 @@ export const sessions = sqliteTable(
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date()),
   },
-  (t) => [index("session_user_id_idx").on(t.userId), index("session_expires_at_idx").on(t.expiresAt)],
+  (t) => [
+    index("session_user_id_idx").on(t.userId),
+    index("session_expires_at_idx").on(t.expiresAt),
+  ],
 )
 
 export const accounts = sqliteTable(

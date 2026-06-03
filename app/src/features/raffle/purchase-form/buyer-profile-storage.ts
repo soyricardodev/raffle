@@ -1,7 +1,7 @@
 import {
-  normalizeCountryScope,
   type CedulaPrefix,
   type CustomerLocationType,
+  normalizeCountryScope,
 } from "@raffle/shared/validators"
 import type { PhoneInputMode } from "@raffle/shared/validators/buyer-identity"
 

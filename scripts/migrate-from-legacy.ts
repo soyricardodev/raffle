@@ -56,10 +56,23 @@ async function main() {
         auto_pause_enabled, publish, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        r.id, r.name, r.description, r.image_url, r.total_tickets,
-        r.price_bs, r.price_usd, r.min_purchase, r.max_purchase,
-        r.draw_date, r.status, r.pause_until, r.pause_reason,
-        r.auto_pause_enabled ?? true, r.publish ?? false, r.created_at, r.updated_at,
+        r.id,
+        r.name,
+        r.description,
+        r.image_url,
+        r.total_tickets,
+        r.price_bs,
+        r.price_usd,
+        r.min_purchase,
+        r.max_purchase,
+        r.draw_date,
+        r.status,
+        r.pause_until,
+        r.pause_reason,
+        r.auto_pause_enabled ?? true,
+        r.publish ?? false,
+        r.created_at,
+        r.updated_at,
       ],
     )
   }
@@ -98,11 +111,22 @@ async function main() {
         ticket_quantity, total_amount, status, notes, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        p.id, p.raffle_id, p.customer_name, p.customer_phone,
-        p.customer_email, p.customer_ci, p.customer_location,
-        p.payment_method, p.payment_reference, p.payment_proof_url,
-        p.ticket_quantity, p.total_amount, p.status, p.notes,
-        p.created_at, p.updated_at,
+        p.id,
+        p.raffle_id,
+        p.customer_name,
+        p.customer_phone,
+        p.customer_email,
+        p.customer_ci,
+        p.customer_location,
+        p.payment_method,
+        p.payment_reference,
+        p.payment_proof_url,
+        p.ticket_quantity,
+        p.total_amount,
+        p.status,
+        p.notes,
+        p.created_at,
+        p.updated_at,
       ],
     )
   }
@@ -140,9 +164,18 @@ async function main() {
         resend_email_id, error_message, metadata, sent_at, created_at, updated_at)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       [
-        e.id, e.purchase_id, e.recipient_email, e.email_type, e.subject,
-        e.status, e.resend_email_id, e.error_message, e.metadata,
-        e.sent_at, e.created_at, e.updated_at,
+        e.id,
+        e.purchase_id,
+        e.recipient_email,
+        e.email_type,
+        e.subject,
+        e.status,
+        e.resend_email_id,
+        e.error_message,
+        e.metadata,
+        e.sent_at,
+        e.created_at,
+        e.updated_at,
       ],
     )
   }

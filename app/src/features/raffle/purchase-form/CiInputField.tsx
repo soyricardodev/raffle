@@ -1,5 +1,5 @@
-import { type CedulaPrefix, sanitizeCiDigits } from "@raffle/shared/validators"
 import { IdentificationBadgeIcon } from "@phosphor-icons/react"
+import { type CedulaPrefix, sanitizeCiDigits } from "@raffle/shared/validators"
 import { memo } from "react"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
@@ -64,10 +64,7 @@ export const CiInputField = memo(function CiInputField({
                 value={p}
                 aria-label={PREFIX_LABELS[p]}
                 title={PREFIX_LABELS[p]}
-                className={cn(
-                  "min-w-9 px-2.5 text-xs font-semibold",
-                  segmentToggleItemClassName,
-                )}
+                className={cn("min-w-9 px-2.5 text-xs font-semibold", segmentToggleItemClassName)}
               >
                 {p}
               </ToggleGroupItem>

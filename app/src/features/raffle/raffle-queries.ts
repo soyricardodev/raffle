@@ -1,10 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
-import { getRaffleById } from "@/server/raffle.service"
 import { createServerFn } from "@tanstack/react-start"
-import {
-  callRaffleIdServerFn,
-  RaffleIdInput,
-} from "@/features/raffle/raffle-server-fn"
+import { callRaffleIdServerFn, RaffleIdInput } from "@/features/raffle/raffle-server-fn"
+import { getRaffleById } from "@/server/raffle.service"
 
 export const raffleQueryKeys = {
   detail: (id: string) => ["raffle", id] as const,

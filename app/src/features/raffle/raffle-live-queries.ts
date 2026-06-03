@@ -1,10 +1,7 @@
 import { queryOptions, useQuery } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
+import { callRaffleIdServerFn, RaffleIdInput } from "@/features/raffle/raffle-server-fn"
 import { getRaffleLiveSnapshot, type RaffleLiveSnapshot } from "@/server/pause.service"
-import {
-  callRaffleIdServerFn,
-  RaffleIdInput,
-} from "@/features/raffle/raffle-server-fn"
 
 export type RaffleLiveStatus = RaffleLiveSnapshot
 
@@ -34,10 +31,7 @@ function livePollIntervalMs(data: RaffleLiveStatus | null | undefined): number |
   return LIVE_POLL_MS
 }
 
-export function useRaffleLiveStatus(
-  raffleId: string | number,
-  options?: { enabled?: boolean },
-) {
+export function useRaffleLiveStatus(raffleId: string | number, options?: { enabled?: boolean }) {
   const id = String(raffleId)
   return useQuery({
     ...raffleLiveQueryOptions(id),

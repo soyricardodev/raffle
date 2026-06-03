@@ -1,5 +1,5 @@
-import { getLogger } from "./logger"
 import { TooManyRequestsError } from "@raffle/shared/errors"
+import { getLogger } from "./logger"
 
 const logger = getLogger()
 

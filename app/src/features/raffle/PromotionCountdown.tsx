@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
 import { Clock } from "lucide-react"
+import { useEffect, useState } from "react"
 
 function formatRemaining(ms: number): string {
   if (ms <= 0) return "00:00:00"
@@ -37,14 +37,8 @@ export function PromotionCountdown({ endsAt, className, compact }: PromotionCoun
   const displayText = remaining === null ? "--:--:--" : formatRemaining(remaining)
 
   return (
-    <span
-      className={className}
-      aria-live="polite"
-      data-testid="promotion-countdown"
-    >
-      {!compact ? (
-        <Clock className="mr-1 inline size-3.5 shrink-0" aria-hidden />
-      ) : null}
+    <span className={className} aria-live="polite" data-testid="promotion-countdown">
+      {!compact ? <Clock className="mr-1 inline size-3.5 shrink-0" aria-hidden /> : null}
       <span className="font-mono font-semibold tabular-nums">{displayText}</span>
       {!compact ? (
         <span className="text-muted-foreground ml-1 text-xs font-normal">restantes</span>

@@ -1,8 +1,8 @@
-import { describe, expect, it, vi } from "vitest"
 import { RaffleInvalidTransitionError } from "@raffle/shared/errors"
+import { describe, expect, it, vi } from "vitest"
+import * as pauseService from "./pause.service"
 import { transitionRaffle } from "./raffle-lifecycle.service"
 import * as rafflesRepo from "./repositories/raffles.repository"
-import * as pauseService from "./pause.service"
 
 vi.mock("./repositories/raffles.repository")
 vi.mock("./pause.service")
@@ -17,9 +17,9 @@ describe("transitionRaffle policy", () => {
       status: "draft",
     } as never)
 
-    await expect(
-      transitionRaffle(1, { intent: "pause_sales" }),
-    ).rejects.toBeInstanceOf(RaffleInvalidTransitionError)
+    await expect(transitionRaffle(1, { intent: "pause_sales" })).rejects.toBeInstanceOf(
+      RaffleInvalidTransitionError,
+    )
   })
 
   it("rejects set_status active from paused (must resume_sales)", async () => {

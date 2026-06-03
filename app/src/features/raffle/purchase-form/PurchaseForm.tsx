@@ -33,12 +33,12 @@ import { usePurchasePricing } from "@/features/raffle/purchase-form/use-purchase
 import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
 import { raffleLiveQueryKeys } from "@/features/raffle/raffle-live-queries"
 import { raffleQueryKeys } from "@/features/raffle/raffle-queries"
-import { useBuyerPresence } from "@/features/raffle/use-buyer-presence"
 import type {
   PurchaseResult,
   RaffleForPurchase,
   RafflePaymentMethod,
 } from "@/features/raffle/types"
+import { useBuyerPresence } from "@/features/raffle/use-buyer-presence"
 import { getApiErrorMessage, publicFetch } from "@/lib/admin-fetch"
 
 export type PurchaseFormProps = {
@@ -102,10 +102,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     [minPurchase, methods],
   )
 
-  const paymentThresholds = useMemo(
-    () => getPaymentMethodThresholds(methods),
-    [methods],
-  )
+  const paymentThresholds = useMemo(() => getPaymentMethodThresholds(methods), [methods])
 
   const [quantity, setQuantity] = useState(quantityMin)
   const [customerName, setCustomerName] = useState("")

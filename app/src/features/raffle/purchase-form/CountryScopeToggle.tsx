@@ -1,5 +1,5 @@
-import type { CountryScope } from "@raffle/shared/validators"
 import { GlobeHemisphereWestIcon } from "@phosphor-icons/react"
+import type { CountryScope } from "@raffle/shared/validators"
 import { memo } from "react"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import { segmentToggleRowClassName } from "@/features/raffle/purchase-form/field-styles"
@@ -32,7 +32,11 @@ export const CountryScopeToggle = memo(function CountryScopeToggle({
       disabled={disabled}
       aria-label={ariaLabel}
     >
-      <ToggleGroupItem value="venezuela" aria-label="Venezuela" className={segmentToggleRowClassName}>
+      <ToggleGroupItem
+        value="venezuela"
+        aria-label="Venezuela"
+        className={segmentToggleRowClassName}
+      >
         <span className="flex items-center justify-center gap-1.5">
           <VenezuelaFlagIcon className="h-3.5 w-5" />
           <span className="text-xs font-medium sm:text-sm">Venezuela</span>

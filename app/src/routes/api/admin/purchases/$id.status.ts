@@ -1,7 +1,7 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { updatePurchaseStatus } from "@/server/purchase.service"
-import { requireAdmin } from "@/lib/auth-utils.server"
 import { UpdatePurchaseStatusInput } from "@raffle/shared/validators"
+import { createFileRoute } from "@tanstack/react-router"
+import { requireAdmin } from "@/lib/auth-utils.server"
+import { updatePurchaseStatus } from "@/server/purchase.service"
 
 export const Route = createFileRoute("/api/admin/purchases/$id/status")({
   server: {

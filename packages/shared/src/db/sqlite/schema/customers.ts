@@ -23,10 +23,7 @@ export const customers = sqliteTable(
       .$onUpdate(() => new Date()),
   },
   (t) => [
-    uniqueIndex("customers_phone_ci_uidx").on(
-      t.customerPhoneNormalized,
-      t.customerCiNormalized,
-    ),
+    uniqueIndex("customers_phone_ci_uidx").on(t.customerPhoneNormalized, t.customerCiNormalized),
     index("customers_phone_norm_idx").on(t.customerPhoneNormalized),
     index("customers_ci_norm_idx").on(t.customerCiNormalized),
     index("customers_email_idx").on(t.customerEmail),

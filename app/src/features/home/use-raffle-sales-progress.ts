@@ -1,10 +1,10 @@
 import { useMemo } from "react"
+import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
 import {
   calculateRaffleSalesProgress,
   type RaffleProgressInput,
   type RaffleSalesProgress,
 } from "@/lib/raffle-progress"
-import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
 
 type UseRaffleSalesProgressOptions = {
   raffleId: string | number

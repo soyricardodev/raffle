@@ -1,56 +1,60 @@
-"use client";
+"use client"
 
+import { motion, useReducedMotion } from "motion/react"
 import {
-  type ChartConfig,
-  ChartContainer,
-  getColorsCount,
-  getLoadingData,
-  LoadingIndicator,
-} from "@/components/evilcharts/ui/chart";
-import { EvilBrush, useEvilBrush, type EvilBrushRange } from "@/components/evilcharts/ui/evil-brush";
-import {
-  ChartTooltip,
-  ChartTooltipContent,
-  type TooltipRoundness,
-  type TooltipVariant,
-} from "@/components/evilcharts/ui/tooltip";
-import { ChartLegend, ChartLegendContent, type ChartLegendVariant } from "@/components/evilcharts/ui/legend";
-import { ChartBackground, type BackgroundVariant } from "@/components/evilcharts/ui/background";
-import {
+  type ComponentProps,
   createContext,
+  type ReactNode,
   use,
   useCallback,
   useId,
   useMemo,
   useRef,
   useState,
-  type ComponentProps,
-  type ReactNode,
-} from "react";
+} from "react"
 import {
+  CartesianGrid,
   Bar as RechartsBar,
   BarChart as RechartsBarChart,
-  CartesianGrid,
-  Rectangle,
-  ReferenceLine,
   XAxis as RechartsXAxis,
   YAxis as RechartsYAxis,
-} from "recharts";
-import type { RectRadius } from "recharts/types/shape/Rectangle";
-import { motion, useReducedMotion } from "motion/react";
+  Rectangle,
+  ReferenceLine,
+} from "recharts"
+import type { RectRadius } from "recharts/types/shape/Rectangle"
+import { type BackgroundVariant, ChartBackground } from "@/components/evilcharts/ui/background"
+import {
+  type ChartConfig,
+  ChartContainer,
+  getColorsCount,
+  getLoadingData,
+  LoadingIndicator,
+} from "@/components/evilcharts/ui/chart"
+import { EvilBrush, type EvilBrushRange, useEvilBrush } from "@/components/evilcharts/ui/evil-brush"
+import {
+  ChartLegend,
+  ChartLegendContent,
+  type ChartLegendVariant,
+} from "@/components/evilcharts/ui/legend"
+import {
+  ChartTooltip,
+  ChartTooltipContent,
+  type TooltipRoundness,
+  type TooltipVariant,
+} from "@/components/evilcharts/ui/tooltip"
 
 // Constants
-const DEFAULT_BAR_RADIUS = 2;
-const LOADING_BAR_DATA_KEY = "loading";
-const LOADING_ANIMATION_DURATION = 2000; // in milliseconds
-const STACK_ID = "evil-stacked";
-const BAR_GROW_DURATION = 0.5; // per-bar grow-in length, in seconds
-const BAR_STAGGER = 0.05; // delay between consecutive bars, in seconds
-const REVEAL_EASE: [number, number, number, number] = [0, 0.7, 0.5, 1]; // grow-in easing
+const DEFAULT_BAR_RADIUS = 2
+const LOADING_BAR_DATA_KEY = "loading"
+const LOADING_ANIMATION_DURATION = 2000 // in milliseconds
+const STACK_ID = "evil-stacked"
+const BAR_GROW_DURATION = 0.5 // per-bar grow-in length, in seconds
+const BAR_STAGGER = 0.05 // delay between consecutive bars, in seconds
+const REVEAL_EASE: [number, number, number, number] = [0, 0.7, 0.5, 1] // grow-in easing
 
-type BarVariant = "default" | "hatched" | "duotone" | "duotone-reverse" | "gradient" | "stripped";
-type StackType = "default" | "stacked" | "percent";
-type BarLayout = "vertical" | "horizontal";
+type BarVariant = "default" | "hatched" | "duotone" | "duotone-reverse" | "gradient" | "stripped"
+type StackType = "default" | "stacked" | "percent"
+type BarLayout = "vertical" | "horizontal"
 
 /**
  * Order in which bars grow into view. Recharts' own bar animation is permanently
@@ -61,7 +65,7 @@ type BarLayout = "vertical" | "horizontal";
  * chart. `"none"` opts out entirely; it is also what a device with the OS
  * "reduce motion" preference falls back to automatically.
  */
-type BarAnimationType = "none" | "left-to-right" | "right-to-left" | "center-out" | "edges-in";
+type BarAnimationType = "none" | "left-to-right" | "right-to-left" | "center-out" | "edges-in"
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Shared context
@@ -73,32 +77,30 @@ type BarAnimationType = "none" | "left-to-right" | "right-to-left" | "center-out
  * Sub-components are composed freely — the provider is the single source of truth.
  */
 type BarChartContextValue = {
-  config: ChartConfig; // colors + labels for every series
-  isStacked: boolean; // whether bars stack on top of each other
-  isHorizontal: boolean; // whether bars are laid out horizontally
-  isLoading: boolean; // whether the chart shows its loading skeleton
-  barRadius: number; // default corner radius each <Bar /> inherits
-  animationType: BarAnimationType; // default grow-in order each <Bar /> inherits
-  introStartedAt: number; // timestamp the chart mounted — anchors the one-shot grow-in
-  dataLength: number; // number of rows currently rendered
-  selectedDataKey: string | null; // currently selected series, or null when none
-  selectDataKey: (dataKey: string | null) => void; // sets the selected series
-  isMouseInChart: boolean; // whether the pointer is currently over the chart
-};
+  config: ChartConfig // colors + labels for every series
+  isStacked: boolean // whether bars stack on top of each other
+  isHorizontal: boolean // whether bars are laid out horizontally
+  isLoading: boolean // whether the chart shows its loading skeleton
+  barRadius: number // default corner radius each <Bar /> inherits
+  animationType: BarAnimationType // default grow-in order each <Bar /> inherits
+  introStartedAt: number // timestamp the chart mounted — anchors the one-shot grow-in
+  dataLength: number // number of rows currently rendered
+  selectedDataKey: string | null // currently selected series, or null when none
+  selectDataKey: (dataKey: string | null) => void // sets the selected series
+  isMouseInChart: boolean // whether the pointer is currently over the chart
+}
 
-const BarChartContext = createContext<BarChartContextValue | null>(null);
+const BarChartContext = createContext<BarChartContextValue | null>(null)
 
 // Reads the chart context, throwing a helpful error when used outside <EvilBarChart />
 function useBarChart() {
-  const context = use(BarChartContext);
+  const context = use(BarChartContext)
 
   if (!context) {
-    throw new Error(
-      "Bar chart parts (<Bar />, <XAxis />, …) must be used within <EvilBarChart />",
-    );
+    throw new Error("Bar chart parts (<Bar />, <XAxis />, …) must be used within <EvilBarChart />")
   }
 
-  return context;
+  return context
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -107,40 +109,40 @@ function useBarChart() {
 
 // Validates that every config key also exists on the data row type
 type ValidateConfigKeys<TData, TConfig> = {
-  [K in keyof TConfig]: K extends keyof TData ? ChartConfig[string] : never;
-};
+  [K in keyof TConfig]: K extends keyof TData ? ChartConfig[string] : never
+}
 
 type EvilBarChartBaseProps<
   TData extends Record<string, unknown>,
   TConfig extends Record<string, ChartConfig[string]>,
 > = {
-  config: TConfig & ValidateConfigKeys<TData, TConfig>; // series colors + labels
-  data: TData[]; // rows rendered by the chart
-  children: ReactNode; // composed parts — <Bar />, <XAxis />, <Legend />, …
-  className?: string; // extra classes for the chart container
-  chartProps?: ComponentProps<typeof RechartsBarChart>; // escape hatch for the raw Recharts chart
-  stackType?: StackType; // how multiple bars combine
-  layout?: BarLayout; // orientation of the bars
-  barRadius?: number; // default corner radius for every <Bar />
-  animationType?: BarAnimationType; // default grow-in order for every <Bar />
-  barGap?: number; // gap between bars within the same category
-  barCategoryGap?: number; // gap between categories of bars
-  backgroundVariant?: BackgroundVariant; // background pattern drawn behind the chart
-  defaultSelectedDataKey?: string | null; // series selected on first render
-  onSelectionChange?: (selectedDataKey: string | null) => void; // fires when the selected series changes
-  isLoading?: boolean; // shows the animated loading skeleton
-  loadingBars?: number; // number of bars in the loading skeleton
-  showBrush?: boolean; // renders a zoom brush below the chart
-  xDataKey?: keyof TData & string; // x-axis key — only needed for the brush footer
-  brushHeight?: number; // height of the brush preview in pixels
-  brushFormatLabel?: (value: unknown, index: number) => string; // formats brush axis labels
-  onBrushChange?: (range: EvilBrushRange) => void; // fires when the brush range changes
-};
+  config: TConfig & ValidateConfigKeys<TData, TConfig> // series colors + labels
+  data: TData[] // rows rendered by the chart
+  children: ReactNode // composed parts — <Bar />, <XAxis />, <Legend />, …
+  className?: string // extra classes for the chart container
+  chartProps?: ComponentProps<typeof RechartsBarChart> // escape hatch for the raw Recharts chart
+  stackType?: StackType // how multiple bars combine
+  layout?: BarLayout // orientation of the bars
+  barRadius?: number // default corner radius for every <Bar />
+  animationType?: BarAnimationType // default grow-in order for every <Bar />
+  barGap?: number // gap between bars within the same category
+  barCategoryGap?: number // gap between categories of bars
+  backgroundVariant?: BackgroundVariant // background pattern drawn behind the chart
+  defaultSelectedDataKey?: string | null // series selected on first render
+  onSelectionChange?: (selectedDataKey: string | null) => void // fires when the selected series changes
+  isLoading?: boolean // shows the animated loading skeleton
+  loadingBars?: number // number of bars in the loading skeleton
+  showBrush?: boolean // renders a zoom brush below the chart
+  xDataKey?: keyof TData & string // x-axis key — only needed for the brush footer
+  brushHeight?: number // height of the brush preview in pixels
+  brushFormatLabel?: (value: unknown, index: number) => string // formats brush axis labels
+  onBrushChange?: (range: EvilBrushRange) => void // fires when the brush range changes
+}
 
 type EvilBarChartProps<
   TData extends Record<string, unknown>,
   TConfig extends Record<string, ChartConfig[string]>,
-> = EvilBarChartBaseProps<TData, TConfig>;
+> = EvilBarChartBaseProps<TData, TConfig>
 
 /**
  * Root of the composible bar chart. Owns the data, the shared context, the
@@ -174,28 +176,28 @@ export function EvilBarChart<
   brushFormatLabel,
   onBrushChange,
 }: EvilBarChartProps<TData, TConfig>) {
-  const chartId = useId().replace(/:/g, ""); // colon-free id keeps CSS/SVG selectors valid
+  const chartId = useId().replace(/:/g, "") // colon-free id keeps CSS/SVG selectors valid
   // Anchors the grow-in to a fixed moment so it plays exactly once — re-renders
   // and Recharts' bar remounts read elapsed time from here instead of replaying.
   // Lazy useState stamps the time once, on the initial render only.
-  const [introStartedAt] = useState(() => Date.now());
-  const [selectedDataKey, setSelectedDataKey] = useState<string | null>(defaultSelectedDataKey);
-  const [isMouseInChart, setIsMouseInChart] = useState(false);
-  const { loadingData, onShimmerExit } = useLoadingData(isLoading, loadingBars);
-  const { visibleData, brushProps } = useEvilBrush({ data });
+  const [introStartedAt] = useState(() => Date.now())
+  const [selectedDataKey, setSelectedDataKey] = useState<string | null>(defaultSelectedDataKey)
+  const [isMouseInChart, setIsMouseInChart] = useState(false)
+  const { loadingData, onShimmerExit } = useLoadingData(isLoading, loadingBars)
+  const { visibleData, brushProps } = useEvilBrush({ data })
 
-  const isStacked = stackType === "stacked" || stackType === "percent";
-  const isHorizontal = layout === "horizontal";
-  const displayData = showBrush && !isLoading ? visibleData : data;
+  const isStacked = stackType === "stacked" || stackType === "percent"
+  const isHorizontal = layout === "horizontal"
+  const displayData = showBrush && !isLoading ? visibleData : data
 
   // Updates selection state and notifies the parent
   const selectDataKey = useCallback(
     (newSelectedDataKey: string | null) => {
-      setSelectedDataKey(newSelectedDataKey);
-      onSelectionChange?.(newSelectedDataKey);
+      setSelectedDataKey(newSelectedDataKey)
+      onSelectionChange?.(newSelectedDataKey)
     },
     [onSelectionChange],
-  );
+  )
 
   const contextValue = useMemo<BarChartContextValue>(
     () => ({
@@ -224,7 +226,7 @@ export function EvilBarChart<
       selectDataKey,
       isMouseInChart,
     ],
-  );
+  )
 
   return (
     <BarChartContext value={contextValue}>
@@ -247,8 +249,8 @@ export function EvilBarChart<
               className="mt-1"
               {...brushProps}
               onChange={(range) => {
-                brushProps.onChange(range);
-                onBrushChange?.(range);
+                brushProps.onChange(range)
+                onBrushChange?.(range)
               }}
             />
           )
@@ -274,7 +276,7 @@ export function EvilBarChart<
         </RechartsBarChart>
       </ChartContainer>
     </BarChartContext>
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -282,16 +284,16 @@ export function EvilBarChart<
 // ─────────────────────────────────────────────────────────────────────────────
 
 type BarProps = {
-  dataKey: string; // series key — must exist on the data and config
-  variant?: BarVariant; // fill style for this bar only
-  radius?: number; // corner radius — falls back to the chart default
-  animationType?: BarAnimationType; // grow-in order — falls back to the chart default
-  isClickable?: boolean; // lets this bar be selected by clicking it
-  enableHoverHighlight?: boolean; // dims this bar while another bar is hovered
-  glowing?: boolean; // applies a soft outer glow to this bar
-  bufferBar?: boolean; // renders the last data point as a hatched "buffer" bar
-  barProps?: ComponentProps<typeof RechartsBar>; // escape hatch for raw Recharts Bar props
-};
+  dataKey: string // series key — must exist on the data and config
+  variant?: BarVariant // fill style for this bar only
+  radius?: number // corner radius — falls back to the chart default
+  animationType?: BarAnimationType // grow-in order — falls back to the chart default
+  isClickable?: boolean // lets this bar be selected by clicking it
+  enableHoverHighlight?: boolean // dims this bar while another bar is hovered
+  glowing?: boolean // applies a soft outer glow to this bar
+  bufferBar?: boolean // renders the last data point as a hatched "buffer" bar
+  barProps?: ComponentProps<typeof RechartsBar> // escape hatch for raw Recharts Bar props
+}
 
 /**
  * A single bar series. Each <Bar /> is fully self-contained: it generates its
@@ -322,22 +324,22 @@ export function Bar({
     selectedDataKey,
     selectDataKey,
     isMouseInChart,
-  } = useBarChart();
-  const id = useId().replace(/:/g, ""); // unique id scopes this bar's style defs
+  } = useBarChart()
+  const id = useId().replace(/:/g, "") // unique id scopes this bar's style defs
   // Devices set to "reduce motion" skip the grow-in animation entirely
-  const shouldReduceMotion = useReducedMotion();
+  const shouldReduceMotion = useReducedMotion()
 
   // The root renders the skeleton bar while loading, so real bars step aside
-  if (isLoading) return null;
+  if (isLoading) return null
 
-  const resolvedRadius = radius ?? defaultRadius;
-  const isSelected = selectedDataKey === dataKey;
+  const resolvedRadius = radius ?? defaultRadius
+  const isSelected = selectedDataKey === dataKey
 
   // The grow-in is a per-frame animation — heavier than a static chart — so
   // `"none"` and the OS reduce-motion preference both opt out of it.
   const revealType: BarAnimationType = shouldReduceMotion
     ? "none"
-    : (animationType ?? defaultAnimation);
+    : (animationType ?? defaultAnimation)
 
   const customBarProps = {
     id,
@@ -354,11 +356,11 @@ export function Bar({
     selectedDataKey,
     dataLength,
     onClick: () => {
-      if (!isClickable) return;
+      if (!isClickable) return
       // Clicking the selected bar clears the selection, otherwise selects it
-      selectDataKey(isSelected ? null : dataKey);
+      selectDataKey(isSelected ? null : dataKey)
     },
-  };
+  }
 
   return (
     <>
@@ -393,10 +395,10 @@ export function Bar({
         {glowing && <GlowFilter id={id} dataKey={dataKey} />}
       </defs>
     </>
-  );
+  )
 }
 
-type XAxisProps = ComponentProps<typeof RechartsXAxis>;
+type XAxisProps = ComponentProps<typeof RechartsXAxis>
 
 /**
  * The category axis. Ships with the chart's flat default styling and forwards
@@ -413,9 +415,9 @@ export function XAxis({
   type,
   ...props
 }: XAxisProps) {
-  const { isLoading, isHorizontal } = useBarChart();
+  const { isLoading, isHorizontal } = useBarChart()
 
-  if (isLoading) return null;
+  if (isLoading) return null
 
   return (
     <RechartsXAxis
@@ -426,10 +428,10 @@ export function XAxis({
       type={type ?? (isHorizontal ? "number" : "category")}
       {...props}
     />
-  );
+  )
 }
 
-type YAxisProps = ComponentProps<typeof RechartsYAxis>;
+type YAxisProps = ComponentProps<typeof RechartsYAxis>
 
 /**
  * The value axis. Forwards every Recharts YAxis prop and resolves its axis type
@@ -445,9 +447,9 @@ export function YAxis({
   type,
   ...props
 }: YAxisProps) {
-  const { isLoading, isHorizontal } = useBarChart();
+  const { isLoading, isHorizontal } = useBarChart()
 
-  if (isLoading) return null;
+  if (isLoading) return null
 
   return (
     <RechartsYAxis
@@ -459,10 +461,10 @@ export function YAxis({
       type={type ?? (isHorizontal ? "category" : "number")}
       {...props}
     />
-  );
+  )
 }
 
-type GridProps = ComponentProps<typeof CartesianGrid>;
+type GridProps = ComponentProps<typeof CartesianGrid>
 
 /**
  * The background grid lines. Defaults to dashed lines aligned to the value
@@ -470,7 +472,7 @@ type GridProps = ComponentProps<typeof CartesianGrid>;
  * prop for full control.
  */
 export function Grid({ strokeDasharray = "3 3", vertical, horizontal, ...props }: GridProps) {
-  const { isHorizontal } = useBarChart();
+  const { isHorizontal } = useBarChart()
 
   return (
     <CartesianGrid
@@ -479,23 +481,23 @@ export function Grid({ strokeDasharray = "3 3", vertical, horizontal, ...props }
       horizontal={horizontal ?? !isHorizontal}
       {...props}
     />
-  );
+  )
 }
 
 type TooltipProps = {
-  variant?: TooltipVariant; // visual style of the tooltip surface
-  roundness?: TooltipRoundness; // border-radius of the tooltip
-  defaultIndex?: number; // data index shown by default with no hover
-};
+  variant?: TooltipVariant // visual style of the tooltip surface
+  roundness?: TooltipRoundness // border-radius of the tooltip
+  defaultIndex?: number // data index shown by default with no hover
+}
 
 /**
  * The hover tooltip. Reads the chart's selection from context so its content
  * dims unselected series. Hidden automatically while the chart is loading.
  */
 export function Tooltip({ variant, roundness, defaultIndex }: TooltipProps) {
-  const { isLoading, selectedDataKey } = useBarChart();
+  const { isLoading, selectedDataKey } = useBarChart()
 
-  if (isLoading) return null;
+  if (isLoading) return null
 
   return (
     <ChartTooltip
@@ -505,15 +507,15 @@ export function Tooltip({ variant, roundness, defaultIndex }: TooltipProps) {
         <ChartTooltipContent selected={selectedDataKey} roundness={roundness} variant={variant} />
       }
     />
-  );
+  )
 }
 
 type LegendProps = {
-  variant?: ChartLegendVariant; // visual style of the legend indicators
-  align?: "left" | "center" | "right"; // horizontal placement
-  verticalAlign?: "top" | "middle" | "bottom"; // vertical placement
-  isClickable?: boolean; // lets each entry toggle selection of its series
-};
+  variant?: ChartLegendVariant // visual style of the legend indicators
+  align?: "left" | "center" | "right" // horizontal placement
+  verticalAlign?: "top" | "middle" | "bottom" // vertical placement
+  isClickable?: boolean // lets each entry toggle selection of its series
+}
 
 /**
  * The series legend. When `isClickable` is set, each entry toggles selection of
@@ -525,7 +527,7 @@ export function Legend({
   verticalAlign = "top",
   isClickable = false,
 }: LegendProps) {
-  const { selectedDataKey, selectDataKey } = useBarChart();
+  const { selectedDataKey, selectDataKey } = useBarChart()
 
   return (
     <ChartLegend
@@ -540,7 +542,7 @@ export function Legend({
         />
       }
     />
-  );
+  )
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -549,36 +551,36 @@ export function Legend({
 
 // Raw geometry Recharts hands to a custom bar shape
 type BarShapeProps = {
-  x?: number;
-  y?: number;
-  width?: number;
-  height?: number;
-  fill?: string;
-  fillOpacity?: number;
-  dataKey?: string;
-  index?: number;
-  [key: string]: unknown;
-};
+  x?: number
+  y?: number
+  width?: number
+  height?: number
+  fill?: string
+  fillOpacity?: number
+  dataKey?: string
+  index?: number
+  [key: string]: unknown
+}
 
 // Per-series config the <Bar /> threads into every CustomBar render
 type CustomBarProps = {
-  id: string;
-  dataKey: string;
-  variant: BarVariant;
-  barRadius: number;
-  glowing?: boolean;
-  bufferBar?: boolean;
-  isClickable?: boolean;
-  enableHoverHighlight?: boolean;
-  isMouseInChart?: boolean;
-  isHorizontal?: boolean;
-  animationType?: BarAnimationType;
-  introStartedAt?: number;
-  selectedDataKey?: string | null;
-  isActive?: boolean;
-  dataLength?: number;
-  onClick?: () => void;
-} & BarShapeProps;
+  id: string
+  dataKey: string
+  variant: BarVariant
+  barRadius: number
+  glowing?: boolean
+  bufferBar?: boolean
+  isClickable?: boolean
+  enableHoverHighlight?: boolean
+  isMouseInChart?: boolean
+  isHorizontal?: boolean
+  animationType?: BarAnimationType
+  introStartedAt?: number
+  selectedDataKey?: string | null
+  isActive?: boolean
+  dataLength?: number
+  onClick?: () => void
+} & BarShapeProps
 
 /**
  * Custom bar shape. Renders the visible bar painted by the owning <Bar />'s
@@ -607,17 +609,17 @@ const CustomBar = (props: CustomBarProps) => {
     isActive,
     dataLength = 0,
     onClick,
-  } = props;
+  } = props
 
-  const index = typeof props.index === "number" ? props.index : -1;
-  const isLastBar = bufferBar && dataLength > 0 && index === dataLength - 1;
-  const isStripped = variant === "stripped";
-  const grow = getBarGrowAnimation(animationType, index, dataLength, isHorizontal, introStartedAt);
+  const index = typeof props.index === "number" ? props.index : -1
+  const isLastBar = bufferBar && dataLength > 0 && index === dataLength - 1
+  const isStripped = variant === "stripped"
+  const grow = getBarGrowAnimation(animationType, index, dataLength, isHorizontal, introStartedAt)
 
   const fill = isLastBar
     ? `url(#${id}-buffer-hatched-${dataKey})`
-    : getVariantFill(variant, id, dataKey);
-  const filter = glowing ? `url(#${id}-bar-glow-${dataKey})` : undefined;
+    : getVariantFill(variant, id, dataKey)
+  const filter = glowing ? `url(#${id}-bar-glow-${dataKey})` : undefined
 
   const fillOpacity = getBarOpacity({
     isClickable,
@@ -626,11 +628,11 @@ const CustomBar = (props: CustomBarProps) => {
     enableHoverHighlight,
     isMouseInChart,
     isActive,
-  });
-  const cursorStyle = isClickable || enableHoverHighlight ? { cursor: "pointer" } : undefined;
+  })
+  const cursorStyle = isClickable || enableHoverHighlight ? { cursor: "pointer" } : undefined
 
   // Stripped bars round only their top corners; every other variant rounds all four
-  const radius: RectRadius = isStripped ? [barRadius, barRadius, 0, 0] : barRadius;
+  const radius: RectRadius = isStripped ? [barRadius, barRadius, 0, 0] : barRadius
 
   // The visible, painted bar — plus the stripped variant's solid top strip
   const visibleBar = (
@@ -658,7 +660,7 @@ const CustomBar = (props: CustomBarProps) => {
         />
       )}
     </>
-  );
+  )
 
   return (
     <g style={cursorStyle} onClick={onClick}>
@@ -678,8 +680,8 @@ const CustomBar = (props: CustomBarProps) => {
         visibleBar
       )}
     </g>
-  );
-};
+  )
+}
 
 /**
  * Builds the motion.dev grow-in animation for a single bar, or returns `null`
@@ -704,49 +706,49 @@ const getBarGrowAnimation = (
   isHorizontal: boolean,
   introStartedAt: number,
 ) => {
-  if (animationType === "none" || index < 0 || dataLength <= 0) return null;
+  if (animationType === "none" || index < 0 || dataLength <= 0) return null
 
-  const lastIndex = dataLength - 1;
-  const center = lastIndex / 2;
+  const lastIndex = dataLength - 1
+  const center = lastIndex / 2
 
   // How many bars this one waits behind before it starts growing
-  let step: number;
+  let step: number
   switch (animationType) {
     case "right-to-left":
-      step = lastIndex - index;
-      break;
+      step = lastIndex - index
+      break
     case "center-out":
-      step = Math.abs(index - center);
-      break;
+      step = Math.abs(index - center)
+      break
     case "edges-in":
-      step = center - Math.abs(index - center);
-      break;
+      step = center - Math.abs(index - center)
+      break
     default: // left-to-right
-      step = index;
+      step = index
   }
 
-  const startMs = step * BAR_STAGGER * 1000;
-  const durationMs = BAR_GROW_DURATION * 1000;
-  const endMs = startMs + durationMs;
-  const elapsed = Date.now() - introStartedAt;
+  const startMs = step * BAR_STAGGER * 1000
+  const durationMs = BAR_GROW_DURATION * 1000
+  const endMs = startMs + durationMs
+  const elapsed = Date.now() - introStartedAt
 
   // Already finished — render static so re-renders/remounts can't replay it
-  if (elapsed >= endMs) return null;
+  if (elapsed >= endMs) return null
 
   // Resume from wherever this bar should already be: 0 before it starts,
   // partway through if a remount caught it mid-grow.
-  const from = elapsed <= startMs ? 0 : (elapsed - startMs) / durationMs;
+  const from = elapsed <= startMs ? 0 : (elapsed - startMs) / durationMs
   const transition = {
     duration: (endMs - Math.max(elapsed, startMs)) / 1000,
     ease: REVEAL_EASE,
     delay: Math.max(0, startMs - elapsed) / 1000,
-  };
+  }
 
   // Horizontal bars grow rightward from the left edge, vertical from the bottom
   return isHorizontal
     ? { initial: { scaleX: from }, animate: { scaleX: 1 }, transition, style: { originX: 0 } }
-    : { initial: { scaleY: from }, animate: { scaleY: 1 }, transition, style: { originY: 1 } };
-};
+    : { initial: { scaleY: from }, animate: { scaleY: 1 }, transition, style: { originY: 1 } }
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Selection + fill helpers
@@ -756,19 +758,19 @@ const getBarGrowAnimation = (
 const getVariantFill = (variant: BarVariant, id: string, dataKey: string): string => {
   switch (variant) {
     case "hatched":
-      return `url(#${id}-hatched-${dataKey})`;
+      return `url(#${id}-hatched-${dataKey})`
     case "duotone":
-      return `url(#${id}-duotone-${dataKey})`;
+      return `url(#${id}-duotone-${dataKey})`
     case "duotone-reverse":
-      return `url(#${id}-duotone-reverse-${dataKey})`;
+      return `url(#${id}-duotone-reverse-${dataKey})`
     case "gradient":
-      return `url(#${id}-gradient-${dataKey})`;
+      return `url(#${id}-gradient-${dataKey})`
     case "stripped":
-      return `url(#${id}-stripped-${dataKey})`;
+      return `url(#${id}-stripped-${dataKey})`
     default:
-      return `url(#${id}-colors-${dataKey})`;
+      return `url(#${id}-colors-${dataKey})`
   }
-};
+}
 
 // Computes bar opacity from the click selection and hover-highlight state
 const getBarOpacity = ({
@@ -779,43 +781,39 @@ const getBarOpacity = ({
   isMouseInChart,
   isActive,
 }: {
-  isClickable?: boolean;
-  selectedDataKey?: string | null;
-  dataKey: string;
-  enableHoverHighlight?: boolean;
-  isMouseInChart?: boolean;
-  isActive?: boolean;
+  isClickable?: boolean
+  selectedDataKey?: string | null
+  dataKey: string
+  enableHoverHighlight?: boolean
+  isMouseInChart?: boolean
+  isActive?: boolean
 }) => {
-  const isSelectedDataKey = selectedDataKey === null || selectedDataKey === dataKey;
-  const clickOpacity = isClickable && selectedDataKey !== null ? (isSelectedDataKey ? 1 : 0.3) : 1;
+  const isSelectedDataKey = selectedDataKey === null || selectedDataKey === dataKey
+  const clickOpacity = isClickable && selectedDataKey !== null ? (isSelectedDataKey ? 1 : 0.3) : 1
 
   // While hovering, the hovered bar keeps its click opacity and the rest dim further
   if (enableHoverHighlight && isMouseInChart) {
-    return isActive ? clickOpacity : clickOpacity * 0.3;
+    return isActive ? clickOpacity : clickOpacity * 0.3
   }
 
-  return clickOpacity;
-};
+  return clickOpacity
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Style definitions — one set per <Bar />, scoped to its unique id
 // ─────────────────────────────────────────────────────────────────────────────
 
 type StyleProps = {
-  id: string; // unique id of the owning <Bar />
-  dataKey: string; // series key the colors belong to
-};
+  id: string // unique id of the owning <Bar />
+  dataKey: string // series key the colors belong to
+}
 
 /**
  * Vertical top-to-bottom color gradient for a series. Always rendered — every
  * fill variant and the buffer-bar stroke paint from this single gradient.
  */
-const ColorGradient = ({
-  id,
-  dataKey,
-  config,
-}: StyleProps & { config: ChartConfig }) => {
-  const colorsCount = getColorsCount(config[dataKey] ?? {});
+const ColorGradient = ({ id, dataKey, config }: StyleProps & { config: ChartConfig }) => {
+  const colorsCount = getColorsCount(config[dataKey] ?? {})
 
   return (
     <linearGradient id={`${id}-colors-${dataKey}`} x1="0" y1="0" x2="0" y2="1">
@@ -826,19 +824,19 @@ const ColorGradient = ({
         </>
       ) : (
         Array.from({ length: colorsCount }, (_, index) => {
-          const offset = `${(index / (colorsCount - 1)) * 100}%`;
+          const offset = `${(index / (colorsCount - 1)) * 100}%`
           return (
             <stop
               key={offset}
               offset={offset}
               stopColor={`var(--color-${dataKey}-${index}, var(--color-${dataKey}-0))`}
             />
-          );
+          )
         })
       )}
     </linearGradient>
-  );
-};
+  )
+}
 
 /** Diagonal hatched-stripe fill, masked from the series color gradient. */
 const HatchedPattern = ({ id, dataKey }: StyleProps) => {
@@ -873,8 +871,8 @@ const HatchedPattern = ({ id, dataKey }: StyleProps) => {
         />
       </pattern>
     </>
-  );
-};
+  )
+}
 
 /** Hatched diagonal lines with no background fill, used for the buffer bar. */
 const BufferHatchedPattern = ({ id, dataKey }: StyleProps) => {
@@ -909,12 +907,12 @@ const BufferHatchedPattern = ({ id, dataKey }: StyleProps) => {
         />
       </pattern>
     </>
-  );
-};
+  )
+}
 
 /** Two-tone fill — a half-faded, half-solid split applied per bar bounding box. */
 const DuotonePattern = ({ id, dataKey, config }: StyleProps & { config: ChartConfig }) => {
-  const colorsCount = getColorsCount(config[dataKey] ?? {});
+  const colorsCount = getColorsCount(config[dataKey] ?? {})
 
   return (
     <>
@@ -944,14 +942,14 @@ const DuotonePattern = ({ id, dataKey, config }: StyleProps & { config: ChartCon
           </>
         ) : (
           Array.from({ length: colorsCount }, (_, index) => {
-            const offset = `${(index / (colorsCount - 1)) * 100}%`;
+            const offset = `${(index / (colorsCount - 1)) * 100}%`
             return (
               <stop
                 key={offset}
                 offset={offset}
                 stopColor={`var(--color-${dataKey}-${index}, var(--color-${dataKey}-0))`}
               />
-            );
+            )
           })
         )}
       </linearGradient>
@@ -981,12 +979,12 @@ const DuotonePattern = ({ id, dataKey, config }: StyleProps & { config: ChartCon
         />
       </pattern>
     </>
-  );
-};
+  )
+}
 
 /** Two-tone fill with the solid and faded halves reversed from `duotone`. */
 const DuotoneReversePattern = ({ id, dataKey, config }: StyleProps & { config: ChartConfig }) => {
-  const colorsCount = getColorsCount(config[dataKey] ?? {});
+  const colorsCount = getColorsCount(config[dataKey] ?? {})
 
   return (
     <>
@@ -1016,14 +1014,14 @@ const DuotoneReversePattern = ({ id, dataKey, config }: StyleProps & { config: C
           </>
         ) : (
           Array.from({ length: colorsCount }, (_, index) => {
-            const offset = `${(index / (colorsCount - 1)) * 100}%`;
+            const offset = `${(index / (colorsCount - 1)) * 100}%`
             return (
               <stop
                 key={offset}
                 offset={offset}
                 stopColor={`var(--color-${dataKey}-${index}, var(--color-${dataKey}-0))`}
               />
-            );
+            )
           })
         )}
       </linearGradient>
@@ -1053,8 +1051,8 @@ const DuotoneReversePattern = ({ id, dataKey, config }: StyleProps & { config: C
         />
       </pattern>
     </>
-  );
-};
+  )
+}
 
 /** Gradient fill that fades the series color from solid at the top to clear. */
 const GradientPattern = ({ id, dataKey }: StyleProps) => {
@@ -1081,8 +1079,8 @@ const GradientPattern = ({ id, dataKey }: StyleProps) => {
         />
       </pattern>
     </>
-  );
-};
+  )
+}
 
 /** Low-opacity body fill, paired with a solid top strip drawn by CustomBar. */
 const StrippedPattern = ({ id, dataKey }: StyleProps) => {
@@ -1109,8 +1107,8 @@ const StrippedPattern = ({ id, dataKey }: StyleProps) => {
         />
       </pattern>
     </>
-  );
-};
+  )
+}
 
 /** Soft outer-glow filter applied to a glowing bar. */
 const GlowFilter = ({ id, dataKey }: StyleProps) => {
@@ -1131,8 +1129,8 @@ const GlowFilter = ({ id, dataKey }: StyleProps) => {
         <feMergeNode in="SourceGraphic" />
       </feMerge>
     </filter>
-  );
-};
+  )
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Loading skeleton
@@ -1145,13 +1143,13 @@ const generateEasedGradientStops = (
   maxOpacity: number = 0.9,
 ) => {
   return Array.from({ length: steps }, (_, i) => {
-    const t = i / (steps - 1); // 0 to 1
+    const t = i / (steps - 1) // 0 to 1
     // Sine-based bell curve easing: peaks at center (t=0.5), smooth falloff at edges
-    const eased = Math.sin(t * Math.PI) ** 2;
-    const opacity = minOpacity + eased * (maxOpacity - minOpacity);
-    return { offset: `${(t * 100).toFixed(0)}%`, opacity: Number(opacity.toFixed(3)) };
-  });
-};
+    const eased = Math.sin(t * Math.PI) ** 2
+    const opacity = minOpacity + eased * (maxOpacity - minOpacity)
+    return { offset: `${(t * 100).toFixed(0)}%`, opacity: Number(opacity.toFixed(3)) }
+  })
+}
 
 /**
  * Hook to manage loading data with pixel-perfect shimmer synchronization.
@@ -1161,36 +1159,30 @@ const generateEasedGradientStops = (
  * timing drift issues from setTimeout/setInterval.
  */
 export function useLoadingData(isLoading: boolean, loadingBars: number = 12) {
-  const [loadingDataKey, setLoadingDataKey] = useState(false);
+  const [loadingDataKey, setLoadingDataKey] = useState(false)
 
   // Callback fired by motion.dev when the shimmer exits the visible area
   const onShimmerExit = useCallback(() => {
     if (isLoading) {
-      setLoadingDataKey((prev) => !prev);
+      setLoadingDataKey((prev) => !prev)
     }
-  }, [isLoading]);
+  }, [isLoading])
 
   const loadingData = useMemo(
     () => getLoadingData(loadingBars, 20, 80),
     // loadingDataKey toggle triggers re-computation when the shimmer exits
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [loadingBars, loadingDataKey],
-  );
+  )
 
-  return { loadingData, onShimmerExit };
+  return { loadingData, onShimmerExit }
 }
 
 /**
  * The skeleton bar shown while the chart is loading. Rendered by the root in
  * place of the real bars, paired with its own masked shimmer pattern.
  */
-const LoadingBar = ({
-  chartId,
-  onShimmerExit,
-}: {
-  chartId: string;
-  onShimmerExit: () => void;
-}) => {
+const LoadingBar = ({ chartId, onShimmerExit }: { chartId: string; onShimmerExit: () => void }) => {
   return (
     <>
       <RechartsBar
@@ -1206,8 +1198,8 @@ const LoadingBar = ({
         <LoadingBarPattern chartId={chartId} onShimmerExit={onShimmerExit} />
       </defs>
     </>
-  );
-};
+  )
+}
 
 /**
  * Animated shimmer pattern for the loading skeleton.
@@ -1221,18 +1213,18 @@ const LoadingBarPattern = ({
   chartId,
   onShimmerExit,
 }: {
-  chartId: string;
-  onShimmerExit: () => void;
+  chartId: string
+  onShimmerExit: () => void
 }) => {
-  const gradientStops = generateEasedGradientStops();
+  const gradientStops = generateEasedGradientStops()
 
   // 1 (left buffer) + 1 (visible) + 1 (right buffer)
-  const patternWidth = 3;
-  const startX = -1;
-  const endX = 2;
+  const patternWidth = 3
+  const startX = -1
+  const endX = 2
 
   // Tracks the last x value to detect the exit threshold crossing
-  const lastXRef = useRef(startX);
+  const lastXRef = useRef(startX)
 
   return (
     <>
@@ -1265,15 +1257,15 @@ const LoadingBarPattern = ({
             repeatType: "loop",
           }}
           onUpdate={(latest) => {
-            const xValue = typeof latest.x === "number" ? latest.x : startX;
-            const lastX = lastXRef.current;
+            const xValue = typeof latest.x === "number" ? latest.x : startX
+            const lastX = lastXRef.current
 
             // Fire once per loop, when the shimmer fully exits the visible area
             if (xValue >= 1 && lastX < 1) {
-              onShimmerExit();
+              onShimmerExit()
             }
 
-            lastXRef.current = xValue;
+            lastXRef.current = xValue
           }}
         />
       </pattern>
@@ -1281,5 +1273,5 @@ const LoadingBarPattern = ({
         <rect width="100%" height="100%" fill={`url(#${chartId}-loading-mask-pattern)`} />
       </mask>
     </>
-  );
-};
+  )
+}

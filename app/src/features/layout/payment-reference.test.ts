@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import { CreatePurchaseBody } from "@raffle/shared/validators"
+import { describe, expect, it } from "vitest"
 
 describe("CreatePurchaseBody paymentReference", () => {
   const base = {

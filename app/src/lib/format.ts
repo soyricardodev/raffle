@@ -7,10 +7,7 @@ export function formatCurrency(amount: number | string, currency: "Bs" | "USD" =
   return `Bs ${value.toFixed(2)}`
 }
 
-export function formatCurrencyForMethod(
-  amount: number | string,
-  paymentMethod: string,
-): string {
+export function formatCurrencyForMethod(amount: number | string, paymentMethod: string): string {
   const currency = isDollarMethod(paymentMethod as PaymentMethod) ? "USD" : "Bs"
   return formatCurrency(amount, currency)
 }

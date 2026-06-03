@@ -1,8 +1,5 @@
 import { describe, expect, it } from "vitest"
-import {
-  customerLocationFieldError,
-  formatCustomerLocation,
-} from "./index.js"
+import { customerLocationFieldError, formatCustomerLocation } from "./index.js"
 
 describe("formatCustomerLocation", () => {
   it("formats Venezuela state", () => {

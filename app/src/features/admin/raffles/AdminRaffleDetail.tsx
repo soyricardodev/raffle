@@ -1,29 +1,17 @@
-import { Link } from "@tanstack/react-router"
-import {
-  ArrowSquareOut,
-  ChartBar,
-  PencilSimple,
-  Receipt,
-  Ticket,
-} from "@phosphor-icons/react"
-import { PaymentMethodSummary } from "@/features/raffle/PaymentMethodSummary"
+import { ArrowSquareOut, ChartBar, PencilSimple, Receipt, Ticket } from "@phosphor-icons/react"
+import { paymentMethodDisplayLabel } from "@raffle/shared/payment-methods"
 import { PLATFORM_TOTAL_TICKETS, RaffleStatus } from "@raffle/shared/validators"
-import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { AdminRaffleStatusControl } from "@/features/admin/raffles/AdminRaffleStatusControl"
+import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Skeleton } from "@/components/ui/skeleton"
-import { useAdminRaffleDetailQuery } from "@/features/admin/raffles/admin-raffle-detail-queries"
 import { AdminRaffleMissing } from "@/features/admin/raffles/AdminRaffleMissing"
+import { AdminRaffleStatusControl } from "@/features/admin/raffles/AdminRaffleStatusControl"
+import { useAdminRaffleDetailQuery } from "@/features/admin/raffles/admin-raffle-detail-queries"
 import { RafflePromotionsPanel } from "@/features/admin/raffles/RafflePromotionsPanel"
-import { paymentMethodDisplayLabel } from "@raffle/shared/payment-methods"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { PaymentMethodSummary } from "@/features/raffle/PaymentMethodSummary"
 export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
   const raffleQuery = useAdminRaffleDetailQuery(raffleId)
 
@@ -104,7 +92,9 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
                 <CardTitle className="text-base">Descripción</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-muted-foreground text-sm leading-relaxed">{raffle.description}</p>
+                <p className="text-muted-foreground text-sm leading-relaxed">
+                  {raffle.description}
+                </p>
               </CardContent>
             </Card>
           ) : null}
@@ -223,7 +213,6 @@ export function AdminRaffleDetail({ raffleId }: { raffleId: string }) {
           </Card>
         </aside>
       </div>
-
     </div>
   )
 }

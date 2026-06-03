@@ -1,18 +1,17 @@
 import { fromCents } from "@raffle/shared/db"
+import { ValidationError } from "@raffle/shared/errors"
 import { isDollarMethodType } from "@raffle/shared/payment-methods"
+import {
+  bestGlobalPromotion,
+  isPromotionWithinSchedule,
+  type RaffleBasePrices,
+  resolveEffectiveUnitPrice,
+} from "@raffle/shared/promotions"
 import {
   formatMethodPromotionBadge,
   formatMethodPromotionHint,
 } from "@raffle/shared/promotions/display"
-import {
-  bestGlobalPromotion,
-  isPromotionWithinSchedule,
-  resolveEffectiveUnitPrice,
-  type RaffleBasePrices,
-} from "@raffle/shared/promotions"
-import type { PaymentMethod } from "@raffle/shared/validators"
-import { ValidationError } from "@raffle/shared/errors"
-import type { CreateRafflePromotionInput } from "@raffle/shared/validators"
+import type { CreateRafflePromotionInput, PaymentMethod } from "@raffle/shared/validators"
 import * as promotionsRepo from "./repositories/raffle-promotions.repository"
 
 export type PaymentMethodForPricing = {
@@ -87,17 +86,14 @@ export function buildPublicRafflePricing(
       raffle_payment_method_id: p.rafflePaymentMethodId!,
       name: p.name,
       kind: p.kind,
-      discount_percent:
-        p.discountPercentBps != null ? p.discountPercentBps / 100 : null,
+      discount_percent: p.discountPercentBps != null ? p.discountPercentBps / 100 : null,
       promo_price_bs: p.promoPriceBsCents != null ? fromCents(p.promoPriceBsCents) : null,
       promo_price_usd: p.promoPriceUsdCents != null ? fromCents(p.promoPriceUsdCents) : null,
       ends_at: p.endsAt?.toISOString() ?? null,
     }))
 
   const hasMethodPromotions = methodPromotions.length > 0
-  const methodPromoById = new Map(
-    methodPromotions.map((p) => [p.raffle_payment_method_id, p]),
-  )
+  const methodPromoById = new Map(methodPromotions.map((p) => [p.raffle_payment_method_id, p]))
 
   const method_quotes: MethodPromotionQuote[] = paymentMethods.map((method) => {
     const unit = resolveEffectiveUnitPrice({
@@ -143,9 +139,7 @@ export function buildPublicRafflePricing(
           scope: highlight.scope,
           ends_at: highlight.endsAt?.toISOString() ?? null,
           discount_percent:
-            highlight.discountPercentBps != null
-              ? highlight.discountPercentBps / 100
-              : null,
+            highlight.discountPercentBps != null ? highlight.discountPercentBps / 100 : null,
         }
       : null,
     method_promotions: methodPromotions,

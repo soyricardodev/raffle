@@ -1,14 +1,14 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
+import { purchases, purchaseTickets, raffles } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
-import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
 import {
-  checkTicketAvailability,
   checkAutoPause,
+  checkTicketAvailability,
+  getPauseInfo,
   pauseRaffle,
   unpauseRaffle,
-  getPauseInfo,
 } from "./pause.service"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)

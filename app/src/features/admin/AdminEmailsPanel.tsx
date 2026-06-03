@@ -1,23 +1,22 @@
-import { getRouteApi, useNavigate } from "@tanstack/react-router"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import {
   ArrowClockwiseIcon,
   EnvelopeSimpleIcon,
   MagnifyingGlassIcon,
   XIcon,
 } from "@phosphor-icons/react"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import type { EmailLogRow } from "@/features/admin/emails/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import {
   InputGroup,
   InputGroupAddon,
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import {
   Select,
@@ -28,17 +27,15 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  EmailLogsDataTable,
-  EmailLogsMobileList,
-} from "@/features/admin/emails/EmailLogsDataTable"
-import {
   ADMIN_EMAILS_PAGE_SIZE,
   adminEmailsQueryOptions,
   normalizeAdminEmailFilters,
 } from "@/features/admin/emails/admin-emails-queries"
+import { EmailLogsDataTable, EmailLogsMobileList } from "@/features/admin/emails/EmailLogsDataTable"
+import type { EmailLogRow } from "@/features/admin/emails/types"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
-import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
+import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -54,10 +51,7 @@ export function AdminEmailsPanel() {
   const [testEmail, setTestEmail] = useState("")
   const [confirmSend, setConfirmSend] = useState(false)
 
-  const filters = useMemo(
-    () => normalizeAdminEmailFilters(routeSearch),
-    [routeSearch]
-  )
+  const filters = useMemo(() => normalizeAdminEmailFilters(routeSearch), [routeSearch])
   const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
   const debouncedSearch = useDebouncedValue(searchDraft)
 
@@ -102,7 +96,7 @@ export function AdminEmailsPanel() {
   const total = logsQuery.data?.total ?? 0
   const pageSize = filters.limit ?? ADMIN_EMAILS_PAGE_SIZE
   const hasCustomFilters = Boolean(
-    filters.search || filters.start || filters.end || filters.status !== "all"
+    filters.search || filters.start || filters.end || filters.status !== "all",
   )
 
   function updateSearch(patch: Partial<typeof routeSearch>) {

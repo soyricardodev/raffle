@@ -60,8 +60,7 @@ export default defineConfig({
       ...process.env,
       NODE_ENV: "development",
       DATABASE_URL: process.env.DATABASE_URL ?? e2eEnv.databaseUrl,
-      BETTER_AUTH_SECRET:
-        process.env.BETTER_AUTH_SECRET ?? "e2e-dev-secret-minimum-32-characters",
+      BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET ?? "e2e-dev-secret-minimum-32-characters",
       BETTER_AUTH_URL: baseURL,
       APP_URL: baseURL,
       EMAIL_PROVIDER: process.env.EMAIL_PROVIDER ?? "noop",

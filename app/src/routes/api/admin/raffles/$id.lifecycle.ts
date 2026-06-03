@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { transitionRaffle } from "@/server/raffle-lifecycle.service"
-import { requireAdmin } from "@/lib/auth-utils.server"
-import { TransitionRaffleInput } from "@raffle/shared/validators"
 import { ValidationError } from "@raffle/shared/errors"
+import { TransitionRaffleInput } from "@raffle/shared/validators"
+import { createFileRoute } from "@tanstack/react-router"
+import { requireAdmin } from "@/lib/auth-utils.server"
+import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 
 export const Route = createFileRoute("/api/admin/raffles/$id/lifecycle")({
   server: {
@@ -16,9 +16,7 @@ export const Route = createFileRoute("/api/admin/raffles/$id/lifecycle")({
             parsed.error.flatten().fieldErrors,
           )
         }
-        return Response.json(
-          await transitionRaffle(Number(params.id), parsed.data),
-        )
+        return Response.json(await transitionRaffle(Number(params.id), parsed.data))
       },
     },
   },

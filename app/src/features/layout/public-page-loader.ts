@@ -7,7 +7,5 @@ export async function ensurePublicSiteConfig(queryClient: QueryClient) {
 }
 
 export async function ensureRaffleLive(queryClient: QueryClient, raffleId: string | number) {
-  return queryClient
-    .ensureQueryData(raffleLiveQueryOptions(String(raffleId)))
-    .catch(() => null)
+  return queryClient.ensureQueryData(raffleLiveQueryOptions(String(raffleId))).catch(() => null)
 }

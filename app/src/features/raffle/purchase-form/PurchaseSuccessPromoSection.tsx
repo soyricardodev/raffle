@@ -1,6 +1,6 @@
+import type { RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import type { ResolvedPurchaseSuccessPromo } from "@/features/raffle/purchase-form/resolve-purchase-success-promo"
-import type { RefObject } from "react"
 
 const WHATSAPP_ICON = "/brand/social/whatsapp.svg"
 const INSTAGRAM_ICON = "/brand/social/instagram.svg"
@@ -86,7 +86,14 @@ export function PurchaseSuccessPromoSection({
               aria-label="Seguir en Instagram"
               onClick={onInstagramClick}
             >
-              <img src={INSTAGRAM_ICON} alt="" className="mr-2 size-4" width={16} height={16} aria-hidden />
+              <img
+                src={INSTAGRAM_ICON}
+                alt=""
+                className="mr-2 size-4"
+                width={16}
+                height={16}
+                aria-hidden
+              />
               Seguir en Instagram
             </a>
           </Button>

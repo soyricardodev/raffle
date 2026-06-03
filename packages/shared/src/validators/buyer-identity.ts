@@ -58,10 +58,7 @@ export function transitionPhoneScope(phone: string, toScope: CountryScope): stri
   return parts ? formatVenezuelanMobile(parts.prefix, parts.suffix) : ""
 }
 
-export function applyVenezuelanMobilePrefix(
-  phone: string,
-  prefix: VenezuelanMobilePrefix,
-): string {
+export function applyVenezuelanMobilePrefix(phone: string, prefix: VenezuelanMobilePrefix): string {
   const suffix = splitVenezuelanMobile(phone)?.suffix ?? ""
   return suffix ? formatVenezuelanMobile(prefix, suffix) : prefix
 }
@@ -75,9 +72,7 @@ export function updateVenezuelanMobileSuffix(
   if (!suffix) return ""
 
   const prefix =
-    selectedPrefix ??
-    parseVenezuelanMobilePrefix(phone) ??
-    DEFAULT_VENEZUELAN_MOBILE_PREFIX
+    selectedPrefix ?? parseVenezuelanMobilePrefix(phone) ?? DEFAULT_VENEZUELAN_MOBILE_PREFIX
 
   return formatVenezuelanMobile(prefix, suffix)
 }

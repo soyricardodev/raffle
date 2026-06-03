@@ -1,7 +1,7 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
 import { brandCssVariables } from "@/features/layout/public-brand-css"
-import { ensurePublicSiteConfig } from "@/features/layout/public-page-loader"
 import { resolveSiteFaviconUrl } from "@/features/layout/public-favicon"
+import { ensurePublicSiteConfig } from "@/features/layout/public-page-loader"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
 import { PublicSiteConfigProvider } from "@/features/layout/public-site-config-context"
 
@@ -12,8 +12,9 @@ export const Route = createFileRoute("/_public")({
   },
   head: ({ loaderData }) => {
     const seo = resolvePublicSeo(loaderData?.siteConfig)
-    const meta: Array<{ title?: string } | { name: string; content: string } | { property: string; content: string }> =
-      []
+    const meta: Array<
+      { title?: string } | { name: string; content: string } | { property: string; content: string }
+    > = []
 
     if (seo.title) meta.push({ title: seo.title })
     if (seo.description) meta.push({ name: "description", content: seo.description })

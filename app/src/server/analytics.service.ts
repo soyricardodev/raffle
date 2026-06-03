@@ -3,7 +3,9 @@ import * as analyticsRepo from "./repositories/analytics.repository"
 export type SalesOverTime = Awaited<ReturnType<typeof analyticsRepo.getSalesOverTime>>
 export type TopRaffle = Awaited<ReturnType<typeof analyticsRepo.getTopRaffles>>[number]
 export type RevenueByMethod = Awaited<ReturnType<typeof analyticsRepo.getRevenueByMethod>>[number]
-export type StatusDistribution = Awaited<ReturnType<typeof analyticsRepo.getStatusDistribution>>[number]
+export type StatusDistribution = Awaited<
+  ReturnType<typeof analyticsRepo.getStatusDistribution>
+>[number]
 
 export type AnalyticsSnapshot = {
   salesOverTime: SalesOverTime

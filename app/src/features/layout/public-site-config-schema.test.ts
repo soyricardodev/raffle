@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { parsePublicSiteConfig } from "@/features/layout/public-site-config-schema"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
+import { parsePublicSiteConfig } from "@/features/layout/public-site-config-schema"
 
 describe("parsePublicSiteConfig", () => {
   it("parses valid keys and normalizes hero", () => {
@@ -25,9 +25,7 @@ describe("parsePublicSiteConfig", () => {
     })
 
     expect(result.site_images?.footer_logo).toBe("/f.png")
-    expect(result.site_images?.official_logos).toEqual([
-      { image: "/tachira.png", alt: "Táchira" },
-    ])
+    expect(result.site_images?.official_logos).toEqual([{ image: "/tachira.png", alt: "Táchira" }])
   })
 
   it("parses legacy site_images without footer fields", () => {

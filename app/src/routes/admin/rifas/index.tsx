@@ -8,9 +8,7 @@ export const Route = createFileRoute("/admin/rifas/")({
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
     const filters = normalizeAdminRaffleFilters(deps)
-    await queryClient
-      .ensureQueryData(adminRafflesQueryOptions(filters))
-      .catch(() => null)
+    await queryClient.ensureQueryData(adminRafflesQueryOptions(filters)).catch(() => null)
     return null
   },
   component: AdminRafflesTable,

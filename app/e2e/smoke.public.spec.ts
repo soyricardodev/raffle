@@ -5,7 +5,9 @@ test.describe("public smoke", () => {
   test("home loads", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     await expect(page).toHaveTitle(/rifas/i)
-    await expect(page.getByRole("navigation").getByRole("link", { name: "Verificar" })).toBeVisible()
+    await expect(
+      page.getByRole("navigation").getByRole("link", { name: "Verificar" }),
+    ).toBeVisible()
   })
 
   test("home shows live activity ticker when applicable", async ({ page }) => {

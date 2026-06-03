@@ -1,7 +1,7 @@
-import { getDb, withImmediateTransaction } from "@/lib/db.server"
-import { getLogger } from "@/lib/logger"
 import { purchaseTickets } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
+import { getDb, withImmediateTransaction } from "@/lib/db.server"
+import { getLogger } from "@/lib/logger"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import * as ticketsRepo from "./repositories/tickets.repository"
 
@@ -23,7 +23,10 @@ export function generateTicketNumbers(total: number, max = TICKET_POOL_SIZE): st
 }
 
 /** @deprecated Pool materializado eliminado en libSQL v2. */
-export async function insertTicketPool(_raffleId: number, _ticketNumbers: string[]): Promise<number> {
+export async function insertTicketPool(
+  _raffleId: number,
+  _ticketNumbers: string[],
+): Promise<number> {
   logger.warn("insertTicketPool is a no-op in sparse ticket model")
   return 0
 }

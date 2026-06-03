@@ -1,19 +1,19 @@
-import { useMutation } from "@tanstack/react-query"
-import { useMemo } from "react"
-import { useNavigate } from "@tanstack/react-router"
-import { toast } from "sonner"
 import type { UpdateRaffleInput } from "@raffle/shared/validators"
+import { useMutation } from "@tanstack/react-query"
+import { useNavigate } from "@tanstack/react-router"
+import { useMemo } from "react"
+import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Skeleton } from "@/components/ui/skeleton"
+import { AdminRaffleMissing } from "@/features/admin/raffles/AdminRaffleMissing"
 import {
   type AdminRaffleDetail,
   useAdminRaffleDetailQuery,
 } from "@/features/admin/raffles/admin-raffle-detail-queries"
-import { AdminRaffleMissing } from "@/features/admin/raffles/AdminRaffleMissing"
 import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
 import type { PaymentMethodAssignment, RaffleFormState } from "@/features/admin/raffles/types"
 import { defaultPrize, defaultRaffleFormState } from "@/features/admin/raffles/types"
 import { adminFetch } from "@/lib/admin-fetch"
-import { Button } from "@/components/ui/button"
-import { Skeleton } from "@/components/ui/skeleton"
 
 function mapDetailToForm(detail: AdminRaffleDetail): RaffleFormState {
   const base = defaultRaffleFormState()
@@ -27,9 +27,7 @@ function mapDetailToForm(detail: AdminRaffleDetail): RaffleFormState {
     minPurchase: String(detail.min_purchase),
     maxPurchase: String(detail.max_purchase),
     drawDateEnabled: Boolean(detail.draw_date),
-    drawDate: detail.draw_date
-      ? new Date(detail.draw_date).toISOString().slice(0, 16)
-      : "",
+    drawDate: detail.draw_date ? new Date(detail.draw_date).toISOString().slice(0, 16) : "",
     status: detail.status as RaffleFormState["status"],
     prizes: detail.prizes?.length
       ? detail.prizes.map((p) => ({

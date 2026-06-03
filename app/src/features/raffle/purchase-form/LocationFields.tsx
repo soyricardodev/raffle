@@ -1,7 +1,6 @@
-import { type CustomerLocationType, VENEZUELA_STATES } from "@raffle/shared/validators"
 import { MapPinIcon } from "@phosphor-icons/react"
+import { type CustomerLocationType, VENEZUELA_STATES } from "@raffle/shared/validators"
 import { memo } from "react"
-import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
@@ -12,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
 import { formInputHeightClassName } from "@/features/raffle/purchase-form/field-styles"
 import { cn } from "@/lib/utils"
 

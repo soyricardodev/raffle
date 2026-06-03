@@ -1,8 +1,8 @@
 "use client"
 
+import { Loader2, Zap } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { Loader2, Zap } from "lucide-react"
 
 const DEV_CREDENTIALS = {
   email: "admin@rifas.com",

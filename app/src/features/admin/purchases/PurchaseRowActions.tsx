@@ -1,8 +1,8 @@
 import { CheckCircleIcon, EyeIcon, XCircleIcon } from "@phosphor-icons/react"
 import { useState } from "react"
-import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import type { PurchaseRow } from "@/features/admin/purchases/types"
 
 type PurchaseRowActionsProps = {
   purchase: PurchaseRow

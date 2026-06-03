@@ -1,6 +1,6 @@
-import { cn } from "@/lib/utils"
-import { VERIFY_SEARCH_METHODS } from "@/features/verify/verify-search-config"
 import type { VerifySearchType } from "@/features/verify/verify-profile"
+import { VERIFY_SEARCH_METHODS } from "@/features/verify/verify-search-config"
+import { cn } from "@/lib/utils"
 
 type VerifySearchMethodPickerProps = {
   value: VerifySearchType
@@ -14,11 +14,7 @@ export function VerifySearchMethodPicker({
   onChange,
 }: VerifySearchMethodPickerProps) {
   return (
-    <div
-      role="tablist"
-      aria-label="Buscar por"
-      className="border-border grid grid-cols-4 border-b"
-    >
+    <div role="tablist" aria-label="Buscar por" className="border-border grid grid-cols-4 border-b">
       {VERIFY_SEARCH_METHODS.map((method) => {
         const Icon = method.icon
         const active = value === method.value

@@ -1,4 +1,3 @@
-import { Link } from "@tanstack/react-router"
 import {
   CaretUpDownIcon,
   DesktopIcon,
@@ -7,7 +6,7 @@ import {
   SignOutIcon,
   SunIcon,
 } from "@phosphor-icons/react"
-import type { AuthSession, UserRole } from "@/features/auth/types"
+import { Link } from "@tanstack/react-router"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -36,6 +35,7 @@ import {
   useSidebar,
 } from "@/components/ui/sidebar"
 import { adminNavItems } from "@/features/admin/nav"
+import type { AuthSession, UserRole } from "@/features/auth/types"
 import { type ThemeMode, useTheme } from "@/stores/theme"
 
 type AdminSidebarNavProps = {
@@ -106,12 +106,7 @@ function AdminSidebarUserMenu({
             <CaretUpDownIcon className="ml-auto opacity-60" />
           </SidebarMenuButton>
         </DropdownMenuTrigger>
-        <DropdownMenuContent
-          className="min-w-64"
-          side="top"
-          align="start"
-          sideOffset={10}
-        >
+        <DropdownMenuContent className="min-w-64" side="top" align="start" sideOffset={10}>
           <DropdownMenuLabel className="p-0 font-normal">
             <div className="flex flex-col gap-3 p-3">
               <div className="flex items-center gap-3">
@@ -135,7 +130,10 @@ function AdminSidebarUserMenu({
             <DropdownMenuLabel className="text-muted-foreground px-3 py-1.5 text-xs font-medium">
               Apariencia
             </DropdownMenuLabel>
-            <DropdownMenuRadioGroup value={mode} onValueChange={(value) => setMode(value as ThemeMode)}>
+            <DropdownMenuRadioGroup
+              value={mode}
+              onValueChange={(value) => setMode(value as ThemeMode)}
+            >
               {themeOptions.map(({ value, label, icon: Icon }) => (
                 <DropdownMenuRadioItem key={value} value={value}>
                   <Icon />
@@ -165,12 +163,7 @@ function AdminSidebarUserMenu({
   )
 }
 
-export function AdminSidebarNav({
-  session,
-  siteName,
-  pathname,
-  onLogout,
-}: AdminSidebarNavProps) {
+export function AdminSidebarNav({ session, siteName, pathname, onLogout }: AdminSidebarNavProps) {
   const { setOpenMobile, isMobile } = useSidebar()
 
   function handleNavigate() {
@@ -221,11 +214,7 @@ export function AdminSidebarNav({
 
       <SidebarFooter>
         <SidebarMenu>
-          <AdminSidebarUserMenu
-            session={session}
-            onLogout={onLogout}
-            onNavigate={handleNavigate}
-          />
+          <AdminSidebarUserMenu session={session} onLogout={onLogout} onNavigate={handleNavigate} />
         </SidebarMenu>
       </SidebarFooter>
 

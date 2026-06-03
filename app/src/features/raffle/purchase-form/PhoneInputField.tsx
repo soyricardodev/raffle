@@ -1,6 +1,7 @@
+import { PhoneIcon } from "@phosphor-icons/react"
 import {
-  type CountryScope,
   applyVenezuelanMobilePrefix,
+  type CountryScope,
   parseVenezuelanMobilePrefix,
   phoneDisplayValue,
   sanitizePhoneInput,
@@ -9,12 +10,11 @@ import {
   VENEZUELAN_MOBILE_PREFIXES,
   type VenezuelanMobilePrefix,
 } from "@raffle/shared/validators"
-import { PhoneIcon } from "@phosphor-icons/react"
 import { memo } from "react"
-import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
 import {
   formInputHeightClassName,
   prefixToggleItemClassName,

@@ -1,17 +1,17 @@
 import { useQuery } from "@tanstack/react-query"
 import { useMemo } from "react"
 import {
-  publicSiteConfigQueryOptions,
   type PublicSiteConfigPayload,
+  publicSiteConfigQueryOptions,
 } from "@/features/layout/public-queries"
 import { usePublicSiteConfigFromLayout } from "@/features/layout/public-site-config-context"
 import {
+  type ContactInfo,
+  type HeroConfig,
   normalizeHeroConfig,
   normalizePurchaseSuccessPromo,
   normalizeSeoConfig,
   normalizeSiteImages,
-  type ContactInfo,
-  type HeroConfig,
   type PurchaseSuccessPromo,
   type SeoConfig,
   type SiteColors,

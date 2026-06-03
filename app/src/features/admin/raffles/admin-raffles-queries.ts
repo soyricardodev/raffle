@@ -27,8 +27,7 @@ export type AdminRafflesSearchParams = {
 }
 
 export const adminRafflesQueryKeys = {
-  list: (filters: AdminRaffleFilters) =>
-    ["admin", "raffles", "list", filters] as const,
+  list: (filters: AdminRaffleFilters) => ["admin", "raffles", "list", filters] as const,
 }
 
 export const fetchAdminRaffles = createServerFn({ method: "POST" })
@@ -43,9 +42,7 @@ export const fetchAdminRaffles = createServerFn({ method: "POST" })
     })
   })
 
-export function normalizeAdminRaffleFilters(
-  search: AdminRafflesSearchParams
-): AdminRaffleFilters {
+export function normalizeAdminRaffleFilters(search: AdminRafflesSearchParams): AdminRaffleFilters {
   return AdminRafflesInput.parse({
     limit: search.limit ?? ADMIN_RAFFLES_PAGE_SIZE,
     page: search.page ?? 1,

@@ -113,20 +113,14 @@ function MethodPromotionsBanner({
   )
 }
 
-export function PromotionBanner({
-  pricing,
-  paymentMethods = [],
-  className,
-}: PromotionBannerProps) {
+export function PromotionBanner({ pricing, paymentMethods = [], className }: PromotionBannerProps) {
   if (!pricing.has_global_promotion && !pricing.has_method_promotions) return null
 
-  const globalPromo =
-    pricing.promotion?.scope === "all_methods" ? pricing.promotion : null
+  const globalPromo = pricing.promotion?.scope === "all_methods" ? pricing.promotion : null
   const methodPromos = pricing.method_promotions
 
   const showGlobal = globalPromo != null
-  const showMethod =
-    methodPromos.length > 0 && paymentMethods.length > 0
+  const showMethod = methodPromos.length > 0 && paymentMethods.length > 0
 
   if (!showGlobal && !showMethod) return null
 
@@ -134,15 +128,12 @@ export function PromotionBanner({
     <div className={cn("flex flex-col gap-2", className)} data-testid="promotion-banner">
       {showGlobal ? <GlobalPromotionBanner promo={globalPromo} /> : null}
       {showMethod ? (
-        <MethodPromotionsBanner
-          methodPromotions={methodPromos}
-          paymentMethods={paymentMethods}
-        />
+        <MethodPromotionsBanner methodPromotions={methodPromos} paymentMethods={paymentMethods} />
       ) : null}
       {showGlobal && showMethod ? (
         <p className="text-muted-foreground px-1 text-[11px] leading-snug">
-          También hay promociones adicionales en métodos de pago específicos (míralas al elegir
-          cómo pagar).
+          También hay promociones adicionales en métodos de pago específicos (míralas al elegir cómo
+          pagar).
         </p>
       ) : null}
     </div>

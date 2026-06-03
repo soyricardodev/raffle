@@ -28,7 +28,10 @@ function messageFromBody(body: ErrorBody): string | undefined {
 }
 
 /** User-facing message from fetch / mutation errors (including TanStack HTTPError wrappers). */
-export function getApiErrorMessage(error: unknown, fallback = "No se pudo completar la operación"): string {
+export function getApiErrorMessage(
+  error: unknown,
+  fallback = "No se pudo completar la operación",
+): string {
   if (error instanceof Error) {
     const withCause = error as Error & { cause?: unknown }
     if (withCause.cause instanceof Error && withCause.cause.message) {

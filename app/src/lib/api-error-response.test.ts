@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import { ValidationError } from "@raffle/shared/errors"
+import { describe, expect, it } from "vitest"
 import { apiErrorResponse } from "@/lib/api-error-response"
 
 describe("apiErrorResponse", () => {

@@ -1,20 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { createFileRoute } from "@tanstack/react-router"
+import { Skeleton } from "@/components/ui/skeleton"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
-import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
-import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
 import { LivePurchaseActivityTicker } from "@/features/raffle/LivePurchaseActivityTicker"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PrizesSection } from "@/features/raffle/PrizesSection"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
+import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
+import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
 import { raffleDetailQueryOptions } from "@/features/raffle/raffle-queries"
-import { Skeleton } from "@/components/ui/skeleton"
 import type { EnrichedRaffle } from "@/server/raffle.service"
 
 export const Route = createFileRoute("/_public/rifa/$id")({
   loader: async ({ params, context: { queryClient } }) => {
-    const raffle = await queryClient.ensureQueryData(raffleDetailQueryOptions(params.id)).catch(() => null)
+    const raffle = await queryClient
+      .ensureQueryData(raffleDetailQueryOptions(params.id))
+      .catch(() => null)
 
     if (raffle?.id != null) {
       await ensureRaffleLive(queryClient, raffle.id)

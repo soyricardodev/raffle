@@ -1,12 +1,12 @@
+import type { TransitionRaffleInput } from "@raffle/shared/validators"
+import type { ColumnDef } from "@tanstack/react-table"
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
 import { useMemo } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { RaffleRow } from "@/features/admin/raffles/types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AdminDataGrid } from "@/features/admin/shared/AdminDataGrid"
 import { RaffleRowActions } from "@/features/admin/raffles/RaffleRowActions"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
-import type { TransitionRaffleInput } from "@raffle/shared/validators"
+import type { RaffleRow } from "@/features/admin/raffles/types"
+import { AdminDataGrid } from "@/features/admin/shared/AdminDataGrid"
 import { formatCurrency, formatDate } from "@/lib/format"
 
 type RafflesDataTableProps = {
@@ -28,9 +28,7 @@ export function RafflesDataTable({
         accessorKey: "id",
         header: "ID",
         cell: ({ getValue }) => (
-          <span className="font-mono text-[11px] text-muted-foreground">
-            #{String(getValue())}
-          </span>
+          <span className="font-mono text-[11px] text-muted-foreground">#{String(getValue())}</span>
         ),
       },
       {
@@ -53,9 +51,7 @@ export function RafflesDataTable({
       {
         id: "sales",
         header: "Progreso",
-        cell: ({ row }) => (
-          <span className="tabular-nums">{row.original.sold_percentage}%</span>
-        ),
+        cell: ({ row }) => <span className="tabular-nums">{row.original.sold_percentage}%</span>,
       },
       {
         id: "prices",
@@ -71,9 +67,7 @@ export function RafflesDataTable({
         accessorKey: "draw_date",
         header: "Sorteo",
         cell: ({ getValue }) => (
-          <span className="text-muted-foreground">
-            {formatDate(String(getValue() ?? ""))}
-          </span>
+          <span className="text-muted-foreground">{formatDate(String(getValue() ?? ""))}</span>
         ),
       },
       {
@@ -91,7 +85,7 @@ export function RafflesDataTable({
         ),
       },
     ],
-    [onLifecycle, pending]
+    [onLifecycle, pending],
   )
 
   const table = useReactTable({
@@ -128,9 +122,7 @@ export function RafflesMobileList({
 
   if (raffles.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        No hay rifas en este filtro.
-      </p>
+      <p className="py-8 text-center text-sm text-muted-foreground">No hay rifas en este filtro.</p>
     )
   }
 
@@ -146,12 +138,10 @@ export function RafflesMobileList({
             <RaffleStatusBadge status={raffle.status} />
           </div>
           <p className="text-sm text-muted-foreground tabular-nums">
-            {raffle.tickets_sold} / {raffle.total_tickets} vendidos (
-            {raffle.sold_percentage}%)
+            {raffle.tickets_sold} / {raffle.total_tickets} vendidos ({raffle.sold_percentage}%)
           </p>
           <p className="mt-1 text-xs text-muted-foreground">
-            {formatCurrency(raffle.price_bs)} ·{" "}
-            {formatCurrency(raffle.price_usd, "USD")} · Sorteo:{" "}
+            {formatCurrency(raffle.price_bs)} · {formatCurrency(raffle.price_usd, "USD")} · Sorteo:{" "}
             {formatDate(raffle.draw_date)}
           </p>
           <div className="mt-3">

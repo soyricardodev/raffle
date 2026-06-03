@@ -1,6 +1,5 @@
+import type { CedulaPrefix, PhoneInputMode, VerifyTicketInput } from "@raffle/shared/validators"
 import { formatCustomerCi } from "@raffle/shared/validators"
-import type { VerifyTicketInput } from "@raffle/shared/validators"
-import type { CedulaPrefix, PhoneInputMode } from "@raffle/shared/validators"
 import type { SavedBuyerProfile } from "@/features/raffle/purchase-form/buyer-profile-storage"
 
 export type VerifySearchType = "phone" | "cedula" | "email" | "ticket"
@@ -67,9 +66,7 @@ export function toVerifyInput(form: VerifyFormState): VerifyTicketInput | null {
       return phone ? { phone } : null
     }
     case "cedula": {
-      const cedula = form.ciNumber.trim()
-        ? formatCustomerCi(form.ciPrefix, form.ciNumber)
-        : ""
+      const cedula = form.ciNumber.trim() ? formatCustomerCi(form.ciPrefix, form.ciNumber) : ""
       return cedula ? { cedula } : null
     }
     case "email": {

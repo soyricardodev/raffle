@@ -1,14 +1,13 @@
-import { fromCents, raffles } from "@raffle/shared/db"
+import { fromCents, prizes, raffles } from "@raffle/shared/db"
 import { AppError } from "@raffle/shared/errors"
 import {
-  PLATFORM_TOTAL_TICKETS,
   type CreateRaffleInput,
+  PLATFORM_TOTAL_TICKETS,
   type RaffleStatus,
   type UpdateRaffleInput,
 } from "@raffle/shared/validators"
 import { and, desc, eq, inArray, like, sql } from "drizzle-orm"
-import { getDb, type DbTransaction } from "@/lib/db.server"
-import { prizes } from "@raffle/shared/db"
+import { type DbTransaction, getDb } from "@/lib/db.server"
 import * as rafflePaymentMethodsRepo from "./raffle-payment-methods.repository"
 
 export type RaffleRow = typeof raffles.$inferSelect
@@ -49,26 +48,18 @@ export async function findRaffleLiveById(id: number): Promise<RaffleLiveRow | un
 
 export async function findRaffleById(
   id: number,
-  tx?: DbTransaction
+  tx?: DbTransaction,
 ): Promise<RaffleRow | undefined> {
   const db = tx ?? getDb()
-  const [row] = await db
-    .select()
-    .from(raffles)
-    .where(eq(raffles.id, id))
-    .limit(1)
+  const [row] = await db.select().from(raffles).where(eq(raffles.id, id)).limit(1)
   return row
 }
 
 export async function findRaffleForUpdate(
   tx: DbTransaction,
-  id: number
+  id: number,
 ): Promise<RaffleRow | undefined> {
-  const [row] = await tx
-    .select()
-    .from(raffles)
-    .where(eq(raffles.id, id))
-    .limit(1)
+  const [row] = await tx.select().from(raffles).where(eq(raffles.id, id)).limit(1)
   return row
 }
 
@@ -78,8 +69,7 @@ export async function listRaffles(params: {
   page?: number
 }): Promise<RaffleRow[]> {
   const db = getDb()
-  const safeLimit =
-    params.limit && params.limit > 0 ? Math.min(params.limit, 100) : 10
+  const safeLimit = params.limit && params.limit > 0 ? Math.min(params.limit, 100) : 10
   const safePage = params.page && params.page > 0 ? params.page : 1
   const offset = (safePage - 1) * safeLimit
 
@@ -105,8 +95,7 @@ export async function listAdminRaffles(params: {
   search?: string | null
 }) {
   const db = getDb()
-  const safeLimit =
-    params.limit && params.limit > 0 ? Math.min(params.limit, 100) : 50
+  const safeLimit = params.limit && params.limit > 0 ? Math.min(params.limit, 100) : 50
   const safePage = params.page && params.page > 0 ? params.page : 1
   const offset = (safePage - 1) * safeLimit
 
@@ -144,9 +133,7 @@ export async function listAdminRaffles(params: {
   return { data: rows, total, hasMore: offset + rows.length < total }
 }
 
-export async function findFirstActiveOrPaused(): Promise<
-  RaffleRow | undefined
-> {
+export async function findFirstActiveOrPaused(): Promise<RaffleRow | undefined> {
   const db = getDb()
   const [row] = await db
     .select()
@@ -157,10 +144,7 @@ export async function findFirstActiveOrPaused(): Promise<
   return row
 }
 
-export async function insertRaffle(
-  tx: DbTransaction,
-  input: CreateRaffleInput
-): Promise<number> {
+export async function insertRaffle(tx: DbTransaction, input: CreateRaffleInput): Promise<number> {
   const total = PLATFORM_TOTAL_TICKETS
   const [row] = await tx
     .insert(raffles)
@@ -216,49 +200,37 @@ export async function insertRaffle(
 export async function updateRaffleRow(
   tx: DbTransaction,
   id: number,
-  input: UpdateRaffleInput
+  input: UpdateRaffleInput,
 ): Promise<void> {
   const patch: Partial<typeof raffles.$inferInsert> = { updatedAt: new Date() }
   if (input.name !== undefined) patch.name = input.name
-  if (input.description !== undefined)
-    patch.description = input.description ?? null
+  if (input.description !== undefined) patch.description = input.description ?? null
   if (input.image_url !== undefined) patch.imageUrl = input.image_url
-  if (
-    input.total_tickets !== undefined &&
-    input.total_tickets !== PLATFORM_TOTAL_TICKETS
-  ) {
+  if (input.total_tickets !== undefined && input.total_tickets !== PLATFORM_TOTAL_TICKETS) {
     throw new AppError(
       "El total de boletos es fijo en la plataforma (10.000)",
       400,
-      "RAFFLE_TOTAL_FIXED"
+      "RAFFLE_TOTAL_FIXED",
     )
   }
-  if (input.price_bs !== undefined)
-    patch.priceBsCents = Math.round(input.price_bs * 100)
-  if (input.price_usd !== undefined)
-    patch.priceUsdCents = Math.round(input.price_usd * 100)
+  if (input.price_bs !== undefined) patch.priceBsCents = Math.round(input.price_bs * 100)
+  if (input.price_usd !== undefined) patch.priceUsdCents = Math.round(input.price_usd * 100)
   if (input.min_purchase !== undefined) patch.minPurchase = input.min_purchase
   if (input.max_purchase !== undefined) patch.maxPurchase = input.max_purchase
   if (input.draw_date !== undefined) {
     patch.drawDate = input.draw_date ? new Date(input.draw_date) : null
   }
   if (input.days_for_draw !== undefined) patch.daysForDraw = input.days_for_draw
-  if (input.auto_pause_enabled !== undefined)
-    patch.autoPauseEnabled = input.auto_pause_enabled
+  if (input.auto_pause_enabled !== undefined) patch.autoPauseEnabled = input.auto_pause_enabled
 
   await tx.update(raffles).set(patch).where(eq(raffles.id, id))
 }
 
-export async function deleteRaffle(
-  tx: DbTransaction,
-  id: number
-): Promise<void> {
+export async function deleteRaffle(tx: DbTransaction, id: number): Promise<void> {
   await tx.delete(raffles).where(eq(raffles.id, id))
 }
 
-export async function countPurchasesForRaffle(
-  raffleId: number
-): Promise<number> {
+export async function countPurchasesForRaffle(raffleId: number): Promise<number> {
   const db = getDb()
   const { purchases } = await import("@raffle/shared/db")
   const [row] = await db
@@ -272,7 +244,7 @@ export async function pauseRaffleRow(
   tx: DbTransaction,
   raffleId: number,
   pauseUntil: Date,
-  reason: string
+  reason: string,
 ): Promise<boolean> {
   const updated = await tx
     .update(raffles)
@@ -290,7 +262,7 @@ export async function pauseRaffleRow(
 export async function unpauseRaffleRow(
   tx: DbTransaction,
   raffleId: number,
-  newStatus: RaffleStatus
+  newStatus: RaffleStatus,
 ): Promise<void> {
   await setRaffleStatusRow(tx, raffleId, newStatus)
 }
@@ -299,7 +271,7 @@ export async function setRaffleStatusRow(
   tx: DbTransaction,
   raffleId: number,
   status: RaffleStatus,
-  options?: { pauseUntil?: Date; pauseReason?: string }
+  options?: { pauseUntil?: Date; pauseReason?: string },
 ): Promise<void> {
   const patch: Partial<typeof raffles.$inferInsert> = {
     status,
@@ -332,8 +304,8 @@ export async function finalizeExpiredRaffles(): Promise<number> {
       and(
         inArray(raffles.status, ["active", "paused"]),
         sql`${raffles.drawDate} IS NOT NULL`,
-        sql`${raffles.drawDate} <= ${cutoff.getTime()}`
-      )
+        sql`${raffles.drawDate} <= ${cutoff.getTime()}`,
+      ),
     )
     .returning({ id: raffles.id })
   return updated.length

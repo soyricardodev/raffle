@@ -11,7 +11,10 @@ export function VenezuelaFlagIcon({ className }: VenezuelaFlagIconProps) {
       viewBox="0 0 20 14"
       xmlns="http://www.w3.org/2000/svg"
       aria-hidden="true"
-      className={cn("shrink-0 overflow-hidden rounded-[2px] shadow-sm ring-1 ring-black/10", className)}
+      className={cn(
+        "shrink-0 overflow-hidden rounded-[2px] shadow-sm ring-1 ring-black/10",
+        className,
+      )}
     >
       <rect width="20" height="4.67" fill="#FFCC00" />
       <rect y="4.67" width="20" height="4.67" fill="#00247D" />

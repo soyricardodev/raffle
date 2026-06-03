@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto"
 import {
   fromCents,
   normalizePhone,
@@ -7,31 +8,25 @@ import {
   ticketNumberToString,
 } from "@raffle/shared/db"
 import { PaymentReferenceDuplicateError } from "@raffle/shared/errors"
+import type { RecentPurchaseDbRow } from "@raffle/shared/public-recent-purchase"
 import type { PaymentMethod, PurchaseStatus } from "@raffle/shared/validators"
 import { isDollarMethod } from "@raffle/shared/validators"
-import type { RecentPurchaseDbRow } from "@raffle/shared/public-recent-purchase"
 import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm"
-import { randomUUID } from "node:crypto"
-import { getDb, type DbTransaction } from "@/lib/db.server"
+import { type DbTransaction, getDb } from "@/lib/db.server"
 
 export type PurchaseRow = typeof purchases.$inferSelect
 
 export async function existsPaymentReference(
   tx: DbTransaction,
   raffleId: number,
-  reference: string
+  reference: string,
 ): Promise<boolean> {
   const trimmed = reference.trim()
   if (!trimmed) return false
   const [row] = await tx
     .select({ id: purchases.id })
     .from(purchases)
-    .where(
-      and(
-        eq(purchases.raffleId, raffleId),
-        eq(purchases.paymentReference, trimmed)
-      )
-    )
+    .where(and(eq(purchases.raffleId, raffleId), eq(purchases.paymentReference, trimmed)))
     .limit(1)
   return Boolean(row)
 }
@@ -58,7 +53,7 @@ export async function insertPurchase(
     discountUnitCents?: number | null
     finalUnitPriceCents?: number | null
     status?: PurchaseStatus
-  }
+  },
 ): Promise<number> {
   const [row] = await tx
     .insert(purchases)
@@ -100,7 +95,7 @@ export type PurchaseWithRaffleContext = PurchaseRow & {
 
 export async function findPurchaseForUpdate(
   tx: DbTransaction,
-  purchaseId: number
+  purchaseId: number,
 ): Promise<PurchaseWithRaffleContext | undefined> {
   const [row] = await tx
     .select({
@@ -131,7 +126,7 @@ export async function updatePurchaseStatusRow(
   tx: DbTransaction,
   purchaseId: number,
   status: PurchaseStatus,
-  notes?: string
+  notes?: string,
 ): Promise<void> {
   await tx
     .update(purchases)
@@ -143,7 +138,7 @@ export async function updatePurchaseTotals(
   tx: DbTransaction,
   purchaseId: number,
   ticketQuantity: number,
-  totalAmountCents: number
+  totalAmountCents: number,
 ): Promise<void> {
   await tx
     .update(purchases)
@@ -153,11 +148,9 @@ export async function updatePurchaseTotals(
 
 export function pricePerTicketCents(
   paymentMethod: PaymentMethod,
-  raffle: { priceBsCents: number; priceUsdCents: number }
+  raffle: { priceBsCents: number; priceUsdCents: number },
 ) {
-  return isDollarMethod(paymentMethod)
-    ? raffle.priceUsdCents
-    : raffle.priceBsCents
+  return isDollarMethod(paymentMethod) ? raffle.priceUsdCents : raffle.priceBsCents
 }
 
 /** Uses purchase snapshot when present; otherwise base raffle price. */
@@ -249,16 +242,7 @@ export async function listAdminPurchases(params: {
   end?: string | null
 }) {
   const db = getDb()
-  const {
-    limit,
-    page,
-    status = "all",
-    raffleId,
-    search,
-    searchType = "all",
-    start,
-    end,
-  } = params
+  const { limit, page, status = "all", raffleId, search, searchType = "all", start, end } = params
   const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100))
   const offset = (Math.max(1, Number(page) || 1) - 1) * safeLimit
 
@@ -273,8 +257,8 @@ export async function listAdminPurchases(params: {
         like(purchases.customerPhone, term),
         like(purchases.customerEmail, term),
         like(purchases.customerCi, term),
-        like(purchases.paymentReference, term)
-      )!
+        like(purchases.paymentReference, term),
+      )!,
     )
   } else if (search && searchType === "name") {
     conditions.push(like(purchases.customerName, `%${search}%`))
@@ -291,18 +275,14 @@ export async function listAdminPurchases(params: {
         select 1 from ${purchaseTickets} pt
         where pt.purchase_id = ${purchases.id}
         and cast(pt.ticket_number as text) like ${term}
-      )`
+      )`,
     )
   }
   if (start) {
-    conditions.push(
-      sql`date(${purchases.createdAt} / 1000, 'unixepoch') >= ${start}`
-    )
+    conditions.push(sql`date(${purchases.createdAt} / 1000, 'unixepoch') >= ${start}`)
   }
   if (end) {
-    conditions.push(
-      sql`date(${purchases.createdAt} / 1000, 'unixepoch') <= ${end}`
-    )
+    conditions.push(sql`date(${purchases.createdAt} / 1000, 'unixepoch') <= ${end}`)
   }
 
   const whereClause = and(...conditions)
@@ -373,7 +353,7 @@ export async function getClientPurchases(params: {
       purchases.raffleId,
       purchases.customerName,
       purchases.customerPhone,
-      purchases.customerEmail
+      purchases.customerEmail,
     )
     .orderBy(sql`sum(${purchases.totalAmountCents}) desc`)
     .limit(limit)
@@ -401,10 +381,7 @@ export async function listRecentPurchaseRows(
     })
     .from(purchases)
     .where(
-      and(
-        eq(purchases.raffleId, raffleId),
-        inArray(purchases.status, ["pending", "approved"]),
-      ),
+      and(eq(purchases.raffleId, raffleId), inArray(purchases.status, ["pending", "approved"])),
     )
     .orderBy(desc(purchases.createdAt))
     .limit(safeLimit)
@@ -413,7 +390,7 @@ export async function listRecentPurchaseRows(
 export async function assertUniquePaymentReference(
   tx: DbTransaction,
   raffleId: number,
-  reference: string
+  reference: string,
 ): Promise<void> {
   if (!reference?.trim()) return
   if (await existsPaymentReference(tx, raffleId, reference)) {

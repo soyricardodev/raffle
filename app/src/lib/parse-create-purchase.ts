@@ -1,4 +1,4 @@
-import { CreatePurchaseBody, parseCreatePurchaseBody } from "@raffle/shared/validators"
+import { type CreatePurchaseBody, parseCreatePurchaseBody } from "@raffle/shared/validators"
 import type { CreatePurchaseParams } from "@/server/purchase.service"
 
 export function formDataToPurchaseRecord(form: FormData): Record<string, unknown> {

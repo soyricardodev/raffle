@@ -1,27 +1,8 @@
-import { useState } from "react"
 import { SlidersHorizontal } from "@phosphor-icons/react"
 import type { RaffleStatus, TransitionRaffleInput } from "@raffle/shared/validators"
-import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
-import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
-import { LifecycleOptionButton } from "@/features/admin/raffles/LifecycleOptionButton"
-import {
-  getConfirmCopy,
-  getLifecyclePhase,
-  getMoreStatusOptions,
-  getPrimaryLifecycleActions,
-  getStatusHint,
-  PHASE_LABELS,
-  type LifecyclePhase,
-} from "@/features/admin/raffles/raffle-lifecycle-ui"
-import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import {
   Sheet,
@@ -30,8 +11,21 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
-import { cn } from "@/lib/utils"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { LifecycleOptionButton } from "@/features/admin/raffles/LifecycleOptionButton"
+import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
+import {
+  getConfirmCopy,
+  getLifecyclePhase,
+  getMoreStatusOptions,
+  getPrimaryLifecycleActions,
+  getStatusHint,
+  type LifecyclePhase,
+  PHASE_LABELS,
+} from "@/features/admin/raffles/raffle-lifecycle-ui"
+import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
 import { formatCurrency, formatDate } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 const PHASES: LifecyclePhase[] = ["prep", "selling", "closed"]
 
@@ -63,15 +57,11 @@ export function AdminRaffleStatusControl({
   const { run, pending } = useAdminRaffleLifecycle(raffleId)
 
   const [moreOpen, setMoreOpen] = useState(false)
-  const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(
-    null,
-  )
+  const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(null)
 
   const primaryActions = getPrimaryLifecycleActions(status, published)
   const moreOptions = getMoreStatusOptions(status)
-  const confirmCopy = pendingRequest
-    ? getConfirmCopy(pendingRequest, raffleName)
-    : null
+  const confirmCopy = pendingRequest ? getConfirmCopy(pendingRequest, raffleName) : null
 
   function requestConfirm(request: TransitionRaffleInput) {
     setMoreOpen(false)
@@ -161,7 +151,10 @@ export function AdminRaffleStatusControl({
       </Card>
 
       <Sheet open={moreOpen} onOpenChange={setMoreOpen}>
-        <SheetContent side="bottom" className="max-h-[85vh] overflow-y-auto rounded-t-2xl px-4 pb-8">
+        <SheetContent
+          side="bottom"
+          className="max-h-[85vh] overflow-y-auto rounded-t-2xl px-4 pb-8"
+        >
           <SheetHeader className="text-left">
             <SheetTitle>Otros estados</SheetTitle>
             <SheetDescription>
@@ -177,9 +170,7 @@ export function AdminRaffleStatusControl({
                   description={option.description}
                   disabled={pending}
                   destructive={option.destructive}
-                  onClick={() =>
-                    requestConfirm({ intent: "set_status", status: option.status })
-                  }
+                  onClick={() => requestConfirm({ intent: "set_status", status: option.status })}
                 />
               </li>
             ))}
@@ -206,13 +197,7 @@ export function AdminRaffleStatusControl({
   )
 }
 
-function LifecycleStepper({
-  phase,
-  status,
-}: {
-  phase: LifecyclePhase
-  status: RaffleStatus
-}) {
+function LifecycleStepper({ phase, status }: { phase: LifecyclePhase; status: RaffleStatus }) {
   const phaseIndex = PHASES.indexOf(phase)
 
   return (

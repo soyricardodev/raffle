@@ -23,7 +23,12 @@ function customerCiForStorage(ci: string): string {
   return formatCustomerCi(parsed.prefix, parsed.number).substring(0, 20)
 }
 
-function toCustomerValues(input: UpsertCustomerInput, phoneNorm: string, ciNorm: string, ciDisplay: string) {
+function toCustomerValues(
+  input: UpsertCustomerInput,
+  phoneNorm: string,
+  ciNorm: string,
+  ciDisplay: string,
+) {
   return {
     customerName: input.customerName.substring(0, 200),
     customerPhone: input.customerPhone.substring(0, 20),

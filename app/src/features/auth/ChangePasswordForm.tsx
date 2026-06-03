@@ -1,16 +1,16 @@
+import { EyeIcon, EyeSlashIcon, KeyIcon } from "@phosphor-icons/react"
 import type { ChangePasswordPayload } from "@raffle/shared/validators"
 import { validateChangePasswordForm } from "@raffle/shared/validators"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
-import { EyeIcon, EyeSlashIcon, KeyIcon } from "@phosphor-icons/react"
 import { useId, useState } from "react"
 import { toast } from "sonner"
-import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { changePassword, signOut } from "@/features/auth/auth-client"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { changePassword, signOut } from "@/features/auth/auth-client"
 import { cn } from "@/lib/utils"
 
 type PasswordFieldProps = {
@@ -101,8 +101,8 @@ function ChangePasswordCard({
           <div className="min-w-0 space-y-1">
             <CardTitle className="text-lg">Cambiar contraseña</CardTitle>
             <CardDescription>
-              Usa una contraseña segura. Al guardar cerraremos tu sesión; inicia sesión de nuevo
-              con la nueva contraseña.
+              Usa una contraseña segura. Al guardar cerraremos tu sesión; inicia sesión de nuevo con
+              la nueva contraseña.
             </CardDescription>
           </div>
         </div>

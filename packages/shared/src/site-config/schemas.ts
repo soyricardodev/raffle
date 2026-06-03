@@ -60,9 +60,13 @@ export const SeoConfigSchema = z.object({
 
 const httpsUrlOrEmpty = z.union([
   z.literal(""),
-  z.string().trim().url("URL inválida").refine((v) => /^https:\/\//i.test(v), {
-    message: "Debe empezar con https://",
-  }),
+  z
+    .string()
+    .trim()
+    .url("URL inválida")
+    .refine((v) => /^https:\/\//i.test(v), {
+      message: "Debe empezar con https://",
+    }),
 ])
 
 /** Promo block shown in the post-purchase success drawer (mobile-first). */

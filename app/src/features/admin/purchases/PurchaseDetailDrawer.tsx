@@ -1,8 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
-import type { PurchaseDetail, PurchaseRow } from "@/features/admin/purchases/types"
-import { Skeleton } from "@/components/ui/skeleton"
 import {
   Sheet,
   SheetContent,
@@ -11,19 +9,20 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet"
+import { Skeleton } from "@/components/ui/skeleton"
+import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
 import { PurchaseCustomerFacts } from "@/features/admin/purchases/PurchaseCustomerFacts"
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
 import { PurchaseTicketsPanel } from "@/features/admin/purchases/PurchaseTicketsPanel"
-import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
+import type { PurchaseDetail, PurchaseRow } from "@/features/admin/purchases/types"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrencyForMethod } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-const DRAWER_WIDTH_CLASS =
-  "!w-full !max-w-full sm:!w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]"
+const DRAWER_WIDTH_CLASS = "!w-full !max-w-full sm:!w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]"
 
 type PurchaseApi = {
   id: number
@@ -90,18 +89,14 @@ function PaymentMeta({ purchase }: { purchase: PurchaseDetail }) {
       </div>
       <div className="grid grid-cols-[88px_1fr] gap-x-2 text-sm">
         <span className="text-muted-foreground text-xs">Método</span>
-        <span className="font-medium capitalize">
-          {purchase.payment_method.replace(/_/g, " ")}
-        </span>
+        <span className="font-medium capitalize">{purchase.payment_method.replace(/_/g, " ")}</span>
         <span className="text-muted-foreground text-xs">Referencia</span>
         <span className="font-mono text-xs break-all">
           {purchase.payment_reference?.trim() || "—"}
         </span>
       </div>
       {!purchase.payment_proof_url && (
-        <p className="text-amber-600 dark:text-amber-400 pt-1 text-xs">
-          Sin comprobante adjunto
-        </p>
+        <p className="text-amber-600 dark:text-amber-400 pt-1 text-xs">Sin comprobante adjunto</p>
       )}
     </div>
   )

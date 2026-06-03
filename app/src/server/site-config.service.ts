@@ -1,7 +1,7 @@
 import {
+  type AdminSiteConfigPatch,
   AdminSiteConfigPatchSchema,
   SITE_CONFIG_PUBLIC_KEYS,
-  type AdminSiteConfigPatch,
 } from "@raffle/shared/site-config"
 import * as settingsRepo from "./repositories/settings.repository"
 

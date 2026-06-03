@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "@/components/evilcharts/charts/line-chart"
-import { type ChartConfig } from "@/components/evilcharts/ui/chart"
+import type { ChartConfig } from "@/components/evilcharts/ui/chart"
 
 type Point = { date: string; count: number; revenue: number }
 
@@ -43,9 +43,7 @@ export function SalesTrendChart({
       <Grid />
       <XAxis
         dataKey="date"
-        tickFormatter={(value: string) =>
-          value.length >= 10 ? value.slice(5, 10) : value
-        }
+        tickFormatter={(value: string) => (value.length >= 10 ? value.slice(5, 10) : value)}
       />
       <YAxis />
       <Tooltip />

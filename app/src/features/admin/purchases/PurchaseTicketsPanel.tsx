@@ -2,9 +2,9 @@ import { Search, Ticket } from "lucide-react"
 import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
+import { parseTicketNumbers } from "@/features/admin/purchases/parseTicketNumbers"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { cn } from "@/lib/utils"
-import { parseTicketNumbers } from "@/features/admin/purchases/parseTicketNumbers"
 
 type PurchaseTicketsPanelProps = {
   ticketNumbers?: Array<string>

@@ -1,6 +1,6 @@
+import { EmailSendError } from "@raffle/shared/errors"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
-import { EmailSendError } from "@raffle/shared/errors"
 import type { EmailAdapter, SendEmailParams, SendEmailResult } from "./types"
 
 const logger = getLogger()
@@ -31,10 +31,7 @@ export class BrevoEmailAdapter implements EmailAdapter {
 
       if (!response.ok) {
         const body = await response.text()
-        logger.error(
-          { status: response.status, body, to: params.to },
-          "email:brevo:error",
-        )
+        logger.error({ status: response.status, body, to: params.to }, "email:brevo:error")
         throw new EmailSendError(params.to, `Brevo API error ${response.status}: ${body}`)
       }
 

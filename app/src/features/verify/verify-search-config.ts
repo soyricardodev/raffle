@@ -1,9 +1,9 @@
 import {
   CreditCardIcon,
   EnvelopeSimpleIcon,
+  type IconProps,
   PhoneIcon,
   TicketIcon,
-  type IconProps,
 } from "@phosphor-icons/react"
 import type { ComponentType } from "react"
 import type { VerifySearchType } from "@/features/verify/verify-profile"

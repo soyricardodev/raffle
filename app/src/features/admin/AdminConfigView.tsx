@@ -1,13 +1,21 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
+import { Input } from "@/components/ui/input"
+import { Skeleton } from "@/components/ui/skeleton"
+import { Switch } from "@/components/ui/switch"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Textarea } from "@/components/ui/textarea"
 import { AdminMaintenanceSection } from "@/features/admin/AdminMaintenanceSection"
 import {
+  type AdminSiteConfigDraft,
   apiToDraft,
   defaultAdminSiteConfigDraft,
   draftsEqual,
   validateDraft,
-  type AdminSiteConfigDraft,
 } from "@/features/admin/config/admin-site-config"
 import { ColorField } from "@/features/admin/config/ColorField"
 import { OfficialLogosEditor } from "@/features/admin/config/OfficialLogosEditor"
@@ -17,20 +25,6 @@ import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { publicQueryKeys } from "@/features/layout/public-queries"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldError,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { Skeleton } from "@/components/ui/skeleton"
-import { Switch } from "@/components/ui/switch"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Textarea } from "@/components/ui/textarea"
 import { adminFetch } from "@/lib/admin-fetch"
 import { useSiteConfig } from "@/stores/site-config"
 
@@ -253,7 +247,9 @@ export function AdminConfigView() {
           <Card>
             <CardHeader>
               <CardTitle>SEO</CardTitle>
-              <CardDescription>Cómo aparece tu sitio en buscadores y al compartir enlaces.</CardDescription>
+              <CardDescription>
+                Cómo aparece tu sitio en buscadores y al compartir enlaces.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <FieldGroup>
@@ -355,7 +351,9 @@ export function AdminConfigView() {
         <TabsContent value="post-purchase">
           <PostPurchasePromoConfigTab
             promo={draft.purchase_success_promo}
-            onChange={(purchase_success_promo) => update("purchase_success_promo", purchase_success_promo)}
+            onChange={(purchase_success_promo) =>
+              update("purchase_success_promo", purchase_success_promo)
+            }
             fieldError={fieldError}
           />
         </TabsContent>
@@ -382,8 +380,8 @@ export function AdminConfigView() {
                     aria-invalid={!!fieldError("site_info.runlot_id")}
                   />
                   <FieldDescription>
-                    Número de autorización para venta de rifas. Se muestra en el pie del sitio cuando
-                    está configurado.
+                    Número de autorización para venta de rifas. Se muestra en el pie del sitio
+                    cuando está configurado.
                   </FieldDescription>
                   <FieldError>{fieldError("site_info.runlot_id")}</FieldError>
                 </Field>

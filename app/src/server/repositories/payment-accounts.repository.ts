@@ -1,8 +1,8 @@
 import { paymentAccounts, rafflePaymentMethods } from "@raffle/shared/db"
-import type { PaymentMethod } from "@raffle/shared/validators"
 import { parseAccountInfo } from "@raffle/shared/payment-methods"
+import type { PaymentMethod } from "@raffle/shared/validators"
 import { desc, eq, sql } from "drizzle-orm"
-import { getDb, type DbTransaction } from "@/lib/db.server"
+import { type DbTransaction, getDb } from "@/lib/db.server"
 
 export type PaymentAccountRow = typeof paymentAccounts.$inferSelect
 
@@ -26,10 +26,7 @@ function mapAccountRow(row: PaymentAccountRow) {
 
 export async function listPaymentAccounts(options?: { activeOnly?: boolean }) {
   const db = getDb()
-  const rows = await db
-    .select()
-    .from(paymentAccounts)
-    .orderBy(desc(paymentAccounts.createdAt))
+  const rows = await db.select().from(paymentAccounts).orderBy(desc(paymentAccounts.createdAt))
 
   const filtered = options?.activeOnly ? rows.filter((r) => r.isActive) : rows
   return filtered.map(mapAccountRow)
@@ -37,22 +34,16 @@ export async function listPaymentAccounts(options?: { activeOnly?: boolean }) {
 
 export async function findPaymentAccountById(id: number) {
   const db = getDb()
-  const [row] = await db
-    .select()
-    .from(paymentAccounts)
-    .where(eq(paymentAccounts.id, id))
-    .limit(1)
+  const [row] = await db.select().from(paymentAccounts).where(eq(paymentAccounts.id, id)).limit(1)
   return row ? mapAccountRow(row) : null
 }
 
-export async function insertPaymentAccount(
-  data: {
-    label: string
-    methodType: PaymentMethod
-    accountInfo: Record<string, string>
-    isActive?: boolean
-  },
-) {
+export async function insertPaymentAccount(data: {
+  label: string
+  methodType: PaymentMethod
+  accountInfo: Record<string, string>
+  isActive?: boolean
+}) {
   const db = getDb()
   const normalized = parseAccountInfo(data.methodType, data.accountInfo)
   const [row] = await db

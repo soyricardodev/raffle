@@ -20,19 +20,13 @@ export const Route = createFileRoute("/admin/emails")({
     q: typeof search.q === "string" ? search.q : undefined,
     start: typeof search.start === "string" ? search.start : undefined,
     end: typeof search.end === "string" ? search.end : undefined,
-    page: Number.isFinite(Number(search.page))
-      ? Math.max(1, Number(search.page))
-      : undefined,
-    limit: Number.isFinite(Number(search.limit))
-      ? Math.max(1, Number(search.limit))
-      : undefined,
+    page: Number.isFinite(Number(search.page)) ? Math.max(1, Number(search.page)) : undefined,
+    limit: Number.isFinite(Number(search.limit)) ? Math.max(1, Number(search.limit)) : undefined,
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
     const filters = normalizeAdminEmailFilters(deps)
-    await queryClient
-      .ensureQueryData(adminEmailsQueryOptions(filters))
-      .catch(() => null)
+    await queryClient.ensureQueryData(adminEmailsQueryOptions(filters)).catch(() => null)
     return null
   },
   component: AdminEmailsPanel,

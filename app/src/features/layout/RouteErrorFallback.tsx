@@ -1,8 +1,8 @@
 import {
-  Link,
-  useRouter,
   type ErrorComponentProps,
+  Link,
   type NotFoundRouteProps,
+  useRouter,
 } from "@tanstack/react-router"
 import { ArrowLeft, Home, RefreshCw, SearchX, TriangleAlert } from "lucide-react"
 import { useState } from "react"
@@ -18,8 +18,8 @@ import {
 import { cn } from "@/lib/utils"
 import {
   formatRouteErrorDetails,
-  resolveRouteError,
   type RouteErrorPresentation,
+  resolveRouteError,
 } from "./route-error-utils"
 
 export type RouteErrorVariant = "public" | "admin"
@@ -156,8 +156,7 @@ export function RouteErrorFallback({
   variant = "public",
 }: RouteErrorFallbackProps) {
   const presentation = resolveRouteError(error)
-  const technicalDetails =
-    import.meta.env.DEV ? formatRouteErrorDetails(error, info) : undefined
+  const technicalDetails = import.meta.env.DEV ? formatRouteErrorDetails(error, info) : undefined
 
   return (
     <RouteProblemScreen

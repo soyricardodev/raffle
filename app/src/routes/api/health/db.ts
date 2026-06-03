@@ -1,5 +1,5 @@
-import { sql } from "drizzle-orm"
 import { createFileRoute } from "@tanstack/react-router"
+import { sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export const Route = createFileRoute("/api/health/db")({

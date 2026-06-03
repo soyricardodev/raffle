@@ -1,11 +1,10 @@
 import { TanStackDevtools } from "@tanstack/react-devtools"
+import type { QueryClient } from "@tanstack/react-query"
 import { QueryClientProvider } from "@tanstack/react-query"
 import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router"
-import type { QueryClient } from "@tanstack/react-query"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
-import { Toaster } from "sonner"
-
 import { useEffect, useLayoutEffect } from "react"
+import { Toaster } from "sonner"
 import { PublicRouteError, PublicRouteNotFound } from "@/features/layout/RouteErrorFallback"
 import { useTheme } from "@/stores/theme"
 

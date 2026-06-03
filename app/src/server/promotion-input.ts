@@ -1,8 +1,8 @@
 import { fromCents } from "@raffle/shared/db"
 import type { PromotionRecord } from "@raffle/shared/promotions/types"
 import {
-  discountBpsToPercent,
   type CreateRafflePromotionInput,
+  discountBpsToPercent,
   type UpdateRafflePromotionInput,
 } from "@raffle/shared/validators"
 
@@ -39,10 +39,7 @@ export function mergePromotionInput(
           ? discountBpsToPercent(existing.discountPercentBps)
           : null,
     starts_at:
-      patch.starts_at !== undefined
-        ? patch.starts_at
-        : existing.startsAt?.toISOString() ?? null,
-    ends_at:
-      patch.ends_at !== undefined ? patch.ends_at : existing.endsAt?.toISOString() ?? null,
+      patch.starts_at !== undefined ? patch.starts_at : (existing.startsAt?.toISOString() ?? null),
+    ends_at: patch.ends_at !== undefined ? patch.ends_at : (existing.endsAt?.toISOString() ?? null),
   }
 }

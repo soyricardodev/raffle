@@ -1,12 +1,13 @@
 import { fromCents, rafflePromotions } from "@raffle/shared/db"
+import type {
+  PromotionKind,
+  PromotionRecord,
+  PromotionScope,
+} from "@raffle/shared/promotions/types"
 import type { CreateRafflePromotionInput } from "@raffle/shared/validators"
-import {
-  discountBpsToPercent,
-  discountPercentToBps,
-} from "@raffle/shared/validators"
+import { discountBpsToPercent, discountPercentToBps } from "@raffle/shared/validators"
 import { and, asc, eq } from "drizzle-orm"
-import { getDb, type DbTransaction } from "@/lib/db.server"
-import type { PromotionKind, PromotionRecord, PromotionScope } from "@raffle/shared/promotions/types"
+import { type DbTransaction, getDb } from "@/lib/db.server"
 
 export type RafflePromotionRow = typeof rafflePromotions.$inferSelect
 
@@ -41,8 +42,7 @@ function inputToInsert(
     scope: input.scope ?? "all_methods",
     rafflePaymentMethodId:
       input.scope === "payment_method" ? (input.raffle_payment_method_id ?? null) : null,
-    promoPriceBsCents:
-      input.promo_price_bs != null ? Math.round(input.promo_price_bs * 100) : null,
+    promoPriceBsCents: input.promo_price_bs != null ? Math.round(input.promo_price_bs * 100) : null,
     promoPriceUsdCents:
       input.promo_price_usd != null ? Math.round(input.promo_price_usd * 100) : null,
     discountPercentBps:
@@ -62,10 +62,8 @@ export function mapPromotionLegacy(row: RafflePromotionRow) {
     kind: row.kind as PromotionKind,
     scope: row.scope as PromotionScope,
     raffle_payment_method_id: row.rafflePaymentMethodId,
-    promo_price_bs:
-      row.promoPriceBsCents != null ? fromCents(row.promoPriceBsCents) : null,
-    promo_price_usd:
-      row.promoPriceUsdCents != null ? fromCents(row.promoPriceUsdCents) : null,
+    promo_price_bs: row.promoPriceBsCents != null ? fromCents(row.promoPriceBsCents) : null,
+    promo_price_usd: row.promoPriceUsdCents != null ? fromCents(row.promoPriceUsdCents) : null,
     discount_percent:
       row.discountPercentBps != null ? discountBpsToPercent(row.discountPercentBps) : null,
     starts_at: row.startsAt?.toISOString() ?? null,
@@ -103,9 +101,7 @@ export async function findPromotionLegacyById(raffleId: number, promotionId: num
   const [row] = await db
     .select()
     .from(rafflePromotions)
-    .where(
-      and(eq(rafflePromotions.raffleId, raffleId), eq(rafflePromotions.id, promotionId)),
-    )
+    .where(and(eq(rafflePromotions.raffleId, raffleId), eq(rafflePromotions.id, promotionId)))
     .limit(1)
   return row ? mapPromotionLegacy(row) : undefined
 }

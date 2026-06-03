@@ -39,11 +39,7 @@ export function formatQuickPickLabel(value: number, max: number): string {
   return String(value)
 }
 
-function collectCandidateValues(
-  min: number,
-  max: number,
-  paymentThresholds: number[],
-): number[] {
+function collectCandidateValues(min: number, max: number, paymentThresholds: number[]): number[] {
   const candidates = new Set<number>([min, max])
 
   for (const threshold of paymentThresholds) {

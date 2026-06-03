@@ -1,6 +1,6 @@
+import { type Client, createClient } from "@libsql/client"
 import { schema } from "@raffle/shared/db"
 import { ConcurrentPurchaseError } from "@raffle/shared/errors"
-import { createClient, type Client } from "@libsql/client"
 import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql"
 import { getEnv, requireDatabaseUrl } from "./env"
 import { getLogger } from "./logger"

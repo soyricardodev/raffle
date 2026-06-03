@@ -1,10 +1,10 @@
-import { cn } from "@/lib/utils"
 import {
   buildTickerViewModel,
   type LivePurchaseActivityVariant,
 } from "@/features/raffle/live-activity-ticker-config"
 import { PurchaseActivityMarquee } from "@/features/raffle/PurchaseActivityMarquee"
 import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
+import { cn } from "@/lib/utils"
 
 export type { LivePurchaseActivityVariant }
 
@@ -38,10 +38,7 @@ function TickerShell({
       <div className="mx-auto flex h-8 max-w-lg items-center gap-2 overflow-hidden px-3 sm:h-9 sm:px-4">
         {view.label}
         <div className="bg-border/60 h-4 w-px shrink-0" aria-hidden />
-        <PurchaseActivityMarquee
-          items={view.marqueeItems}
-          durationSec={view.marqueeDurationSec}
-        />
+        <PurchaseActivityMarquee items={view.marqueeItems} durationSec={view.marqueeDurationSec} />
       </div>
     </div>
   )
@@ -69,9 +66,7 @@ export function LivePurchaseActivityTicker({
 }: LivePurchaseActivityTickerProps) {
   if (variant === "live") {
     if (raffleId == null) return null
-    return (
-      <LivePurchaseActivityTickerLive raffleId={raffleId} className={className} />
-    )
+    return <LivePurchaseActivityTickerLive raffleId={raffleId} className={className} />
   }
 
   const view = buildTickerViewModel(variant, { activeBuyersCount: 0, purchases: [] })

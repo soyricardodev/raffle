@@ -24,9 +24,7 @@ export type ChangePasswordPayload = {
 
 export function validateChangePasswordForm(
   values: unknown,
-):
-  | { ok: true; data: ChangePasswordPayload }
-  | { ok: false; fieldErrors: Record<string, string> } {
+): { ok: true; data: ChangePasswordPayload } | { ok: false; fieldErrors: Record<string, string> } {
   const parsed = ChangePasswordFormInput.safeParse(values)
   if (!parsed.success) {
     return { ok: false, fieldErrors: zodIssuesToFieldErrors(parsed.error.issues) }

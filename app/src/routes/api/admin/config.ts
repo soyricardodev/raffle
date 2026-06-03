@@ -1,12 +1,12 @@
+import { AdminSiteConfigPatchSchema } from "@raffle/shared/site-config"
 import { createFileRoute } from "@tanstack/react-router"
+import { z } from "zod"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import {
   getSiteConfigMap,
   updateSiteConfigKey,
   updateSiteConfigPatch,
 } from "@/server/site-config.service"
-import { z } from "zod"
-import { AdminSiteConfigPatchSchema } from "@raffle/shared/site-config"
 
 const UpdateConfigInput = z.object({
   key: z.string().min(1).max(100),

@@ -45,9 +45,7 @@ export const PAYMENT_METHOD_DEFINITIONS: Record<PaymentMethod, PaymentMethodDefi
     code: "binance",
     label: "Binance",
     currency: "USD",
-    fields: [
-      { ...EMAIL_FIELD, hint: "Pago en USD / USDT" },
-    ],
+    fields: [{ ...EMAIL_FIELD, hint: "Pago en USD / USDT" }],
   },
   zinli: {
     code: "zinli",
@@ -152,9 +150,7 @@ export const PAYMENT_METHOD_DEFINITIONS: Record<PaymentMethod, PaymentMethodDefi
   },
 }
 
-export function getPaymentMethodDefinition(
-  methodType: PaymentMethod,
-): PaymentMethodDefinition {
+export function getPaymentMethodDefinition(methodType: PaymentMethod): PaymentMethodDefinition {
   return PAYMENT_METHOD_DEFINITIONS[methodType]
 }
 

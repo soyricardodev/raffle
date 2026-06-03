@@ -51,19 +51,15 @@ export async function listEmailLogs(params: {
       or(
         like(emailLogs.subject, term),
         like(emailLogs.recipientEmail, term),
-        like(purchases.customerName, term)
-      )!
+        like(purchases.customerName, term),
+      )!,
     )
   }
   if (start) {
-    conditions.push(
-      sql`date(${emailLogs.createdAt} / 1000, 'unixepoch') >= ${start}`
-    )
+    conditions.push(sql`date(${emailLogs.createdAt} / 1000, 'unixepoch') >= ${start}`)
   }
   if (end) {
-    conditions.push(
-      sql`date(${emailLogs.createdAt} / 1000, 'unixepoch') <= ${end}`
-    )
+    conditions.push(sql`date(${emailLogs.createdAt} / 1000, 'unixepoch') <= ${end}`)
   }
 
   const whereClause = and(...conditions)

@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { setAutoPauseEnabled } from "@/server/raffle.service"
-import { requireAdmin } from "@/lib/auth-utils.server"
 import { z } from "zod"
+import { requireAdmin } from "@/lib/auth-utils.server"
+import { setAutoPauseEnabled } from "@/server/raffle.service"
 
 const AutoPauseInput = z.object({
   enabled: z.boolean(),

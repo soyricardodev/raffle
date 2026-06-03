@@ -12,9 +12,7 @@ const VISIBILITY_THRESHOLD = 0.12
 
 /** IntersectionObserver only accepts px or % in rootMargin (not rem). */
 function rootMarginPx(topRem: number, bottomRem: number): string {
-  const rootFontSize = parseFloat(
-    getComputedStyle(document.documentElement).fontSize,
-  )
+  const rootFontSize = parseFloat(getComputedStyle(document.documentElement).fontSize)
   const pxPerRem = Number.isFinite(rootFontSize) && rootFontSize > 0 ? rootFontSize : 16
   const top = Math.round(topRem * pxPerRem)
   const bottom = Math.round(bottomRem * pxPerRem)
@@ -22,10 +20,7 @@ function rootMarginPx(topRem: number, bottomRem: number): string {
 }
 
 function resolvePurchaseTarget(): HTMLElement | null {
-  return (
-    document.getElementById(PURCHASE_PAYMENT_ID) ??
-    document.getElementById(PURCHASE_FORM_ID)
-  )
+  return document.getElementById(PURCHASE_PAYMENT_ID) ?? document.getElementById(PURCHASE_FORM_ID)
 }
 
 export function HomeStickyCta({ visible }: { visible: boolean }) {

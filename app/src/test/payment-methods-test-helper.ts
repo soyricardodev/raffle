@@ -1,5 +1,5 @@
-import { eq } from "drizzle-orm"
 import { paymentAccounts, rafflePaymentMethods } from "@raffle/shared/db"
+import { eq } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export async function seedPagoMovilPaymentMethodForRaffle(raffleId: number): Promise<number> {

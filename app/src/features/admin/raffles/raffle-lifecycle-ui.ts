@@ -8,8 +8,8 @@ import {
   Prohibit,
   RocketLaunch,
 } from "@phosphor-icons/react"
-import type { ComponentType } from "react"
 import type { RaffleStatus, TransitionRaffleInput } from "@raffle/shared/validators"
+import type { ComponentType } from "react"
 import { getStatusLabel } from "@/lib/format"
 
 export type LifecyclePhase = "prep" | "selling" | "closed"
@@ -29,7 +29,8 @@ export const RAFFLE_STATUS_HINTS: Record<RaffleStatus, string> = {
   draft: "Borrador: no aparece en la página pública y no se pueden comprar boletos.",
   active: "En venta: los clientes pueden comprar boletos ahora mismo.",
   paused: "Pausada: las ventas están detenidas de forma temporal.",
-  finished: "Finalizada: las ventas están cerradas. Puedes publicar resultados cuando tengas ganador.",
+  finished:
+    "Finalizada: las ventas están cerradas. Puedes publicar resultados cuando tengas ganador.",
   cancelled: "Cancelada: la rifa no acepta compras ni aparece como activa.",
 }
 
@@ -158,46 +159,45 @@ export type MoreStatusOption = {
   destructive?: boolean
 }
 
-const MORE_STATUS_OPTIONS: Array<
-  MoreStatusOption & { when: (current: RaffleStatus) => boolean }
-> = [
-  {
-    status: "draft",
-    label: "Volver a borrador",
-    description: "Oculta la rifa y detiene ventas",
-    icon: FileDashed,
-    when: (c) => c !== "draft",
-  },
-  {
-    status: "active",
-    label: "Marcar como activa",
-    description: "Solo desde borrador, finalizada o cancelada",
-    icon: RocketLaunch,
-    when: (c) => c === "draft" || c === "finished" || c === "cancelled",
-  },
-  {
-    status: "paused",
-    label: "Marcar como pausada",
-    description: "Pausa administrativa con temporizador de 15 min",
-    icon: Pause,
-    when: (c) => c === "draft" || c === "finished" || c === "cancelled",
-  },
-  {
-    status: "finished",
-    label: "Marcar como finalizada",
-    description: "Cierra ventas sin usar el flujo principal",
-    icon: Flag,
-    when: (c) => c !== "finished",
-  },
-  {
-    status: "cancelled",
-    label: "Cancelar rifa",
-    description: "La rifa queda fuera de circulación",
-    icon: Prohibit,
-    destructive: true,
-    when: (c) => c !== "cancelled",
-  },
-]
+const MORE_STATUS_OPTIONS: Array<MoreStatusOption & { when: (current: RaffleStatus) => boolean }> =
+  [
+    {
+      status: "draft",
+      label: "Volver a borrador",
+      description: "Oculta la rifa y detiene ventas",
+      icon: FileDashed,
+      when: (c) => c !== "draft",
+    },
+    {
+      status: "active",
+      label: "Marcar como activa",
+      description: "Solo desde borrador, finalizada o cancelada",
+      icon: RocketLaunch,
+      when: (c) => c === "draft" || c === "finished" || c === "cancelled",
+    },
+    {
+      status: "paused",
+      label: "Marcar como pausada",
+      description: "Pausa administrativa con temporizador de 15 min",
+      icon: Pause,
+      when: (c) => c === "draft" || c === "finished" || c === "cancelled",
+    },
+    {
+      status: "finished",
+      label: "Marcar como finalizada",
+      description: "Cierra ventas sin usar el flujo principal",
+      icon: Flag,
+      when: (c) => c !== "finished",
+    },
+    {
+      status: "cancelled",
+      label: "Cancelar rifa",
+      description: "La rifa queda fuera de circulación",
+      icon: Prohibit,
+      destructive: true,
+      when: (c) => c !== "cancelled",
+    },
+  ]
 
 export function getMoreStatusOptions(current: RaffleStatus): MoreStatusOption[] {
   return MORE_STATUS_OPTIONS.filter((o) => o.when(current)).map(

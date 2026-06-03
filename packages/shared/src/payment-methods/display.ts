@@ -1,10 +1,10 @@
-import type { PaymentMethod } from "./types.js"
 import {
   getFieldsForType,
   getPaymentMethodCurrency,
   PAYMENT_METHOD_DEFINITIONS,
 } from "./definitions.js"
 import { normalizeAccountInfoKeys } from "./normalize.js"
+import type { PaymentMethod } from "./types.js"
 
 export function paymentMethodDisplayLabel(method: {
   label?: string | null

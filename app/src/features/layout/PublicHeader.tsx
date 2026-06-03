@@ -1,8 +1,8 @@
 import { Link } from "@tanstack/react-router"
-import { Button } from "@/components/ui/button"
-import { ThemeToggle } from "@/features/theme/ThemeToggle"
-import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { Search } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
+import { ThemeToggle } from "@/features/theme/ThemeToggle"
 
 export function PublicHeader() {
   const branding = usePublicBranding()
@@ -29,7 +29,13 @@ export function PublicHeader() {
           {siteName ? <span className="truncate">{siteName}</span> : null}
         </Link>
         <nav className="flex shrink-0 items-center gap-0.5">
-          <Button variant="ghost" size="icon" className="size-10" asChild aria-label="Verificar boletos">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-10"
+            asChild
+            aria-label="Verificar boletos"
+          >
             <Link to="/verificar">
               <Search className="size-5" />
             </Link>

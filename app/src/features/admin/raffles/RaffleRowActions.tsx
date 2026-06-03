@@ -1,14 +1,8 @@
-import { Link } from "@tanstack/react-router"
 import { DotsThreeVertical, Eye, PencilSimple } from "@phosphor-icons/react"
-import { useState } from "react"
-import type { RaffleRow } from "@/features/admin/raffles/types"
-import {
-  getConfirmCopy,
-  getPrimaryLifecycleActions,
-} from "@/features/admin/raffles/raffle-lifecycle-ui"
 import type { TransitionRaffleInput } from "@raffle/shared/validators"
+import { Link } from "@tanstack/react-router"
+import { useState } from "react"
 import { Button } from "@/components/ui/button"
-import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,6 +10,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import {
+  getConfirmCopy,
+  getPrimaryLifecycleActions,
+} from "@/features/admin/raffles/raffle-lifecycle-ui"
+import type { RaffleRow } from "@/features/admin/raffles/types"
 
 type RaffleRowActionsProps = {
   raffle: RaffleRow
@@ -30,17 +30,13 @@ export function RaffleRowActions({
   onLifecycle,
   density = "comfortable",
 }: RaffleRowActionsProps) {
-  const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(
-    null,
-  )
+  const [pendingRequest, setPendingRequest] = useState<TransitionRaffleInput | null>(null)
   const buttonSize = density === "compact" ? "icon-xs" : "icon-sm"
   const buttonClassName = density === "compact" ? undefined : "size-11"
 
   const published = Boolean(raffle.publish)
   const menuActions = getPrimaryLifecycleActions(raffle.status, published)
-  const confirmCopy = pendingRequest
-    ? getConfirmCopy(pendingRequest, raffle.name)
-    : null
+  const confirmCopy = pendingRequest ? getConfirmCopy(pendingRequest, raffle.name) : null
 
   return (
     <>

@@ -95,9 +95,7 @@
       "indexes": {
         "account_user_id_idx": {
           "name": "account_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         }
       },
@@ -106,12 +104,8 @@
           "name": "account_user_id_users_id_fk",
           "tableFrom": "account",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -215,23 +209,17 @@
       "indexes": {
         "audit_events_raffle_idx": {
           "name": "audit_events_raffle_idx",
-          "columns": [
-            "raffle_id"
-          ],
+          "columns": ["raffle_id"],
           "isUnique": false
         },
         "audit_events_purchase_idx": {
           "name": "audit_events_purchase_idx",
-          "columns": [
-            "purchase_id"
-          ],
+          "columns": ["purchase_id"],
           "isUnique": false
         },
         "audit_events_created_idx": {
           "name": "audit_events_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         }
       },
@@ -240,12 +228,8 @@
           "name": "audit_events_actor_user_id_users_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "users",
-          "columnsFrom": [
-            "actor_user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["actor_user_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -253,12 +237,8 @@
           "name": "audit_events_raffle_id_raffles_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -266,12 +246,8 @@
           "name": "audit_events_purchase_id_purchases_id_fk",
           "tableFrom": "audit_events",
           "tableTo": "purchases",
-          "columnsFrom": [
-            "purchase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchase_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -379,23 +355,17 @@
       "indexes": {
         "email_logs_purchase_idx": {
           "name": "email_logs_purchase_idx",
-          "columns": [
-            "purchase_id"
-          ],
+          "columns": ["purchase_id"],
           "isUnique": false
         },
         "email_logs_created_idx": {
           "name": "email_logs_created_idx",
-          "columns": [
-            "created_at"
-          ],
+          "columns": ["created_at"],
           "isUnique": false
         },
         "email_logs_idempotency_idx": {
           "name": "email_logs_idempotency_idx",
-          "columns": [
-            "idempotency_key"
-          ],
+          "columns": ["idempotency_key"],
           "isUnique": false
         }
       },
@@ -404,12 +374,8 @@
           "name": "email_logs_purchase_id_purchases_id_fk",
           "tableFrom": "email_logs",
           "tableTo": "purchases",
-          "columnsFrom": [
-            "purchase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchase_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -475,10 +441,7 @@
       "indexes": {
         "payment_methods_raffle_active_idx": {
           "name": "payment_methods_raffle_active_idx",
-          "columns": [
-            "raffle_id",
-            "is_active"
-          ],
+          "columns": ["raffle_id", "is_active"],
           "isUnique": false
         }
       },
@@ -487,12 +450,8 @@
           "name": "payment_methods_raffle_id_raffles_id_fk",
           "tableFrom": "payment_methods",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -557,10 +516,7 @@
       "indexes": {
         "prizes_raffle_position_idx": {
           "name": "prizes_raffle_position_idx",
-          "columns": [
-            "raffle_id",
-            "position"
-          ],
+          "columns": ["raffle_id", "position"],
           "isUnique": false
         }
       },
@@ -569,12 +525,8 @@
           "name": "prizes_raffle_id_raffles_id_fk",
           "tableFrom": "prizes",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -639,25 +591,17 @@
       "indexes": {
         "purchase_tickets_raffle_number_uidx": {
           "name": "purchase_tickets_raffle_number_uidx",
-          "columns": [
-            "raffle_id",
-            "ticket_number"
-          ],
+          "columns": ["raffle_id", "ticket_number"],
           "isUnique": true
         },
         "purchase_tickets_purchase_idx": {
           "name": "purchase_tickets_purchase_idx",
-          "columns": [
-            "purchase_id"
-          ],
+          "columns": ["purchase_id"],
           "isUnique": false
         },
         "purchase_tickets_raffle_status_idx": {
           "name": "purchase_tickets_raffle_status_idx",
-          "columns": [
-            "raffle_id",
-            "status"
-          ],
+          "columns": ["raffle_id", "status"],
           "isUnique": false
         }
       },
@@ -666,12 +610,8 @@
           "name": "purchase_tickets_raffle_id_raffles_id_fk",
           "tableFrom": "purchase_tickets",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -679,12 +619,8 @@
           "name": "purchase_tickets_purchase_id_purchases_id_fk",
           "tableFrom": "purchase_tickets",
           "tableTo": "purchases",
-          "columnsFrom": [
-            "purchase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchase_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -834,40 +770,27 @@
       "indexes": {
         "purchases_public_id_unique": {
           "name": "purchases_public_id_unique",
-          "columns": [
-            "public_id"
-          ],
+          "columns": ["public_id"],
           "isUnique": true
         },
         "purchases_raffle_status_idx": {
           "name": "purchases_raffle_status_idx",
-          "columns": [
-            "raffle_id",
-            "status"
-          ],
+          "columns": ["raffle_id", "status"],
           "isUnique": false
         },
         "purchases_raffle_created_idx": {
           "name": "purchases_raffle_created_idx",
-          "columns": [
-            "raffle_id",
-            "created_at"
-          ],
+          "columns": ["raffle_id", "created_at"],
           "isUnique": false
         },
         "purchases_phone_norm_idx": {
           "name": "purchases_phone_norm_idx",
-          "columns": [
-            "customer_phone_normalized"
-          ],
+          "columns": ["customer_phone_normalized"],
           "isUnique": false
         },
         "purchases_raffle_payment_ref_uidx": {
           "name": "purchases_raffle_payment_ref_uidx",
-          "columns": [
-            "raffle_id",
-            "payment_reference"
-          ],
+          "columns": ["raffle_id", "payment_reference"],
           "isUnique": true,
           "where": "\"purchases\".\"payment_reference\" IS NOT NULL AND \"purchases\".\"payment_reference\" != ''"
         }
@@ -877,12 +800,8 @@
           "name": "purchases_raffle_id_raffles_id_fk",
           "tableFrom": "purchases",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1053,16 +972,12 @@
       "indexes": {
         "raffles_status_idx": {
           "name": "raffles_status_idx",
-          "columns": [
-            "status"
-          ],
+          "columns": ["status"],
           "isUnique": false
         },
         "raffles_draw_date_idx": {
           "name": "raffles_draw_date_idx",
-          "columns": [
-            "draw_date"
-          ],
+          "columns": ["draw_date"],
           "isUnique": false
         }
       },
@@ -1134,23 +1049,17 @@
       "indexes": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ],
+          "columns": ["token"],
           "isUnique": true
         },
         "session_user_id_idx": {
           "name": "session_user_id_idx",
-          "columns": [
-            "user_id"
-          ],
+          "columns": ["user_id"],
           "isUnique": false
         },
         "session_expires_at_idx": {
           "name": "session_expires_at_idx",
-          "columns": [
-            "expires_at"
-          ],
+          "columns": ["expires_at"],
           "isUnique": false
         }
       },
@@ -1159,12 +1068,8 @@
           "name": "session_user_id_users_id_fk",
           "tableFrom": "session",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1238,23 +1143,17 @@
       "indexes": {
         "users_username_unique": {
           "name": "users_username_unique",
-          "columns": [
-            "username"
-          ],
+          "columns": ["username"],
           "isUnique": true
         },
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": true
         },
         "users_email_idx": {
           "name": "users_email_idx",
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "isUnique": false
         }
       },
@@ -1312,9 +1211,7 @@
       "indexes": {
         "verification_identifier_idx": {
           "name": "verification_identifier_idx",
-          "columns": [
-            "identifier"
-          ],
+          "columns": ["identifier"],
           "isUnique": false
         }
       },

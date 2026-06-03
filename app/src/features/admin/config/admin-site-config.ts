@@ -1,6 +1,6 @@
 import {
-  AdminSiteConfigPatchSchema,
   type AdminSiteConfigPatch,
+  AdminSiteConfigPatchSchema,
   type OfficialFooterLogo,
   type PurchaseSuccessPromo,
 } from "@raffle/shared/site-config"

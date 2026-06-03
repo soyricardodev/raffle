@@ -1,6 +1,5 @@
-import { purchases, raffles } from "@raffle/shared/db"
-import { fromCents } from "@raffle/shared/db"
-import { and, desc, eq, sql, type SQL } from "drizzle-orm"
+import { fromCents, purchases, raffles } from "@raffle/shared/db"
+import { and, desc, eq, type SQL, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export type AnalyticsScope = {
@@ -56,7 +55,9 @@ export async function getTopRaffles(limit = 5, raffleId?: number) {
     .leftJoin(purchases, eq(raffles.id, purchases.raffleId))
     .where(raffleFilter)
     .groupBy(raffles.id, raffles.name)
-    .orderBy(sql`coalesce(sum(case when ${purchases.status} = 'approved' then ${purchases.totalAmountCents} else 0 end), 0) desc`)
+    .orderBy(
+      sql`coalesce(sum(case when ${purchases.status} = 'approved' then ${purchases.totalAmountCents} else 0 end), 0) desc`,
+    )
     .limit(safeLimit)
 
   return rows.map((r) => ({
@@ -79,7 +80,9 @@ export async function getRevenueByMethod(days = 30, raffleId?: number) {
     .from(purchases)
     .where(purchaseTimeFilter(days, raffleId))
     .groupBy(purchases.paymentMethod)
-    .orderBy(sql`coalesce(sum(case when ${purchases.status} = 'approved' then ${purchases.totalAmountCents} else 0 end), 0) desc`)
+    .orderBy(
+      sql`coalesce(sum(case when ${purchases.status} = 'approved' then ${purchases.totalAmountCents} else 0 end), 0) desc`,
+    )
 
   return rows.map((r) => ({
     method: r.method,

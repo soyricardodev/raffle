@@ -8,7 +8,9 @@ import type { PromotionRecord } from "./types.js"
 
 const basePrices = { priceBsCents: 20_000, priceUsdCents: 700 }
 
-function promo(overrides: Partial<PromotionRecord> & Pick<PromotionRecord, "id" | "kind">): PromotionRecord {
+function promo(
+  overrides: Partial<PromotionRecord> & Pick<PromotionRecord, "id" | "kind">,
+): PromotionRecord {
   return {
     id: overrides.id,
     raffleId: 1,
@@ -147,9 +149,7 @@ describe("resolveEffectiveUnitPrice", () => {
 
 describe("isPromotionWithinSchedule", () => {
   it("allows permanent promos", () => {
-    expect(
-      isPromotionWithinSchedule({ startsAt: null, endsAt: null }, new Date()),
-    ).toBe(true)
+    expect(isPromotionWithinSchedule({ startsAt: null, endsAt: null }, new Date())).toBe(true)
   })
 })
 

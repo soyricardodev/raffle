@@ -1,9 +1,9 @@
 import { randomUUID } from "node:crypto"
 import { createClient } from "@libsql/client"
+import { accounts, raffles, schema, users } from "@raffle/shared/db"
 import { hashPassword } from "better-auth/crypto"
 import { desc, eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/libsql"
-import { accounts, raffles, schema, users } from "@raffle/shared/db"
 import { e2eEnv } from "./env"
 
 function createE2eDb() {

@@ -8,7 +8,7 @@
  */
 
 import { randomBytes } from "node:crypto"
-import { readFileSync, writeFileSync, existsSync } from "node:fs"
+import { existsSync, readFileSync, writeFileSync } from "node:fs"
 
 function parseArgs(argv: string[]) {
   const out: Record<string, string> = {
@@ -40,10 +40,7 @@ function parseDotenv(content: string): Record<string, string> {
     if (eq <= 0) continue
     const key = trimmed.slice(0, eq).trim()
     let val = trimmed.slice(eq + 1).trim()
-    if (
-      (val.startsWith('"') && val.endsWith('"')) ||
-      (val.startsWith("'") && val.endsWith("'"))
-    ) {
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
       val = val.slice(1, -1)
     }
     env[key] = val
@@ -134,7 +131,9 @@ function main() {
 
   writeFileSync(outputPath, lines.join("\n"), { mode: 0o600 })
   console.log(`✅ Escrito ${outputPath}`)
-  console.log(`   MySQL: ${legacy.DB_HOST ?? "127.0.0.1"}:${legacy.DB_PORT ?? "3306"}/${legacy.DB_NAME ?? "raffle_db"}`)
+  console.log(
+    `   MySQL: ${legacy.DB_HOST ?? "127.0.0.1"}:${legacy.DB_PORT ?? "3306"}/${legacy.DB_NAME ?? "raffle_db"}`,
+  )
   console.log(`   Uploads: ${uploadsDir}`)
 }
 

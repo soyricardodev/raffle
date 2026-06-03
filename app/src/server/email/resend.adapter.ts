@@ -1,7 +1,7 @@
+import { EmailSendError } from "@raffle/shared/errors"
 import { Resend } from "resend"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
-import { EmailSendError } from "@raffle/shared/errors"
 import type { EmailAdapter, SendEmailParams, SendEmailResult } from "./types"
 
 const logger = getLogger()
@@ -28,10 +28,7 @@ export class ResendEmailAdapter implements EmailAdapter {
       })
 
       if (result.error) {
-        logger.error(
-          { error: result.error, to: params.to },
-          "email:resend:error",
-        )
+        logger.error({ error: result.error, to: params.to }, "email:resend:error")
         throw new EmailSendError(params.to, result.error.message ?? "Unknown Resend error")
       }
 

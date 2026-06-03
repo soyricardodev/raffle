@@ -56,8 +56,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
   )
 
   const paymentMinAboveRaffle =
-    quantityMin > raffleMinPurchase &&
-    paymentThresholds.some((t) => t > raffleMinPurchase)
+    quantityMin > raffleMinPurchase && paymentThresholds.some((t) => t > raffleMinPurchase)
 
   useEffect(() => {
     setDraft(String(quantity))
@@ -76,12 +75,9 @@ export const TicketQuantityStep = memo(function TicketQuantityStep({
     [effectiveMax, onChange, quantityMin],
   )
 
-  const subtotal =
-    unitPrice != null && Number.isFinite(unitPrice) ? unitPrice * quantity : null
+  const subtotal = unitPrice != null && Number.isFinite(unitPrice) ? unitPrice * quantity : null
   const savings =
-    discountPerTicket != null && discountPerTicket > 0
-      ? discountPerTicket * quantity
-      : null
+    discountPerTicket != null && discountPerTicket > 0 ? discountPerTicket * quantity : null
 
   const soldOut = available <= 0 || effectiveMax < quantityMin
 

@@ -1,14 +1,14 @@
-import { getLogger } from "@/lib/logger"
-import { withImmediateTransaction } from "@/lib/db.server"
 import {
   RaffleInvalidTransitionError,
-  RaffleNotFoundError,
   RaffleNotActiveError,
+  RaffleNotFoundError,
 } from "@raffle/shared/errors"
 import type { RaffleStatus, TransitionRaffleInput } from "@raffle/shared/validators"
-import * as rafflesRepo from "./repositories/raffles.repository"
+import { withImmediateTransaction } from "@/lib/db.server"
+import { getLogger } from "@/lib/logger"
 import { pauseRaffle, unpauseRaffle } from "./pause.service"
 import { publishRaffle } from "./raffle.service"
+import * as rafflesRepo from "./repositories/raffles.repository"
 
 const logger = getLogger()
 const MANUAL_PAUSE_MINUTES = 15
@@ -94,10 +94,7 @@ async function applyStatus(
   return { status, previousStatus }
 }
 
-export async function transitionRaffle(
-  raffleId: number,
-  input: TransitionRaffleInput,
-) {
+export async function transitionRaffle(raffleId: number, input: TransitionRaffleInput) {
   const row = await rafflesRepo.findRaffleById(raffleId)
   if (!row) throw new RaffleNotFoundError(raffleId)
 
@@ -113,10 +110,11 @@ export async function transitionRaffle(
       }
       const result = await pauseRaffle(raffleId, "manual")
       if (!result.success) {
-        throw new RaffleInvalidTransitionError(
-          result.error ?? "No se pudo pausar la rifa.",
-          { raffleId, from, intent: input.intent },
-        )
+        throw new RaffleInvalidTransitionError(result.error ?? "No se pudo pausar la rifa.", {
+          raffleId,
+          from,
+          intent: input.intent,
+        })
       }
       return {
         raffleId,
@@ -136,10 +134,11 @@ export async function transitionRaffle(
       }
       const result = await unpauseRaffle(raffleId)
       if (!result.success) {
-        throw new RaffleInvalidTransitionError(
-          result.error ?? "No se pudo reanudar la rifa.",
-          { raffleId, from, intent: input.intent },
-        )
+        throw new RaffleInvalidTransitionError(result.error ?? "No se pudo reanudar la rifa.", {
+          raffleId,
+          from,
+          intent: input.intent,
+        })
       }
       return {
         raffleId,
@@ -161,9 +160,7 @@ export async function transitionRaffle(
         raffleId,
         intent: input.intent,
         ...change,
-        message: change.noChange
-          ? "La rifa ya está finalizada"
-          : "Rifa finalizada",
+        message: change.noChange ? "La rifa ya está finalizada" : "Rifa finalizada",
       }
     }
 
@@ -171,10 +168,11 @@ export async function transitionRaffle(
       if (from === "paused") {
         const result = await unpauseRaffle(raffleId)
         if (!result.success) {
-          throw new RaffleInvalidTransitionError(
-            result.error ?? "No se pudo activar la rifa.",
-            { raffleId, from, intent: input.intent },
-          )
+          throw new RaffleInvalidTransitionError(result.error ?? "No se pudo activar la rifa.", {
+            raffleId,
+            from,
+            intent: input.intent,
+          })
         }
         return {
           raffleId,

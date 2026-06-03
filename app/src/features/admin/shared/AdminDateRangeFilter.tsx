@@ -3,11 +3,7 @@ import { useMemo } from "react"
 import type { DateRange } from "react-day-picker"
 import { Button } from "@/components/ui/button"
 import { Calendar } from "@/components/ui/calendar"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
 type AdminDateRangeFilterProps = {
   start?: string | null
@@ -36,36 +32,25 @@ function formatDateLabel(value?: string | null) {
   return date.toLocaleDateString("es-VE", { day: "2-digit", month: "short" })
 }
 
-export function AdminDateRangeFilter({
-  start,
-  end,
-  onChange,
-}: AdminDateRangeFilterProps) {
+export function AdminDateRangeFilter({ start, end, onChange }: AdminDateRangeFilterProps) {
   const selected = useMemo<DateRange | undefined>(
     () => ({
       from: parseDateValue(start),
       to: parseDateValue(end),
     }),
-    [start, end]
+    [start, end],
   )
 
   const hasValue = Boolean(start || end)
   const label = hasValue
-    ? [formatDateLabel(start) ?? "Inicio", formatDateLabel(end) ?? "Fin"].join(
-        " - "
-      )
+    ? [formatDateLabel(start) ?? "Inicio", formatDateLabel(end) ?? "Fin"].join(" - ")
     : "Fechas"
 
   return (
     <div className="flex min-w-0 items-center gap-1">
       <Popover>
         <PopoverTrigger asChild>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="min-w-0 justify-start"
-          >
+          <Button type="button" variant="outline" size="sm" className="min-w-0 justify-start">
             <CalendarBlankIcon data-icon="inline-start" />
             <span className="truncate">{label}</span>
           </Button>

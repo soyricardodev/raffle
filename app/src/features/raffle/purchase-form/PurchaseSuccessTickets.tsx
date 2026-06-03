@@ -1,15 +1,15 @@
+import { ChevronDown, ChevronUp, Copy } from "lucide-react"
+import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { VirtualTicketBadgeGrid } from "@/features/raffle/purchase-form/VirtualTicketBadgeGrid"
 import {
   getHiddenTicketCount,
   getTicketListDisplayMode,
   getVisibleTicketNumbers,
   TICKET_COLLAPSE_THRESHOLD,
 } from "@/features/raffle/purchase-form/purchase-success-tickets"
+import { VirtualTicketBadgeGrid } from "@/features/raffle/purchase-form/VirtualTicketBadgeGrid"
 import { cn } from "@/lib/utils"
-import { ChevronDown, ChevronUp, Copy } from "lucide-react"
-import { useEffect, useState } from "react"
 
 type PurchaseSuccessTicketsProps = {
   purchaseId: number
@@ -82,10 +82,7 @@ export function PurchaseSuccessTickets({
       ) : (
         <div
           id={listId}
-          className={cn(
-            listScrollClassName,
-            expanded ? "max-h-[min(32vh,260px)]" : "max-h-[72px]",
-          )}
+          className={cn(listScrollClassName, expanded ? "max-h-[min(32vh,260px)]" : "max-h-[72px]")}
           role="list"
           aria-label={`Números de boletos asignados, ${ticketCount} en total`}
         >

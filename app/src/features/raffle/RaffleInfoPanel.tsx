@@ -1,11 +1,11 @@
-import { CalendarDays, Pause, TrendingUp, Ticket } from "lucide-react"
+import { CalendarDays, Pause, Ticket, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { SalesProgressBar } from "@/features/home/SalesProgressBar"
+import { useRaffleSalesProgress } from "@/features/home/use-raffle-sales-progress"
 import { PromotionCountdown } from "@/features/raffle/PromotionCountdown"
 import type { RafflePricing } from "@/features/raffle/promotion-types"
-import { useRaffleSalesProgress } from "@/features/home/use-raffle-sales-progress"
+import type { raffleTicketsInput } from "@/features/raffle/raffle-landing-types"
 import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
-import { raffleTicketsInput } from "@/features/raffle/raffle-landing-types"
 import { getRaffleStatusClass, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -64,8 +64,7 @@ export function RaffleInfoPanel({
   const isPaused = status === "paused"
   const Heading = headingLevel === 1 ? "h1" : "h2"
 
-  const available =
-    live.data?.availability.available ?? Math.max(0, Number(ticketsAvailable) || 0)
+  const available = live.data?.availability.available ?? Math.max(0, Number(ticketsAvailable) || 0)
 
   const hasScheduledDraw = Boolean(drawDate)
   const showDrawCountdown =

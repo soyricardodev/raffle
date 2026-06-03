@@ -1,9 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
-import {
-  createPaymentAccount,
-  listPaymentAccounts,
-} from "@/server/payment-accounts.service"
+import { createPaymentAccount, listPaymentAccounts } from "@/server/payment-accounts.service"
 
 export const Route = createFileRoute("/api/admin/payment-accounts/")({
   server: {

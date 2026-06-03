@@ -9,18 +9,18 @@
  */
 
 import { randomUUID } from "node:crypto"
-import { hashPassword } from "better-auth/crypto"
 import {
   accounts,
   appSettings,
   paymentAccounts,
-  rafflePaymentMethods,
   prizes,
-  purchaseTickets,
   purchases,
+  purchaseTickets,
+  rafflePaymentMethods,
   raffles,
   users,
 } from "@raffle/shared/db"
+import { hashPassword } from "better-auth/crypto"
 import { createScriptClient, createScriptDb } from "./lib/db"
 
 const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@rifas.com"
@@ -133,7 +133,7 @@ async function seedActiveRaffle(db: ReturnType<typeof createScriptDb>) {
   const prizeRows = [
     ["Primer Premio - Automóvil 0km", "Chevrolet Spark modelo 2026"],
     ["Segundo Premio - Efectivo", "$500 dólares en efectivo"],
-    ["Tercer Premio - TV 55\"", "Smart TV Samsung 4K"],
+    ['Tercer Premio - TV 55"', "Smart TV Samsung 4K"],
   ]
   for (let i = 0; i < prizeRows.length; i++) {
     await db.insert(prizes).values({

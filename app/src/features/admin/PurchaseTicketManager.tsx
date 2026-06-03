@@ -2,11 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Minus, Plus, RefreshCw } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrencyForMethod } from "@/lib/format"
 
@@ -176,11 +176,7 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2">
-            <Button
-              className="min-h-11"
-              disabled={pending}
-              onClick={() => setConfirm("add")}
-            >
+            <Button className="min-h-11" disabled={pending} onClick={() => setConfirm("add")}>
               Agregar
             </Button>
             <Button

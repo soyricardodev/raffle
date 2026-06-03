@@ -1,4 +1,11 @@
-import { CheckCircleIcon, ClockIcon, CopyIcon, TicketIcon, XCircleIcon } from "@phosphor-icons/react"
+import {
+  CheckCircleIcon,
+  ClockIcon,
+  CopyIcon,
+  TicketIcon,
+  XCircleIcon,
+} from "@phosphor-icons/react"
+import type { VerifiedTicketRow } from "@raffle/shared/validators"
 import { useMemo } from "react"
 import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
@@ -6,7 +13,6 @@ import { Button } from "@/components/ui/button"
 import { Card, CardHeader, CardTitle } from "@/components/ui/card"
 import { formatDate, getPurchaseStatusClass, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
-import type { VerifiedTicketRow } from "@raffle/shared/validators"
 
 function statusIcon(status: string) {
   switch (status) {

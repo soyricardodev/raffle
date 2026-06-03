@@ -11,18 +11,19 @@
 
 import { randomUUID } from "node:crypto"
 import { createClient } from "@libsql/client"
+import { normalizePhone, schema, ticketNumberToInt, toCents } from "@raffle/shared/db"
 import { hashPassword } from "better-auth/crypto"
+import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/libsql"
 import mysql from "mysql2/promise"
-import { eq } from "drizzle-orm"
-import { schema } from "@raffle/shared/db"
-import { normalizePhone, toCents, ticketNumberToInt } from "@raffle/shared/db"
 
 const SOURCE_URL = process.env.SOURCE_DATABASE_URL ?? process.env.LEGACY_DATABASE_URL
 const TARGET_URL = process.env.TARGET_DATABASE_URL ?? process.env.DATABASE_URL
 
 if (!SOURCE_URL || !TARGET_URL) {
-  console.error("❌ Set SOURCE_DATABASE_URL (MySQL) and TARGET_DATABASE_URL (libSQL file: or libsql://)")
+  console.error(
+    "❌ Set SOURCE_DATABASE_URL (MySQL) and TARGET_DATABASE_URL (libSQL file: or libsql://)",
+  )
   process.exit(1)
 }
 
@@ -35,7 +36,10 @@ function parseJson(value: unknown): string {
   return JSON.stringify(value ?? {})
 }
 
-function ticketStatusForPurchase(purchaseStatus: string, ticketStatus: string): "reserved" | "sold" | null {
+function ticketStatusForPurchase(
+  purchaseStatus: string,
+  ticketStatus: string,
+): "reserved" | "sold" | null {
   if (ticketStatus === "available") return null
   if (purchaseStatus === "approved") return "sold"
   if (ticketStatus === "sold") return "sold"
@@ -295,7 +299,9 @@ async function main() {
 
   await source.end()
   console.log("\n✅ Migración MySQL → libSQL v2 completa")
-  console.log("   Siguiente: validar contadores, ejecutar tests, cambiar DATABASE_URL en prod, re-login admin")
+  console.log(
+    "   Siguiente: validar contadores, ejecutar tests, cambiar DATABASE_URL en prod, re-login admin",
+  )
 }
 
 main().catch((err) => {

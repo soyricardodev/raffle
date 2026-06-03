@@ -11,9 +11,7 @@ type Prize = {
 export function PrizesSection({ prizes }: { prizes: Prize[] }) {
   if (!prizes.length) return null
 
-  const sorted = [...prizes].sort(
-    (a, b) => Number(a.position ?? 0) - Number(b.position ?? 0),
-  )
+  const sorted = [...prizes].sort((a, b) => Number(a.position ?? 0) - Number(b.position ?? 0))
 
   return (
     <Card>

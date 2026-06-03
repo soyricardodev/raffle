@@ -8,11 +8,7 @@ export type AppSettingsDocument = Record<string, unknown>
 
 export async function getAppSettings(): Promise<AppSettingsDocument> {
   const db = getDb()
-  const [row] = await db
-    .select()
-    .from(appSettings)
-    .orderBy(desc(appSettings.id))
-    .limit(1)
+  const [row] = await db.select().from(appSettings).orderBy(desc(appSettings.id)).limit(1)
 
   if (!row) return {}
   try {
@@ -24,11 +20,7 @@ export async function getAppSettings(): Promise<AppSettingsDocument> {
 
 export async function saveAppSettings(settings: AppSettingsDocument): Promise<void> {
   const db = getDb()
-  const [existing] = await db
-    .select()
-    .from(appSettings)
-    .orderBy(desc(appSettings.id))
-    .limit(1)
+  const [existing] = await db.select().from(appSettings).orderBy(desc(appSettings.id)).limit(1)
 
   const payload = JSON.stringify(settings)
   if (existing) {
@@ -50,7 +42,9 @@ export async function updateAppSettingsKey(key: string, value: unknown): Promise
   await saveAppSettings(current)
 }
 
-export async function patchAppSettings(patch: Record<string, unknown>): Promise<AppSettingsDocument> {
+export async function patchAppSettings(
+  patch: Record<string, unknown>,
+): Promise<AppSettingsDocument> {
   const current = await getAppSettings()
   for (const [key, value] of Object.entries(patch)) {
     if (value !== undefined) {

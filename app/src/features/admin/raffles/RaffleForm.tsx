@@ -1,14 +1,8 @@
-import { Link } from "@tanstack/react-router"
 import { Plus, Trash } from "@phosphor-icons/react"
-import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
-import { useState } from "react"
 import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
-import type { RaffleFormState } from "@/features/admin/raffles/types"
-import { defaultPrize } from "@/features/admin/raffles/types"
-import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
-import { RafflePaymentMethodsPicker } from "@/features/admin/payment-methods/RafflePaymentMethodsPicker"
-import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
-import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { PLATFORM_TOTAL_TICKETS } from "@raffle/shared/validators"
+import { Link } from "@tanstack/react-router"
+import { useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
@@ -19,12 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -36,6 +25,12 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { RafflePaymentMethodsPicker } from "@/features/admin/payment-methods/RafflePaymentMethodsPicker"
+import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
+import type { RaffleFormState } from "@/features/admin/raffles/types"
+import { defaultPrize } from "@/features/admin/raffles/types"
+import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { cn } from "@/lib/utils"
 
 type RaffleFormProps = {
@@ -59,9 +54,8 @@ function buildPayload(state: RaffleFormState): CreateRaffleInput {
     price_usd: Number(state.priceUsd),
     min_purchase: Number(state.minPurchase),
     max_purchase: Number(state.maxPurchase),
-    draw_date: state.drawDateEnabled && state.drawDate
-      ? new Date(state.drawDate).toISOString()
-      : null,
+    draw_date:
+      state.drawDateEnabled && state.drawDate ? new Date(state.drawDate).toISOString() : null,
     status: state.status,
     auto_pause_enabled: true,
     prizes: state.prizes
@@ -239,7 +233,9 @@ export function RaffleForm({
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div>
                 <CardTitle>Premios</CardTitle>
-                <CardDescription>Ordenados por posición. Puedes agregar imagen a cada uno.</CardDescription>
+                <CardDescription>
+                  Ordenados por posición. Puedes agregar imagen a cada uno.
+                </CardDescription>
               </div>
               <Button
                 type="button"
@@ -354,9 +350,7 @@ export function RaffleForm({
                     <FieldLabel htmlFor="raffle-status">Estado inicial</FieldLabel>
                     <Select
                       value={state.status}
-                      onValueChange={(value) =>
-                        patch("status", value as RaffleFormState["status"])
-                      }
+                      onValueChange={(value) => patch("status", value as RaffleFormState["status"])}
                     >
                       <SelectTrigger id="raffle-status" className="min-h-11 w-full">
                         <SelectValue />
@@ -434,11 +428,7 @@ export function RaffleForm({
                 disabled={isPending || !state.name.trim()}
                 onClick={handleSubmit}
               >
-                {isPending
-                  ? "Guardando…"
-                  : mode === "create"
-                    ? "Crear rifa"
-                    : "Guardar cambios"}
+                {isPending ? "Guardando…" : mode === "create" ? "Crear rifa" : "Guardar cambios"}
               </Button>
             </CardFooter>
           </Card>
@@ -470,8 +460,8 @@ export function RaffleForm({
             <CardContent className="flex flex-col gap-2 text-sm">
               <p className="font-medium">{state.name.trim() || "Sin nombre"}</p>
               <p className="text-muted-foreground">
-                {prizeCount} premio{prizeCount === 1 ? "" : "s"} · {state.assignments.length}{" "}
-                método{state.assignments.length === 1 ? "" : "s"} de pago
+                {prizeCount} premio{prizeCount === 1 ? "" : "s"} · {state.assignments.length} método
+                {state.assignments.length === 1 ? "" : "s"} de pago
               </p>
               <p className="text-muted-foreground tabular-nums">
                 Bs {state.priceBs} · USD {state.priceUsd}

@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router"
 import { MagnifyingGlassIcon } from "@phosphor-icons/react"
+import { createFileRoute } from "@tanstack/react-router"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import { TicketVerifier } from "@/features/verify/TicketVerifier"
 

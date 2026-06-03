@@ -9,11 +9,7 @@ type UsePurchasePricingParams = {
   selectedMethod: RafflePaymentMethod | null
 }
 
-export function usePurchasePricing({
-  raffle,
-  quantity,
-  selectedMethod,
-}: UsePurchasePricingParams) {
+export function usePurchasePricing({ raffle, quantity, selectedMethod }: UsePurchasePricingParams) {
   const pricing = raffle.pricing
 
   const quotesByMethodId = useMemo(() => {

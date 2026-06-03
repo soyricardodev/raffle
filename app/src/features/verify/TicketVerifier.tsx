@@ -9,10 +9,13 @@ import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
 import { TicketVerifierEmpty } from "@/features/verify/TicketVerifierEmpty"
 import { useTicketVerify } from "@/features/verify/use-ticket-verify"
-import { VerifySearchMethodPicker } from "@/features/verify/VerifySearchMethodPicker"
-import { verifySearchMethodLabel, VERIFY_SEARCH_METHODS } from "@/features/verify/verify-search-config"
-import { maskPhoneTail } from "@/features/verify/verify-profile"
 import { VerifiedTicketsList } from "@/features/verify/VerifiedTicketsList"
+import { VerifySearchMethodPicker } from "@/features/verify/VerifySearchMethodPicker"
+import { maskPhoneTail } from "@/features/verify/verify-profile"
+import {
+  VERIFY_SEARCH_METHODS,
+  verifySearchMethodLabel,
+} from "@/features/verify/verify-search-config"
 
 export function TicketVerifier() {
   const {
@@ -126,9 +129,7 @@ export function TicketVerifier() {
               />
             ) : (
               <Field>
-                <FieldLabel htmlFor={`verify-${form.method}`}>
-                  {methodConfig?.label}
-                </FieldLabel>
+                <FieldLabel htmlFor={`verify-${form.method}`}>{methodConfig?.label}</FieldLabel>
                 <Input
                   id={`verify-${form.method}`}
                   value={form.text}

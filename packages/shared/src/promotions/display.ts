@@ -1,5 +1,5 @@
-import { paymentMethodDisplayLabel } from "../payment-methods/display.js"
 import { isDollarMethodType } from "../payment-methods/definitions.js"
+import { paymentMethodDisplayLabel } from "../payment-methods/display.js"
 import type { PaymentMethod } from "../payment-methods/types.js"
 import type { PromotionKind } from "./types.js"
 

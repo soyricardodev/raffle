@@ -7,7 +7,12 @@ export function withTestBuyerDefaults(
     CreatePurchaseParams,
     "customerEmail" | "customerCi" | "paymentProofUrl" | "customerLocation"
   > &
-    Partial<Pick<CreatePurchaseParams, "customerEmail" | "customerCi" | "paymentProofUrl" | "customerLocation">>,
+    Partial<
+      Pick<
+        CreatePurchaseParams,
+        "customerEmail" | "customerCi" | "paymentProofUrl" | "customerLocation"
+      >
+    >,
 ): CreatePurchaseParams {
   return {
     customerLocation: "Venezuela, Carabobo",

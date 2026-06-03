@@ -1,13 +1,8 @@
+import { ArrowClockwiseIcon, MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
-import {
-  ArrowClockwiseIcon,
-  MagnifyingGlassIcon,
-  XIcon,
-} from "@phosphor-icons/react"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -24,19 +19,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
-import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
-import { PurchaseDetailDrawer } from "@/features/admin/purchases/PurchaseDetailDrawer"
-import {
-  PurchasesDataTable,
-  PurchasesMobileList,
-} from "@/features/admin/purchases/PurchasesDataTable"
 import {
   ADMIN_PURCHASES_PAGE_SIZE,
   adminPurchasesDashboardQueryOptions,
   adminPurchasesQueryOptions,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
+import { PurchaseDetailDrawer } from "@/features/admin/purchases/PurchaseDetailDrawer"
+import {
+  PurchasesDataTable,
+  PurchasesMobileList,
+} from "@/features/admin/purchases/PurchasesDataTable"
+import type { PurchaseRow } from "@/features/admin/purchases/types"
+import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
+import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -52,16 +48,12 @@ export function AdminPurchasesView() {
   const queryClient = useQueryClient()
 
   const purchaseFromUrl =
-    routeSearch.purchase != null && routeSearch.purchase > 0
-      ? routeSearch.purchase
-      : null
+    routeSearch.purchase != null && routeSearch.purchase > 0 ? routeSearch.purchase : null
 
-  const [selectedPurchaseId, setSelectedPurchaseId] = useState<number | null>(
-    purchaseFromUrl
-  )
+  const [selectedPurchaseId, setSelectedPurchaseId] = useState<number | null>(purchaseFromUrl)
   const filters = useMemo(
     () => normalizeAdminPurchaseFilters(routeSearch, defaultRaffleId),
-    [routeSearch, defaultRaffleId]
+    [routeSearch, defaultRaffleId],
   )
   const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
 
@@ -103,13 +95,7 @@ export function AdminPurchasesView() {
   })
 
   const statusMutation = useMutation({
-    mutationFn: async ({
-      id,
-      status,
-    }: {
-      id: number
-      status: "approved" | "rejected"
-    }) => {
+    mutationFn: async ({ id, status }: { id: number; status: "approved" | "rejected" }) => {
       return adminFetch(`/api/admin/purchases/${id}/status`, {
         method: "PUT",
         body: JSON.stringify({ status }),
@@ -126,20 +112,20 @@ export function AdminPurchasesView() {
   const total = purchasesQuery.data?.total ?? 0
   const pageSize = filters.limit ?? ADMIN_PURCHASES_PAGE_SIZE
   const activeRaffleName = activeRaffles.find(
-    (raffle) => String(raffle.id) === filters.raffleId
+    (raffle) => String(raffle.id) === filters.raffleId,
   )?.name
   const hasCustomFilters = Boolean(
     filters.search ||
-    filters.start ||
-    filters.end ||
-    filters.status !== "all" ||
-    routeSearch.raffle_id === "all" ||
-    (filters.raffleId && filters.raffleId !== defaultRaffleId)
+      filters.start ||
+      filters.end ||
+      filters.status !== "all" ||
+      routeSearch.raffle_id === "all" ||
+      (filters.raffleId && filters.raffleId !== defaultRaffleId),
   )
 
   const pendingCount = useMemo(
     () => purchases.filter((p) => p.status === "pending").length,
-    [purchases]
+    [purchases],
   )
 
   function openPurchase(row: PurchaseRow) {
@@ -321,9 +307,7 @@ export function AdminPurchasesView() {
               loading={purchasesQuery.isPending}
               pending={statusMutation.isPending}
               onView={openPurchase}
-              onStatusChange={(id, status) =>
-                statusMutation.mutate({ id, status })
-              }
+              onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
             />
           </div>
           <div className="p-3 md:hidden">
@@ -332,9 +316,7 @@ export function AdminPurchasesView() {
               loading={purchasesQuery.isPending}
               pending={statusMutation.isPending}
               onView={openPurchase}
-              onStatusChange={(id, status) =>
-                statusMutation.mutate({ id, status })
-              }
+              onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
             />
           </div>
           <AdminDataGridPagination

@@ -1,6 +1,6 @@
 import {
-  toPublicRecentPurchase,
   type PublicRecentPurchase,
+  toPublicRecentPurchase,
 } from "@raffle/shared/public-recent-purchase"
 import * as buyerPresenceRepo from "./repositories/buyer-presence.repository"
 import * as purchasesRepo from "./repositories/purchases.repository"

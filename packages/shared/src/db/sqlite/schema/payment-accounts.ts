@@ -16,7 +16,5 @@ export const paymentAccounts = sqliteTable(
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date()),
   },
-  (t) => [
-    index("payment_accounts_method_active_idx").on(t.methodType, t.isActive),
-  ],
+  (t) => [index("payment_accounts_method_active_idx").on(t.methodType, t.isActive)],
 )

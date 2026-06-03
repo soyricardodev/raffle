@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest"
 import { InsufficientTicketsError } from "@raffle/shared/errors"
+import { describe, expect, it } from "vitest"
 import { pickFreeTicketNumbers, sampleWithoutReplacement } from "./ticket-sampling"
 
 /** Always picks the highest index in the remaining slice (deterministic, non-flaky). */

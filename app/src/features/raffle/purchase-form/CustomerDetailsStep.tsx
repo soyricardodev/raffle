@@ -1,5 +1,5 @@
-import type { CedulaPrefix, CustomerLocationType, PhoneInputMode } from "@raffle/shared/validators"
 import { EnvelopeSimpleIcon, UserCircleIcon } from "@phosphor-icons/react"
+import type { CedulaPrefix, CustomerLocationType, PhoneInputMode } from "@raffle/shared/validators"
 import { memo } from "react"
 import { FieldGroup } from "@/components/ui/field"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"

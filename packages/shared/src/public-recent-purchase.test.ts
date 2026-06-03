@@ -36,19 +36,13 @@ describe("toPublicRecentPurchase", () => {
 
 describe("formatRecentPurchaseMessageCompact", () => {
   it("uses short copy for marquee", () => {
-    expect(formatRecentPurchaseMessageCompact("María G.", 3, "pending")).toBe(
-      "María G. reservó 3",
-    )
+    expect(formatRecentPurchaseMessageCompact("María G.", 3, "pending")).toBe("María G. reservó 3")
   })
 })
 
 describe("formatRecentPurchaseMessage", () => {
   it("uses full copy for accessibility", () => {
-    expect(formatRecentPurchaseMessage("María G.", 3, "pending")).toBe(
-      "María G. reservó 3 boletos",
-    )
-    expect(formatRecentPurchaseMessage("María G.", 1, "approved")).toBe(
-      "María G. compró 1 boleto",
-    )
+    expect(formatRecentPurchaseMessage("María G.", 3, "pending")).toBe("María G. reservó 3 boletos")
+    expect(formatRecentPurchaseMessage("María G.", 1, "approved")).toBe("María G. compró 1 boleto")
   })
 })

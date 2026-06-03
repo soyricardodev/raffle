@@ -1,9 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { transitionRaffle } from "@/server/raffle-lifecycle.service"
-import { publishRaffle } from "@/server/raffle.service"
-import { requireAdmin } from "@/lib/auth-utils.server"
-import { PublishRaffleInput } from "@raffle/shared/validators"
 import { ValidationError } from "@raffle/shared/errors"
+import { PublishRaffleInput } from "@raffle/shared/validators"
+import { createFileRoute } from "@tanstack/react-router"
+import { requireAdmin } from "@/lib/auth-utils.server"
+import { publishRaffle } from "@/server/raffle.service"
+import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 
 export const Route = createFileRoute("/api/admin/raffles/$id/publish")({
   server: {
@@ -19,9 +19,7 @@ export const Route = createFileRoute("/api/admin/raffles/$id/publish")({
         }
         const id = Number(params.id)
         if (parsed.data.publish) {
-          return Response.json(
-            await transitionRaffle(id, { intent: "publish_results" }),
-          )
+          return Response.json(await transitionRaffle(id, { intent: "publish_results" }))
         }
         return Response.json(await publishRaffle(id, false))
       },

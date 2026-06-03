@@ -12,9 +12,7 @@ const AdminTicketLookupInput = z.object({
 })
 
 export type AdminTicketLookupInput = z.infer<typeof AdminTicketLookupInput>
-export type AdminTicketLookupResult = Awaited<
-  ReturnType<typeof lookupAdminTicketByNumber>
->
+export type AdminTicketLookupResult = Awaited<ReturnType<typeof lookupAdminTicketByNumber>>
 
 export const adminTicketLookupQueryKeys = {
   lookup: (ticket: string) => ["admin", "ticket-lookup", ticket] as const,

@@ -7,8 +7,8 @@ import {
   setPurchaseStatus,
   uniqueRef,
 } from "./helpers/api"
-import { describeWithDb, test } from "./helpers/fixtures"
 import { e2eEnv } from "./helpers/env"
+import { describeWithDb, test } from "./helpers/fixtures"
 
 function hasAdminSession(): boolean {
   try {
@@ -22,7 +22,10 @@ function hasAdminSession(): boolean {
 
 describeWithDb("admin purchases", () => {
   test("approve and reject pending purchases from dashboard", async ({ page, request }) => {
-    test.skip(!hasAdminSession(), "Admin session missing — Fast Login / Better Auth must work (see docs/E2E.md)")
+    test.skip(
+      !hasAdminSession(),
+      "Admin session missing — Fast Login / Better Auth must work (see docs/E2E.md)",
+    )
 
     await page.goto("/admin", { waitUntil: "domcontentloaded" })
     await page.waitForURL(/\/(admin|login)/, { timeout: 15_000 })
@@ -64,7 +67,8 @@ describeWithDb("admin purchases", () => {
     const approveCard = page.locator(".rounded-xl.border").filter({ hasText: approveName })
     await expect(approveCard).toBeVisible({ timeout: 20_000 })
     const approveResponse = page.waitForResponse(
-      (res) => res.url().includes("/api/admin/purchases/") && res.url().includes("/status") && res.ok(),
+      (res) =>
+        res.url().includes("/api/admin/purchases/") && res.url().includes("/status") && res.ok(),
     )
     await approveCard.getByTitle("Aprobar").click()
     await approveResponse
@@ -78,7 +82,8 @@ describeWithDb("admin purchases", () => {
     const rejectCard = page.locator(".rounded-xl.border").filter({ hasText: rejectName })
     await expect(rejectCard).toBeVisible()
     const rejectResponse = page.waitForResponse(
-      (res) => res.url().includes("/api/admin/purchases/") && res.url().includes("/status") && res.ok(),
+      (res) =>
+        res.url().includes("/api/admin/purchases/") && res.url().includes("/status") && res.ok(),
     )
     await rejectCard.getByTitle("Rechazar").click()
     await rejectResponse

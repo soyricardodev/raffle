@@ -1,9 +1,15 @@
+import {
+  normalizePhone,
+  purchases,
+  purchaseTickets,
+  raffles,
+  ticketNumberToInt,
+} from "@raffle/shared/db"
+import { VerifiedTicketRow, VerifyTicketInput } from "@raffle/shared/validators"
 import { createFileRoute } from "@tanstack/react-router"
+import { and, eq, inArray, or, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 import { rateLimit } from "@/lib/rate-limit"
-import { normalizePhone, purchaseTickets, purchases, raffles, ticketNumberToInt } from "@raffle/shared/db"
-import { VerifiedTicketRow, VerifyTicketInput } from "@raffle/shared/validators"
-import { and, eq, inArray, or, sql } from "drizzle-orm"
 
 export const Route = createFileRoute("/api/tickets/verify")({
   server: {
@@ -26,10 +32,15 @@ export const Route = createFileRoute("/api/tickets/verify")({
           conditions.push(eq(purchases.customerPhoneNormalized, normalizePhone(body.phone.trim())))
         }
         if (body.ticketNumber?.trim()) {
-          conditions.push(eq(purchaseTickets.ticketNumber, ticketNumberToInt(body.ticketNumber.trim())))
+          conditions.push(
+            eq(purchaseTickets.ticketNumber, ticketNumberToInt(body.ticketNumber.trim())),
+          )
         }
         if (body.cedula?.trim()) {
-          const normalized = body.cedula.trim().replace(/[\s\-.VEve]/g, "").toUpperCase()
+          const normalized = body.cedula
+            .trim()
+            .replace(/[\s\-.VEve]/g, "")
+            .toUpperCase()
           conditions.push(
             or(
               sql`replace(replace(replace(upper(${purchases.customerCi}), 'V', ''), 'E', ''), '-', '') = ${normalized}`,

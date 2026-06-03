@@ -1,14 +1,8 @@
-import { Link, getRouteApi, useNavigate } from "@tanstack/react-router"
-import { useQuery } from "@tanstack/react-query"
-import {
-  ArrowClockwiseIcon,
-  MagnifyingGlassIcon,
-  PlusIcon,
-  XIcon,
-} from "@phosphor-icons/react"
-import { useEffect, useMemo, useState } from "react"
+import { ArrowClockwiseIcon, MagnifyingGlassIcon, PlusIcon, XIcon } from "@phosphor-icons/react"
 import { RaffleStatus } from "@raffle/shared/validators"
-import type { RaffleRow } from "@/features/admin/raffles/types"
+import { useQuery } from "@tanstack/react-query"
+import { getRouteApi, Link, useNavigate } from "@tanstack/react-router"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -26,18 +20,16 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  RafflesDataTable,
-  RafflesMobileList,
-} from "@/features/admin/raffles/RafflesDataTable"
-import {
   ADMIN_RAFFLES_PAGE_SIZE,
   adminRafflesQueryOptions,
   normalizeAdminRaffleFilters,
 } from "@/features/admin/raffles/admin-raffles-queries"
+import { RafflesDataTable, RafflesMobileList } from "@/features/admin/raffles/RafflesDataTable"
+import type { RaffleRow } from "@/features/admin/raffles/types"
+import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
 import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/rifas/")
@@ -45,10 +37,7 @@ const routeApi = getRouteApi("/admin/rifas/")
 export function AdminRafflesTable() {
   const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/rifas/" })
-  const filters = useMemo(
-    () => normalizeAdminRaffleFilters(routeSearch),
-    [routeSearch]
-  )
+  const filters = useMemo(() => normalizeAdminRaffleFilters(routeSearch), [routeSearch])
   const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
   const debouncedSearch = useDebouncedValue(searchDraft)
 
@@ -83,9 +72,7 @@ export function AdminRafflesTable() {
   }))
   const total = rafflesQuery.data?.total ?? 0
   const pageSize = filters.limit ?? ADMIN_RAFFLES_PAGE_SIZE
-  const hasCustomFilters = Boolean(
-    filters.search || filters.status !== "active"
-  )
+  const hasCustomFilters = Boolean(filters.search || filters.status !== "active")
 
   function updateSearch(patch: Partial<typeof routeSearch>) {
     void navigate({
@@ -132,9 +119,7 @@ export function AdminRafflesTable() {
             <CardTitle className="text-base">Listado</CardTitle>
             <p className="text-xs text-muted-foreground tabular-nums">
               Mostrando rifas{" "}
-              {filters.status === "active"
-                ? "activas"
-                : `en estado «${filters.status}»`}
+              {filters.status === "active" ? "activas" : `en estado «${filters.status}»`}
             </p>
           </div>
 

@@ -1,9 +1,9 @@
+import type { OfficialFooterLogo } from "@raffle/shared/site-config"
+import { Plus, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
-import type { OfficialFooterLogo } from "@raffle/shared/site-config"
-import { Plus, Trash2 } from "lucide-react"
 
 type OfficialLogosEditorProps = {
   logos: OfficialFooterLogo[]
@@ -60,9 +60,7 @@ export function OfficialLogosEditor({ logos, onChange }: OfficialLogosEditorProp
               className="border-border/80 flex flex-col gap-3 rounded-xl border p-3"
             >
               <div className="flex items-center justify-between gap-2">
-                <span className="text-muted-foreground text-xs font-medium">
-                  Logo {index + 1}
-                </span>
+                <span className="text-muted-foreground text-xs font-medium">Logo {index + 1}</span>
                 <Button
                   type="button"
                   variant="ghost"

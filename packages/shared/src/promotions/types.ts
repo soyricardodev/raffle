@@ -28,4 +28,3 @@ export type EffectiveUnitPrice = {
   promotionName: string | null
   promotionEndsAt: string | null
 }
-

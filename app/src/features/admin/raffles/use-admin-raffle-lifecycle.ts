@@ -1,5 +1,5 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query"
 import type { TransitionRaffleInput } from "@raffle/shared/validators"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { toast } from "sonner"
 import {
   adminRaffleDetailQueryOptions,
@@ -30,13 +30,8 @@ export function useAdminRaffleLifecycle(raffleId?: string) {
   }
 
   const mutation = useMutation({
-    mutationFn: async ({
-      id,
-      request,
-    }: {
-      id: number
-      request: TransitionRaffleInput
-    }) => executeRaffleLifecycle(id, request),
+    mutationFn: async ({ id, request }: { id: number; request: TransitionRaffleInput }) =>
+      executeRaffleLifecycle(id, request),
     onSuccess: (_data, variables) => {
       toast.success("Rifa actualizada")
       if (raffleId && variables.id === Number(raffleId)) {
@@ -56,8 +51,7 @@ export function useAdminRaffleLifecycle(raffleId?: string) {
       }
       mutation.mutate({ id: Number(raffleId), request })
     },
-    runForRaffle: (id: number, request: TransitionRaffleInput) =>
-      mutation.mutate({ id, request }),
+    runForRaffle: (id: number, request: TransitionRaffleInput) => mutation.mutate({ id, request }),
     pending: mutation.isPending,
   }
 }

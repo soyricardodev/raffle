@@ -1,5 +1,5 @@
-import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { whatsAppHref } from "@/features/layout/social-links"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { cn } from "@/lib/utils"
 
 const WHATSAPP_ICON = "/brand/social/whatsapp.svg"
@@ -29,7 +29,13 @@ export function WhatsAppFab() {
         className="flex size-11 items-center justify-center rounded-full bg-[#25D366] shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
         aria-hidden
       >
-        <img src={WHATSAPP_ICON} alt="" className="size-6 brightness-0 invert" width={24} height={24} />
+        <img
+          src={WHATSAPP_ICON}
+          alt=""
+          className="size-6 brightness-0 invert"
+          width={24}
+          height={24}
+        />
       </span>
     </a>
   )

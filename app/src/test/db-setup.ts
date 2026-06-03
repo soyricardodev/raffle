@@ -1,11 +1,10 @@
 import { randomUUID } from "node:crypto"
-import { readFileSync } from "node:fs"
-import { mkdirSync } from "node:fs"
+import { mkdirSync, readFileSync } from "node:fs"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { createClient } from "@libsql/client"
-import { resetEnvCache } from "@/lib/env"
 import { resetDbForTests } from "@/lib/db.server"
+import { resetEnvCache } from "@/lib/env"
 
 const migrationDir = join(import.meta.dirname, "../../../packages/shared/drizzle-sqlite")
 

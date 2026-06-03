@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query"
-import { useEffect, useMemo, useState } from "react"
 import { AlertCircle, RefreshCw } from "lucide-react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -19,6 +19,7 @@ import { TopRafflesList } from "@/features/admin/analytics/TopRafflesList"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrency } from "@/lib/format"
+
 const POLL_MS = 60_000
 
 type AnalyticsResponse = {
@@ -140,7 +141,9 @@ export function AdminAnalytics() {
             <AlertCircle className="text-destructive size-8 shrink-0" />
             <div className="flex-1">
               <p className="font-medium">No se pudieron cargar los datos</p>
-              <p className="text-muted-foreground text-sm">Revisa tu conexión e intenta de nuevo.</p>
+              <p className="text-muted-foreground text-sm">
+                Revisa tu conexión e intenta de nuevo.
+              </p>
             </div>
             <Button
               variant="outline"
@@ -156,7 +159,9 @@ export function AdminAnalytics() {
 
       <div className="grid gap-4 sm:grid-cols-3">
         {analyticsQuery.isLoading && !data
-          ? Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-24 rounded-xl" />)
+          ? Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-24 rounded-xl" />
+            ))
           : summaryCards.map((card) => (
               <Card key={card.label}>
                 <CardHeader className="pb-2">

@@ -1,6 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { getAnalyticsSnapshot, getSalesOverTime, getTopRaffles, getRevenueByMethod, getStatusDistribution } from "@/server/analytics.service"
 import { requireAdmin } from "@/lib/auth-utils.server"
+import {
+  getAnalyticsSnapshot,
+  getRevenueByMethod,
+  getSalesOverTime,
+  getStatusDistribution,
+  getTopRaffles,
+} from "@/server/analytics.service"
 
 export const Route = createFileRoute("/api/admin/analytics")({
   server: {
@@ -11,9 +17,7 @@ export const Route = createFileRoute("/api/admin/analytics")({
         const days = Number(url.searchParams.get("days") || 30)
         const raffleIdParam = url.searchParams.get("raffleId")
         const raffleId =
-          raffleIdParam && !Number.isNaN(Number(raffleIdParam))
-            ? Number(raffleIdParam)
-            : undefined
+          raffleIdParam && !Number.isNaN(Number(raffleIdParam)) ? Number(raffleIdParam) : undefined
 
         const [snapshot, salesOverTime, topRaffles, revenueByMethod, statusDistribution] =
           await Promise.all([

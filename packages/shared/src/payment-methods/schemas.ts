@@ -1,13 +1,10 @@
 import { z } from "zod"
-import { PaymentMethod } from "./types.js"
 import { getFieldsForType } from "./definitions.js"
 import { normalizeAccountInfoKeys } from "./normalize.js"
+import { PaymentMethod } from "./types.js"
 
 const digitsOnly = (label: string) =>
-  z
-    .string()
-    .min(1, `${label} requerido`)
-    .regex(/^\d+$/, `${label}: solo números`)
+  z.string().min(1, `${label} requerido`).regex(/^\d+$/, `${label}: solo números`)
 
 const emailField = z.string().email("Correo inválido")
 
@@ -64,9 +61,7 @@ export function parseAccountInfo(
 export function safeParseAccountInfo(
   methodType: PaymentMethod,
   raw: Record<string, string>,
-):
-  | { success: true; data: Record<string, string> }
-  | { success: false; error: z.ZodError } {
+): { success: true; data: Record<string, string> } | { success: false; error: z.ZodError } {
   try {
     return { success: true, data: parseAccountInfo(methodType, raw) }
   } catch (e) {

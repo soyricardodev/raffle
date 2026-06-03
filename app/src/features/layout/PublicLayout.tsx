@@ -1,6 +1,6 @@
-import { useInAppBrowserRedirect } from "@/hooks/useInAppBrowserRedirect"
 import { useSiteFavicon } from "@/features/layout/use-site-favicon"
 import { useSyncPublicSiteConfig } from "@/features/layout/use-sync-public-site-config"
+import { useInAppBrowserRedirect } from "@/hooks/useInAppBrowserRedirect"
 import { PublicFooter } from "./PublicFooter"
 import { PublicHeader } from "./PublicHeader"
 import { WhatsAppFab } from "./WhatsAppFab"

@@ -45,9 +45,6 @@ export async function pruneExpiredBuyerPresenceForRaffle(
   await db
     .delete(raffleBuyerPresence)
     .where(
-      and(
-        eq(raffleBuyerPresence.raffleId, raffleId),
-        lt(raffleBuyerPresence.lastSeenAt, cutoff),
-      ),
+      and(eq(raffleBuyerPresence.raffleId, raffleId), lt(raffleBuyerPresence.lastSeenAt, cutoff)),
     )
 }

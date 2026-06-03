@@ -1,10 +1,10 @@
+import type { ColumnDef } from "@tanstack/react-table"
 import { getCoreRowModel, useReactTable } from "@tanstack/react-table"
 import { useMemo } from "react"
-import type { ColumnDef } from "@tanstack/react-table"
-import type { EmailLogRow } from "@/features/admin/emails/types"
 import { Skeleton } from "@/components/ui/skeleton"
-import { AdminDataGrid } from "@/features/admin/shared/AdminDataGrid"
 import { EmailStatusBadge } from "@/features/admin/emails/EmailStatusBadge"
+import type { EmailLogRow } from "@/features/admin/emails/types"
+import { AdminDataGrid } from "@/features/admin/shared/AdminDataGrid"
 import { formatDateTime } from "@/lib/format"
 
 type EmailLogsDataTableProps = {
@@ -12,19 +12,14 @@ type EmailLogsDataTableProps = {
   loading?: boolean
 }
 
-export function EmailLogsDataTable({
-  logs,
-  loading = false,
-}: EmailLogsDataTableProps) {
+export function EmailLogsDataTable({ logs, loading = false }: EmailLogsDataTableProps) {
   const columns = useMemo<Array<ColumnDef<EmailLogRow>>>(
     () => [
       {
         accessorKey: "id",
         header: "ID",
         cell: ({ getValue }) => (
-          <span className="font-mono text-[11px] text-muted-foreground">
-            #{String(getValue())}
-          </span>
+          <span className="font-mono text-[11px] text-muted-foreground">#{String(getValue())}</span>
         ),
       },
       {
@@ -43,9 +38,7 @@ export function EmailLogsDataTable({
         accessorKey: "email_type",
         header: "Tipo",
         cell: ({ getValue }) => (
-          <span className="capitalize">
-            {String(getValue()).replace(/_/g, " ")}
-          </span>
+          <span className="capitalize">{String(getValue()).replace(/_/g, " ")}</span>
         ),
       },
       {
@@ -58,9 +51,7 @@ export function EmailLogsDataTable({
         header: "Fecha",
         cell: ({ row }) => (
           <span className="text-muted-foreground tabular-nums">
-            {formatDateTime(
-              String(row.original.sent_at ?? row.original.created_at)
-            )}
+            {formatDateTime(String(row.original.sent_at ?? row.original.created_at))}
           </span>
         ),
       },
@@ -68,13 +59,11 @@ export function EmailLogsDataTable({
         id: "customer",
         header: "Cliente",
         cell: ({ row }) => (
-          <span className="max-w-32 truncate">
-            {row.original.customer_name ?? "—"}
-          </span>
+          <span className="max-w-32 truncate">{row.original.customer_name ?? "—"}</span>
         ),
       },
     ],
-    []
+    [],
   )
 
   const table = useReactTable({
@@ -93,10 +82,7 @@ export function EmailLogsDataTable({
   )
 }
 
-export function EmailLogsMobileList({
-  logs,
-  loading = false,
-}: EmailLogsDataTableProps) {
+export function EmailLogsMobileList({ logs, loading = false }: EmailLogsDataTableProps) {
   if (loading && logs.length === 0) {
     return (
       <div className="flex flex-col gap-3">
@@ -108,11 +94,7 @@ export function EmailLogsMobileList({
   }
 
   if (logs.length === 0) {
-    return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
-        Sin registros aún.
-      </p>
-    )
+    return <p className="py-8 text-center text-sm text-muted-foreground">Sin registros aún.</p>
   }
 
   return (
@@ -120,9 +102,7 @@ export function EmailLogsMobileList({
       {logs.map((log) => (
         <div key={log.id} className="rounded-xl border p-4">
           <div className="mb-2 flex items-start justify-between gap-2">
-            <p className="min-w-0 flex-1 leading-snug font-medium">
-              {log.subject}
-            </p>
+            <p className="min-w-0 flex-1 leading-snug font-medium">{log.subject}</p>
             <EmailStatusBadge status={log.status} />
           </div>
           <p className="text-xs text-muted-foreground">{log.recipient_email}</p>
@@ -131,9 +111,7 @@ export function EmailLogsMobileList({
             {formatDateTime(String(log.sent_at ?? log.created_at))}
           </p>
           {log.customer_name ? (
-            <p className="mt-1 text-xs text-muted-foreground">
-              {log.customer_name}
-            </p>
+            <p className="mt-1 text-xs text-muted-foreground">{log.customer_name}</p>
           ) : null}
         </div>
       ))}

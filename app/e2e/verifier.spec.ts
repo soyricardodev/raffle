@@ -29,9 +29,11 @@ describeWithDb("ticket verifier", () => {
       data: { phone: customerPhone },
     })
     expect(verifyRes.ok()).toBeTruthy()
-    const tickets = (await verifyRes.json()) as Array<{ ticket_number: string; raffle_name: string }>
+    const tickets = (await verifyRes.json()) as Array<{
+      ticket_number: string
+      raffle_name: string
+    }>
     expect(tickets.length).toBeGreaterThan(0)
     expect(tickets[0]?.raffle_name).toMatch(new RegExp(raffle.name, "i"))
   })
-
 })

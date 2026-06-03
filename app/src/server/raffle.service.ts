@@ -1,22 +1,17 @@
-import { getLogger } from "@/lib/logger"
-import { withImmediateTransaction } from "@/lib/db.server"
+import { fromCents, prizes, purchases, raffles } from "@raffle/shared/db"
 import {
-  RaffleNotFoundError,
   RaffleHasPurchasesError,
   RaffleNotActiveError,
+  RaffleNotFoundError,
 } from "@raffle/shared/errors"
 import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
 import { and, desc, eq, inArray, sql } from "drizzle-orm"
-import { prizes, purchases, raffles } from "@raffle/shared/db"
-import { fromCents } from "@raffle/shared/db"
+import { getDb, withImmediateTransaction } from "@/lib/db.server"
+import { getLogger } from "@/lib/logger"
+import { buildPublicRafflePricing, type PublicRafflePricing } from "./promotion-pricing.service"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
-import {
-  buildPublicRafflePricing,
-  type PublicRafflePricing,
-} from "./promotion-pricing.service"
-import { getDb } from "@/lib/db.server"
 
 const logger = getLogger()
 
@@ -27,9 +22,7 @@ export type EnrichedRaffle = ReturnType<typeof mapRaffleLegacy> & {
     image_url: string | null
     position: number
   }[]
-  payment_methods: Awaited<
-    ReturnType<typeof rafflePaymentMethodsRepo.listPaymentMethodsByRaffle>
-  >
+  payment_methods: Awaited<ReturnType<typeof rafflePaymentMethodsRepo.listPaymentMethodsByRaffle>>
   pricing: PublicRafflePricing
   tickets_sold: number
   tickets_available: number
@@ -38,9 +31,7 @@ export type EnrichedRaffle = ReturnType<typeof mapRaffleLegacy> & {
   days_remaining: number | null
 }
 
-function mapRaffleLegacy(
-  row: NonNullable<Awaited<ReturnType<typeof rafflesRepo.findRaffleById>>>
-) {
+function mapRaffleLegacy(row: NonNullable<Awaited<ReturnType<typeof rafflesRepo.findRaffleById>>>) {
   const prices = rafflesRepo.rafflePricesLegacy(row)
   return {
     id: row.id,
@@ -66,7 +57,7 @@ function mapRaffleLegacy(
 
 async function enrichRaffleDetail(
   row: NonNullable<Awaited<ReturnType<typeof rafflesRepo.findRaffleById>>>,
-  options?: { includeInactivePaymentMethods?: boolean }
+  options?: { includeInactivePaymentMethods?: boolean },
 ): Promise<EnrichedRaffle> {
   const db = getDb()
   const prizeRows = await db
@@ -78,7 +69,7 @@ async function enrichRaffleDetail(
   const av = rafflesRepo.raffleAvailabilityFromCounters(row)
   const payMethods = await rafflePaymentMethodsRepo.listPaymentMethodsByRaffle(
     row.id,
-    !options?.includeInactivePaymentMethods
+    !options?.includeInactivePaymentMethods,
   )
   const promotionRecords = await rafflePromotionsRepo.listPromotionsByRaffle(row.id)
   const pricing = buildPublicRafflePricing(
@@ -105,36 +96,25 @@ async function enrichRaffleDetail(
     tickets_available: av.available,
     tickets_reserved: av.reserved,
     sold_percentage:
-      row.totalTickets > 0
-        ? ((av.sold / row.totalTickets) * 100).toFixed(2)
-        : "0.00",
+      row.totalTickets > 0 ? ((av.sold / row.totalTickets) * 100).toFixed(2) : "0.00",
     days_remaining: row.drawDate
       ? Math.ceil((row.drawDate.getTime() - Date.now()) / (1000 * 60 * 60 * 24))
       : null,
   }
 }
 
-function mapRaffleListRow(
-  r: NonNullable<Awaited<ReturnType<typeof rafflesRepo.findRaffleById>>>
-) {
+function mapRaffleListRow(r: NonNullable<Awaited<ReturnType<typeof rafflesRepo.findRaffleById>>>) {
   const av = rafflesRepo.raffleAvailabilityFromCounters(r)
   return {
     ...mapRaffleLegacy(r),
     tickets_sold: av.sold,
     tickets_available: av.available,
     tickets_reserved: av.reserved,
-    sold_percentage:
-      r.totalTickets > 0
-        ? ((av.sold / r.totalTickets) * 100).toFixed(2)
-        : "0.00",
+    sold_percentage: r.totalTickets > 0 ? ((av.sold / r.totalTickets) * 100).toFixed(2) : "0.00",
   }
 }
 
-export async function getAllRaffles(params: {
-  status?: string
-  limit?: number
-  page?: number
-}) {
+export async function getAllRaffles(params: { status?: string; limit?: number; page?: number }) {
   const list = await rafflesRepo.listRaffles(params)
   return Promise.all(list.map((r) => mapRaffleListRow(r)))
 }
@@ -152,7 +132,7 @@ export async function listAdminRaffles(params: {
 
 export async function getRaffleById(
   id: number,
-  options?: { includeInactivePaymentMethods?: boolean }
+  options?: { includeInactivePaymentMethods?: boolean },
 ): Promise<EnrichedRaffle> {
   const row = await rafflesRepo.findRaffleById(id)
   if (!row) throw new RaffleNotFoundError(id)
@@ -172,9 +152,7 @@ export async function getFirstActiveRaffle(): Promise<EnrichedRaffle> {
 }
 
 export async function createRaffle(input: CreateRaffleInput) {
-  const raffleId = await withImmediateTransaction((tx) =>
-    rafflesRepo.insertRaffle(tx, input)
-  )
+  const raffleId = await withImmediateTransaction((tx) => rafflesRepo.insertRaffle(tx, input))
   logger.info({ raffleId, name: input.name }, "raffle:created")
   return { raffleId }
 }
@@ -242,10 +220,7 @@ export async function publishRaffle(id: number, publish: boolean) {
   }
 
   const db = getDb()
-  await db
-    .update(raffles)
-    .set({ publish, updatedAt: new Date() })
-    .where(eq(raffles.id, id))
+  await db.update(raffles).set({ publish, updatedAt: new Date() }).where(eq(raffles.id, id))
 
   logger.info({ raffleId: id, publish }, "raffle:published")
   return {
@@ -284,10 +259,7 @@ export async function getPublishedRaffles(limit: number, page: number) {
       name: r.name,
       tickets_sold: av.sold,
       total_tickets: r.totalTickets,
-      sold_percentage:
-        r.totalTickets > 0
-          ? ((av.sold / r.totalTickets) * 100).toFixed(2)
-          : "0.00",
+      sold_percentage: r.totalTickets > 0 ? ((av.sold / r.totalTickets) * 100).toFixed(2) : "0.00",
     }
   })
 
@@ -340,7 +312,7 @@ export async function getDashboardStats(raffleId?: number) {
     .where(purchaseWhere)
     .groupBy(purchases.paymentMethod)
     .orderBy(
-      sql`coalesce(sum(case when ${purchases.status} = 'approved' then ${purchases.totalAmountCents} else 0 end), 0) desc`
+      sql`coalesce(sum(case when ${purchases.status} = 'approved' then ${purchases.totalAmountCents} else 0 end), 0) desc`,
     )
 
   const [userStats] = await db

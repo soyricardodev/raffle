@@ -23,9 +23,7 @@ export function PublishedRafflesGrid({ raffles }: { raffles: PublishedRaffle[] }
             >
               <div className="min-w-0 text-left">
                 <p className="truncate text-sm font-medium">{raffle.name}</p>
-                <p className="text-muted-foreground text-xs">
-                  {raffle.sold_percentage}% vendido
-                </p>
+                <p className="text-muted-foreground text-xs">{raffle.sold_percentage}% vendido</p>
               </div>
               <ChevronRight className="text-muted-foreground size-4 shrink-0" />
             </Link>

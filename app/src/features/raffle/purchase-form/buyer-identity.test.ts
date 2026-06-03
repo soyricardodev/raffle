@@ -1,4 +1,3 @@
-import { describe, expect, it } from "vitest"
 import {
   formatCustomerCi,
   isValidCustomerCi,
@@ -7,6 +6,7 @@ import {
   normalizeCustomerCi,
   parseCustomerCi,
 } from "@raffle/shared/validators"
+import { describe, expect, it } from "vitest"
 
 describe("buyer identity", () => {
   it("parses and formats CI", () => {

@@ -9,7 +9,9 @@ export type ResolvedPublicSeo = {
   indexable: boolean
 }
 
-export function resolvePublicSeo(config: PublicSiteConfigPayload | null | undefined): ResolvedPublicSeo {
+export function resolvePublicSeo(
+  config: PublicSiteConfigPayload | null | undefined,
+): ResolvedPublicSeo {
   const seo = normalizeSeoConfig(config?.seo_config)
   const siteName = config?.site_info?.site_name?.trim() ?? ""
   const tagline = config?.site_info?.tagline?.trim() ?? ""

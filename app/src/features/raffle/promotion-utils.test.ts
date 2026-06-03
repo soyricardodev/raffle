@@ -1,10 +1,10 @@
 import { describe, expect, it } from "vitest"
+import type { MethodPromotionSummary } from "@/features/raffle/promotion-types"
 import {
   buildMethodPromotionBadgeMap,
   formatMethodPromotionBadge,
   formatMethodPromotionHint,
 } from "@/features/raffle/promotion-utils"
-import type { MethodPromotionSummary } from "@/features/raffle/promotion-types"
 
 describe("method promotion labels", () => {
   const promo: MethodPromotionSummary = {

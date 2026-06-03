@@ -1,6 +1,6 @@
-import { createFileRoute } from "@tanstack/react-router"
 import { readFile } from "node:fs/promises"
 import path from "node:path"
+import { createFileRoute } from "@tanstack/react-router"
 import { getEnv } from "@/lib/env"
 
 const MIME: Record<string, string> = {

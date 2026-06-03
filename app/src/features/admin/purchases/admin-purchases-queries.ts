@@ -7,9 +7,7 @@ import { getDashboardStats } from "@/server/raffle.service"
 
 export const ADMIN_PURCHASES_PAGE_SIZE = 50
 
-const PurchaseStatusFilter = z
-  .enum(["all", "pending", "approved", "rejected"])
-  .catch("all")
+const PurchaseStatusFilter = z.enum(["all", "pending", "approved", "rejected"]).catch("all")
 
 const AdminPurchasesInput = z.object({
   limit: z.number().int().min(1).max(100).catch(ADMIN_PURCHASES_PAGE_SIZE),
@@ -24,9 +22,7 @@ const AdminPurchasesInput = z.object({
 
 export type AdminPurchaseFilters = z.infer<typeof AdminPurchasesInput>
 export type AdminDashboardStats = Awaited<ReturnType<typeof getDashboardStats>>
-export type AdminPurchasesResult = Awaited<
-  ReturnType<typeof listAdminPurchases>
->
+export type AdminPurchasesResult = Awaited<ReturnType<typeof listAdminPurchases>>
 
 export type AdminPurchaseSearchParams = {
   status?: string
@@ -41,8 +37,7 @@ export type AdminPurchaseSearchParams = {
 
 export const adminPurchasesQueryKeys = {
   dashboard: ["admin", "dashboard", "purchases"] as const,
-  list: (filters: AdminPurchaseFilters) =>
-    ["admin", "purchases", filters] as const,
+  list: (filters: AdminPurchaseFilters) => ["admin", "purchases", filters] as const,
 }
 
 export const fetchAdminPurchasesDashboard = createServerFn({ method: "GET" })
@@ -69,12 +64,10 @@ export const fetchAdminPurchases = createServerFn({ method: "POST" })
 
 export function normalizeAdminPurchaseFilters(
   search: AdminPurchaseSearchParams,
-  fallbackRaffleId?: string | null
+  fallbackRaffleId?: string | null,
 ): AdminPurchaseFilters {
   const raffleId =
-    search.raffle_id === "all"
-      ? null
-      : (search.raffle_id ?? fallbackRaffleId ?? null)
+    search.raffle_id === "all" ? null : (search.raffle_id ?? fallbackRaffleId ?? null)
 
   return AdminPurchasesInput.parse({
     limit: search.limit ?? ADMIN_PURCHASES_PAGE_SIZE,

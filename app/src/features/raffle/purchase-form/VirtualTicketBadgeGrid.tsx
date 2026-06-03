@@ -21,10 +21,7 @@ export function VirtualTicketBadgeGrid({
   className,
 }: VirtualTicketBadgeGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const rows = useMemo(
-    () => chunkTicketRows(ticketNumbers, TICKET_GRID_COLUMNS),
-    [ticketNumbers],
-  )
+  const rows = useMemo(() => chunkTicketRows(ticketNumbers, TICKET_GRID_COLUMNS), [ticketNumbers])
 
   const virtualizer = useVirtualizer({
     count: rows.length,

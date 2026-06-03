@@ -1,7 +1,7 @@
 import { useMutation } from "@tanstack/react-query"
+import { Wrench } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import { Wrench } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
@@ -25,8 +25,7 @@ export function AdminMaintenanceSection() {
   const [confirmRun, setConfirmRun] = useState(false)
 
   const runMutation = useMutation({
-    mutationFn: () =>
-      adminFetch<MaintenanceResult>("/api/admin/maintenance", { method: "POST" }),
+    mutationFn: () => adminFetch<MaintenanceResult>("/api/admin/maintenance", { method: "POST" }),
     onSuccess: (result) => {
       setLastResult(result)
       setConfirmRun(false)
@@ -58,8 +57,7 @@ export function AdminMaintenanceSection() {
           <div className="bg-muted flex flex-col gap-2 rounded-xl p-4 text-sm">
             <p>
               <span className="text-muted-foreground">Pausas procesadas:</span>{" "}
-              <span className="font-medium tabular-nums">{lastResult.paused.processed}</span>
-              {" "}
+              <span className="font-medium tabular-nums">{lastResult.paused.processed}</span>{" "}
               (reactivadas: {lastResult.paused.reactivated}, finalizadas:{" "}
               {lastResult.paused.finished})
             </p>

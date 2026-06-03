@@ -102,7 +102,9 @@ export function PaymentAccountForm({
           value={values.label}
           onChange={(e) => setValues((v) => ({ ...v, label: e.target.value }))}
         />
-        <FieldDescription>Cómo lo identificas en el panel (no lo ve el comprador).</FieldDescription>
+        <FieldDescription>
+          Cómo lo identificas en el panel (no lo ve el comprador).
+        </FieldDescription>
         {errors.label ? (
           <FieldDescription className="text-destructive">{errors.label}</FieldDescription>
         ) : null}
@@ -110,7 +112,10 @@ export function PaymentAccountForm({
 
       <Field>
         <FieldLabel htmlFor="account-type">Tipo</FieldLabel>
-        <Select value={values.method_type} onValueChange={(v) => handleTypeChange(v as PaymentMethod)}>
+        <Select
+          value={values.method_type}
+          onValueChange={(v) => handleTypeChange(v as PaymentMethod)}
+        >
           <SelectTrigger id="account-type" className="min-h-11 w-full">
             <SelectValue />
           </SelectTrigger>
@@ -167,7 +172,9 @@ export function PaymentAccountForm({
               <Input
                 id={`field-${field.key}`}
                 type={field.input === "email" ? "email" : field.input === "tel" ? "tel" : "text"}
-                inputMode={field.input === "digits" || field.input === "tel" ? "numeric" : undefined}
+                inputMode={
+                  field.input === "digits" || field.input === "tel" ? "numeric" : undefined
+                }
                 className="min-h-11"
                 placeholder={field.placeholder}
                 value={values.account_info[field.key] ?? ""}
@@ -196,7 +203,12 @@ export function PaymentAccountForm({
         <Button type="button" variant="outline" className="min-h-11" onClick={onCancel}>
           Cancelar
         </Button>
-        <Button type="button" className="min-h-11 flex-1" disabled={isPending} onClick={handleSubmit}>
+        <Button
+          type="button"
+          className="min-h-11 flex-1"
+          disabled={isPending}
+          onClick={handleSubmit}
+        >
           {isPending ? "Guardando…" : "Guardar"}
         </Button>
       </div>

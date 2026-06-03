@@ -1,9 +1,6 @@
 import { ValidationError } from "@raffle/shared/errors"
-import {
-  CreatePaymentAccountInput,
-  UpdatePaymentAccountInput,
-} from "@raffle/shared/validators"
 import { validatePaymentAccountInput } from "@raffle/shared/payment-methods"
+import { CreatePaymentAccountInput, UpdatePaymentAccountInput } from "@raffle/shared/validators"
 import * as paymentAccountsRepo from "./repositories/payment-accounts.repository"
 
 export async function listPaymentAccounts(activeOnly?: boolean) {
@@ -56,9 +53,7 @@ export async function updatePaymentAccount(id: number, raw: unknown) {
 export async function removePaymentAccount(id: number) {
   const result = await paymentAccountsRepo.deletePaymentAccount(id)
   if (!result.deleted) {
-    throw new ValidationError(
-      "No se puede eliminar: este método está asignado a una o más rifas",
-    )
+    throw new ValidationError("No se puede eliminar: este método está asignado a una o más rifas")
   }
   return { deletedId: id }
 }

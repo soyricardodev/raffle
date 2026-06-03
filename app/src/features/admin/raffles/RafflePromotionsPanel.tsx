@@ -4,23 +4,10 @@ import type { PromotionRecord } from "@raffle/shared/promotions/types"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { useMemo, useState } from "react"
 import { toast } from "sonner"
-import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
-import { adminFetch } from "@/lib/admin-fetch"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import {
-  Field,
-  FieldDescription,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import {
   Select,
@@ -31,8 +18,10 @@ import {
 } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import type { RafflePromotionApi } from "@/features/raffle/promotion-types"
 import { mapApiPromotionToRecord } from "@/features/raffle/promotion-utils"
+import { adminFetch } from "@/lib/admin-fetch"
 import { cn } from "@/lib/utils"
 
 type PaymentMethodOption = {
@@ -109,9 +98,7 @@ function buildPayload(state: PromoFormState) {
         : null,
     promo_price_bs: state.promo_price_bs.trim() ? Number(state.promo_price_bs) : null,
     promo_price_usd: state.promo_price_usd.trim() ? Number(state.promo_price_usd) : null,
-    discount_percent: state.discount_percent.trim()
-      ? Number(state.discount_percent)
-      : null,
+    discount_percent: state.discount_percent.trim() ? Number(state.discount_percent) : null,
     starts_at:
       state.duration_mode === "scheduled" && state.starts_at
         ? new Date(state.starts_at).toISOString()
@@ -144,8 +131,7 @@ export function RafflePromotionsPanel({
 
   const promotionsQuery = useQuery({
     queryKey: ["admin", "raffle", raffleId, "promotions"],
-    queryFn: () =>
-      adminFetch<RafflePromotionApi[]>(`/api/admin/raffles/${raffleId}/promotions`),
+    queryFn: () => adminFetch<RafflePromotionApi[]>(`/api/admin/raffles/${raffleId}/promotions`),
   })
 
   const saveMutation = useMutation({
@@ -230,8 +216,7 @@ export function RafflePromotionsPanel({
         : "",
       promo_price_bs: promo.promo_price_bs != null ? String(promo.promo_price_bs) : "",
       promo_price_usd: promo.promo_price_usd != null ? String(promo.promo_price_usd) : "",
-      discount_percent:
-        promo.discount_percent != null ? String(promo.discount_percent) : "",
+      discount_percent: promo.discount_percent != null ? String(promo.discount_percent) : "",
       duration_mode: promo.starts_at || promo.ends_at ? "scheduled" : "permanent",
       starts_at: promo.starts_at ? promo.starts_at.slice(0, 16) : "",
       ends_at: promo.ends_at ? promo.ends_at.slice(0, 16) : "",
@@ -415,10 +400,7 @@ export function RafflePromotionsPanel({
                 </div>
               ) : null}
               <Field orientation="horizontal">
-                <Switch
-                  checked={form.is_active}
-                  onCheckedChange={(v) => patch("is_active", v)}
-                />
+                <Switch checked={form.is_active} onCheckedChange={(v) => patch("is_active", v)} />
                 <FieldLabel>Promoción activa</FieldLabel>
               </Field>
               {previewRecord ? (

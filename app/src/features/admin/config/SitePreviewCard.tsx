@@ -1,10 +1,10 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import {
+  type AdminSiteConfigDraft,
+  draftToPublicPayload,
+} from "@/features/admin/config/admin-site-config"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
 import { resolvePublicBranding } from "@/features/layout/use-public-branding"
-import {
-  draftToPublicPayload,
-  type AdminSiteConfigDraft,
-} from "@/features/admin/config/admin-site-config"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
 
 type SitePreviewCardProps = {

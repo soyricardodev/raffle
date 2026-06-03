@@ -101,12 +101,8 @@
           "name": "account_user_id_users_id_fk",
           "tableFrom": "account",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -114,9 +110,7 @@
       "compositePrimaryKeys": {
         "account_id": {
           "name": "account_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -220,12 +214,8 @@
           "name": "email_logs_purchase_id_purchases_id_fk",
           "tableFrom": "email_logs",
           "tableTo": "purchases",
-          "columnsFrom": [
-            "purchase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchase_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -233,9 +223,7 @@
       "compositePrimaryKeys": {
         "email_logs_id": {
           "name": "email_logs_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -302,12 +290,8 @@
           "name": "payment_methods_raffle_id_raffles_id_fk",
           "tableFrom": "payment_methods",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -315,9 +299,7 @@
       "compositePrimaryKeys": {
         "payment_methods_id": {
           "name": "payment_methods_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -383,12 +365,8 @@
           "name": "prizes_raffle_id_raffles_id_fk",
           "tableFrom": "prizes",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -396,9 +374,7 @@
       "compositePrimaryKeys": {
         "prizes_id": {
           "name": "prizes_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -530,12 +506,8 @@
           "name": "purchases_raffle_id_raffles_id_fk",
           "tableFrom": "purchases",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -543,9 +515,7 @@
       "compositePrimaryKeys": {
         "purchases_id": {
           "name": "purchases_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -709,9 +679,7 @@
       "compositePrimaryKeys": {
         "raffles_id": {
           "name": "raffles_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},
@@ -786,12 +754,8 @@
           "name": "session_user_id_users_id_fk",
           "tableFrom": "session",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -799,17 +763,13 @@
       "compositePrimaryKeys": {
         "session_id": {
           "name": "session_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "session_token_unique": {
           "name": "session_token_unique",
-          "columns": [
-            "token"
-          ]
+          "columns": ["token"]
         }
       },
       "checkConstraint": {}
@@ -860,17 +820,13 @@
       "compositePrimaryKeys": {
         "site_config_id": {
           "name": "site_config_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "site_config_config_key_unique": {
           "name": "site_config_config_key_unique",
-          "columns": [
-            "config_key"
-          ]
+          "columns": ["config_key"]
         }
       },
       "checkConstraint": {}
@@ -938,12 +894,8 @@
           "name": "tickets_raffle_id_raffles_id_fk",
           "tableFrom": "tickets",
           "tableTo": "raffles",
-          "columnsFrom": [
-            "raffle_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["raffle_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -951,12 +903,8 @@
           "name": "tickets_purchase_id_purchases_id_fk",
           "tableFrom": "tickets",
           "tableTo": "purchases",
-          "columnsFrom": [
-            "purchase_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["purchase_id"],
+          "columnsTo": ["id"],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -964,18 +912,13 @@
       "compositePrimaryKeys": {
         "tickets_id": {
           "name": "tickets_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "unique_raffle_ticket": {
           "name": "unique_raffle_ticket",
-          "columns": [
-            "raffle_id",
-            "ticket_number"
-          ]
+          "columns": ["raffle_id", "ticket_number"]
         }
       },
       "checkConstraint": {}
@@ -1042,23 +985,17 @@
       "compositePrimaryKeys": {
         "users_id": {
           "name": "users_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {
         "users_username_unique": {
           "name": "users_username_unique",
-          "columns": [
-            "username"
-          ]
+          "columns": ["username"]
         },
         "users_email_unique": {
           "name": "users_email_unique",
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "checkConstraint": {}
@@ -1117,9 +1054,7 @@
       "compositePrimaryKeys": {
         "verification_id": {
           "name": "verification_id",
-          "columns": [
-            "id"
-          ]
+          "columns": ["id"]
         }
       },
       "uniqueConstraints": {},

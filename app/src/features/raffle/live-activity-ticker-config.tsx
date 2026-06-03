@@ -1,10 +1,10 @@
-import { Link } from "@tanstack/react-router"
-import type { ReactNode } from "react"
 import {
   formatRecentPurchaseMessage,
   formatRecentPurchaseMessageCompact,
   type PublicRecentPurchase,
 } from "@raffle/shared/public-recent-purchase"
+import { Link } from "@tanstack/react-router"
+import type { ReactNode } from "react"
 import { marqueeDurationSec } from "@/features/raffle/PurchaseActivityMarquee"
 import { cn } from "@/lib/utils"
 
@@ -18,11 +18,7 @@ export type TickerViewModel = {
   isLiveBar?: boolean
 }
 
-const IDLE_MARQUEE = [
-  "Sin rifa activa",
-  "Verifica tus boletos",
-  "Rifas publicadas abajo",
-]
+const IDLE_MARQUEE = ["Sin rifa activa", "Verifica tus boletos", "Rifas publicadas abajo"]
 
 const FINISHED_MARQUEE = ["Rifa finalizada", "Verifica tus boletos", "Más rifas en inicio"]
 
@@ -32,17 +28,10 @@ function purchasesToMarqueeItems(purchases: PublicRecentPurchase[]): string[] {
   )
 }
 
-function liveAriaSummary(
-  activeBuyersCount: number,
-  purchases: PublicRecentPurchase[],
-): string {
+function liveAriaSummary(activeBuyersCount: number, purchases: PublicRecentPurchase[]): string {
   const first = purchases[0]
   if (first) {
-    return formatRecentPurchaseMessage(
-      first.displayName,
-      first.ticketQuantity,
-      first.status,
-    )
+    return formatRecentPurchaseMessage(first.displayName, first.ticketQuantity, first.status)
   }
   if (activeBuyersCount > 0) {
     return `${activeBuyersCount} persona${activeBuyersCount === 1 ? "" : "s"} comprando en este momento`

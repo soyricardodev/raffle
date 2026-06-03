@@ -1,13 +1,14 @@
 import { Link } from "@tanstack/react-router"
-import { usePublicBranding } from "@/features/layout/use-public-branding"
-import { buildSocialLinks } from "@/features/layout/social-links"
+import { Mail, MapPin, Phone } from "lucide-react"
 import {
   DEFAULT_OFFICIAL_FOOTER_DESCRIPTION,
   DEFAULT_OFFICIAL_FOOTER_HEADING,
   resolveOfficialFooterLogos,
 } from "@/features/layout/footer-defaults"
+import { buildSocialLinks } from "@/features/layout/social-links"
 import { PUBLIC_FOOTER_LEGAL_ID } from "@/features/layout/sticky-purchase-cta"
-import { Mail, MapPin, Phone } from "lucide-react"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
+
 const FOOTER_NAV = [
   { label: "Inicio", to: "/" as const },
   { label: "Verificar boletos", to: "/verificar" as const },
@@ -89,7 +90,10 @@ export function PublicFooter() {
                   {contact.phone ? (
                     <li className="flex items-start gap-2">
                       <Phone className="mt-0.5 size-4 shrink-0" aria-hidden />
-                      <a href={`tel:${contact.phone.replace(/\s/g, "")}`} className="hover:text-foreground">
+                      <a
+                        href={`tel:${contact.phone.replace(/\s/g, "")}`}
+                        className="hover:text-foreground"
+                      >
                         {contact.phone}
                       </a>
                     </li>
@@ -97,7 +101,10 @@ export function PublicFooter() {
                   {contact.email ? (
                     <li className="flex items-start gap-2">
                       <Mail className="mt-0.5 size-4 shrink-0" aria-hidden />
-                      <a href={`mailto:${contact.email}`} className="hover:text-foreground break-all">
+                      <a
+                        href={`mailto:${contact.email}`}
+                        className="hover:text-foreground break-all"
+                      >
                         {contact.email}
                       </a>
                     </li>

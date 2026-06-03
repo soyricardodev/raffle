@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { requireAdmin } from "@/lib/auth-utils.server"
-import { listEmailLogs } from "@/server/email-logs.service"
 import { sendEmail } from "@/server/email/email.service"
+import { listEmailLogs } from "@/server/email-logs.service"
 
 export const Route = createFileRoute("/api/admin/emails")({
   server: {
@@ -17,7 +17,7 @@ export const Route = createFileRoute("/api/admin/emails")({
             search: url.searchParams.get("search"),
             start: url.searchParams.get("start"),
             end: url.searchParams.get("end"),
-          })
+          }),
         )
       },
       POST: async ({ request }) => {

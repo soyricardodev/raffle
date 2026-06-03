@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest"
-import { hydrateVerifyFormFromProfile, toVerifyInput } from "@/features/verify/verify-profile"
 import type { SavedBuyerProfile } from "@/features/raffle/purchase-form/buyer-profile-storage"
+import { hydrateVerifyFormFromProfile, toVerifyInput } from "@/features/verify/verify-profile"
 
 const profile: SavedBuyerProfile = {
   customerName: "Ricardo Pérez",

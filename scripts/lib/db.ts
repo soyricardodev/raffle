@@ -1,6 +1,6 @@
-import { createClient, type Client } from "@libsql/client"
-import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql"
+import { type Client, createClient } from "@libsql/client"
 import { resolveLibsqlDatabaseUrl, schema } from "@raffle/shared/db"
+import { drizzle, type LibSQLDatabase } from "drizzle-orm/libsql"
 
 export type ScriptDb = LibSQLDatabase<typeof schema>
 

@@ -1,7 +1,7 @@
 import { TrendingUp } from "lucide-react"
 import { useId } from "react"
-import { cn } from "@/lib/utils"
 import type { RaffleSalesProgress } from "@/lib/raffle-progress"
+import { cn } from "@/lib/utils"
 
 type SalesProgressBarProps = {
   progress: RaffleSalesProgress
@@ -90,7 +90,10 @@ export function SalesProgressBar({
         >
           {showMotion ? (
             <>
-              <span className="sales-progress-shimmer pointer-events-none absolute inset-0" aria-hidden />
+              <span
+                className="sales-progress-shimmer pointer-events-none absolute inset-0"
+                aria-hidden
+              />
               <span
                 className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 to-transparent"
                 aria-hidden

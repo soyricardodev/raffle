@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router"
-import { listAdminPurchases } from "@/server/purchase.service"
 import { requireAdmin } from "@/lib/auth-utils.server"
+import { listAdminPurchases } from "@/server/purchase.service"
 
 export const Route = createFileRoute("/api/admin/purchases/")({
   server: {

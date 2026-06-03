@@ -1,10 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
+import { raffles } from "@raffle/shared/db"
+import { RaffleInvalidTransitionError } from "@raffle/shared/errors"
 import { eq } from "drizzle-orm"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
-import { raffles } from "@raffle/shared/db"
 import { transitionRaffle } from "./raffle-lifecycle.service"
-import { RaffleInvalidTransitionError } from "@raffle/shared/errors"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 

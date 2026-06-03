@@ -1,7 +1,7 @@
 import {
   isSqliteUniqueViolation,
-  purchaseTickets,
   purchases,
+  purchaseTickets,
   raffles,
   ticketNumberToInt,
   ticketNumberToString,
@@ -125,7 +125,10 @@ async function applyCounterDelta(
 }
 
 /** Carga números ya asignados en la rifa (sparse). */
-export async function loadOccupiedNumbers(tx: DbTransaction, raffleId: number): Promise<Set<number>> {
+export async function loadOccupiedNumbers(
+  tx: DbTransaction,
+  raffleId: number,
+): Promise<Set<number>> {
   const rows = await tx
     .select({ ticketNumber: purchaseTickets.ticketNumber })
     .from(purchaseTickets)
@@ -262,10 +265,7 @@ export async function releaseTicketNumbers(
     .select({ status: purchaseTickets.status })
     .from(purchaseTickets)
     .where(
-      and(
-        eq(purchaseTickets.purchaseId, purchaseId),
-        inArray(purchaseTickets.ticketNumber, ints),
-      ),
+      and(eq(purchaseTickets.purchaseId, purchaseId), inArray(purchaseTickets.ticketNumber, ints)),
     )
 
   const reservedCount = rows.filter((r) => r.status === "reserved").length
@@ -275,10 +275,7 @@ export async function releaseTicketNumbers(
   await tx
     .delete(purchaseTickets)
     .where(
-      and(
-        eq(purchaseTickets.purchaseId, purchaseId),
-        inArray(purchaseTickets.ticketNumber, ints),
-      ),
+      and(eq(purchaseTickets.purchaseId, purchaseId), inArray(purchaseTickets.ticketNumber, ints)),
     )
 
   if (purchaseStatus === "approved" || soldCount > 0) {
@@ -314,9 +311,7 @@ export async function markPurchaseTicketsStatus(
   const rows = await tx
     .select({ id: purchaseTickets.id })
     .from(purchaseTickets)
-    .where(
-      and(eq(purchaseTickets.purchaseId, purchaseId), eq(purchaseTickets.status, fromStatus)),
-    )
+    .where(and(eq(purchaseTickets.purchaseId, purchaseId), eq(purchaseTickets.status, fromStatus)))
 
   const count = rows.length
   if (count === 0) return
@@ -324,9 +319,7 @@ export async function markPurchaseTicketsStatus(
   await tx
     .update(purchaseTickets)
     .set({ status: toStatus, updatedAt: new Date() })
-    .where(
-      and(eq(purchaseTickets.purchaseId, purchaseId), eq(purchaseTickets.status, fromStatus)),
-    )
+    .where(and(eq(purchaseTickets.purchaseId, purchaseId), eq(purchaseTickets.status, fromStatus)))
 
   await tx
     .update(raffles)

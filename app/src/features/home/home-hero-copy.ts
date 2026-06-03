@@ -6,7 +6,10 @@ export function getHomeHeadline(siteInfo: SiteInfo, hero: HeroConfig) {
   const subline = hero.subtitle.trim() || siteInfo.tagline.trim()
 
   const titleIsFragment =
-    rawTitle.length > 0 && rawTitle.length < 14 && !rawTitle.includes(" ") && rawTitle !== siteInfo.site_name
+    rawTitle.length > 0 &&
+    rawTitle.length < 14 &&
+    !rawTitle.includes(" ") &&
+    rawTitle !== siteInfo.site_name
 
   if (!rawTitle || titleIsFragment) {
     return {

@@ -13,8 +13,5 @@ export default defineConfig({
   dialect: url.startsWith("libsql:") || url.includes("turso") ? "turso" : "sqlite",
   schema: "./src/db/sqlite/schema/index.ts",
   out: "./drizzle-sqlite",
-  dbCredentials:
-    authToken && !url.startsWith("file:")
-      ? { url, authToken }
-      : { url },
+  dbCredentials: authToken && !url.startsWith("file:") ? { url, authToken } : { url },
 })

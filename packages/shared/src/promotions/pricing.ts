@@ -7,10 +7,7 @@ export type RaffleBasePrices = {
   priceUsdCents: number
 }
 
-export function baseUnitPriceCents(
-  paymentMethod: PaymentMethod,
-  prices: RaffleBasePrices,
-): number {
+export function baseUnitPriceCents(paymentMethod: PaymentMethod, prices: RaffleBasePrices): number {
   return isDollarMethodType(paymentMethod) ? prices.priceUsdCents : prices.priceBsCents
 }
 

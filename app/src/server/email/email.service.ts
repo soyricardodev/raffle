@@ -1,9 +1,9 @@
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
-import type { EmailAdapter } from "./types"
+import { BrevoEmailAdapter } from "./brevo.adapter"
 import { NoopEmailAdapter } from "./noop.adapter"
 import { ResendEmailAdapter } from "./resend.adapter"
-import { BrevoEmailAdapter } from "./brevo.adapter"
+import type { EmailAdapter } from "./types"
 
 const logger = getLogger()
 

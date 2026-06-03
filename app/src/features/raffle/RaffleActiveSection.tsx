@@ -2,8 +2,8 @@ import { PromotionBanner } from "@/features/raffle/PromotionBanner"
 import { RaffleCoverHero } from "@/features/raffle/RaffleCoverHero"
 import { RaffleInfoPanel } from "@/features/raffle/RaffleInfoPanel"
 import {
-  raffleTicketsInput,
   type RaffleLandingRaffle,
+  raffleTicketsInput,
 } from "@/features/raffle/raffle-landing-types"
 
 type RaffleActiveSectionProps = {
@@ -41,10 +41,7 @@ export function RaffleActiveSection({
       ) : null}
 
       {raffle.pricing ? (
-        <PromotionBanner
-          pricing={raffle.pricing}
-          paymentMethods={raffle.payment_methods ?? []}
-        />
+        <PromotionBanner pricing={raffle.pricing} paymentMethods={raffle.payment_methods ?? []} />
       ) : null}
 
       <RaffleInfoPanel

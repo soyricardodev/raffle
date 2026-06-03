@@ -1,12 +1,12 @@
-import { Badge } from "@/components/ui/badge"
 import {
   formatAccountInfoForDisplay,
+  PAYMENT_METHOD_DEFINITIONS,
   paymentMethodCurrencyLabel,
   paymentMethodDisplayLabel,
   paymentMethodTypeLabel,
-  PAYMENT_METHOD_DEFINITIONS,
 } from "@raffle/shared/payment-methods"
 import type { PaymentMethod } from "@raffle/shared/validators"
+import { Badge } from "@/components/ui/badge"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 
 type PaymentMethodSummaryProps = {
@@ -17,10 +17,7 @@ type PaymentMethodSummaryProps = {
   variant?: "admin" | "inline"
 }
 
-export function PaymentMethodSummary({
-  method,
-  variant = "inline",
-}: PaymentMethodSummaryProps) {
+export function PaymentMethodSummary({ method, variant = "inline" }: PaymentMethodSummaryProps) {
   const type = method.method_type as PaymentMethod
   const lines = formatAccountInfoForDisplay(type, method.account_info)
   const def = PAYMENT_METHOD_DEFINITIONS[type]
@@ -53,14 +50,14 @@ export function PaymentMethodSummary({
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span className="font-medium">{title}</span>
-      {method.label ? (
-        <span className="text-muted-foreground text-xs">{typeLabel}</span>
-      ) : null}
+      {method.label ? <span className="text-muted-foreground text-xs">{typeLabel}</span> : null}
       <Badge variant="outline" className="text-[10px]">
         {currency}
       </Badge>
       {def?.fields.find((f) => f.hint)?.hint ? (
-        <p className="text-muted-foreground w-full text-xs">{def.fields.find((f) => f.hint)?.hint}</p>
+        <p className="text-muted-foreground w-full text-xs">
+          {def.fields.find((f) => f.hint)?.hint}
+        </p>
       ) : null}
     </div>
   )

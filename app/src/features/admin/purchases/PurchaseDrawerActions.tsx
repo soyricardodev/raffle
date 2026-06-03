@@ -21,12 +21,7 @@ export function PurchaseDrawerActions({
 
   return (
     <div className={cn("flex gap-2 p-4", className)}>
-      <Button
-        variant="outline"
-        className="min-h-11 flex-1"
-        disabled={disabled}
-        onClick={onReject}
-      >
+      <Button variant="outline" className="min-h-11 flex-1" disabled={disabled} onClick={onReject}>
         <XCircle className="mr-2 size-4" />
         Rechazar
       </Button>

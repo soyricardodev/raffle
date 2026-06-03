@@ -8,13 +8,13 @@ import {
   SocialMediaSchema,
 } from "@raffle/shared/site-config"
 import { z } from "zod"
+import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 import {
   normalizeHeroConfig,
   normalizePurchaseSuccessPromo,
   normalizeSeoConfig,
   normalizeSiteImages,
 } from "@/stores/site-config"
-import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 
 const HeroConfigRawSchema = z
   .object({

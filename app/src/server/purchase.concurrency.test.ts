@@ -1,12 +1,12 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
+import { purchases, purchaseTickets, raffles } from "@raffle/shared/db"
+import { InvalidQuantityError, PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 import { eq } from "drizzle-orm"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
-import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
 import { seedPagoMovilPaymentMethodForRaffle } from "@/test/payment-methods-test-helper"
 import { withTestBuyerDefaults } from "@/test/purchase-test-helper"
 import { createPurchase } from "./purchase.service"
-import { InvalidQuantityError, PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 
 const TOTAL_TICKETS = 50
 const MAX_PURCHASE = 5

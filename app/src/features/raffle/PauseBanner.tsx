@@ -10,7 +10,9 @@ export function PauseBanner({ raffleId }: { raffleId: number | string }) {
   const minutes = Math.floor(totalSeconds / 60)
   const seconds = totalSeconds % 60
   const countdown =
-    totalSeconds > 0 ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}` : null
+    totalSeconds > 0
+      ? `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+      : null
 
   const title = data.pauseContext?.title ?? "Ventas pausadas temporalmente"
   const description =
@@ -18,10 +20,7 @@ export function PauseBanner({ raffleId }: { raffleId: number | string }) {
     "Estamos procesando muchas compras. Vuelve en un momento para continuar."
 
   return (
-    <div
-      role="status"
-      className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4"
-    >
+    <div role="status" className="rounded-xl border border-amber-500/40 bg-amber-500/10 px-4 py-4">
       <div className="flex items-start gap-3">
         <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-amber-500/20">
           <Clock className="size-5 text-amber-700 dark:text-amber-300" aria-hidden />

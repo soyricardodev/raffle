@@ -1,11 +1,11 @@
-import { getLogger } from "@/lib/logger"
-import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { raffles } from "@raffle/shared/db"
 import type { PauseReason, RaffleStatus } from "@raffle/shared/validators"
 import { and, eq, lte } from "drizzle-orm"
-import * as rafflesRepo from "./repositories/raffles.repository"
-import type { RaffleLiveRow } from "./repositories/raffles.repository"
+import { getDb, withImmediateTransaction } from "@/lib/db.server"
+import { getLogger } from "@/lib/logger"
 import { getRaffleLiveActivity, type PublicRecentPurchase } from "./live-activity.service"
+import type { RaffleLiveRow } from "./repositories/raffles.repository"
+import * as rafflesRepo from "./repositories/raffles.repository"
 
 const logger = getLogger()
 const PAUSE_DURATION_MINUTES = 15
@@ -165,9 +165,7 @@ export async function unpauseRaffle(raffleId: number): Promise<{
       message = `Rifa finalizada — tickets insuficientes (${availability.available} < ${minPurchase})`
     }
 
-    await withImmediateTransaction((tx) =>
-      rafflesRepo.unpauseRaffleRow(tx, raffleId, newStatus),
-    )
+    await withImmediateTransaction((tx) => rafflesRepo.unpauseRaffleRow(tx, raffleId, newStatus))
 
     logger.info({ raffleId, newStatus }, "raffle:unpaused")
     return { success: true, newStatus, message, availability }
@@ -203,7 +201,10 @@ function buildPauseContext(
   if (!isPaused || !raffle.pauseReason) return null
   const contexts: Record<string, { title: string; description: string }> = {
     manual: { title: "Rifa pausada", description: "Volveremos pronto." },
-    auto_full: { title: "Agotado temporalmente", description: "Todos los boletos están reservados o vendidos." },
+    auto_full: {
+      title: "Agotado temporalmente",
+      description: "Todos los boletos están reservados o vendidos.",
+    },
     auto_insufficient: {
       title: "Pocos boletos disponibles",
       description: `Quedan menos de ${raffle.minPurchase} boletos para la compra mínima.`,

@@ -1,11 +1,11 @@
-import type { PromotionRecord } from "@raffle/shared/promotions/types"
+import { paymentMethodDisplayLabel } from "@raffle/shared/payment-methods"
 import {
   formatMethodPromotionBadge as formatMethodPromotionBadgeShared,
   formatMethodPromotionHint as formatMethodPromotionHintShared,
 } from "@raffle/shared/promotions/display"
+import type { PromotionRecord } from "@raffle/shared/promotions/types"
 import type { MethodPromotionSummary, RafflePromotionApi } from "@/features/raffle/promotion-types"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
-import { paymentMethodDisplayLabel } from "@raffle/shared/payment-methods"
 
 export function mapApiPromotionToRecord(p: RafflePromotionApi): PromotionRecord {
   return {
@@ -19,8 +19,7 @@ export function mapApiPromotionToRecord(p: RafflePromotionApi): PromotionRecord 
     rafflePaymentMethodId: p.raffle_payment_method_id,
     promoPriceBsCents: p.promo_price_bs != null ? Math.round(p.promo_price_bs * 100) : null,
     promoPriceUsdCents: p.promo_price_usd != null ? Math.round(p.promo_price_usd * 100) : null,
-    discountPercentBps:
-      p.discount_percent != null ? Math.round(p.discount_percent * 100) : null,
+    discountPercentBps: p.discount_percent != null ? Math.round(p.discount_percent * 100) : null,
     startsAt: p.starts_at ? new Date(p.starts_at) : null,
     endsAt: p.ends_at ? new Date(p.ends_at) : null,
   }

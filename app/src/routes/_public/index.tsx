@@ -1,20 +1,23 @@
-import { createFileRoute, Link } from "@tanstack/react-router"
 import { useQuery } from "@tanstack/react-query"
+import { createFileRoute, Link } from "@tanstack/react-router"
+import { Search, Ticket } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HomeSiteBanner } from "@/features/home/HomeSiteBanner"
 import { HomeStickyCta } from "@/features/home/HomeStickyCta"
-import { PublicHomeShell } from "@/features/home/public-home-shell"
-import { homeFirstActiveQueryOptions, homePublishedQueryOptions } from "@/features/home/home-queries"
+import {
+  homeFirstActiveQueryOptions,
+  homePublishedQueryOptions,
+} from "@/features/home/home-queries"
 import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
+import { PublicHomeShell } from "@/features/home/public-home-shell"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
 import type { LivePurchaseActivityVariant } from "@/features/raffle/live-activity-ticker-config"
-import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
-import { Search, Ticket } from "lucide-react"
+import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 
 export const Route = createFileRoute("/_public/")({
   loader: async ({ context: { queryClient } }) => {
@@ -40,9 +43,7 @@ function resolveHomeTickerVariant(
 ): LivePurchaseActivityVariant | null {
   if (activeLoading && activeRaffle == null) return null
   if (activeRaffle == null) return "idle"
-  return activeRaffle.status === "active" || activeRaffle.status === "paused"
-    ? "live"
-    : "finished"
+  return activeRaffle.status === "active" || activeRaffle.status === "paused" ? "live" : "finished"
 }
 
 function HomePage() {
@@ -64,8 +65,7 @@ function HomePage() {
   })
 
   const showStickyCta = activeRaffle != null && activeRaffle.status === "active"
-  const liveEnabled =
-    activeRaffle?.status === "active" || activeRaffle?.status === "paused"
+  const liveEnabled = activeRaffle?.status === "active" || activeRaffle?.status === "paused"
   const tickerVariant = resolveHomeTickerVariant(activeRaffle, activeLoading)
 
   return (

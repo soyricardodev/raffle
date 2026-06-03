@@ -6,9 +6,7 @@ import { listEmailLogs } from "@/server/email-logs.service"
 
 export const ADMIN_EMAILS_PAGE_SIZE = 50
 
-const EmailStatusFilter = z
-  .enum(["all", "sent", "failed", "pending", "error"])
-  .catch("all")
+const EmailStatusFilter = z.enum(["all", "sent", "failed", "pending", "error"]).catch("all")
 
 const AdminEmailsInput = z.object({
   limit: z.number().int().min(1).max(100).catch(ADMIN_EMAILS_PAGE_SIZE),
@@ -31,8 +29,7 @@ export type AdminEmailsSearchParams = {
 }
 
 export const adminEmailsQueryKeys = {
-  list: (filters: AdminEmailFilters) =>
-    ["admin", "emails", "list", filters] as const,
+  list: (filters: AdminEmailFilters) => ["admin", "emails", "list", filters] as const,
 }
 
 export const fetchAdminEmails = createServerFn({ method: "POST" })
@@ -49,9 +46,7 @@ export const fetchAdminEmails = createServerFn({ method: "POST" })
     })
   })
 
-export function normalizeAdminEmailFilters(
-  search: AdminEmailsSearchParams
-): AdminEmailFilters {
+export function normalizeAdminEmailFilters(search: AdminEmailsSearchParams): AdminEmailFilters {
   return AdminEmailsInput.parse({
     limit: search.limit ?? ADMIN_EMAILS_PAGE_SIZE,
     page: search.page ?? 1,

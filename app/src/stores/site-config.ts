@@ -1,4 +1,3 @@
-import { create } from "zustand"
 import type {
   ContactInfo,
   HeroConfig,
@@ -10,6 +9,7 @@ import type {
   SiteInfo,
   SocialMedia,
 } from "@raffle/shared/site-config"
+import { create } from "zustand"
 
 export type {
   ContactInfo,

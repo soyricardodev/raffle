@@ -1,23 +1,27 @@
-import { getPayloadConfigFromPayload, getColorsCount, useChart } from "@/components/evilcharts/ui/chart";
-import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent";
-import * as RechartsPrimitive from "recharts";
-import { cn } from "@/lib/utils";
-import * as React from "react";
+import * as React from "react"
+import * as RechartsPrimitive from "recharts"
+import type { NameType, ValueType } from "recharts/types/component/DefaultTooltipContent"
+import {
+  getColorsCount,
+  getPayloadConfigFromPayload,
+  useChart,
+} from "@/components/evilcharts/ui/chart"
+import { cn } from "@/lib/utils"
 
-type TooltipRoundness = "sm" | "md" | "lg" | "xl";
-type TooltipVariant = "default" | "frosted-glass";
+type TooltipRoundness = "sm" | "md" | "lg" | "xl"
+type TooltipVariant = "default" | "frosted-glass"
 
 const roundnessMap: Record<TooltipRoundness, string> = {
   sm: "rounded-sm",
   md: "rounded-md",
   lg: "rounded-lg",
   xl: "rounded-xl",
-};
+}
 
 const variantMap: Record<TooltipVariant, string> = {
   default: "bg-background",
   "frosted-glass": "bg-background/70 backdrop-blur-sm",
-};
+}
 
 function ChartTooltipContent({
   active,
@@ -37,50 +41,50 @@ function ChartTooltipContent({
   variant = "default",
 }: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
   React.ComponentProps<"div"> & {
-    hideLabel?: boolean;
-    hideIndicator?: boolean;
-    indicator?: "line" | "dot" | "dashed";
-    nameKey?: string;
-    labelKey?: string;
-    selected?: string | null;
-    roundness?: TooltipRoundness;
-    variant?: TooltipVariant;
+    hideLabel?: boolean
+    hideIndicator?: boolean
+    indicator?: "line" | "dot" | "dashed"
+    nameKey?: string
+    labelKey?: string
+    selected?: string | null
+    roundness?: TooltipRoundness
+    variant?: TooltipVariant
   } & Omit<
     RechartsPrimitive.DefaultTooltipContentProps<ValueType, NameType>,
     "accessibilityLayer"
   >) {
-  const { config } = useChart();
+  const { config } = useChart()
 
   const tooltipLabel = React.useMemo(() => {
     if (hideLabel || !payload?.length) {
-      return null;
+      return null
     }
 
-    const [item] = payload;
-    const key = `${labelKey ?? item?.dataKey ?? item?.name ?? "value"}`;
-    const itemConfig = getPayloadConfigFromPayload(config, item, key);
+    const [item] = payload
+    const key = `${labelKey ?? item?.dataKey ?? item?.name ?? "value"}`
+    const itemConfig = getPayloadConfigFromPayload(config, item, key)
     const value =
-      !labelKey && typeof label === "string" ? (config[label]?.label ?? label) : itemConfig?.label;
+      !labelKey && typeof label === "string" ? (config[label]?.label ?? label) : itemConfig?.label
 
     if (labelFormatter) {
       return (
         <div className={cn("font-medium", labelClassName)}>{labelFormatter(value, payload)}</div>
-      );
+      )
     }
 
     if (!value) {
-      return null;
+      return null
     }
 
-    return <div className={cn("font-medium", labelClassName)}>{value}</div>;
-  }, [label, labelFormatter, payload, hideLabel, labelClassName, config, labelKey]);
+    return <div className={cn("font-medium", labelClassName)}>{value}</div>
+  }, [label, labelFormatter, payload, hideLabel, labelClassName, config, labelKey])
 
   if (!active || !payload?.length) {
     // Empty tooltip - to prevent position getting 0.0 so it doesnt animate tooltip every time from 0.0 origin
-    return <span className="p-4" />;
+    return <span className="p-4" />
   }
 
-  const nestLabel = payload.length === 1 && indicator !== "dot";
+  const nestLabel = payload.length === 1 && indicator !== "dot"
 
   return (
     <div
@@ -102,12 +106,12 @@ function ChartTooltipContent({
             const payloadName =
               nameKey && item.payload
                 ? (item.payload as Record<string, unknown>)[nameKey]
-                : undefined;
-            const key = `${payloadName ?? item.name ?? item.dataKey ?? "value"}`;
-            const itemConfig = getPayloadConfigFromPayload(config, item, key);
+                : undefined
+            const key = `${payloadName ?? item.name ?? item.dataKey ?? "value"}`
+            const itemConfig = getPayloadConfigFromPayload(config, item, key)
 
             // Get colors count for this item to determine gradient vs solid
-            const colorsCount = itemConfig ? getColorsCount(itemConfig) : 1;
+            const colorsCount = itemConfig ? getColorsCount(itemConfig) : 1
 
             return (
               <div
@@ -161,25 +165,25 @@ function ChartTooltipContent({
                   </>
                 )}
               </div>
-            );
+            )
           })}
       </div>
     </div>
-  );
+  )
 }
 
 function getIndicatorColorStyle(dataKey: string, colorsCount: number): React.CSSProperties {
   if (colorsCount <= 1) {
-    return { background: `var(--color-${dataKey}-0)` };
+    return { background: `var(--color-${dataKey}-0)` }
   }
 
   // Multiple colors: create linear gradient with evenly distributed stops
   const stops = Array.from({ length: colorsCount }, (_, index) => {
-    const offset = (index / (colorsCount - 1)) * 100;
-    return `var(--color-${dataKey}-${index}) ${offset}%`;
-  }).join(", ");
+    const offset = (index / (colorsCount - 1)) * 100
+    return `var(--color-${dataKey}-${index}) ${offset}%`
+  }).join(", ")
 
-  return { background: `linear-gradient(to right, ${stops})` };
+  return { background: `linear-gradient(to right, ${stops})` }
 }
 
 const ChartTooltip = ({
@@ -187,7 +191,7 @@ const ChartTooltip = ({
   ...props
 }: React.ComponentProps<typeof RechartsPrimitive.Tooltip>) => (
   <RechartsPrimitive.Tooltip animationDuration={animationDuration} {...props} />
-);
+)
 
-export { ChartTooltip, ChartTooltipContent };
-export type { TooltipRoundness, TooltipVariant };
+export type { TooltipRoundness, TooltipVariant }
+export { ChartTooltip, ChartTooltipContent }

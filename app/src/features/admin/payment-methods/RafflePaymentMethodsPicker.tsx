@@ -1,16 +1,13 @@
+import { PAYMENT_METHOD_DEFINITIONS, summarizeAccountInfo } from "@raffle/shared/payment-methods"
+import type { PaymentMethod } from "@raffle/shared/validators"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import {
-  PAYMENT_METHOD_DEFINITIONS,
-  summarizeAccountInfo,
-} from "@raffle/shared/payment-methods"
-import type { PaymentMethod } from "@raffle/shared/validators"
-import type { PaymentMethodAssignment } from "@/features/admin/raffles/types"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { PaymentMethodAssignment } from "@/features/admin/raffles/types"
 import { adminFetch } from "@/lib/admin-fetch"
 import { cn } from "@/lib/utils"
 
@@ -33,8 +30,7 @@ export function RafflePaymentMethodsPicker({
 }: RafflePaymentMethodsPickerProps) {
   const accountsQuery = useQuery({
     queryKey: ["admin", "payment-accounts", "active"],
-    queryFn: () =>
-      adminFetch<PaymentAccount[]>("/api/admin/payment-accounts?active=true"),
+    queryFn: () => adminFetch<PaymentAccount[]>("/api/admin/payment-accounts?active=true"),
   })
 
   const selectedIds = new Set(assignments.map((a) => a.account_id))
@@ -44,16 +40,11 @@ export function RafflePaymentMethodsPicker({
       onChange(assignments.filter((a) => a.account_id !== accountId))
       return
     }
-    onChange([
-      ...assignments,
-      { account_id: accountId, min_tickets: "", is_active: true },
-    ])
+    onChange([...assignments, { account_id: accountId, min_tickets: "", is_active: true }])
   }
 
   function updateAssignment(accountId: number, patch: Partial<PaymentMethodAssignment>) {
-    onChange(
-      assignments.map((a) => (a.account_id === accountId ? { ...a, ...patch } : a)),
-    )
+    onChange(assignments.map((a) => (a.account_id === accountId ? { ...a, ...patch } : a)))
   }
 
   return (
@@ -110,7 +101,8 @@ export function RafflePaymentMethodsPicker({
                     <span className="min-w-0 flex-1">
                       <span className="font-medium">{account.label}</span>
                       <span className="text-muted-foreground mt-0.5 block text-sm">
-                        {def.label} · {summarizeAccountInfo(account.method_type, account.account_info)}
+                        {def.label} ·{" "}
+                        {summarizeAccountInfo(account.method_type, account.account_info)}
                       </span>
                       <span className="mt-1 flex flex-wrap gap-1">
                         <Badge variant="outline" className="text-xs">
@@ -136,8 +128,7 @@ export function RafflePaymentMethodsPicker({
                           }
                         />
                         <FieldDescription>
-                          El comprador solo podrá usar este método si compra al menos esta
-                          cantidad.
+                          El comprador solo podrá usar este método si compra al menos esta cantidad.
                         </FieldDescription>
                       </Field>
                     </div>

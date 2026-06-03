@@ -1,8 +1,8 @@
-import { createFileRoute } from "@tanstack/react-router"
-import { transitionRaffle } from "@/server/raffle-lifecycle.service"
-import { requireAdmin } from "@/lib/auth-utils.server"
-import { SetRaffleStatusInput } from "@raffle/shared/validators"
 import { ValidationError } from "@raffle/shared/errors"
+import { SetRaffleStatusInput } from "@raffle/shared/validators"
+import { createFileRoute } from "@tanstack/react-router"
+import { requireAdmin } from "@/lib/auth-utils.server"
+import { transitionRaffle } from "@/server/raffle-lifecycle.service"
 
 /** @deprecated Prefer POST /lifecycle — kept for compatibility. */
 export const Route = createFileRoute("/api/admin/raffles/$id/status")({
@@ -12,10 +12,7 @@ export const Route = createFileRoute("/api/admin/raffles/$id/status")({
         await requireAdmin(request)
         const parsed = SetRaffleStatusInput.safeParse(await request.json())
         if (!parsed.success) {
-          throw new ValidationError(
-            "Estado de rifa inválido",
-            parsed.error.flatten().fieldErrors,
-          )
+          throw new ValidationError("Estado de rifa inválido", parsed.error.flatten().fieldErrors)
         }
         return Response.json(
           await transitionRaffle(Number(params.id), {

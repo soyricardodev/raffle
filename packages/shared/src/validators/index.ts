@@ -1,22 +1,20 @@
 import { z } from "zod"
-import {
-  isBolivarMethodType,
-  isDollarMethodType,
-} from "../payment-methods/definitions.js"
-import { isValidCustomerCi, CountryScope } from "./buyer-identity.js"
+import { isBolivarMethodType, isDollarMethodType } from "../payment-methods/definitions.js"
+import { CountryScope, isValidCustomerCi } from "./buyer-identity.js"
 import { passwordSchema } from "./password.js"
 
-export { passwordSchema } from "./password.js"
 export {
   ChangePasswordFormInput,
-  validateChangePasswordForm,
   type ChangePasswordPayload,
+  validateChangePasswordForm,
 } from "./change-password.js"
+export { passwordSchema } from "./password.js"
 export { zodIssuesToFieldErrors } from "./zod-utils.js"
 
 // ─── Enums ───────────────────────────────────────────────────
 
 import { PaymentMethod } from "../payment-methods/types.js"
+
 export { PaymentMethod }
 
 export const RaffleStatus = z.enum(["draft", "active", "paused", "finished", "cancelled"])
@@ -128,14 +126,13 @@ export function isBolivarMethod(method: PaymentMethod): boolean {
 export const TicketNumber = z.string().regex(/^\d{4}$/, "Número de boleto inválido (0000-9999)")
 
 export {
+  applyVenezuelanMobilePrefix,
   CedulaPrefix,
   CountryScope,
-  VENEZUELAN_MOBILE_PREFIXES,
-  DEFAULT_VENEZUELAN_MOBILE_PREFIX,
   CustomerCi,
   CustomerEmail,
   CustomerPhone,
-  applyVenezuelanMobilePrefix,
+  DEFAULT_VENEZUELAN_MOBILE_PREFIX,
   formatCustomerCi,
   formatVenezuelanMobile,
   isValidCustomerCi,
@@ -145,6 +142,7 @@ export {
   isVenezuelanMobilePrefix,
   normalizeCountryScope,
   normalizeCustomerCi,
+  type PhoneInputMode,
   parseCustomerCi,
   parseVenezuelanMobilePrefix,
   phoneDisplayValue,
@@ -153,7 +151,7 @@ export {
   splitVenezuelanMobile,
   transitionPhoneScope,
   updateVenezuelanMobileSuffix,
-  type PhoneInputMode,
+  VENEZUELAN_MOBILE_PREFIXES,
   type VenezuelanMobileParts,
   type VenezuelanMobilePrefix,
 } from "./buyer-identity.js"
@@ -203,12 +201,7 @@ export const CreatePurchaseBody = z.object({
   raffleId: z.coerce.number().int().positive(),
   customerName: z.string().trim().min(1, "Ingresa tu nombre").max(200),
   customerPhone: z.string().trim().min(7).max(20),
-  customerEmail: z
-    .string()
-    .trim()
-    .min(1, "Ingresa tu email")
-    .email("Email inválido")
-    .max(100),
+  customerEmail: z.string().trim().min(1, "Ingresa tu email").email("Email inválido").max(100),
   customerCi: z
     .string()
     .trim()
@@ -228,9 +221,7 @@ export const CreatePurchaseBody = z.object({
 
 export type CreatePurchaseBody = z.infer<typeof CreatePurchaseBody>
 
-export function parseCreatePurchaseBody(
-  raw: Record<string, unknown>,
-): CreatePurchaseBody {
+export function parseCreatePurchaseBody(raw: Record<string, unknown>): CreatePurchaseBody {
   return CreatePurchaseBody.parse(raw)
 }
 
@@ -280,10 +271,7 @@ export const CreateRaffleInput = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
   image_url: z.string().optional().nullable(),
-  total_tickets: z
-    .literal(PLATFORM_TOTAL_TICKETS)
-    .optional()
-    .default(PLATFORM_TOTAL_TICKETS),
+  total_tickets: z.literal(PLATFORM_TOTAL_TICKETS).optional().default(PLATFORM_TOTAL_TICKETS),
   price_bs: z.number().positive(),
   price_usd: z.number().positive(),
   min_purchase: z.number().int().min(1).default(1),
@@ -319,11 +307,11 @@ export {
 } from "../payment-methods/schemas.js"
 export {
   CreateRafflePromotionInput,
-  UpdateRafflePromotionInput,
+  discountBpsToPercent,
+  discountPercentToBps,
   PromotionKindSchema,
   PromotionScopeSchema,
-  discountPercentToBps,
-  discountBpsToPercent,
+  UpdateRafflePromotionInput,
 } from "./promotions.js"
 export type CreateRaffleInput = z.infer<typeof CreateRaffleInput>
 

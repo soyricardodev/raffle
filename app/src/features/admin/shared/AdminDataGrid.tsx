@@ -1,6 +1,6 @@
+import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react"
 import { flexRender, type Table as TanStackTable } from "@tanstack/react-table"
 import type { ReactNode } from "react"
-import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -54,10 +54,7 @@ export function AdminDataGrid<TData>({
                 >
                   {header.isPlaceholder
                     ? null
-                    : flexRender(
-                        header.column.columnDef.header,
-                        header.getContext()
-                      )}
+                    : flexRender(header.column.columnDef.header, header.getContext())}
                 </TableHead>
               ))}
             </TableRow>
@@ -74,10 +71,7 @@ export function AdminDataGrid<TData>({
             ))
           ) : rows.length === 0 ? (
             <TableRow>
-              <TableCell
-                colSpan={columnCount}
-                className="h-24 text-center text-muted-foreground"
-              >
+              <TableCell colSpan={columnCount} className="h-24 text-center text-muted-foreground">
                 {emptyMessage}
               </TableCell>
             </TableRow>
@@ -88,7 +82,7 @@ export function AdminDataGrid<TData>({
                 className={cn(
                   "h-9",
                   onRowClick && "cursor-pointer",
-                  getRowClassName?.(row.original)
+                  getRowClassName?.(row.original),
                 )}
                 onClick={() => onRowClick?.(row.original)}
               >

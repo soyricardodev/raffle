@@ -1,8 +1,8 @@
+import { ArrowSquareOut, MagnifyingGlass, Ticket } from "@phosphor-icons/react"
+import { ticketNumberToString } from "@raffle/shared/db/ticket-number"
 import { useQuery } from "@tanstack/react-query"
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router"
-import { ArrowSquareOut, MagnifyingGlass, Ticket } from "@phosphor-icons/react"
 import { useEffect, useState } from "react"
-import { ticketNumberToString } from "@raffle/shared/db/ticket-number"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -15,8 +15,8 @@ import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBa
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import {
-  adminTicketLookupQueryOptions,
   type AdminTicketLookupResult,
+  adminTicketLookupQueryOptions,
 } from "@/features/admin/tickets/admin-ticket-lookup-queries"
 import { formatDate, formatDateTime, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
@@ -50,10 +50,7 @@ export function AdminTicketLookup() {
   const isBusy = lookupQuery.isFetching
   const matches = lookupQuery.data ?? []
   const showEmpty =
-    /^\d{1,4}$/.test(ticket) &&
-    !isBusy &&
-    !lookupQuery.isError &&
-    matches.length === 0
+    /^\d{1,4}$/.test(ticket) && !isBusy && !lookupQuery.isError && matches.length === 0
 
   return (
     <div className="flex flex-col gap-4">
@@ -128,12 +125,9 @@ export function AdminTicketLookup() {
       {showEmpty ? (
         <Card>
           <CardContent className="text-muted-foreground py-8 text-center text-sm">
-            <p className="font-medium text-foreground">
-              No encontramos el boleto {ticket}
-            </p>
+            <p className="font-medium text-foreground">No encontramos el boleto {ticket}</p>
             <p className="mt-1">
-              Puede estar libre, no haberse vendido aún, o haberse liberado tras
-              rechazar la compra.
+              Puede estar libre, no haberse vendido aún, o haberse liberado tras rechazar la compra.
             </p>
           </CardContent>
         </Card>
@@ -155,20 +149,13 @@ type TicketLookupResultCardProps = {
 function TicketLookupResultCard({ match }: TicketLookupResultCardProps) {
   const phone = match.customer_phone.replace(/\s/g, "")
   const email = match.customer_email?.trim()
-  const isCurrentRaffle =
-    match.raffle_status === "active" || match.raffle_status === "paused"
+  const isCurrentRaffle = match.raffle_status === "active" || match.raffle_status === "paused"
 
   return (
-    <Card
-      className={cn(
-        isCurrentRaffle && "border-primary/40 ring-1 ring-primary/20",
-      )}
-    >
+    <Card className={cn(isCurrentRaffle && "border-primary/40 ring-1 ring-primary/20")}>
       <CardHeader className="gap-2 pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <CardTitle className="text-base font-semibold">
-            {match.raffle_name}
-          </CardTitle>
+          <CardTitle className="text-base font-semibold">{match.raffle_name}</CardTitle>
           <div className="flex flex-wrap gap-1.5">
             <RaffleStatusBadge status={match.raffle_status} />
             {isCurrentRaffle ? (

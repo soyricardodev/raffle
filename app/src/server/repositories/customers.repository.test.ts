@@ -1,6 +1,6 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
-import { eq } from "drizzle-orm"
 import { customers } from "@raffle/shared/db"
+import { eq } from "drizzle-orm"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import { findOrCreateCustomer } from "./customers.repository"

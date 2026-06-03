@@ -9,7 +9,7 @@ import {
   XAxis,
   YAxis,
 } from "@/components/evilcharts/charts/bar-chart"
-import { type ChartConfig } from "@/components/evilcharts/ui/chart"
+import type { ChartConfig } from "@/components/evilcharts/ui/chart"
 
 type Row = { method: string; revenue: number; count: number }
 

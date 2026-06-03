@@ -1,5 +1,5 @@
+export { BrevoEmailAdapter } from "./brevo.adapter"
 export { getEmailAdapter, sendEmail } from "./email.service"
-export type { EmailAdapter, SendEmailParams, SendEmailResult } from "./types"
 export { NoopEmailAdapter } from "./noop.adapter"
 export { ResendEmailAdapter } from "./resend.adapter"
-export { BrevoEmailAdapter } from "./brevo.adapter"
+export type { EmailAdapter, SendEmailParams, SendEmailResult } from "./types"

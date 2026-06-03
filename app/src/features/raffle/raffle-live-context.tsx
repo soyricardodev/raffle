@@ -1,9 +1,6 @@
 import type { UseQueryResult } from "@tanstack/react-query"
 import { createContext, useContext } from "react"
-import {
-  useRaffleLiveStatus,
-  type RaffleLiveStatus,
-} from "@/features/raffle/raffle-live-queries"
+import { type RaffleLiveStatus, useRaffleLiveStatus } from "@/features/raffle/raffle-live-queries"
 
 type RaffleLiveQuery = UseQueryResult<RaffleLiveStatus | null, Error>
 
@@ -15,7 +12,11 @@ type RaffleLiveProviderProps = {
   children: React.ReactNode
 }
 
-export function RaffleLiveProvider({ raffleId, enabled = true, children }: RaffleLiveProviderProps) {
+export function RaffleLiveProvider({
+  raffleId,
+  enabled = true,
+  children,
+}: RaffleLiveProviderProps) {
   const live = useRaffleLiveStatus(raffleId, { enabled })
   return <RaffleLiveContext.Provider value={live}>{children}</RaffleLiveContext.Provider>
 }

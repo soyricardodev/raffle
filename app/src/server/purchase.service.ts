@@ -1,28 +1,27 @@
-import { getLogger } from "@/lib/logger"
-import { withRetryTransaction } from "@/lib/db.server"
 import {
-  RaffleNotFoundError,
-  RaffleNotActiveError,
-  RafflePausedError,
-  RaffleFinishedError,
   InsufficientTicketsError,
-  PurchaseNotFoundError,
-  PurchaseNoTicketsError,
-  PurchaseRejectedImmutableError,
   InvalidQuantityError,
+  PurchaseNoTicketsError,
+  PurchaseNotFoundError,
+  PurchaseRejectedImmutableError,
+  RaffleFinishedError,
+  RaffleNotActiveError,
+  RaffleNotFoundError,
+  RafflePausedError,
   ValidationError,
 } from "@raffle/shared/errors"
-import { type PurchaseStatus } from "@raffle/shared/validators"
+import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
+import type { CustomerLocationType, PurchaseStatus } from "@raffle/shared/validators"
+import { formatCustomerCi, parseCustomerCi } from "@raffle/shared/validators/buyer-identity"
+import { withRetryTransaction } from "@/lib/db.server"
+import { getLogger } from "@/lib/logger"
 import * as pauseService from "./pause.service"
+import * as customersRepo from "./repositories/customers.repository"
 import * as purchasesRepo from "./repositories/purchases.repository"
-import * as rafflesRepo from "./repositories/raffles.repository"
-import * as ticketsRepo from "./repositories/tickets.repository"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
-import * as customersRepo from "./repositories/customers.repository"
-import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
-import { formatCustomerCi, parseCustomerCi } from "@raffle/shared/validators/buyer-identity"
-import type { CustomerLocationType } from "@raffle/shared/validators"
+import * as rafflesRepo from "./repositories/raffles.repository"
+import * as ticketsRepo from "./repositories/tickets.repository"
 
 const logger = getLogger()
 
@@ -83,16 +82,9 @@ export async function createPurchase(params: CreatePurchaseParams) {
 
     const paymentMethod = payMethod.method_type
 
-    await purchasesRepo.assertUniquePaymentReference(
-      tx,
-      params.raffleId,
-      params.paymentReference,
-    )
+    await purchasesRepo.assertUniquePaymentReference(tx, params.raffleId, params.paymentReference)
 
-    if (
-      raffle.ticketsAvailable < raffle.minPurchase &&
-      raffle.autoPauseEnabled
-    ) {
+    if (raffle.ticketsAvailable < raffle.minPurchase && raffle.autoPauseEnabled) {
       throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)
     }
 
@@ -162,7 +154,11 @@ export async function createPurchase(params: CreatePurchaseParams) {
   })
 
   logger.info(
-    { purchaseId: result.purchaseId, raffleId: params.raffleId, ticketQuantity: params.ticketQuantity },
+    {
+      purchaseId: result.purchaseId,
+      raffleId: params.raffleId,
+      ticketQuantity: params.ticketQuantity,
+    },
     "purchase:created",
   )
 
@@ -233,7 +229,11 @@ export async function updatePurchaseStatus(
 
   logger.info({ purchaseId, newStatus: status }, "purchase:status_updated")
 
-  if (outcome.status === "rejected" && outcome.autoPauseEnabled && outcome.pauseReason === "auto_full") {
+  if (
+    outcome.status === "rejected" &&
+    outcome.autoPauseEnabled &&
+    outcome.pauseReason === "auto_full"
+  ) {
     const availability = await pauseService.checkTicketAvailability(outcome.raffleId)
     if (availability.available > 0) {
       await pauseService.unpauseRaffle(outcome.raffleId)

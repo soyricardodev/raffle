@@ -1,17 +1,17 @@
-import { describe, it, expect, beforeAll, afterAll } from "vitest"
+import { purchases, raffleBuyerPresence, raffles } from "@raffle/shared/db"
+import { toPublicRecentPurchase } from "@raffle/shared/public-recent-purchase"
 import { eq } from "drizzle-orm"
+import { afterAll, beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
-import { purchases, raffleBuyerPresence, raffles } from "@raffle/shared/db"
+import { getRaffleLiveActivity } from "./live-activity.service"
+import { getRaffleLiveSnapshot } from "./pause.service"
 import {
   BUYER_PRESENCE_TTL_MS,
   countActiveBuyers,
   upsertBuyerPresence,
 } from "./repositories/buyer-presence.repository"
 import { listRecentPurchaseRows } from "./repositories/purchases.repository"
-import { getRaffleLiveActivity } from "./live-activity.service"
-import { getRaffleLiveSnapshot } from "./pause.service"
-import { toPublicRecentPurchase } from "@raffle/shared/public-recent-purchase"
 
 const hasDatabase = Boolean(process.env.DATABASE_URL)
 

@@ -20,12 +20,7 @@ describe("getMinimumPurchasableQuantity", () => {
   })
 
   it("uses lowest payment min that still allows a method", () => {
-    expect(
-      getMinimumPurchasableQuantity(1, [
-        { min_tickets: 10 },
-        { min_tickets: 5 },
-      ]),
-    ).toBe(5)
+    expect(getMinimumPurchasableQuantity(1, [{ min_tickets: 10 }, { min_tickets: 5 }])).toBe(5)
   })
 
   it("never goes below raffle min", () => {

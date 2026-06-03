@@ -1,12 +1,7 @@
 "use client"
 
-import {
-  EvilPieChart,
-  Legend,
-  Pie,
-  Tooltip,
-} from "@/components/evilcharts/charts/pie-chart"
-import { type ChartConfig } from "@/components/evilcharts/ui/chart"
+import { EvilPieChart, Legend, Pie, Tooltip } from "@/components/evilcharts/charts/pie-chart"
+import type { ChartConfig } from "@/components/evilcharts/ui/chart"
 
 type Row = { status: string; count: number }
 
@@ -31,13 +26,7 @@ const chartConfig = {
   },
 } satisfies ChartConfig
 
-export function StatusPieChart({
-  data,
-  isLoading = false,
-}: {
-  data: Row[]
-  isLoading?: boolean
-}) {
+export function StatusPieChart({ data, isLoading = false }: { data: Row[]; isLoading?: boolean }) {
   const chartData = data.map((row) => ({
     name: labels[row.status] ?? row.status,
     status: row.status,

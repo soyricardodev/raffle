@@ -1,3 +1,5 @@
+import { Link } from "@tanstack/react-router"
+import { PartyPopper } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -12,8 +14,6 @@ import { PurchaseSuccessPromoSection } from "@/features/raffle/purchase-form/Pur
 import { PurchaseSuccessTickets } from "@/features/raffle/purchase-form/PurchaseSuccessTickets"
 import { usePurchaseSuccessSheet } from "@/features/raffle/purchase-form/use-purchase-success-sheet"
 import type { PurchaseResult } from "@/features/raffle/types"
-import { Link } from "@tanstack/react-router"
-import { PartyPopper } from "lucide-react"
 
 type PurchaseSuccessDialogProps = {
   result: PurchaseResult | null
@@ -81,7 +81,11 @@ export function PurchaseSuccessDialog({ result, onClose }: PurchaseSuccessDialog
           <Button variant="outline" className="min-h-10 w-full" asChild>
             <Link to="/verificar">Verificar mis boletos</Link>
           </Button>
-          <Button variant="ghost" className="h-9 w-full text-sm" onClick={() => handleOpenChange(false)}>
+          <Button
+            variant="ghost"
+            className="h-9 w-full text-sm"
+            onClick={() => handleOpenChange(false)}
+          >
             Cerrar
           </Button>
         </SheetFooter>

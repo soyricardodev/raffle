@@ -1,20 +1,14 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
-import { Link } from "@tanstack/react-router"
-import { Plus, Pencil, Trash } from "lucide-react"
-import { useState } from "react"
-import { toast } from "sonner"
 import {
   emptyAccountInfoDraft,
   PAYMENT_METHOD_DEFINITIONS,
   summarizeAccountInfo,
 } from "@raffle/shared/payment-methods"
 import type { PaymentMethod } from "@raffle/shared/validators"
-import {
-  PaymentAccountForm,
-  type PaymentAccountFormValues,
-} from "@/features/admin/payment-methods/PaymentAccountForm"
-import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { Link } from "@tanstack/react-router"
+import { Pencil, Plus, Trash } from "lucide-react"
+import { useState } from "react"
+import { toast } from "sonner"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -26,6 +20,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import {
+  PaymentAccountForm,
+  type PaymentAccountFormValues,
+} from "@/features/admin/payment-methods/PaymentAccountForm"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch } from "@/lib/admin-fetch"
 
 type PaymentAccount = {
@@ -182,9 +182,7 @@ export function PaymentAccountsView() {
                 </CardHeader>
                 <CardContent className="flex flex-wrap gap-2 pt-0">
                   <Badge variant="secondary">{def.label}</Badge>
-                  <Badge variant="outline">
-                    {def.currency === "USD" ? "USD" : "Bs"}
-                  </Badge>
+                  <Badge variant="outline">{def.currency === "USD" ? "USD" : "Bs"}</Badge>
                   {!account.is_active ? <Badge variant="outline">Inactivo</Badge> : null}
                 </CardContent>
               </Card>
@@ -210,7 +208,9 @@ export function PaymentAccountsView() {
             <PaymentAccountForm
               key={editing?.id ?? "new"}
               initial={formInitial}
-              allowLegacyTypes={Boolean(editing?.method_type && PAYMENT_METHOD_DEFINITIONS[editing.method_type].legacy)}
+              allowLegacyTypes={Boolean(
+                editing?.method_type && PAYMENT_METHOD_DEFINITIONS[editing.method_type].legacy,
+              )}
               isPending={saveMutation.isPending}
               onCancel={() => setSheetOpen(false)}
               onSubmit={(v) => saveMutation.mutate(v)}
