@@ -10,12 +10,14 @@ type PurchaseTicketsPanelProps = {
   ticketNumbers?: Array<string>
   ticketNumbersCsv?: string
   className?: string
+  embedded?: boolean
 }
 
 export function PurchaseTicketsPanel({
   ticketNumbers,
   ticketNumbersCsv,
   className,
+  embedded = false,
 }: PurchaseTicketsPanelProps) {
   const [query, setQuery] = useState("")
 
@@ -36,57 +38,60 @@ export function PurchaseTicketsPanel({
 
   if (allTickets.length === 0) {
     return (
-      <p className={cn("text-muted-foreground text-xs", className)}>
+      <p className={cn("text-muted-foreground text-[11px]", className)}>
         Sin números asignados todavía.
       </p>
     )
   }
 
   return (
-    <section className={cn("flex flex-col gap-1.5", className)}>
+    <section className={cn("flex flex-col gap-1", className)}>
       <div className="flex items-center justify-between gap-2">
-        <div className="flex items-center gap-1.5">
-          <Ticket className="text-muted-foreground size-3.5 shrink-0" />
-          <h3 className="text-xs font-medium">Boletos</h3>
-          <Badge variant="secondary" className="h-5 px-1.5 tabular-nums">
+        <div className="flex items-center gap-1">
+          <Ticket className="text-muted-foreground size-3 shrink-0" />
+          <h3 className="text-[11px] font-medium uppercase text-muted-foreground">Boletos</h3>
+          <Badge variant="secondary" className="h-4 px-1 text-[10px] tabular-nums">
             {allTickets.length}
           </Badge>
         </div>
         {isFiltering && (
-          <span className="text-muted-foreground text-[11px] tabular-nums">
-            {filteredTickets.length} de {allTickets.length}
+          <span className="text-muted-foreground text-[10px] tabular-nums">
+            {filteredTickets.length}/{allTickets.length}
           </span>
         )}
       </div>
 
       <div className="relative">
-        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2" />
+        <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3 -translate-y-1/2" />
         <Input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Buscar número…"
-          className="h-9 pl-9 text-sm"
+          placeholder="Buscar…"
+          className="h-7 pl-7 text-xs"
           aria-label="Filtrar boletos"
         />
       </div>
 
       <div
-        className="bg-muted/30 max-h-28 overflow-y-auto overscroll-contain rounded-md border p-1.5"
+        className={cn(
+          "max-h-20 overflow-y-auto overscroll-contain rounded-md border p-1",
+          embedded ? "bg-background" : "bg-muted/30",
+        )}
         role="list"
         aria-label="Lista de boletos"
       >
         {filteredTickets.length === 0 ? (
-          <p className="text-muted-foreground px-1 py-6 text-center text-xs">
-            Ningún boleto coincide con &quot;{debouncedQuery.trim()}&quot;
+          <p className="text-muted-foreground px-1 py-3 text-center text-[11px]">
+            Sin coincidencias
           </p>
         ) : (
-          <div className="flex flex-wrap gap-1.5">
+          <div className="flex flex-wrap gap-1">
             {filteredTickets.map((ticket) => (
               <Badge
                 key={ticket}
                 variant="outline"
-                className="font-mono text-xs tabular-nums"
+                className="h-5 px-1 font-mono text-[10px] tabular-nums"
                 role="listitem"
               >
                 {ticket}

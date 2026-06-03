@@ -12,17 +12,20 @@ import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatDateTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 type PurchaseEmailsSectionProps = {
   purchase: PurchaseDetail
+  className?: string
 }
 
-export function PurchaseEmailsSection({ purchase }: PurchaseEmailsSectionProps) {
+export function PurchaseEmailsSection({ purchase, className }: PurchaseEmailsSectionProps) {
   const queryClient = useQueryClient()
   const [confirmSend, setConfirmSend] = useState<"confirmation" | "status" | null>(null)
 
   const emailsQuery = useQuery(adminPurchaseEmailsQueryOptions(purchase.id))
   const logs = emailsQuery.data?.data ?? []
+  const lastLog = logs[0]
   const hasEmail = Boolean(purchase.customer_email?.trim())
 
   const sendMutation = useMutation({
@@ -47,37 +50,37 @@ export function PurchaseEmailsSection({ purchase }: PurchaseEmailsSectionProps) 
   })
 
   return (
-    <div className="rounded-xl border p-3">
-      <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <p className="flex items-center gap-1.5 text-xs font-medium uppercase text-muted-foreground">
-          <EnvelopeSimpleIcon className="size-3.5" />
+    <div className={cn("rounded-lg border px-2 py-1.5", className)}>
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+        <p className="flex shrink-0 items-center gap-1 text-[11px] font-medium uppercase text-muted-foreground">
+          <EnvelopeSimpleIcon className="size-3" />
           Correos
         </p>
-        <div className="flex flex-wrap gap-1">
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1">
           <Button
             type="button"
             variant="outline"
-            size="sm"
+            size="xs"
             disabled={!hasEmail || sendMutation.isPending}
             onClick={() => setConfirmSend("confirmation")}
           >
-            Enviar confirmación
+            Confirmación
           </Button>
           {(purchase.status === "approved" || purchase.status === "rejected") && (
             <Button
               type="button"
               variant="outline"
-              size="sm"
+              size="xs"
               disabled={!hasEmail || sendMutation.isPending}
               onClick={() => setConfirmSend("status")}
             >
-              Enviar estado
+              Estado
             </Button>
           )}
           <Link
             to="/admin/emails"
             search={{ purchase: purchase.id }}
-            className="inline-flex h-8 items-center rounded-lg px-2 text-sm font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
+            className="inline-flex h-6 items-center rounded-lg px-1.5 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           >
             Ver todos
           </Link>
@@ -85,34 +88,25 @@ export function PurchaseEmailsSection({ purchase }: PurchaseEmailsSectionProps) 
       </div>
 
       {!hasEmail ? (
-        <p className="text-muted-foreground text-xs">El cliente no tiene correo registrado.</p>
+        <p className="text-muted-foreground mt-1 text-[11px]">Sin correo del cliente.</p>
       ) : emailsQuery.isLoading ? (
-        <Skeleton className="h-16 w-full rounded-lg" />
-      ) : logs.length === 0 ? (
-        <p className="text-muted-foreground text-xs">Sin envíos registrados para esta compra.</p>
+        <Skeleton className="mt-1 h-5 w-full rounded" />
+      ) : !lastLog ? (
+        <p className="text-muted-foreground mt-1 text-[11px]">Sin envíos registrados.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
-          {logs.slice(0, 3).map((log) => (
-            <li
-              key={log.id}
-              className="flex items-start justify-between gap-2 rounded-lg bg-muted/30 px-2 py-1.5 text-xs"
-            >
-              <div className="min-w-0 flex-1">
-                <p className="font-medium">{emailTypeLabel(log.email_type)}</p>
-                <p className="text-muted-foreground truncate">{log.subject}</p>
-                <p className="text-muted-foreground tabular-nums">
-                  {formatDateTime(String(log.sent_at ?? log.created_at))}
-                </p>
-                {log.error_message ? (
-                  <p className="text-red-600 dark:text-red-400 mt-0.5 line-clamp-2">
-                    {log.error_message}
-                  </p>
-                ) : null}
-              </div>
-              <EmailStatusBadge status={log.status} className="shrink-0" />
-            </li>
-          ))}
-        </ul>
+        <div className="mt-1 flex items-center justify-between gap-2 rounded bg-muted/30 px-1.5 py-0.5 text-[11px]">
+          <span className="min-w-0 truncate">
+            <span className="font-medium">{emailTypeLabel(lastLog.email_type)}</span>
+            <span className="text-muted-foreground">
+              {" · "}
+              {formatDateTime(String(lastLog.sent_at ?? lastLog.created_at))}
+            </span>
+            {logs.length > 1 ? (
+              <span className="text-muted-foreground"> (+{logs.length - 1})</span>
+            ) : null}
+          </span>
+          <EmailStatusBadge status={lastLog.status} className="shrink-0 scale-90" />
+        </div>
       )}
 
       <ConfirmAction

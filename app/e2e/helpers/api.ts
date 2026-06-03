@@ -73,9 +73,12 @@ export async function setPurchaseStatus(
   request: APIRequestContext,
   purchaseId: number,
   status: "approved" | "rejected",
+  notes?: string,
 ): Promise<void> {
+  const data: { status: string; notes?: string } = { status }
+  if (notes) data.notes = notes
   const response = await request.put(`/api/admin/purchases/${purchaseId}/status`, {
-    data: { status },
+    data,
   })
   if (!response.ok()) {
     throw new Error(`status update failed: ${response.status()} ${await response.text()}`)

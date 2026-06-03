@@ -106,10 +106,20 @@ export function AdminPurchasesView() {
   })
 
   const statusMutation = useMutation({
-    mutationFn: async ({ id, status }: { id: number; status: "approved" | "rejected" }) => {
+    mutationFn: async ({
+      id,
+      status,
+      notes,
+    }: {
+      id: number
+      status: "approved" | "rejected"
+      notes?: string
+    }) => {
+      const body: { status: string; notes?: string } = { status }
+      if (notes) body.notes = notes
       return adminFetch(`/api/admin/purchases/${id}/status`, {
         method: "PUT",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       })
     },
     onSuccess: () => {
@@ -322,7 +332,9 @@ export function AdminPurchasesView() {
               loading={purchasesQuery.isPending}
               pending={statusMutation.isPending}
               onView={openPurchase}
-              onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+              onStatusChange={(id, status, notes) =>
+                statusMutation.mutate({ id, status, notes })
+              }
             />
           </div>
           <div className="p-3 md:hidden">
@@ -331,7 +343,9 @@ export function AdminPurchasesView() {
               loading={purchasesQuery.isPending}
               pending={statusMutation.isPending}
               onView={openPurchase}
-              onStatusChange={(id, status) => statusMutation.mutate({ id, status })}
+              onStatusChange={(id, status, notes) =>
+                statusMutation.mutate({ id, status, notes })
+              }
             />
           </div>
           <AdminDataGridPagination

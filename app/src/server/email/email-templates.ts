@@ -1,6 +1,14 @@
 import { fromCents } from "@raffle/shared/db"
 import { isDollarMethod, type EmailType, type PaymentMethod } from "@raffle/shared/validators"
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+}
+
 export type PurchaseEmailContext = {
   purchaseId: number
   customerName: string
@@ -10,6 +18,7 @@ export type PurchaseEmailContext = {
   paymentMethod: string
   raffleName: string
   status?: string
+  notes?: string | null
   ticketNumbers?: Array<string>
 }
 
@@ -23,6 +32,7 @@ export function buildPurchaseEmailContext(
     paymentMethod: string
     raffleName: string
     status?: string
+    notes?: string | null
   },
   ticketNumbers?: Array<string>,
 ): PurchaseEmailContext | null {
@@ -37,6 +47,7 @@ export function buildPurchaseEmailContext(
     paymentMethod: row.paymentMethod,
     raffleName: row.raffleName,
     status: row.status,
+    notes: row.notes ?? null,
     ticketNumbers,
   }
 }
@@ -81,12 +92,17 @@ export function buildEmailForType(
     case "status_update": {
       const status = options?.status ?? (ctx.status === "approved" ? "approved" : "rejected")
       const label = status === "approved" ? "aprobada" : "rechazada"
+      const reasonNote =
+        status === "rejected" && ctx.notes?.trim()
+          ? `<p>Motivo: <strong>${escapeHtml(ctx.notes.trim())}</strong></p>`
+          : ""
       return {
         type,
         subject: `Compra ${label} — ${ctx.raffleName}`,
         html: `
           <p>Hola ${ctx.customerName},</p>
           <p>Tu compra #${ctx.purchaseId} fue <strong>${label}</strong>.</p>
+          ${reasonNote}
           <p>Rifa: <strong>${ctx.raffleName}</strong></p>
           ${ticketsLine}
         `,

@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils"
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
-    <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-0.5 text-sm leading-snug">
+    <div className="grid grid-cols-[72px_1fr] gap-x-2 gap-y-0.5 text-sm leading-snug">
       <span className="text-muted-foreground text-xs">{label}</span>
       <span className="min-w-0 font-medium break-words">{children}</span>
     </div>
@@ -20,9 +20,10 @@ type PurchaseCustomerFactsProps = {
 export function PurchaseCustomerFacts({ purchase, className }: PurchaseCustomerFactsProps) {
   const phone = purchase.customer_phone.replace(/\s/g, "")
   const email = purchase.customer_email?.trim()
+  const notes = purchase.notes?.trim()
 
   return (
-    <div className={cn("flex flex-col gap-1.5", className)}>
+    <div className={cn("flex flex-col gap-1", className)}>
       <Row label="Cliente">{purchase.customer_name}</Row>
       <Row label="Teléfono">
         <a href={`tel:${phone}`} className="text-primary hover:underline">
@@ -45,6 +46,9 @@ export function PurchaseCustomerFacts({ purchase, className }: PurchaseCustomerF
       <Row label="Rifa">{purchase.raffle_name}</Row>
       <Row label="Boletos">{purchase.ticket_quantity}</Row>
       <Row label="Fecha">{formatDateTime(purchase.created_at)}</Row>
+      {notes && purchase.status === "rejected" ? (
+        <Row label="Motivo">{notes}</Row>
+      ) : null}
     </div>
   )
 }

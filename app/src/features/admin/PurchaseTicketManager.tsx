@@ -9,6 +9,7 @@ import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrencyForMethod } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 type TicketAddResult = {
   addedTickets: Array<string>
@@ -38,6 +39,7 @@ type PurchaseApi = {
 type PurchaseTicketManagerProps = {
   purchase: PurchaseDetail
   onUpdated: (patch: Partial<PurchaseDetail>) => void
+  embedded?: boolean
 }
 
 type ConfirmKind = "update" | "reassign" | null
@@ -59,7 +61,11 @@ async function refetchPurchaseDetail(id: number): Promise<Partial<PurchaseDetail
   }
 }
 
-export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketManagerProps) {
+export function PurchaseTicketManager({
+  purchase,
+  onUpdated,
+  embedded = false,
+}: PurchaseTicketManagerProps) {
   const queryClient = useQueryClient()
   const [targetQty, setTargetQty] = useState(purchase.ticket_quantity)
   const [confirm, setConfirm] = useState<ConfirmKind>(null)
@@ -156,90 +162,98 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
   const deltaLabel = delta > 0 ? `+${delta}` : String(delta)
 
   const helpText = hasChange
-    ? `${deltaLabel} boleto(s) · Total aprox. ${estimatedTotal ?? formattedCurrentTotal} (se confirma al guardar)`
-    : `Sin cambios · Total ${formattedCurrentTotal}`
+    ? `${deltaLabel} · ~${estimatedTotal ?? formattedCurrentTotal}`
+    : `Total ${formattedCurrentTotal}`
 
   const updateConfirmDescription =
     estimatedTotal != null
-      ? `Cambiar de ${currentQty} a ${clampedTarget} boleto(s) (${deltaLabel}). Total aprox.: ${estimatedTotal}. El monto final lo calcula el sistema al guardar.`
-      : `Cambiar de ${currentQty} a ${clampedTarget} boleto(s) (${deltaLabel}). El total se recalculará al guardar.`
+      ? `De ${currentQty} a ${clampedTarget} (${deltaLabel}). Total aprox.: ${estimatedTotal}.`
+      : `De ${currentQty} a ${clampedTarget} (${deltaLabel}).`
 
   if (!canAdjust && !canReassign) return null
 
   return (
-    <div className="space-y-3 rounded-lg border bg-muted/20 p-3">
-      <p className="text-xs font-semibold tracking-wide uppercase">Gestionar boletos</p>
+    <div
+      className={cn(
+        embedded ? "flex flex-col gap-2 border-t pt-2" : "space-y-2 rounded-lg border bg-muted/20 p-2",
+      )}
+    >
+      {!embedded && (
+        <p className="text-[11px] font-semibold tracking-wide uppercase text-muted-foreground">
+          Gestionar boletos
+        </p>
+      )}
 
       {canReassign && (
-        <div className="space-y-2">
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            Asigna nuevos números disponibles y deja la compra en pendiente.
+        <div className="flex flex-col gap-1.5">
+          <p className="text-muted-foreground text-[11px] leading-snug">
+            Reasigna números y deja la compra pendiente.
           </p>
           <Button
-            className="min-h-11 w-full"
+            className="h-8 w-full"
             variant="secondary"
+            size="sm"
             disabled={pending}
             onClick={() => setConfirm("reassign")}
           >
-            <RefreshCw className="mr-2 size-4" />
-            Reasignar boletos
+            <RefreshCw className="mr-1.5 size-3.5" />
+            Reasignar
           </Button>
         </div>
       )}
 
       {canAdjust && (
-        <>
-          <div className="space-y-2">
-            <Label htmlFor="ticket-qty" className="text-xs">
-              Boletos en la compra
-            </Label>
-            <div className="flex items-center gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-11 shrink-0"
-                disabled={pending || clampedTarget <= 1}
-                onClick={() => setTargetQty((n) => clampTargetQty(n - 1))}
-                aria-label="Menos"
-              >
-                <Minus className="size-4" />
-              </Button>
-              <Input
-                id="ticket-qty"
-                type="number"
-                min={1}
-                value={clampedTarget}
-                onChange={(e) => {
-                  const parsed = Number(e.target.value)
-                  setTargetQty(
-                    Number.isFinite(parsed) && parsed >= 1 ? clampTargetQty(parsed) : 1,
-                  )
-                }}
-                className="min-h-11 text-center"
-              />
-              <Button
-                type="button"
-                variant="outline"
-                size="icon"
-                className="size-11 shrink-0"
-                disabled={pending || clampedTarget >= MAX_TARGET_QTY}
-                onClick={() => setTargetQty((n) => clampTargetQty(n + 1))}
-                aria-label="Más"
-              >
-                <Plus className="size-4" />
-              </Button>
-            </div>
-            <p className="text-muted-foreground text-xs">{helpText}</p>
+        <div className="flex flex-col gap-1.5">
+          <Label htmlFor="ticket-qty" className="text-[11px] text-muted-foreground">
+            Cantidad
+          </Label>
+          <div className="flex items-center gap-1.5">
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className="shrink-0"
+              disabled={pending || clampedTarget <= 1}
+              onClick={() => setTargetQty((n) => clampTargetQty(n - 1))}
+              aria-label="Menos"
+            >
+              <Minus className="size-3.5" />
+            </Button>
+            <Input
+              id="ticket-qty"
+              type="number"
+              min={1}
+              value={clampedTarget}
+              onChange={(e) => {
+                const parsed = Number(e.target.value)
+                setTargetQty(
+                  Number.isFinite(parsed) && parsed >= 1 ? clampTargetQty(parsed) : 1,
+                )
+              }}
+              className="h-8 text-center text-sm"
+            />
+            <Button
+              type="button"
+              variant="outline"
+              size="icon-sm"
+              className="shrink-0"
+              disabled={pending || clampedTarget >= MAX_TARGET_QTY}
+              onClick={() => setTargetQty((n) => clampTargetQty(n + 1))}
+              aria-label="Más"
+            >
+              <Plus className="size-3.5" />
+            </Button>
           </div>
+          <p className="text-muted-foreground text-[10px]">{helpText}</p>
           <Button
-            className="min-h-11 w-full"
+            className="h-8 w-full"
+            size="sm"
             disabled={pending || !hasChange}
             onClick={() => setConfirm("update")}
           >
             Actualizar boletos
           </Button>
-        </>
+        </div>
       )}
 
       <ConfirmAction

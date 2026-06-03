@@ -21,6 +21,7 @@ async function loadPurchaseEmailContext(purchaseId: number): Promise<PurchaseEma
       totalAmountCents: purchases.totalAmountCents,
       paymentMethod: purchases.paymentMethod,
       status: purchases.status,
+      notes: purchases.notes,
       raffleName: raffles.name,
     })
     .from(purchases)

@@ -24,6 +24,23 @@ describe("email-templates", () => {
     const email = buildEmailForType("status_update", ctx, { status: "approved" })
     expect(email.metadata?.new_status).toBe("approved")
     expect(email.subject).toContain("aprobada")
+    expect(email.html).not.toContain("Motivo:")
+  })
+
+  it("includes rejection reason in status email when notes exist", () => {
+    const email = buildEmailForType(
+      "status_update",
+      { ...ctx, notes: "Pago duplicado" },
+      { status: "rejected" },
+    )
+    expect(email.metadata?.new_status).toBe("rejected")
+    expect(email.html).toContain("Motivo:")
+    expect(email.html).toContain("Pago duplicado")
+  })
+
+  it("omits rejection reason when notes are empty", () => {
+    const email = buildEmailForType("status_update", { ...ctx, notes: "" }, { status: "rejected" })
+    expect(email.html).not.toContain("Motivo:")
   })
 
   it("builds sample test email", () => {

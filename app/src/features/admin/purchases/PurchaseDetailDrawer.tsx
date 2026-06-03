@@ -11,11 +11,12 @@ import {
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
+import { PurchaseEmailsSection } from "@/features/admin/emails/PurchaseEmailsSection"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
-import { PurchaseEmailsSection } from "@/features/admin/emails/PurchaseEmailsSection"
 import { PurchaseCustomerFacts } from "@/features/admin/purchases/PurchaseCustomerFacts"
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
+import { RejectPurchaseDialog } from "@/features/admin/purchases/RejectPurchaseDialog"
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
 import { PurchaseTicketsPanel } from "@/features/admin/purchases/PurchaseTicketsPanel"
 import type { PurchaseDetail, PurchaseRow } from "@/features/admin/purchases/types"
@@ -38,6 +39,7 @@ type PurchaseApi = {
   ticket_quantity: number
   total_amount: number | string
   status: string
+  notes?: string | null
   created_at: string | Date
   raffle_name: string
   ticketNumbers: Array<string>
@@ -56,6 +58,7 @@ function mapApiToDetail(data: PurchaseApi): PurchaseDetail {
     total_amount: data.total_amount,
     payment_method: data.payment_method,
     status: data.status,
+    notes: data.notes ?? undefined,
     created_at:
       typeof data.created_at === "string"
         ? data.created_at
@@ -81,7 +84,7 @@ type PurchaseDetailDrawerProps = {
 
 function PaymentMeta({ purchase }: { purchase: PurchaseDetail }) {
   return (
-    <div className="mb-3 shrink-0 space-y-1 border-b pb-3 text-sm">
+    <div className="mb-2 shrink-0 border-b pb-2 text-sm">
       <div className="flex items-baseline justify-between gap-2">
         <span className="text-muted-foreground text-xs">Total</span>
         <span className="text-lg font-bold tabular-nums">
@@ -97,7 +100,7 @@ function PaymentMeta({ purchase }: { purchase: PurchaseDetail }) {
         </span>
       </div>
       {!purchase.payment_proof_url && (
-        <p className="text-amber-600 dark:text-amber-400 pt-1 text-xs">Sin comprobante adjunto</p>
+        <p className="pt-1 text-xs text-amber-600 dark:text-amber-400">Sin comprobante adjunto</p>
       )}
     </div>
   )
@@ -111,7 +114,8 @@ export function PurchaseDetailDrawer({
   onPurchaseUpdated,
 }: PurchaseDetailDrawerProps) {
   const queryClient = useQueryClient()
-  const [confirm, setConfirm] = useState<"approve" | "reject" | null>(null)
+  const [confirmApprove, setConfirmApprove] = useState(false)
+  const [rejectOpen, setRejectOpen] = useState(false)
   const [localPatch, setLocalPatch] = useState<Partial<PurchaseDetail>>({})
 
   const handlePurchaseUpdated = (patch: Partial<PurchaseDetail>) => {
@@ -132,29 +136,43 @@ export function PurchaseDetailDrawer({
         ? { ...mapRowToDetail(fallbackPurchase), ...localPatch }
         : null
 
-  const isPending = purchase?.status === "pending"
+  const showFooterActions =
+    purchase?.status === "pending" || purchase?.status === "approved"
 
   const statusMutation = useMutation({
-    mutationFn: async (status: "approved" | "rejected") => {
+    mutationFn: async (payload: { status: "approved" | "rejected"; notes?: string }) => {
       if (!purchaseId) throw new Error("Sin compra")
+      const body: { status: string; notes?: string } = { status: payload.status }
+      if (payload.notes) body.notes = payload.notes
       return adminFetch(`/api/admin/purchases/${purchaseId}/status`, {
         method: "PUT",
-        body: JSON.stringify({ status }),
+        body: JSON.stringify(body),
       })
     },
-    onSuccess: (_data, status) => {
-      toast.success(status === "approved" ? "Compra aprobada" : "Compra rechazada")
+    onSuccess: (_data, payload) => {
+      toast.success(payload.status === "approved" ? "Compra aprobada" : "Compra rechazada")
       void queryClient.invalidateQueries({ queryKey: ["admin"] })
-      setConfirm(null)
-      setLocalPatch({})
-      onOpenChange(false)
+      setConfirmApprove(false)
+      setRejectOpen(false)
+      if (payload.status === "approved") {
+        setLocalPatch({})
+        onOpenChange(false)
+      } else {
+        setLocalPatch((prev) => ({
+          ...prev,
+          status: "rejected",
+          notes: payload.notes ?? prev.notes,
+        }))
+        void detailQuery.refetch()
+      }
     },
     onError: (error: Error) => toast.error(error.message),
   })
 
   const handleOpenChange = (next: boolean) => {
     if (!next) {
-      setConfirm(null)
+      setConfirmApprove(false)
+      setRejectOpen(false)
       setLocalPatch({})
     }
     onOpenChange(next)
@@ -175,7 +193,7 @@ export function PurchaseDetailDrawer({
           </div>
         ) : purchase ? (
           <>
-            <SheetHeader className="shrink-0 border-b px-4 py-3">
+            <SheetHeader className="shrink-0 border-b px-4 py-2.5">
               <div className="flex items-center justify-between gap-2 pr-8">
                 <SheetTitle className="text-base">Compra #{purchase.id}</SheetTitle>
                 <PurchaseStatusBadge status={purchase.status} />
@@ -184,58 +202,68 @@ export function PurchaseDetailDrawer({
             </SheetHeader>
 
             <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
-              <div className="flex min-h-0 flex-col gap-3 overflow-y-auto border-b p-4 lg:border-b-0 lg:border-r">
-                <PurchaseCustomerFacts purchase={purchase} />
+              <div className="flex min-h-0 flex-col gap-2 overflow-y-auto border-b p-3 lg:border-b-0 lg:border-r">
+                <PurchaseCustomerFacts purchase={purchase} className="text-sm" />
                 <PurchaseEmailsSection purchase={purchase} />
-                <PurchaseTicketsPanel
-                  ticketNumbers={purchase.ticketNumbers}
-                  ticketNumbersCsv={purchase.ticket_numbers}
-                />
-                <PurchaseTicketManager purchase={purchase} onUpdated={handlePurchaseUpdated} />
+                <section className="rounded-lg border p-2">
+                  <PurchaseTicketsPanel
+                    ticketNumbers={purchase.ticketNumbers}
+                    ticketNumbersCsv={purchase.ticket_numbers}
+                    embedded
+                  />
+                  <PurchaseTicketManager
+                    purchase={purchase}
+                    onUpdated={handlePurchaseUpdated}
+                    embedded
+                  />
+                </section>
               </div>
 
-              <div className="flex min-h-0 flex-col overflow-hidden p-4">
-                <p className="text-muted-foreground mb-2 shrink-0 text-xs font-medium uppercase">
+              <div className="flex min-h-0 flex-col overflow-hidden p-3">
+                <p className="text-muted-foreground mb-1.5 shrink-0 text-xs font-medium uppercase">
                   Pago
                 </p>
                 <PaymentMeta purchase={purchase} />
                 {purchase.payment_proof_url ? (
-                  <PaymentProofPreview url={purchase.payment_proof_url} className="min-h-[200px]" />
+                  <PaymentProofPreview url={purchase.payment_proof_url} className="min-h-[160px]" />
                 ) : null}
               </div>
             </div>
 
-            {isPending && (
+            {showFooterActions && (
               <SheetFooter className="shrink-0 border-t p-0">
                 <PurchaseDrawerActions
-                  pending
+                  status={purchase.status}
                   disabled={statusMutation.isPending}
                   className="w-full"
-                  onApprove={() => setConfirm("approve")}
-                  onReject={() => setConfirm("reject")}
+                  onApprove={
+                    purchase.status === "pending"
+                      ? () => setConfirmApprove(true)
+                      : undefined
+                  }
+                  onReject={() => setRejectOpen(true)}
                 />
               </SheetFooter>
             )}
 
             <ConfirmAction
-              open={confirm === "approve"}
-              onOpenChange={(next) => !next && setConfirm(null)}
+              open={confirmApprove}
+              onOpenChange={setConfirmApprove}
               title="Aprobar compra"
               description={`¿Confirmas la compra #${purchase.id}?`}
               confirmLabel="Aprobar"
               pending={statusMutation.isPending}
-              onConfirm={() => statusMutation.mutate("approved")}
+              onConfirm={() => statusMutation.mutate({ status: "approved" })}
             />
 
-            <ConfirmAction
-              open={confirm === "reject"}
-              onOpenChange={(next) => !next && setConfirm(null)}
-              title="Rechazar compra"
-              description="Los boletos quedarán liberados."
-              confirmLabel="Rechazar"
-              pending={statusMutation.isPending}
-              destructive
-              onConfirm={() => statusMutation.mutate("rejected")}
+            <RejectPurchaseDialog
+              open={rejectOpen}
+              onOpenChange={setRejectOpen}
+              purchaseId={purchase.id}
+              customerName={purchase.customer_name}
+              pending={purchase.status === "pending"}
+              isPending={statusMutation.isPending}
+              onConfirm={(notes) => statusMutation.mutate({ status: "rejected", notes })}
             />
           </>
         ) : null}

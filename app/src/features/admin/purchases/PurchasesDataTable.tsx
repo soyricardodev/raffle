@@ -14,7 +14,7 @@ type PurchasesDataTableProps = {
   loading?: boolean
   pending?: boolean
   onView: (purchase: PurchaseRow) => void
-  onStatusChange: (id: number, status: "approved" | "rejected") => void
+  onStatusChange: (id: number, status: "approved" | "rejected", notes?: string) => void
 }
 
 export function PurchasesDataTable({
@@ -112,7 +112,7 @@ export function PurchasesDataTable({
               pending={pending}
               density="compact"
               onView={() => onView(row.original)}
-              onStatusChange={(status) => onStatusChange(row.original.id, status)}
+              onStatusChange={(status, notes) => onStatusChange(row.original.id, status, notes)}
             />
           </div>
         ),
@@ -192,7 +192,7 @@ export function PurchasesMobileList({
               purchase={purchase}
               pending={pending}
               onView={() => onView(purchase)}
-              onStatusChange={(status) => onStatusChange(purchase.id, status)}
+              onStatusChange={(status, notes) => onStatusChange(purchase.id, status, notes)}
             />
           </div>
         </div>

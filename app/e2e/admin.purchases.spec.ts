@@ -118,6 +118,60 @@ describeWithDb("admin purchases", () => {
     })
 
     await setPurchaseStatus(request, purchase.purchaseId, "approved")
-    await setPurchaseStatus(request, purchase.purchaseId, "rejected")
+    await setPurchaseStatus(request, purchase.purchaseId, "rejected", "Pago duplicado")
+  })
+
+  test("reject approved purchase from detail drawer with duplicate reason", async ({
+    page,
+    request,
+  }) => {
+    test.skip(
+      !hasAdminSession(),
+      "Admin session missing — Fast Login / Better Auth must work (see docs/E2E.md)",
+    )
+
+    await page.goto("/admin/compras", { waitUntil: "domcontentloaded" })
+    await page.waitForURL(/\/(admin\/compras|login)/, { timeout: 15_000 })
+    test.skip(page.url().includes("/login"), "Admin session expired")
+
+    const raffle = await fetchFirstActiveRaffle(request)
+    test.skip(!raffle, "No active raffle — run scripts/seed.ts")
+
+    const name = `E2E Reject Approved ${Date.now()}`
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
+
+    const created = await createPurchase(request, {
+      raffleId: raffle.id,
+      customerName: name,
+      customerPhone: `0414${String(Date.now()).slice(-7)}`,
+      rafflePaymentMethodId,
+      paymentReference: uniqueRef("e2e-reject-approved"),
+      ticketQuantity: 1,
+    })
+
+    await setPurchaseStatus(request, created.purchaseId, "approved")
+
+    await page.goto(`/admin/compras?purchase=${created.purchaseId}`, {
+      waitUntil: "domcontentloaded",
+    })
+    await expect(page.getByRole("heading", { name: `Compra #${created.purchaseId}` })).toBeVisible({
+      timeout: 20_000,
+    })
+
+    await page.getByRole("button", { name: "Rechazar compra" }).first().click()
+    const dialog = page.getByRole("dialog")
+    await expect(dialog).toBeVisible()
+    await dialog.getByRole("button", { name: "Usar: Pago duplicado" }).click()
+
+    const rejectResponse = page.waitForResponse(
+      (res) =>
+        res.url().includes(`/api/admin/purchases/${created.purchaseId}/status`) && res.ok(),
+    )
+    await dialog.getByRole("button", { name: "Rechazar compra" }).click()
+    await rejectResponse
+
+    await expect(page.getByText("Rechazado")).toBeVisible({ timeout: 15_000 })
+    await expect(page.getByText("Motivo")).toBeVisible()
+    await expect(page.getByText("Pago duplicado")).toBeVisible()
   })
 })
