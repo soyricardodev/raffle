@@ -28,6 +28,7 @@ import { RafflesDataTable, RafflesMobileList } from "@/features/admin/raffles/Ra
 import type { RaffleRow } from "@/features/admin/raffles/types"
 import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
+import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { cn } from "@/lib/utils"
@@ -87,7 +88,7 @@ export function AdminRafflesTable() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        title="Mis rifas"
+        title={adminNavTitle("/admin/rifas")}
         description={`${total.toLocaleString("es-VE")} rifa${total === 1 ? "" : "s"} en el sistema`}
         actions={
           <>

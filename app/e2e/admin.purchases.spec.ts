@@ -57,10 +57,15 @@ describeWithDb("admin purchases", () => {
       ticketQuantity: 1,
     })
 
+    await expect(page).toHaveTitle(/Dashboard/i)
     await expect(page.getByRole("heading", { name: "Dashboard" })).toBeVisible({
       timeout: 20_000,
     })
 
+    await page.goto("/admin/compras", { waitUntil: "domcontentloaded" })
+    await expect(page).toHaveTitle(/Compras/i)
+
+    await page.goto("/admin", { waitUntil: "domcontentloaded" })
     await page.locator("select").nth(1).selectOption("pending")
     await page.getByRole("button", { name: "Actualizar" }).click()
 

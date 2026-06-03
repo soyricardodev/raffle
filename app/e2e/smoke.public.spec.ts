@@ -19,6 +19,7 @@ test.describe("public smoke", () => {
 
   test("/verificar page shows verifier UI", async ({ page }) => {
     await page.goto("/verificar", { waitUntil: "domcontentloaded" })
+    await expect(page).toHaveTitle(/Verificar boletos/i)
     await expect(page.getByRole("heading", { name: "Verificar boletos" })).toBeVisible()
     const quickSearch = page.getByRole("button", { name: /ver mis boletos/i })
     const manualSearch = page.getByRole("button", { name: "Buscar boletos" })
@@ -29,6 +30,7 @@ test.describe("public smoke", () => {
     test.skip(!hasDatabase(), "DATABASE_URL required for auth session check on /login")
 
     await page.goto("/login", { waitUntil: "domcontentloaded" })
+    await expect(page).toHaveTitle(/Iniciar sesión/i)
     await expect(page.locator('[data-slot="card-title"]')).toHaveText("Panel administrador")
     await expect(page.getByLabel("Email")).toBeVisible()
     await expect(page.getByLabel("Contraseña")).toBeVisible()

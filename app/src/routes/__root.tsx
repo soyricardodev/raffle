@@ -1,7 +1,12 @@
 import { TanStackDevtools } from "@tanstack/react-devtools"
 import type { QueryClient } from "@tanstack/react-query"
 import { QueryClientProvider } from "@tanstack/react-query"
-import { createRootRouteWithContext, HeadContent, Scripts } from "@tanstack/react-router"
+import {
+  createRootRouteWithContext,
+  HeadContent,
+  ScriptOnce,
+  Scripts,
+} from "@tanstack/react-router"
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools"
 import { useEffect, useLayoutEffect } from "react"
 import { Toaster } from "sonner"
@@ -27,7 +32,6 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { name: "viewport", content: "width=device-width, initial-scale=1" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
-    scripts: [{ children: themeScript }],
   }),
   errorComponent: PublicRouteError,
   notFoundComponent: PublicRouteNotFound,
@@ -60,6 +64,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
+        <ScriptOnce>{themeScript}</ScriptOnce>
         <QueryClientProvider client={queryClient}>
           {children}
           <Toaster richColors closeButton position="top-center" />

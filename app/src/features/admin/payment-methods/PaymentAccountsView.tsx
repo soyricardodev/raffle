@@ -25,6 +25,7 @@ import {
   type PaymentAccountFormValues,
 } from "@/features/admin/payment-methods/PaymentAccountForm"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch } from "@/lib/admin-fetch"
 
@@ -119,7 +120,7 @@ export function PaymentAccountsView() {
   return (
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 pb-24">
       <AdminPageHeader
-        title="Métodos de pago"
+        title={adminNavTitle("/admin/metodos-pago")}
         description="Cuentas reutilizables. Asígnalas al crear o editar una rifa."
       />
 

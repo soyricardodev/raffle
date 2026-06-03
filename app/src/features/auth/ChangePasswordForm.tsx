@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { ADMIN_ACCOUNT_PAGE_TITLE } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { changePassword, signOut } from "@/features/auth/auth-client"
 import { cn } from "@/lib/utils"
@@ -187,7 +188,7 @@ export function AdminAccountPage() {
   return (
     <div className="space-y-6">
       <AdminPageHeader
-        title="Mi cuenta"
+        title={ADMIN_ACCOUNT_PAGE_TITLE}
         description="Gestiona la seguridad de tu acceso al panel administrador."
       />
       <div className="max-w-lg">

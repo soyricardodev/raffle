@@ -4,6 +4,8 @@ import {
   adminRafflesQueryOptions,
   normalizeAdminRaffleFilters,
 } from "@/features/admin/raffles/admin-raffles-queries"
+import { adminNavRouteHead } from "@/features/admin/admin-page-title"
+
 export const Route = createFileRoute("/admin/rifas/")({
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
@@ -11,5 +13,6 @@ export const Route = createFileRoute("/admin/rifas/")({
     await queryClient.ensureQueryData(adminRafflesQueryOptions(filters)).catch(() => null)
     return null
   },
+  head: ({ matches }) => adminNavRouteHead(matches, "/admin/rifas"),
   component: AdminRafflesTable,
 })

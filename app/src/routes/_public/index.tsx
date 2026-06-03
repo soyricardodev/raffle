@@ -13,7 +13,13 @@ import {
 import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
 import { PublicHomeShell } from "@/features/home/public-home-shell"
 import { PublicLayout } from "@/features/layout/PublicLayout"
+import {
+  buildPublicPageHead,
+  siteConfigFromMatches,
+  siteNameFromMatches,
+} from "@/features/layout/document-head"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
+import { resolvePublicSeo } from "@/features/layout/public-seo"
 import type { LivePurchaseActivityVariant } from "@/features/raffle/live-activity-ticker-config"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
@@ -33,6 +39,15 @@ export const Route = createFileRoute("/_public/")({
     }
 
     return { firstActive, published }
+  },
+  head: ({ matches }) => {
+    const seo = resolvePublicSeo(siteConfigFromMatches(matches, "/_public"))
+    const siteName = siteNameFromMatches(matches, "/_public")
+    return buildPublicPageHead({
+      pageTitle: seo.title || "Rifas",
+      siteName,
+      matches,
+    })
   },
   component: HomePage,
 })

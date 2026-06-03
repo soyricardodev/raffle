@@ -3,6 +3,7 @@ import { useEffect } from "react"
 import { z } from "zod"
 import { authClient } from "@/features/auth/auth-client"
 import { LoginForm } from "@/features/auth/LoginForm"
+import { buildPublicPageHead } from "@/features/layout/document-head"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 
 const loginSearchSchema = z.object({
@@ -11,6 +12,12 @@ const loginSearchSchema = z.object({
 
 export const Route = createFileRoute("/_public/login")({
   validateSearch: loginSearchSchema,
+  head: ({ matches }) =>
+    buildPublicPageHead({
+      pageTitle: "Iniciar sesión",
+      robots: "noindex, nofollow",
+      matches,
+    }),
   beforeLoad: async () => {
     const session = await authClient.getSession()
     if (session.data) {

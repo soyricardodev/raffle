@@ -23,6 +23,7 @@ import { PostPurchasePromoConfigTab } from "@/features/admin/config/PostPurchase
 import { SitePreviewCard } from "@/features/admin/config/SitePreviewCard"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
+import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { publicQueryKeys } from "@/features/layout/public-queries"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -113,7 +114,7 @@ export function AdminConfigView() {
   if (configQuery.isError) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
-        <AdminPageHeader title="Configuración" description="Personaliza tu sitio público." />
+        <AdminPageHeader title={adminNavTitle("/admin/config")} description="Personaliza tu sitio público." />
         <Card>
           <CardContent className="flex flex-col gap-3 py-8">
             <p className="text-destructive text-sm">No se pudo cargar la configuración.</p>
@@ -129,7 +130,7 @@ export function AdminConfigView() {
   return (
     <div className="mx-auto max-w-3xl space-y-6 pb-28 lg:pb-6">
       <AdminPageHeader
-        title="Configuración"
+        title={adminNavTitle("/admin/config")}
         description="Marca, inicio, SEO, colores y contacto. La vista previa se actualiza al instante."
       />
 

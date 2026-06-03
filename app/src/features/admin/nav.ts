@@ -19,6 +19,8 @@ export type AdminNavItem = {
   description: string
 }
 
+export const ADMIN_ACCOUNT_PAGE_TITLE = "Mi cuenta"
+
 export const adminNavItems: Array<AdminNavItem> = [
   {
     name: "Dashboard",
@@ -84,3 +86,14 @@ export const adminNavItems: Array<AdminNavItem> = [
     description: "Logs y pruebas",
   },
 ]
+
+export function isAdminNavActive(pathname: string, href: string) {
+  if (href === "/admin") return pathname === "/admin"
+  return pathname === href || pathname.startsWith(`${href}/`)
+}
+
+export function adminNavTitle(href: string): string {
+  const item = adminNavItems.find((entry) => entry.href === href)
+  if (!item) throw new Error(`Unknown admin nav href: ${href}`)
+  return item.name
+}

@@ -1,9 +1,17 @@
 import { MagnifyingGlassIcon } from "@phosphor-icons/react"
 import { createFileRoute } from "@tanstack/react-router"
+import { buildPublicPageHead } from "@/features/layout/document-head"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import { TicketVerifier } from "@/features/verify/TicketVerifier"
 
 export const Route = createFileRoute("/_public/verificar")({
+  head: ({ matches }) =>
+    buildPublicPageHead({
+      pageTitle: "Verificar boletos",
+      description:
+        "Confirma que tus números estén registrados y revisa el estado de tu compra en segundos.",
+      matches,
+    }),
   component: VerifyPage,
 })
 

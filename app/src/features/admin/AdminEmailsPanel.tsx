@@ -36,6 +36,7 @@ import type { EmailLogRow } from "@/features/admin/emails/types"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { AdminDateRangeFilter } from "@/features/admin/shared/AdminDateRangeFilter"
+import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -112,7 +113,7 @@ export function AdminEmailsPanel() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        title="Emails"
+        title={adminNavTitle("/admin/emails")}
         description="Historial de envíos y pruebas"
         actions={
           <Button

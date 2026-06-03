@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Skeleton } from "@/components/ui/skeleton"
 import { PublicLayout } from "@/features/layout/PublicLayout"
+import { buildPublicPageHead, siteNameFromMatches } from "@/features/layout/document-head"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
 import { LivePurchaseActivityTicker } from "@/features/raffle/LivePurchaseActivityTicker"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
@@ -23,6 +24,18 @@ export const Route = createFileRoute("/_public/rifa/$id")({
     }
 
     return { raffle }
+  },
+  head: ({ matches, loaderData }) => {
+    const siteName = siteNameFromMatches(matches, "/_public")
+    const raffle = loaderData?.raffle
+    const pageTitle = raffle?.name?.trim() || "Rifa no encontrada"
+    const description = raffle?.description?.trim() || undefined
+    return buildPublicPageHead({
+      pageTitle,
+      siteName,
+      description,
+      matches,
+    })
   },
   component: RaffleDetailPage,
 })

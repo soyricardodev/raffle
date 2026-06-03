@@ -4,6 +4,7 @@ import {
   adminEmailsQueryOptions,
   normalizeAdminEmailFilters,
 } from "@/features/admin/emails/admin-emails-queries"
+import { adminNavRouteHead } from "@/features/admin/admin-page-title"
 
 type EmailsSearch = {
   status?: string
@@ -29,5 +30,6 @@ export const Route = createFileRoute("/admin/emails")({
     await queryClient.ensureQueryData(adminEmailsQueryOptions(filters)).catch(() => null)
     return null
   },
+  head: ({ matches }) => adminNavRouteHead(matches, "/admin/emails"),
   component: AdminEmailsPanel,
 })

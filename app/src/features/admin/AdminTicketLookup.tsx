@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/input-group"
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
+import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import {
   type AdminTicketLookupResult,
@@ -55,7 +56,7 @@ export function AdminTicketLookup() {
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
-        title="Buscar boleto"
+        title={adminNavTitle("/admin/boletos")}
         description="Consulta el dueño de un número en rifas activas o pasadas."
       />
 

@@ -2,6 +2,7 @@ import type { CreateRaffleInput } from "@raffle/shared/validators"
 import { useMutation } from "@tanstack/react-query"
 import { useNavigate } from "@tanstack/react-router"
 import { toast } from "sonner"
+import { adminNavTitle } from "@/features/admin/nav"
 import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
 import { defaultRaffleFormState } from "@/features/admin/raffles/types"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -27,7 +28,7 @@ export function CreateRaffleForm() {
   return (
     <RaffleForm
       mode="create"
-      title="Nueva rifa"
+      title={adminNavTitle("/admin/crear")}
       description="Configura tu rifa paso a paso. Los boletos son siempre 10.000 (0000-9999)."
       initial={initialState()}
       isPending={createMutation.isPending}

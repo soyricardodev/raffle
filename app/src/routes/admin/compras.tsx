@@ -5,6 +5,7 @@ import {
   adminPurchasesQueryOptions,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
+import { adminNavRouteHead } from "@/features/admin/admin-page-title"
 
 type ComprasSearch = {
   status?: string
@@ -45,5 +46,6 @@ export const Route = createFileRoute("/admin/compras")({
 
     return { defaultRaffleId: defaultRaffleId || null }
   },
+  head: ({ matches }) => adminNavRouteHead(matches, "/admin/compras"),
   component: AdminPurchasesView,
 })

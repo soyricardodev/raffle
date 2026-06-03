@@ -34,7 +34,7 @@ import {
   SidebarRail,
   useSidebar,
 } from "@/components/ui/sidebar"
-import { adminNavItems } from "@/features/admin/nav"
+import { adminNavItems, isAdminNavActive } from "@/features/admin/nav"
 import type { AuthSession, UserRole } from "@/features/auth/types"
 import { type ThemeMode, useTheme } from "@/stores/theme"
 
@@ -50,11 +50,6 @@ const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof SunIco
   { value: "dark", label: "Oscuro", icon: MoonIcon },
   { value: "system", label: "Sistema", icon: DesktopIcon },
 ]
-
-function isNavActive(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin"
-  return pathname === href || pathname.startsWith(`${href}/`)
-}
 
 function userInitials(username: string) {
   const parts = username.trim().split(/\s+/).filter(Boolean)
@@ -195,7 +190,7 @@ export function AdminSidebarNav({ session, siteName, pathname, onLogout }: Admin
             <SidebarMenu>
               {adminNavItems.map((item) => {
                 const Icon = item.icon
-                const active = isNavActive(pathname, item.href)
+                const active = isAdminNavActive(pathname, item.href)
                 return (
                   <SidebarMenuItem key={item.href}>
                     <SidebarMenuButton asChild isActive={active} tooltip={item.name}>

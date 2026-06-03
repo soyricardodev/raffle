@@ -1,9 +1,10 @@
 import { ListIcon } from "@phosphor-icons/react"
-import { Link, useRouterState } from "@tanstack/react-router"
+import { Link, useMatches, useRouterState } from "@tanstack/react-router"
 import { useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { SidebarInset, SidebarProvider, SidebarTrigger, useSidebar } from "@/components/ui/sidebar"
-import { adminNavItems } from "@/features/admin/nav"
+import { adminNavItems, isAdminNavActive } from "@/features/admin/nav"
+import { raffleNameFromMatches, resolveAdminPageTitle } from "@/features/admin/admin-page-title"
 import { AdminSidebarNav } from "@/features/admin/shared/AdminSidebarNav"
 import { signOut } from "@/features/auth/auth-client"
 import type { AuthSession } from "@/features/auth/types"
@@ -13,11 +14,6 @@ import { useSiteConfig } from "@/stores/site-config"
 type AdminLayoutShellProps = {
   session: AuthSession
   children: React.ReactNode
-}
-
-function isNavActive(pathname: string, href: string) {
-  if (href === "/admin") return pathname === "/admin"
-  return pathname === href || pathname.startsWith(`${href}/`)
 }
 
 function MobileSidebarOpenButton() {
@@ -39,6 +35,13 @@ function MobileSidebarOpenButton() {
 
 export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const search = useRouterState({ select: (s) => s.location.search })
+  const matches = useMatches()
+  const pageTitle = resolveAdminPageTitle({
+    pathname,
+    search: search as { tab?: "editar" },
+    raffleName: raffleNameFromMatches(matches),
+  })
   const siteName = useSiteConfig((s) => s.siteInfo.site_name)
   const loaded = useSiteConfig((s) => s.loaded)
   const setFromApi = useSiteConfig((s) => s.setFromApi)
@@ -75,7 +78,7 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
       <SidebarInset>
         <header className="bg-background/95 sticky top-0 z-40 flex h-14 shrink-0 items-center gap-2 border-b px-4 backdrop-blur md:hidden">
           <SidebarTrigger className="-ml-1" />
-          <span className="font-heading truncate font-medium">{siteName}</span>
+          <span className="font-heading truncate font-medium">{pageTitle}</span>
         </header>
 
         <div className="min-w-0 flex-1 pb-[calc(4.5rem+env(safe-area-inset-bottom))] md:pb-0">
@@ -88,7 +91,7 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
         >
           {adminNavItems.slice(0, 4).map((item) => {
             const Icon = item.icon
-            const active = isNavActive(pathname, item.href)
+            const active = isAdminNavActive(pathname, item.href)
             return (
               <Link
                 key={item.href}
