@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
+import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -20,9 +21,9 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import {
-  ADMIN_PURCHASES_PAGE_SIZE,
   adminPurchasesDashboardQueryOptions,
   adminPurchasesQueryOptions,
+  getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
 import { PurchaseDetailDrawer } from "@/features/admin/purchases/PurchaseDetailDrawer"
@@ -30,7 +31,6 @@ import {
   PurchasesDataTable,
   PurchasesMobileList,
 } from "@/features/admin/purchases/PurchasesDataTable"
-import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
@@ -53,7 +53,16 @@ export function AdminPurchasesView() {
     routeSearch.purchase != null && routeSearch.purchase > 0 ? routeSearch.purchase : null
 
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<number | null>(purchaseFromUrl)
-  const filters = useMemo(() => normalizeAdminPurchaseFilters(routeSearch), [routeSearch])
+  const dashboardQuery = useQuery({
+    ...adminPurchasesDashboardQueryOptions(),
+    refetchOnMount: false,
+  })
+  const filterRaffles = dashboardQuery.data?.filter_raffles ?? []
+  const defaultRaffleId = getDefaultAdminPurchasesRaffleId(dashboardQuery.data)
+  const filters = useMemo(
+    () => normalizeAdminPurchaseFilters(routeSearch, { defaultRaffleId }),
+    [defaultRaffleId, routeSearch],
+  )
   const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
 
   const debouncedSearch = useDebouncedValue(searchDraft)
@@ -79,13 +88,6 @@ export function AdminPurchasesView() {
       }),
     })
   }, [debouncedSearch, filters.search, navigate])
-
-  const dashboardQuery = useQuery({
-    ...adminPurchasesDashboardQueryOptions(),
-    refetchOnMount: false,
-  })
-
-  const filterRaffles = dashboardQuery.data?.filter_raffles ?? []
 
   useEffect(() => {
     const id = filters.raffleId
@@ -131,7 +133,7 @@ export function AdminPurchasesView() {
 
   const purchases: Array<PurchaseRow> = purchasesQuery.data?.data ?? []
   const total = purchasesQuery.data?.total ?? 0
-  const pageSize = filters.limit ?? ADMIN_PURCHASES_PAGE_SIZE
+  const pageSize = filters.limit
   const selectedRaffle = filterRaffles.find((r) => String(r.id) === filters.raffleId)
   const hasCustomFilters = Boolean(
     filters.search ||

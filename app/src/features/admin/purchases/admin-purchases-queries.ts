@@ -40,6 +40,11 @@ export const adminPurchasesQueryKeys = {
   list: (filters: AdminPurchaseFilters) => ["admin", "purchases", filters] as const,
 }
 
+export function getDefaultAdminPurchasesRaffleId(dashboard?: AdminDashboardStats | null) {
+  const activeRaffle = dashboard?.filter_raffles.find((raffle) => raffle.status === "active")
+  return activeRaffle ? String(activeRaffle.id) : null
+}
+
 export const fetchAdminPurchasesDashboard = createServerFn({ method: "GET" })
   .middleware([requireAdminMiddleware])
   .handler(async () => {
@@ -64,8 +69,12 @@ export const fetchAdminPurchases = createServerFn({ method: "POST" })
 
 export function normalizeAdminPurchaseFilters(
   search: AdminPurchaseSearchParams,
+  options?: { defaultRaffleId?: string | null },
 ): AdminPurchaseFilters {
-  const raffleId = search.raffle_id === "all" || !search.raffle_id ? null : search.raffle_id
+  const raffleId =
+    search.raffle_id === "all"
+      ? null
+      : search.raffle_id || options?.defaultRaffleId || null
 
   return AdminPurchasesInput.parse({
     limit: search.limit ?? ADMIN_PURCHASES_PAGE_SIZE,

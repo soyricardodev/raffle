@@ -1,7 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { AdminPurchasesView } from "@/features/admin/AdminPurchasesView"
 import {
+  adminPurchasesDashboardQueryOptions,
   adminPurchasesQueryOptions,
+  getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
 import { adminNavRouteHead } from "@/features/admin/admin-page-title"
@@ -33,7 +35,12 @@ export const Route = createFileRoute("/admin/compras")({
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
-    const filters = normalizeAdminPurchaseFilters(deps)
+    const dashboard = await queryClient
+      .ensureQueryData(adminPurchasesDashboardQueryOptions())
+      .catch(() => null)
+    const filters = normalizeAdminPurchaseFilters(deps, {
+      defaultRaffleId: getDefaultAdminPurchasesRaffleId(dashboard),
+    })
     await queryClient.ensureQueryData(adminPurchasesQueryOptions(filters)).catch(() => null)
   },
   head: ({ matches }) => adminNavRouteHead(matches, "/admin/compras"),
