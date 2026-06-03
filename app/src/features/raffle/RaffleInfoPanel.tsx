@@ -1,11 +1,10 @@
-import { CalendarDays, Pause, Ticket, TrendingUp } from "lucide-react"
+import { CalendarDays, Pause, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { SalesProgressBar } from "@/features/home/SalesProgressBar"
 import { useRaffleSalesProgress } from "@/features/home/use-raffle-sales-progress"
 import { PromotionCountdown } from "@/features/raffle/PromotionCountdown"
 import type { RafflePricing } from "@/features/raffle/promotion-types"
 import type { raffleTicketsInput } from "@/features/raffle/raffle-landing-types"
-import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
 import { getRaffleStatusClass, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -15,7 +14,6 @@ type RaffleInfoPanelProps = {
   description?: string | null
   status?: string
   tickets: ReturnType<typeof raffleTicketsInput>
-  ticketsAvailable: number | string
   drawDate?: string | null
   daysRemaining?: number | null
   priceBs: number | string
@@ -27,10 +25,6 @@ type RaffleInfoPanelProps = {
   showStatusBadge?: boolean
   headingLevel?: 1 | 2
   descriptionLineClamp?: number | false
-}
-
-function formatCount(value: number) {
-  return new Intl.NumberFormat("es-VE").format(value)
 }
 
 function formatPrice(amount: number, currency: "Bs" | "USD") {
@@ -47,7 +41,6 @@ export function RaffleInfoPanel({
   description,
   status = "active",
   tickets,
-  ticketsAvailable,
   drawDate,
   daysRemaining,
   priceBs,
@@ -60,11 +53,8 @@ export function RaffleInfoPanel({
   descriptionLineClamp = 5,
 }: RaffleInfoPanelProps) {
   const progress = useRaffleSalesProgress({ raffleId, raffle: tickets, liveEnabled })
-  const live = useRaffleLiveDataOrFetch(raffleId, { enabled: liveEnabled })
   const isPaused = status === "paused"
   const Heading = headingLevel === 1 ? "h1" : "h2"
-
-  const available = live.data?.availability.available ?? Math.max(0, Number(ticketsAvailable) || 0)
 
   const hasScheduledDraw = Boolean(drawDate)
   const showDrawCountdown =
@@ -133,56 +123,45 @@ export function RaffleInfoPanel({
 
       {showProgress ? <SalesProgressBar progress={progress} variant="inline" animated /> : null}
 
-      <div
-        className={cn(
-          "grid gap-2",
-          showDrawCountdown || showSoldStat ? "grid-cols-2" : "grid-cols-1",
-        )}
-      >
-        <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
-          <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
-            <Ticket className="size-4" aria-hidden />
-          </span>
-          <div className="min-w-0">
-            <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-              Disponibles
-            </p>
-            <p className="font-semibold tabular-nums" aria-live="polite">
-              {formatCount(available)}
-            </p>
-          </div>
+      {showDrawCountdown || showSoldStat ? (
+        <div
+          className={cn(
+            "grid gap-2",
+            showDrawCountdown && showSoldStat ? "grid-cols-2" : "grid-cols-1",
+          )}
+        >
+          {showDrawCountdown ? (
+            <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+              <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
+                <CalendarDays className="size-4" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+                  Sorteo en
+                </p>
+                <p className="font-semibold tabular-nums">
+                  {daysRemaining! > 0 ? `${daysRemaining} días` : "Hoy"}
+                </p>
+              </div>
+            </div>
+          ) : null}
+          {showSoldStat ? (
+            <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
+              <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
+                <TrendingUp className="size-4" aria-hidden />
+              </span>
+              <div className="min-w-0">
+                <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
+                  Vendidos
+                </p>
+                <p className="font-semibold tabular-nums" aria-live="polite">
+                  {progress.percentage.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          ) : null}
         </div>
-        {showDrawCountdown ? (
-          <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
-            <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
-              <CalendarDays className="size-4" aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-                Sorteo en
-              </p>
-              <p className="font-semibold tabular-nums">
-                {daysRemaining! > 0 ? `${daysRemaining} días` : "Hoy"}
-              </p>
-            </div>
-          </div>
-        ) : null}
-        {showSoldStat ? (
-          <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
-            <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
-              <TrendingUp className="size-4" aria-hidden />
-            </span>
-            <div className="min-w-0">
-              <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-                Vendidos
-              </p>
-              <p className="font-semibold tabular-nums" aria-live="polite">
-                {progress.percentage.toFixed(1)}%
-              </p>
-            </div>
-          </div>
-        ) : null}
-      </div>
+      ) : null}
 
       <div className="rounded-xl border bg-card p-1 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2">

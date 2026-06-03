@@ -50,7 +50,6 @@ export function RaffleActiveSection({
         description={raffle.description}
         status={raffle.status}
         tickets={tickets}
-        ticketsAvailable={raffle.tickets_available}
         drawDate={raffle.draw_date}
         daysRemaining={raffle.days_remaining}
         priceBs={raffle.price_bs}
