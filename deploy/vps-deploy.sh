@@ -47,6 +47,37 @@ fi
 log() { echo "[deploy] $*"; }
 die() { echo "[deploy] ERROR: $*" >&2; exit 1; }
 
+ensure_build_resources() {
+  local mem_kb swap_kb total_mb swap_size
+  mem_kb="$(awk '/MemTotal/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0)"
+  swap_kb="$(awk '/SwapTotal/ { print $2 }' /proc/meminfo 2>/dev/null || echo 0)"
+  total_mb=$(((mem_kb + swap_kb) / 1024))
+  swap_size="${BUILD_SWAP_SIZE:-4G}"
+
+  log "Memoria build: RAM+swap=${total_mb}MB (swap=$((swap_kb / 1024))MB)"
+
+  if [[ "${AUTO_SWAP:-1}" == "1" && "$total_mb" -lt 3500 ]]; then
+    if ! swapon --show=NAME | grep -qx '/swapfile'; then
+      log "RAM+swap bajo para Vite; creando swap temporal /swapfile (${swap_size})"
+      if sudo fallocate -l "$swap_size" /swapfile 2>/dev/null; then
+        true
+      else
+        log "fallocate falló; usando dd para crear /swapfile"
+        sudo dd if=/dev/zero of=/swapfile bs=1M count="${BUILD_SWAP_MB:-4096}" status=progress
+      fi
+      sudo chmod 600 /swapfile
+      sudo mkswap /swapfile >/dev/null
+      sudo swapon /swapfile
+      swapon --show
+    else
+      log "Swap /swapfile ya está activo"
+    fi
+  fi
+
+  export NODE_OPTIONS="${NODE_OPTIONS:---max-old-space-size=${NODE_MAX_OLD_SPACE_SIZE:-3072}}"
+  log "NODE_OPTIONS=$NODE_OPTIONS"
+}
+
 [[ -f "$ENV_FILE" ]] || die "Falta $ENV_FILE — copia deploy/env.yoiberifas.example o deploy/env.production.example"
 
 # shellcheck disable=SC1090
@@ -111,6 +142,7 @@ fi
 if [[ "${SKIP_BUILD:-0}" != "1" ]]; then
   log "Build producción"
   export NODE_ENV=production
+  ensure_build_resources
   pnpm build
 fi
 

@@ -59,6 +59,19 @@ bash deploy/vps-yoiberifas-full.sh --force-db --skip-nginx
 bash deploy/vps-yoiberifas-full.sh --skip-migration
 ```
 
+## Si el build falla por memoria
+
+La migración ya queda en `~/raffle/data/raffle.db`; no la repitas. Trae el fix y reintenta solo build + servicio:
+
+```bash
+cd ~/raffle
+git pull origin master
+AUTO_SWAP=1 BUILD_SWAP_SIZE=4G NODE_MAX_OLD_SPACE_SIZE=3072 \
+  bash deploy/vps-yoiberifas-full.sh --skip-migration --skip-nginx
+```
+
+El script crea `/swapfile` si RAM+swap es bajo y configura `NODE_OPTIONS` para Vite.
+
 ## Requisitos en el VPS
 
 - `~/raffle-app/backend/.env` con `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME`
