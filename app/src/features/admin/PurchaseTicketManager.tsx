@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { Minus, Plus, RefreshCw } from "lucide-react"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -40,7 +40,13 @@ type PurchaseTicketManagerProps = {
   onUpdated: (patch: Partial<PurchaseDetail>) => void
 }
 
-type ConfirmKind = "add" | "remove" | "reassign" | null
+type ConfirmKind = "update" | "reassign" | null
+
+const MAX_TARGET_QTY = 500
+
+function clampTargetQty(value: number): number {
+  return Math.max(1, Math.min(value, MAX_TARGET_QTY))
+}
 
 async function refetchPurchaseDetail(id: number): Promise<Partial<PurchaseDetail>> {
   const data = await adminFetch<PurchaseApi>(`/api/admin/purchases/${id}`)
@@ -55,10 +61,39 @@ async function refetchPurchaseDetail(id: number): Promise<Partial<PurchaseDetail
 
 export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketManagerProps) {
   const queryClient = useQueryClient()
-  const [quantity, setQuantity] = useState(1)
+  const [targetQty, setTargetQty] = useState(purchase.ticket_quantity)
   const [confirm, setConfirm] = useState<ConfirmKind>(null)
 
-  const qty = Math.max(1, Math.min(quantity, 500))
+  const currentQty = purchase.ticket_quantity
+
+  useEffect(() => {
+    setTargetQty(currentQty)
+  }, [purchase.id, currentQty])
+
+  const clampedTarget = clampTargetQty(targetQty)
+  const delta = clampedTarget - currentQty
+  const hasChange = delta !== 0
+  const isDecrease = delta < 0
+
+  useEffect(() => {
+    if (confirm === "update" && !hasChange) {
+      setConfirm(null)
+    }
+  }, [confirm, hasChange])
+
+  const formattedCurrentTotal = formatCurrencyForMethod(
+    purchase.total_amount,
+    purchase.payment_method,
+  )
+
+  const totalAmount = Number(purchase.total_amount)
+  const unitPrice =
+    currentQty > 0 && Number.isFinite(totalAmount) ? totalAmount / currentQty : null
+
+  const estimatedTotal =
+    unitPrice != null && hasChange
+      ? formatCurrencyForMethod(unitPrice * clampedTarget, purchase.payment_method)
+      : null
 
   const syncAfterChange = async (message: string) => {
     toast.success(message)
@@ -68,26 +103,37 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
     setConfirm(null)
   }
 
-  const addMutation = useMutation({
-    mutationFn: () =>
-      adminFetch<TicketAddResult>(`/api/admin/purchases/${purchase.id}/tickets/add`, {
-        method: "PUT",
-        body: JSON.stringify({ quantity: qty }),
-      }),
-    onSuccess: async (result) => {
-      await syncAfterChange(`${result.addedTickets.length} boleto(s) agregado(s)`)
+  const adjustMutation = useMutation({
+    mutationFn: async (adjustDelta: number) => {
+      if (adjustDelta === 0) {
+        throw new Error("Sin cambios en la cantidad de boletos")
+      }
+      const absDelta = Math.abs(adjustDelta)
+      if (adjustDelta > 0) {
+        const result = await adminFetch<TicketAddResult>(
+          `/api/admin/purchases/${purchase.id}/tickets/add`,
+          {
+            method: "PUT",
+            body: JSON.stringify({ quantity: absDelta }),
+          },
+        )
+        return { kind: "add" as const, result }
+      }
+      const result = await adminFetch<TicketRemoveResult>(
+        `/api/admin/purchases/${purchase.id}/tickets/remove`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ quantity: absDelta }),
+        },
+      )
+      return { kind: "remove" as const, result }
     },
-    onError: (error: Error) => toast.error(error.message),
-  })
-
-  const removeMutation = useMutation({
-    mutationFn: () =>
-      adminFetch<TicketRemoveResult>(`/api/admin/purchases/${purchase.id}/tickets/remove`, {
-        method: "PUT",
-        body: JSON.stringify({ quantity: qty }),
-      }),
-    onSuccess: async (result) => {
-      await syncAfterChange(`${result.removedTickets.length} boleto(s) eliminado(s)`)
+    onSuccess: async (data) => {
+      const message =
+        data.kind === "add"
+          ? `${data.result.addedTickets.length} boleto(s) agregado(s)`
+          : `${data.result.removedTickets.length} boleto(s) eliminado(s)`
+      await syncAfterChange(message)
     },
     onError: (error: Error) => toast.error(error.message),
   })
@@ -103,10 +149,20 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
     onError: (error: Error) => toast.error(error.message),
   })
 
-  const pending = addMutation.isPending || removeMutation.isPending || reassignMutation.isPending
+  const pending = adjustMutation.isPending || reassignMutation.isPending
   const canAdjust = purchase.status === "approved" || purchase.status === "pending"
   const canReassign = purchase.status === "rejected"
-  const maxRemove = Math.max(1, purchase.ticket_quantity - 1)
+
+  const deltaLabel = delta > 0 ? `+${delta}` : String(delta)
+
+  const helpText = hasChange
+    ? `${deltaLabel} boleto(s) · Total aprox. ${estimatedTotal ?? formattedCurrentTotal} (se confirma al guardar)`
+    : `Sin cambios · Total ${formattedCurrentTotal}`
+
+  const updateConfirmDescription =
+    estimatedTotal != null
+      ? `Cambiar de ${currentQty} a ${clampedTarget} boleto(s) (${deltaLabel}). Total aprox.: ${estimatedTotal}. El monto final lo calcula el sistema al guardar.`
+      : `Cambiar de ${currentQty} a ${clampedTarget} boleto(s) (${deltaLabel}). El total se recalculará al guardar.`
 
   if (!canAdjust && !canReassign) return null
 
@@ -135,7 +191,7 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
         <>
           <div className="space-y-2">
             <Label htmlFor="ticket-qty" className="text-xs">
-              Cantidad a agregar o quitar
+              Boletos en la compra
             </Label>
             <div className="flex items-center gap-2">
               <Button
@@ -143,8 +199,8 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
                 variant="outline"
                 size="icon"
                 className="size-11 shrink-0"
-                disabled={pending || qty <= 1}
-                onClick={() => setQuantity((n) => Math.max(1, n - 1))}
+                disabled={pending || clampedTarget <= 1}
+                onClick={() => setTargetQty((n) => clampTargetQty(n - 1))}
                 aria-label="Menos"
               >
                 <Minus className="size-4" />
@@ -153,9 +209,13 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
                 id="ticket-qty"
                 type="number"
                 min={1}
-                max={maxRemove}
-                value={qty}
-                onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+                value={clampedTarget}
+                onChange={(e) => {
+                  const parsed = Number(e.target.value)
+                  setTargetQty(
+                    Number.isFinite(parsed) && parsed >= 1 ? clampTargetQty(parsed) : 1,
+                  )
+                }}
                 className="min-h-11 text-center"
               />
               <Button
@@ -163,53 +223,41 @@ export function PurchaseTicketManager({ purchase, onUpdated }: PurchaseTicketMan
                 variant="outline"
                 size="icon"
                 className="size-11 shrink-0"
-                disabled={pending}
-                onClick={() => setQuantity((n) => n + 1)}
+                disabled={pending || clampedTarget >= MAX_TARGET_QTY}
+                onClick={() => setTargetQty((n) => clampTargetQty(n + 1))}
                 aria-label="Más"
               >
                 <Plus className="size-4" />
               </Button>
             </div>
-            <p className="text-muted-foreground text-xs">
-              Actual: {purchase.ticket_quantity} ·{" "}
-              {formatCurrencyForMethod(purchase.total_amount, purchase.payment_method)}
-            </p>
+            <p className="text-muted-foreground text-xs">{helpText}</p>
           </div>
-          <div className="grid grid-cols-2 gap-2">
-            <Button className="min-h-11" disabled={pending} onClick={() => setConfirm("add")}>
-              Agregar
-            </Button>
-            <Button
-              variant="outline"
-              className="min-h-11"
-              disabled={pending || qty >= purchase.ticket_quantity}
-              onClick={() => setConfirm("remove")}
-            >
-              Quitar
-            </Button>
-          </div>
+          <Button
+            className="min-h-11 w-full"
+            disabled={pending || !hasChange}
+            onClick={() => setConfirm("update")}
+          >
+            Actualizar boletos
+          </Button>
         </>
       )}
 
       <ConfirmAction
-        open={confirm === "add"}
+        open={confirm === "update"}
         onOpenChange={(open) => !open && setConfirm(null)}
-        title="Agregar boletos"
-        description={`¿Agregar ${qty} boleto(s) a la compra #${purchase.id}? El total se actualizará.`}
-        confirmLabel="Agregar"
+        title="Actualizar boletos"
+        description={updateConfirmDescription}
+        confirmLabel="Actualizar"
         pending={pending}
-        onConfirm={() => addMutation.mutate()}
-      />
-
-      <ConfirmAction
-        open={confirm === "remove"}
-        onOpenChange={(open) => !open && setConfirm(null)}
-        title="Quitar boletos"
-        description={`¿Quitar ${qty} boleto(s) de la compra #${purchase.id}?`}
-        confirmLabel="Quitar"
-        pending={pending}
-        destructive
-        onConfirm={() => removeMutation.mutate()}
+        destructive={isDecrease}
+        onConfirm={() => {
+          const adjustDelta = clampTargetQty(targetQty) - purchase.ticket_quantity
+          if (adjustDelta === 0) {
+            setConfirm(null)
+            return
+          }
+          adjustMutation.mutate(adjustDelta)
+        }}
       />
 
       <ConfirmAction
