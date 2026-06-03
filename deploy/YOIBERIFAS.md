@@ -6,7 +6,7 @@ Desde el VPS como `admin`, con legacy en `~/raffle-app` y v2 en `~/raffle`:
 
 ```bash
 cd ~/raffle
-git pull origin main   # o clona la primera vez
+git pull origin master   # o clona la primera vez
 bash deploy/vps-yoiberifas-full.sh
 ```
 

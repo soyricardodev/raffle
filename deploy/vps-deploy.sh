@@ -8,7 +8,7 @@
 #   RAFFLE_ROOT=/home/admin/raffle   Raíz del repo (auto-detectada si omites)
 #   ENV_FILE=/home/admin/raffle/.env
 #   GIT_REPO=https://github.com/USER/raffle.git   Solo HTTPS si no tienes SSH key
-#   GIT_BRANCH=main
+#   GIT_BRANCH=master
 #   SKIP_BUILD=1
 #   SKIP_MIGRATE=1
 #   SKIP_PULL=1          Útil si el código ya está en disco (sin git remoto)
@@ -21,7 +21,7 @@ DEFAULT_REPO="$(cd "$SCRIPT_DIR/.." && pwd)"
 
 RAFFLE_ROOT="${RAFFLE_ROOT:-$DEFAULT_REPO}"
 GIT_REPO="${GIT_REPO:-}"
-GIT_BRANCH="${GIT_BRANCH:-main}"
+GIT_BRANCH="${GIT_BRANCH:-master}"
 SERVICE_NAME="${SERVICE_NAME:-raffle}"
 
 # Repo en RAFFLE_ROOT o en RAFFLE_ROOT/src (layout /opt/raffle)
@@ -60,6 +60,13 @@ command -v bun >/dev/null 2>&1 || die "Instala Bun: curl -fsSL https://bun.sh/in
 # Clone solo si no hay repo y se pasó GIT_REPO
 if [[ ! -d "$SRC_DIR/.git" ]]; then
   if [[ -n "$GIT_REPO" ]]; then
+    if ! git ls-remote --exit-code --heads "$GIT_REPO" "$GIT_BRANCH" >/dev/null 2>&1; then
+      FALLBACK_BRANCH="$(git ls-remote --symref "$GIT_REPO" HEAD | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2; exit }')"
+      if [[ -n "$FALLBACK_BRANCH" ]]; then
+        log "Rama '$GIT_BRANCH' no existe en remote — usando '$FALLBACK_BRANCH'"
+        GIT_BRANCH="$FALLBACK_BRANCH"
+      fi
+    fi
     log "Clonando $GIT_REPO → $SRC_DIR"
     mkdir -p "$(dirname "$SRC_DIR")"
     git clone --branch "$GIT_BRANCH" "$GIT_REPO" "$SRC_DIR"
@@ -73,6 +80,13 @@ cd "$SRC_DIR"
 if [[ "${SKIP_PULL:-0}" != "1" ]]; then
   if git remote get-url origin &>/dev/null; then
     log "git pull ($GIT_BRANCH)"
+    if ! git ls-remote --exit-code --heads origin "$GIT_BRANCH" >/dev/null 2>&1; then
+      FALLBACK_BRANCH="$(git ls-remote --symref origin HEAD | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2; exit }')"
+      if [[ -n "$FALLBACK_BRANCH" ]]; then
+        log "Rama '$GIT_BRANCH' no existe en origin — usando '$FALLBACK_BRANCH'"
+        GIT_BRANCH="$FALLBACK_BRANCH"
+      fi
+    fi
     git fetch origin "$GIT_BRANCH" 2>/dev/null || log "WARN: git fetch falló (¿sin SSH key? usa GIT_REPO=https://... o SKIP_PULL=1)"
     git checkout "$GIT_BRANCH" 2>/dev/null || true
     git pull --ff-only origin "$GIT_BRANCH" 2>/dev/null || log "WARN: git pull falló — continúo con código local (SKIP_PULL=1 para silenciar)"

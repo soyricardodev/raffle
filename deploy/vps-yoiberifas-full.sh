@@ -19,7 +19,7 @@ LEGACY_ROOT="${LEGACY_ROOT:-$HOME/raffle-app}"
 LEGACY_ENV="${LEGACY_ENV:-$LEGACY_ROOT/backend/.env}"
 DOMAIN="${DOMAIN:-yoiberifas.com}"
 GIT_REPO="${GIT_REPO:-https://github.com/soyricardodev/raffle.git}"
-GIT_BRANCH="${GIT_BRANCH:-main}"
+GIT_BRANCH="${GIT_BRANCH:-master}"
 SERVICE_NAME="${SERVICE_NAME:-raffle}"
 NGINX_SITE="${NGINX_SITE:-/etc/nginx/sites-available/raffle-app}"
 
@@ -109,6 +109,15 @@ cd "$RAFFLE_ROOT"
 if [[ "$SKIP_GIT" != "1" ]]; then
   log "=== 1/9 git pull ==="
   git remote set-url origin "$GIT_REPO" 2>/dev/null || git remote add origin "$GIT_REPO"
+  if ! git ls-remote --exit-code --heads origin "$GIT_BRANCH" >/dev/null 2>&1; then
+    FALLBACK_BRANCH="$(git ls-remote --symref origin HEAD | awk '/^ref:/ { sub("refs/heads/", "", $2); print $2; exit }')"
+    if [[ -n "$FALLBACK_BRANCH" ]]; then
+      log "Rama '$GIT_BRANCH' no existe en origin — usando '$FALLBACK_BRANCH'"
+      GIT_BRANCH="$FALLBACK_BRANCH"
+    else
+      die "No existe la rama '$GIT_BRANCH' en origin y no pude detectar la rama default"
+    fi
+  fi
   git fetch origin "$GIT_BRANCH"
   git checkout "$GIT_BRANCH" 2>/dev/null || git checkout -b "$GIT_BRANCH"
   git pull --ff-only origin "$GIT_BRANCH"
