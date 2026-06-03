@@ -1,10 +1,9 @@
-import { ANALYTICS_PERIOD_PRESETS } from "@raffle/shared/analytics"
 import type { AnalyticsPeriodState } from "@raffle/shared/analytics"
-import { Download } from "lucide-react"
+import { Download } from "@phosphor-icons/react"
 import { AnalyticsPeriodPresets } from "@/features/admin/analytics/AnalyticsPeriodPresets"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
+import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
 
 type AnalyticsPeriodFilterProps = {
   value: AnalyticsPeriodState
@@ -19,10 +18,32 @@ export function AnalyticsPeriodFilter({
   onExport,
   exportDisabled,
 }: AnalyticsPeriodFilterProps) {
+  const customStart = value.kind === "custom" ? value.from : undefined
+  const customEnd = value.kind === "custom" ? value.to : undefined
+
   return (
     <div className="flex flex-col gap-3">
       <div className="flex flex-wrap items-center gap-2">
         <AnalyticsPeriodPresets value={value} onChange={onChange} />
+        <DateRangePicker
+          start={customStart}
+          end={customEnd}
+          presets={adminDateRangePresets}
+          placeholder="Rango personalizado"
+          size="sm"
+          className="min-w-0"
+          onChange={(range) => {
+            if (!range.start && !range.end) {
+              if (value.kind === "custom") {
+                onChange({ kind: "preset", days: 30 })
+              }
+              return
+            }
+            if (range.start && range.end) {
+              onChange({ kind: "custom", from: range.start, to: range.end })
+            }
+          }}
+        />
         {onExport ? (
           <Button
             size="sm"
@@ -31,65 +52,11 @@ export function AnalyticsPeriodFilter({
             disabled={exportDisabled}
             onClick={onExport}
           >
-            <Download className="mr-2 size-4" />
+            <Download data-icon="inline-start" />
             CSV
           </Button>
         ) : null}
       </div>
-
-      <div className="flex flex-wrap items-end gap-2">
-        <div className="grid gap-1">
-          <Label htmlFor="analytics-from" className="text-xs">
-            Desde
-          </Label>
-          <Input
-            id="analytics-from"
-            type="date"
-            className="h-11 w-[160px]"
-            value={value.kind === "custom" ? value.from : ""}
-            onChange={(e) =>
-              onChange({
-                kind: "custom",
-                from: e.target.value,
-                to: value.kind === "custom" ? value.to : e.target.value,
-              })
-            }
-          />
-        </div>
-        <div className="grid gap-1">
-          <Label htmlFor="analytics-to" className="text-xs">
-            Hasta
-          </Label>
-          <Input
-            id="analytics-to"
-            type="date"
-            className="h-11 w-[160px]"
-            value={value.kind === "custom" ? value.to : ""}
-            onChange={(e) =>
-              onChange({
-                kind: "custom",
-                from: value.kind === "custom" ? value.from : e.target.value,
-                to: e.target.value,
-              })
-            }
-          />
-        </div>
-        <Button
-          size="sm"
-          variant={value.kind === "custom" ? "default" : "outline"}
-          className="min-h-11"
-          disabled={value.kind !== "custom" || !value.from || !value.to}
-          onClick={() => {
-            if (value.kind === "custom" && value.from && value.to) {
-              onChange({ kind: "custom", from: value.from, to: value.to })
-            }
-          }}
-        >
-          Aplicar rango
-        </Button>
-      </div>
     </div>
   )
 }
-
-export { ANALYTICS_PERIOD_PRESETS }
