@@ -5,7 +5,7 @@ import {
   RaffleNotFoundError,
 } from "@raffle/shared/errors"
 import type { CreateRaffleInput, UpdateRaffleInput } from "@raffle/shared/validators"
-import { and, desc, eq, inArray, sql } from "drizzle-orm"
+import { desc, eq, inArray, sql } from "drizzle-orm"
 import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
 import { buildPublicRafflePricing, type PublicRafflePricing } from "./promotion-pricing.service"
@@ -237,34 +237,6 @@ export async function setAutoPauseEnabled(id: number, enabled: boolean) {
     .set({ autoPauseEnabled: enabled, updatedAt: new Date() })
     .where(eq(raffles.id, id))
   return { autoPauseEnabled: enabled }
-}
-
-export async function getPublishedRaffles(limit: number, page: number) {
-  const db = getDb()
-  const safeLimit = Math.min(limit ?? 10, 100)
-  const safePage = Math.max(page ?? 1, 1)
-  const offset = (safePage - 1) * safeLimit
-
-  const rows = await db
-    .select()
-    .from(raffles)
-    .where(and(eq(raffles.publish, true), eq(raffles.status, "finished")))
-    .orderBy(desc(raffles.createdAt))
-    .limit(safeLimit)
-    .offset(offset)
-
-  const enriched = rows.map((r) => {
-    const av = rafflesRepo.raffleAvailabilityFromCounters(r)
-    return {
-      id: r.id,
-      name: r.name,
-      tickets_sold: av.sold,
-      total_tickets: r.totalTickets,
-      sold_percentage: r.totalTickets > 0 ? ((av.sold / r.totalTickets) * 100).toFixed(2) : "0.00",
-    }
-  })
-
-  return { raffles: enriched, totalRows: enriched.length }
 }
 
 export async function getDashboardStats(raffleId?: number) {

@@ -138,7 +138,7 @@ export const PaymentStep = memo(function PaymentStep({
 }: PaymentStepProps) {
   return (
     <section id="purchase-payment" className="flex flex-col gap-2">
-      <SectionHeader title="Pago" />
+      <SectionHeader title="Métodos de Pago" />
 
       {methods.length === 0 ? (
         <p className="text-muted-foreground text-xs">Sin métodos de pago.</p>

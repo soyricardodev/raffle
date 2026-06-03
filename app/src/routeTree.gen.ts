@@ -30,7 +30,6 @@ import { Route as ApiRafflesIndexRouteImport } from './routes/api/raffles/index'
 import { Route as ApiPurchasesIndexRouteImport } from './routes/api/purchases/index'
 import { Route as AdminRifasIndexRouteImport } from './routes/admin/rifas/index'
 import { Route as ApiTicketsVerifyRouteImport } from './routes/api/tickets.verify'
-import { Route as ApiRafflesPublishedRouteImport } from './routes/api/raffles/published'
 import { Route as ApiRafflesFirstActiveRouteImport } from './routes/api/raffles/first-active'
 import { Route as ApiRafflesIdRouteImport } from './routes/api/raffles/$id'
 import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchases.top-clients'
@@ -177,11 +176,6 @@ const AdminRifasIndexRoute = AdminRifasIndexRouteImport.update({
 const ApiTicketsVerifyRoute = ApiTicketsVerifyRouteImport.update({
   id: '/api/tickets/verify',
   path: '/api/tickets/verify',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ApiRafflesPublishedRoute = ApiRafflesPublishedRouteImport.update({
-  id: '/api/raffles/published',
-  path: '/api/raffles/published',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiRafflesFirstActiveRoute = ApiRafflesFirstActiveRouteImport.update({
@@ -451,7 +445,6 @@ export interface FileRoutesByFullPath {
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
-  '/api/raffles/published': typeof ApiRafflesPublishedRoute
   '/api/tickets/verify': typeof ApiTicketsVerifyRoute
   '/admin/rifas/': typeof AdminRifasIndexRoute
   '/api/purchases/': typeof ApiPurchasesIndexRoute
@@ -515,7 +508,6 @@ export interface FileRoutesByTo {
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
-  '/api/raffles/published': typeof ApiRafflesPublishedRoute
   '/api/tickets/verify': typeof ApiTicketsVerifyRoute
   '/admin/rifas': typeof AdminRifasIndexRoute
   '/api/purchases': typeof ApiPurchasesIndexRoute
@@ -583,7 +575,6 @@ export interface FileRoutesById {
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
-  '/api/raffles/published': typeof ApiRafflesPublishedRoute
   '/api/tickets/verify': typeof ApiTicketsVerifyRoute
   '/admin/rifas/': typeof AdminRifasIndexRoute
   '/api/purchases/': typeof ApiPurchasesIndexRoute
@@ -651,7 +642,6 @@ export interface FileRouteTypes {
     | '/api/purchases/top-clients'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
-    | '/api/raffles/published'
     | '/api/tickets/verify'
     | '/admin/rifas/'
     | '/api/purchases/'
@@ -715,7 +705,6 @@ export interface FileRouteTypes {
     | '/api/purchases/top-clients'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
-    | '/api/raffles/published'
     | '/api/tickets/verify'
     | '/admin/rifas'
     | '/api/purchases'
@@ -782,7 +771,6 @@ export interface FileRouteTypes {
     | '/api/purchases/top-clients'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
-    | '/api/raffles/published'
     | '/api/tickets/verify'
     | '/admin/rifas/'
     | '/api/purchases/'
@@ -834,7 +822,6 @@ export interface RootRouteChildren {
   ApiPurchasesTopClientsRoute: typeof ApiPurchasesTopClientsRoute
   ApiRafflesIdRoute: typeof ApiRafflesIdRouteWithChildren
   ApiRafflesFirstActiveRoute: typeof ApiRafflesFirstActiveRoute
-  ApiRafflesPublishedRoute: typeof ApiRafflesPublishedRoute
   ApiTicketsVerifyRoute: typeof ApiTicketsVerifyRoute
   ApiPurchasesIndexRoute: typeof ApiPurchasesIndexRoute
   ApiRafflesIndexRoute: typeof ApiRafflesIndexRoute
@@ -993,13 +980,6 @@ declare module '@tanstack/react-router' {
       path: '/api/tickets/verify'
       fullPath: '/api/tickets/verify'
       preLoaderRoute: typeof ApiTicketsVerifyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/api/raffles/published': {
-      id: '/api/raffles/published'
-      path: '/api/raffles/published'
-      fullPath: '/api/raffles/published'
-      preLoaderRoute: typeof ApiRafflesPublishedRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/raffles/first-active': {
@@ -1525,7 +1505,6 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPurchasesTopClientsRoute: ApiPurchasesTopClientsRoute,
   ApiRafflesIdRoute: ApiRafflesIdRouteWithChildren,
   ApiRafflesFirstActiveRoute: ApiRafflesFirstActiveRoute,
-  ApiRafflesPublishedRoute: ApiRafflesPublishedRoute,
   ApiTicketsVerifyRoute: ApiTicketsVerifyRoute,
   ApiPurchasesIndexRoute: ApiPurchasesIndexRoute,
   ApiRafflesIndexRoute: ApiRafflesIndexRoute,

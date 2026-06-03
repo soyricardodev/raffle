@@ -6,11 +6,7 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HomeSiteBanner } from "@/features/home/HomeSiteBanner"
 import { HomeStickyCta } from "@/features/home/HomeStickyCta"
-import {
-  homeFirstActiveQueryOptions,
-  homePublishedQueryOptions,
-} from "@/features/home/home-queries"
-import { PublishedRafflesGrid } from "@/features/home/PublishedRafflesGrid"
+import { homeFirstActiveQueryOptions } from "@/features/home/home-queries"
 import { PublicHomeShell } from "@/features/home/public-home-shell"
 import { PublicLayout } from "@/features/layout/PublicLayout"
 import {
@@ -27,18 +23,15 @@ import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 
 export const Route = createFileRoute("/_public/")({
   loader: async ({ context: { queryClient } }) => {
-    const [firstActive, published] = await Promise.all([
-      queryClient.ensureQueryData(homeFirstActiveQueryOptions()).catch(() => null),
-      queryClient
-        .ensureQueryData(homePublishedQueryOptions())
-        .catch(() => ({ raffles: [] as never[], totalRows: 0 })),
-    ])
+    const firstActive = await queryClient
+      .ensureQueryData(homeFirstActiveQueryOptions())
+      .catch(() => null)
 
     if (firstActive?.id != null) {
       await ensureRaffleLive(queryClient, firstActive.id)
     }
 
-    return { firstActive, published }
+    return { firstActive }
   },
   head: ({ matches }) => {
     const seo = resolvePublicSeo(siteConfigFromMatches(matches, "/_public"))
@@ -62,7 +55,7 @@ function resolveHomeTickerVariant(
 }
 
 function HomePage() {
-  const { firstActive, published: initialPublished } = Route.useLoaderData()
+  const { firstActive } = Route.useLoaderData()
 
   const activeQuery = useQuery({
     ...homeFirstActiveQueryOptions(),
@@ -72,12 +65,6 @@ function HomePage() {
 
   const activeRaffle = activeQuery.data
   const activeLoading = activeQuery.isFetching && activeRaffle == null
-
-  const { data: published = initialPublished } = useQuery({
-    ...homePublishedQueryOptions(),
-    initialData: initialPublished,
-    refetchOnMount: false,
-  })
 
   const showStickyCta = activeRaffle != null && activeRaffle.status === "active"
   const liveEnabled = activeRaffle?.status === "active" || activeRaffle?.status === "paused"
@@ -150,12 +137,6 @@ function HomePage() {
           ) : null}
         </div>
       </PublicHomeShell>
-
-      {published.raffles.length > 0 && (
-        <div className="border-t">
-          <PublishedRafflesGrid raffles={published.raffles} />
-        </div>
-      )}
 
       <HomeStickyCta visible={showStickyCta} />
     </PublicLayout>
