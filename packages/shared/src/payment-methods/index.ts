@@ -1,5 +1,6 @@
 export * from "./definitions.js"
 export * from "./display.js"
+export * from "./migrate.js"
 export * from "./normalize.js"
 export * from "./schemas.js"
 export * from "./types.js"

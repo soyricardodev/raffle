@@ -12,6 +12,13 @@
 import { randomUUID } from "node:crypto"
 import { createClient } from "@libsql/client"
 import { normalizePhone, schema, ticketNumberToInt, toCents } from "@raffle/shared/db"
+import {
+  resolveOrCreatePaymentAccount,
+  resolveOrCreateRafflePaymentMethod,
+  type PaymentAccountCache,
+  type PaymentMethod,
+  type RafflePaymentMethodCache,
+} from "@raffle/shared/payment-methods"
 import { hashPassword } from "better-auth/crypto"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/libsql"
@@ -145,40 +152,82 @@ async function main() {
     })
   }
 
+  const accountCache: PaymentAccountCache = new Map()
+  const rpmCache: RafflePaymentMethodCache = new Map()
   const rpmIdByRaffleAndType = new Map<string, number>()
-  const [payRows] = await source.execute("SELECT * FROM payment_methods")
+  const [payRows] = await source.execute("SELECT * FROM payment_methods ORDER BY id")
+  const payRowCount = (payRows as unknown[]).length
+  let accountsCreated = 0
+  let rpmsCreated = 0
+
+  console.log(`💳 Migrando ${payRowCount} métodos de pago legacy...`)
+
   for (const m of payRows as MysqlRow[]) {
-    const legacyId = Number(m.id)
     const raffleId = Number(m.raffle_id)
-    const methodType = String(m.method_type)
-    const [account] = await db
-      .insert(schema.paymentAccounts)
-      .values({
-        label: `${methodType} #${legacyId}`,
-        methodType,
-        accountInfo: parseJson(m.account_info),
-        isActive: Boolean(m.is_active ?? true),
-        createdAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
-        updatedAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
-      })
-      .returning({ id: schema.paymentAccounts.id })
+    const methodType = String(m.method_type) as PaymentMethod
+    const createdAt = m.created_at ? new Date(String(m.created_at)) : new Date()
+    const assignment = {
+      isActive: Boolean(m.is_active ?? true),
+      minTickets: m.min_tickets != null ? Number(m.min_tickets) : null,
+    }
 
-    const [rpm] = await db
-      .insert(schema.rafflePaymentMethods)
-      .values({
-        raffleId,
-        accountId: account!.id,
-        isActive: Boolean(m.is_active ?? true),
-        minTickets: m.min_tickets != null ? Number(m.min_tickets) : null,
-        createdAt: m.created_at ? new Date(String(m.created_at)) : new Date(),
-      })
-      .returning({ id: schema.rafflePaymentMethods.id })
+    const { accountId, created: accountCreated } = await resolveOrCreatePaymentAccount(
+      accountCache,
+      methodType,
+      m.account_info,
+      async (normalized, label) => {
+        const [account] = await db
+          .insert(schema.paymentAccounts)
+          .values({
+            label,
+            methodType,
+            accountInfo: JSON.stringify(normalized),
+            isActive: true,
+            createdAt,
+            updatedAt: createdAt,
+          })
+          .returning({ id: schema.paymentAccounts.id })
+        return account!.id
+      },
+    )
+    if (accountCreated) accountsCreated++
 
-    const mapKey = `${raffleId}:${methodType}`
-    if (!rpmIdByRaffleAndType.has(mapKey)) {
-      rpmIdByRaffleAndType.set(mapKey, rpm!.id)
+    const { rpmId, created: rpmCreated } = await resolveOrCreateRafflePaymentMethod(
+      rpmCache,
+      raffleId,
+      accountId,
+      assignment,
+      async (rpmAssignment) => {
+        const [rpm] = await db
+          .insert(schema.rafflePaymentMethods)
+          .values({
+            raffleId,
+            accountId,
+            isActive: rpmAssignment.isActive,
+            minTickets: rpmAssignment.minTickets,
+            createdAt,
+          })
+          .returning({ id: schema.rafflePaymentMethods.id })
+        return rpm!.id
+      },
+      async (existingRpmId, patch) => {
+        await db
+          .update(schema.rafflePaymentMethods)
+          .set({ minTickets: patch.minTickets })
+          .where(eq(schema.rafflePaymentMethods.id, existingRpmId))
+      },
+    )
+    if (rpmCreated) rpmsCreated++
+
+    const typeKey = `${raffleId}:${methodType}`
+    if (!rpmIdByRaffleAndType.has(typeKey)) {
+      rpmIdByRaffleAndType.set(typeKey, rpmId)
     }
   }
+
+  console.log(
+    `   ${payRowCount} legacy rows → ${accountsCreated} cuentas, ${rpmsCreated} assignments (${payRowCount - accountsCreated} cuentas dedup, ${payRowCount - rpmsCreated} assignments dedup)`,
+  )
 
   // ─── purchases ─────────────────────────────────────────────
   const [purchaseRows] = await source.execute("SELECT * FROM purchases")

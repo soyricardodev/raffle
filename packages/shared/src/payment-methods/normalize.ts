@@ -13,14 +13,32 @@ const KEY_ALIASES: Record<string, string> = {
 function splitCedula(raw: Record<string, string>): Record<string, string> {
   const out = { ...raw }
   const combined = out.cedula
-  if (!combined || (out.cedula_type && out.cedula_number)) return out
 
-  const match = /^([VJE])\s*[-.]?\s*(\d+)$/i.exec(combined.trim())
-  if (match) {
-    out.cedula_type = match[1]!.toUpperCase()
-    out.cedula_number = match[2]!
-    delete out.cedula
+  if (combined && !(out.cedula_type && out.cedula_number)) {
+    const trimmed = combined.trim()
+    const withSeparator = /^([VJE])\s*[-.]?\s*(\d+)$/i.exec(trimmed)
+    if (withSeparator) {
+      out.cedula_type = withSeparator[1]!.toUpperCase()
+      out.cedula_number = withSeparator[2]!
+      delete out.cedula
+    } else if (/^\d+$/.test(trimmed)) {
+      out.cedula_type = "V"
+      out.cedula_number = trimmed
+      delete out.cedula
+    } else {
+      const compact = /^([VJE])(\d+)$/i.exec(trimmed)
+      if (compact) {
+        out.cedula_type = compact[1]!.toUpperCase()
+        out.cedula_number = compact[2]!
+        delete out.cedula
+      }
+    }
   }
+
+  if (out.cedula_number && !out.cedula_type) {
+    out.cedula_type = "V"
+  }
+
   return out
 }
 

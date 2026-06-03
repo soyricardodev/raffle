@@ -13,6 +13,12 @@
 import { access } from "node:fs/promises"
 import path from "node:path"
 import { createClient } from "@libsql/client"
+import {
+  normalizeLegacyAccountInfo,
+  parseRawAccountInfo,
+  stableAccountInfoKey,
+  type PaymentMethod,
+} from "@raffle/shared/payment-methods"
 import mysql from "mysql2/promise"
 
 const SOURCE_URL = process.env.SOURCE_DATABASE_URL ?? process.env.LEGACY_DATABASE_URL
@@ -169,6 +175,56 @@ async function main() {
     sqlite: sqliteSettings,
     ok: mysqlConfig === 0 ? sqliteSettings === 0 : sqliteSettings >= 1,
     note: "SQLite debe tener al menos 1 fila app_settings si legacy tenía config",
+  })
+
+  // Métodos de pago: catálogo deduplicado y cédula pago móvil
+  const legacyPayCount = await mysqlScalar(mysqlConn, "SELECT COUNT(*) FROM payment_methods")
+  const catalogCount = await libsqlScalar(libsql, "SELECT COUNT(*) FROM payment_accounts")
+  checks.push({
+    name: "catálogo payment_accounts ≤ legacy",
+    mysql: legacyPayCount,
+    sqlite: catalogCount,
+    ok: catalogCount <= legacyPayCount,
+    note:
+      catalogCount > legacyPayCount
+        ? "Hay más cuentas en catálogo que filas legacy — ejecuta db:repair:payment-accounts"
+        : undefined,
+  })
+
+  const payAccountRows = await libsql.execute(
+    "SELECT id, method_type, account_info FROM payment_accounts",
+  )
+  let pagoMovilMissingCedula = 0
+  const stableKeyGroups = new Map<string, number>()
+  for (const row of payAccountRows.rows) {
+    const methodType = String(row[1]) as PaymentMethod
+    const raw = parseRawAccountInfo(String(row[2] ?? "{}"))
+    const normalized = normalizeLegacyAccountInfo(methodType, raw)
+    if (methodType === "pago_movil" && (!normalized.cedula_type || !normalized.cedula_number)) {
+      pagoMovilMissingCedula++
+    }
+    const key = stableAccountInfoKey(methodType, normalized)
+    stableKeyGroups.set(key, (stableKeyGroups.get(key) ?? 0) + 1)
+  }
+  const logicalDuplicateGroups = [...stableKeyGroups.values()].filter((n) => n > 1).length
+
+  checks.push({
+    name: "pago móvil con cédula completa",
+    sqlite: pagoMovilMissingCedula,
+    ok: pagoMovilMissingCedula === 0,
+    note:
+      pagoMovilMissingCedula > 0
+        ? `${pagoMovilMissingCedula} cuenta(s) sin cedula_type/cedula_number — ejecuta db:repair:payment-accounts`
+        : undefined,
+  })
+  checks.push({
+    name: "sin duplicados lógicos en catálogo",
+    sqlite: logicalDuplicateGroups,
+    ok: logicalDuplicateGroups === 0,
+    note:
+      logicalDuplicateGroups > 0
+        ? `${logicalDuplicateGroups} grupo(s) con cuentas equivalentes — ejecuta db:repair:payment-accounts`
+        : undefined,
   })
 
   // Muestra de URLs de archivos (opcional)

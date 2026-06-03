@@ -32,8 +32,28 @@ Qué hace el script:
 - Rifas con precios en **centavos** y contadores en cero hasta compactar tickets.
 - Solo tickets `reserved`/`sold` → `purchase_tickets` (sparse).
 - Recalcula `tickets_available`, `tickets_reserved`, `tickets_sold` por rifa.
+- Métodos de pago: deduplica cuentas idénticas en `payment_accounts` y normaliza cédula de pago móvil (`cedula` legacy → `cedula_type` + `cedula_number`).
 
 **No migra** sesiones activas → admins deben **re-login** con `MIGRATE_ADMIN_PASSWORD`.
+
+## 2b. Reparar métodos de pago (migraciones anteriores)
+
+Si la base ya se migró con una versión anterior del script (catálogo duplicado o pago móvil sin cédula), ejecuta la reparación usando MySQL legacy como fuente de verdad:
+
+```bash
+set SOURCE_DATABASE_URL=mysql://user:pass@host:3306/raffle_prod
+set TARGET_DATABASE_URL=file:./data/raffle.db
+
+# Revisar acciones propuestas (dry-run)
+pnpm db:repair:payment-accounts
+
+# Aplicar correcciones
+pnpm db:repair:payment-accounts -- --apply
+```
+
+Qué hace: backfill de cédula desde legacy, deduplica `payment_accounts` por datos equivalentes, fusiona assignments duplicados por rifa, elimina cuentas huérfanas y regenera labels legibles.
+
+**Limitación conocida — compras → método de pago:** legacy solo guardaba `payment_method` (tipo), no el id de la fila `payment_methods`. En migrate, `purchases.raffle_payment_method_id` apunta al **primer** assignment (orden legacy por `id`) para ese par rifa+tipo. Si una rifa tenía varias cuentas distintas del mismo tipo (p. ej. dos pago móvil), las compras no distinguen cuál se usó; revisar manualmente si aplica.
 
 ## 3. Validación post-migración
 
@@ -69,6 +89,7 @@ Criterios:
 
 - `purchase concurrency`: 0 doble-asignación, contadores coherentes.
 - `pause system`: auto_full / auto_insufficient con contadores.
+- Catálogo de métodos de pago: 0 pago móvil sin cédula, 0 duplicados lógicos (`pnpm db:validate:migration` incluye estos checks).
 
 ## 4. Cutover big-bang
 

@@ -14,6 +14,16 @@ describe("payment account schemas", () => {
     expect(data.cedula_number).toBe("12345678")
   })
 
+  it("validates pago movil with digits-only cedula", () => {
+    const data = parseAccountInfo("pago_movil", {
+      bank: "Banesco",
+      phone: "04121234567",
+      cedula: "12345678",
+    })
+    expect(data.cedula_type).toBe("V")
+    expect(data.cedula_number).toBe("12345678")
+  })
+
   it("rejects non-numeric phone", () => {
     const result = safeParseAccountInfo("pago_movil", {
       bank: "X",
