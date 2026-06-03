@@ -36,5 +36,15 @@ export function apiErrorResponse(error: unknown): Response {
     return Response.json(payload, { status })
   }
 
-  throw error
+  if (error instanceof Error && error.message) {
+    return Response.json(
+      { message: error.message, code: "INTERNAL_ERROR" },
+      { status: 500 },
+    )
+  }
+
+  return Response.json(
+    { message: "Error interno del servidor", code: "INTERNAL_ERROR" },
+    { status: 500 },
+  )
 }

@@ -26,4 +26,14 @@ describe("getApiErrorMessage", () => {
       "El método de pago seleccionado no está disponible para esta rifa",
     )
   })
+
+  it("reads duplicate payment reference message end-to-end", () => {
+    const error = new Error(
+      'El número de referencia "1234567890" ya ha sido utilizado para esta rifa',
+    )
+
+    expect(getApiErrorMessage(error, "No se pudo procesar la compra")).toBe(
+      'El número de referencia "1234567890" ya ha sido utilizado para esta rifa',
+    )
+  })
 })

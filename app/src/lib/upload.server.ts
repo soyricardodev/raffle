@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto"
 import { mkdir, writeFile } from "node:fs/promises"
 import path from "node:path"
+import { FileTooLargeError, InvalidFileTypeError } from "@raffle/shared/errors"
 import { getEnv } from "./env"
 import { getLogger } from "./logger"
 
@@ -25,10 +26,10 @@ function extensionForMime(mime: string): string {
 
 export async function savePaymentProof(file: File): Promise<string> {
   if (!ALLOWED_MIME.has(file.type)) {
-    throw new Error("Tipo de archivo no permitido. Usa JPG, PNG, WEBP, GIF o PDF.")
+    throw new InvalidFileTypeError(file.type, [...ALLOWED_MIME])
   }
   if (file.size > MAX_BYTES) {
-    throw new Error("El comprobante no puede superar 5 MB.")
+    throw new FileTooLargeError(MAX_BYTES)
   }
 
   const env = getEnv()
