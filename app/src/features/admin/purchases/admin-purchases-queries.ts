@@ -64,10 +64,8 @@ export const fetchAdminPurchases = createServerFn({ method: "POST" })
 
 export function normalizeAdminPurchaseFilters(
   search: AdminPurchaseSearchParams,
-  fallbackRaffleId?: string | null,
 ): AdminPurchaseFilters {
-  const raffleId =
-    search.raffle_id === "all" ? null : (search.raffle_id ?? fallbackRaffleId ?? null)
+  const raffleId = search.raffle_id === "all" || !search.raffle_id ? null : search.raffle_id
 
   return AdminPurchasesInput.parse({
     limit: search.limit ?? ADMIN_PURCHASES_PAGE_SIZE,

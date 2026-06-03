@@ -11,6 +11,7 @@ import { getLogger } from "@/lib/logger"
 import { buildPublicRafflePricing, type PublicRafflePricing } from "./promotion-pricing.service"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
+import * as analyticsRepo from "./repositories/analytics.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 
 const logger = getLogger()
@@ -323,11 +324,14 @@ export async function getDashboardStats(raffleId?: number) {
     .from(purchases)
     .where(purchaseWhere)
 
-  const activeRaffles = await db
-    .select({ id: raffles.id, name: raffles.name })
-    .from(raffles)
-    .where(inArray(raffles.status, ["active", "paused"]))
-    .orderBy(desc(raffles.createdAt))
+  const [activeRaffles, filterRaffles] = await Promise.all([
+    db
+      .select({ id: raffles.id, name: raffles.name })
+      .from(raffles)
+      .where(inArray(raffles.status, ["active", "paused"]))
+      .orderBy(desc(raffles.createdAt)),
+    analyticsRepo.listRafflesForAnalytics(),
+  ])
 
   const sales = salesStats ?? {
     total_sales: 0,
@@ -350,6 +354,7 @@ export async function getDashboardStats(raffleId?: number) {
       revenue: fromCents(Number(r.revenue)),
     })),
     active_raffles: activeRaffles,
+    filter_raffles: filterRaffles,
     filtered_raffle_id: raffleId ?? null,
   }
 }

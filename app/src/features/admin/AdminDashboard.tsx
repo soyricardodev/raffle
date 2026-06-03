@@ -21,6 +21,7 @@ import {
   type AnalyticsPeriodState,
 } from "@/features/admin/analytics/types"
 import type { getDashboardAnalyticsSummary } from "@/server/analytics.service"
+import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrency } from "@/lib/format"
@@ -30,7 +31,7 @@ const POLL_MS = 30_000
 
 type DashboardAnalyticsSummary = Awaited<ReturnType<typeof getDashboardAnalyticsSummary>>
 
-type ActiveRaffle = { id: number; name: string }
+type FilterRaffle = { id: number; name: string; status: string }
 
 type DashboardStats = {
   raffles: Record<string, number>
@@ -38,7 +39,8 @@ type DashboardStats = {
   sales: Record<string, number>
   users: Record<string, number>
   revenue_by_method: Array<{ method: string; count: number; revenue: number }>
-  active_raffles: Array<ActiveRaffle>
+  active_raffles: Array<{ id: number; name: string }>
+  filter_raffles: Array<FilterRaffle>
   filtered_raffle_id: number | null
 }
 
@@ -51,7 +53,6 @@ export function AdminDashboard() {
   const [raffleId, setRaffleId] = useState<string>("")
   const [period, setPeriod] = useState<AnalyticsPeriodState>({ kind: "preset", days: 30 })
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null)
-  const [raffleInitialized, setRaffleInitialized] = useState(false)
 
   const statsQuery = useQuery({
     queryKey: ["admin", "dashboard", raffleId],
@@ -73,13 +74,13 @@ export function AdminDashboard() {
 
   const stats = statsQuery.data
   const analytics = analyticsQuery.data
-  const activeRaffles = stats?.active_raffles ?? []
+  const filterRaffles = stats?.filter_raffles ?? []
+  const hasActiveRaffles = (stats?.active_raffles.length ?? 0) > 0
 
   useEffect(() => {
-    if (raffleInitialized || !activeRaffles.length) return
-    setRaffleId(String(activeRaffles[0]!.id))
-    setRaffleInitialized(true)
-  }, [activeRaffles, raffleInitialized])
+    if (!raffleId || filterRaffles.some((r) => String(r.id) === raffleId)) return
+    setRaffleId("")
+  }, [filterRaffles, raffleId])
 
   useEffect(() => {
     if (statsQuery.dataUpdatedAt || analyticsQuery.dataUpdatedAt) {
@@ -115,8 +116,10 @@ export function AdminDashboard() {
     void analyticsQuery.refetch()
   }
 
-  const selectedRaffleName =
-    activeRaffles.find((r) => String(r.id) === raffleId)?.name ?? "Rifa seleccionada"
+  const selectedRaffle = filterRaffles.find((r) => String(r.id) === raffleId)
+  const selectedRaffleName = selectedRaffle
+    ? `${selectedRaffle.name} (${raffleStatusLabel(selectedRaffle.status)})`
+    : "Todas las rifas"
 
   return (
     <div className="flex flex-col gap-6">
@@ -147,17 +150,20 @@ export function AdminDashboard() {
           <Select
             value={raffleId || "all"}
             onValueChange={(v) => setRaffleId(v === "all" ? "" : v)}
+            disabled={statsQuery.isLoading || filterRaffles.length === 0}
           >
             <SelectTrigger className="h-11 w-full sm:max-w-xs" aria-label="Filtrar por rifa">
-              <SelectValue placeholder="Rifa activa" />
+              <SelectValue
+                placeholder={
+                  filterRaffles.length === 0 ? "Sin rifas" : "Todas las rifas"
+                }
+              />
             </SelectTrigger>
             <SelectContent>
-              {activeRaffles.length > 1 && (
-                <SelectItem value="all">Todas las rifas activas</SelectItem>
-              )}
-              {activeRaffles.map((r) => (
+              <SelectItem value="all">Todas las rifas</SelectItem>
+              {filterRaffles.map((r) => (
                 <SelectItem key={r.id} value={String(r.id)}>
-                  {r.name}
+                  {r.name} ({raffleStatusLabel(r.status)})
                 </SelectItem>
               ))}
             </SelectContent>
@@ -169,23 +175,33 @@ export function AdminDashboard() {
             </Button>
           </div>
         </div>
-        {raffleId && (
-          <p className="text-muted-foreground mt-2 text-xs">
-            Mostrando métricas de: <span className="font-medium">{selectedRaffleName}</span>
-          </p>
-        )}
+        <p className="text-muted-foreground mt-2 text-xs">
+          Mostrando métricas de: <span className="font-medium">{selectedRaffleName}</span>
+        </p>
       </div>
 
-      {!activeRaffles.length && !statsQuery.isLoading && (
+      {!filterRaffles.length && !statsQuery.isLoading && (
         <Card className="border-dashed">
           <CardContent className="flex flex-col items-center gap-3 py-10 text-center">
-            <p className="font-medium">No hay rifas activas</p>
+            <p className="font-medium">Aún no hay rifas</p>
             <p className="text-muted-foreground max-w-sm text-sm">
-              Publica una rifa para ver métricas y gráficos en este panel.
+              Crea una rifa para ver métricas y gráficos en este panel.
             </p>
             <Button asChild className="min-h-11">
               <Link to="/admin/crear">Crear rifa</Link>
             </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {filterRaffles.length > 0 && !hasActiveRaffles && !statsQuery.isLoading && (
+        <Card className="border-dashed border-amber-500/30 bg-amber-500/5">
+          <CardContent className="py-4 text-center text-sm">
+            <p className="font-medium">No hay rifas activas ni pausadas</p>
+            <p className="text-muted-foreground mt-1">
+              Puedes filtrar por rifas finalizadas o en borrador. Los totales de boletos
+              agregados solo incluyen rifas activas o pausadas cuando eliges «Todas las rifas».
+            </p>
           </CardContent>
         </Card>
       )}

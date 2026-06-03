@@ -4,6 +4,7 @@ import {
   clampQuantity,
   getMinimumPurchasableQuantity,
   getPaymentMethodThresholds,
+  getPurchasableQuantityRange,
 } from "@/features/raffle/purchase-form/ticket-quantity-utils"
 
 describe("clampQuantity", () => {
@@ -23,8 +24,46 @@ describe("getMinimumPurchasableQuantity", () => {
     expect(getMinimumPurchasableQuantity(1, [{ min_tickets: 10 }, { min_tickets: 5 }])).toBe(5)
   })
 
+  it("keeps the lower eligible payment min when another method has a higher min", () => {
+    expect(getMinimumPurchasableQuantity(1, [{ min_tickets: 10 }, { min_tickets: 60 }])).toBe(10)
+  })
+
+  it("allows methods without their own min to keep the raffle min", () => {
+    expect(getMinimumPurchasableQuantity(1, [{ min_tickets: null }, { min_tickets: 60 }])).toBe(1)
+  })
+
   it("never goes below raffle min", () => {
     expect(getMinimumPurchasableQuantity(8, [{ min_tickets: 5 }])).toBe(8)
+  })
+})
+
+describe("getPurchasableQuantityRange", () => {
+  it("keeps the form purchasable when one method min is within stock and another is above stock", () => {
+    expect(
+      getPurchasableQuantityRange(1, 100, 50, [{ min_tickets: 10 }, { min_tickets: 60 }]),
+    ).toEqual({
+      min: 10,
+      max: 50,
+      hasPurchasableQuantity: true,
+    })
+  })
+
+  it("keeps methods without their own min purchasable when restrictive methods are above stock", () => {
+    expect(
+      getPurchasableQuantityRange(1, 100, 50, [{ min_tickets: null }, { min_tickets: 60 }]),
+    ).toEqual({
+      min: 1,
+      max: 50,
+      hasPurchasableQuantity: true,
+    })
+  })
+
+  it("marks the range unavailable when every method requires more than the remaining stock", () => {
+    expect(getPurchasableQuantityRange(1, 100, 50, [{ min_tickets: 60 }])).toEqual({
+      min: 60,
+      max: 50,
+      hasPurchasableQuantity: false,
+    })
   })
 })
 

@@ -34,6 +34,7 @@ import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
+import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
@@ -45,7 +46,6 @@ const POLL_MS = 30_000
 
 export function AdminPurchasesView() {
   const routeSearch = routeApi.useSearch()
-  const { defaultRaffleId } = routeApi.useLoaderData()
   const navigate = useNavigate({ from: "/admin/compras" })
   const queryClient = useQueryClient()
 
@@ -53,10 +53,7 @@ export function AdminPurchasesView() {
     routeSearch.purchase != null && routeSearch.purchase > 0 ? routeSearch.purchase : null
 
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<number | null>(purchaseFromUrl)
-  const filters = useMemo(
-    () => normalizeAdminPurchaseFilters(routeSearch, defaultRaffleId),
-    [routeSearch, defaultRaffleId],
-  )
+  const filters = useMemo(() => normalizeAdminPurchaseFilters(routeSearch), [routeSearch])
   const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
 
   const debouncedSearch = useDebouncedValue(searchDraft)
@@ -88,7 +85,19 @@ export function AdminPurchasesView() {
     refetchOnMount: false,
   })
 
-  const activeRaffles = dashboardQuery.data?.active_raffles ?? []
+  const filterRaffles = dashboardQuery.data?.filter_raffles ?? []
+
+  useEffect(() => {
+    const id = filters.raffleId
+    if (!id || filterRaffles.some((r) => String(r.id) === id)) return
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        raffle_id: undefined,
+      }),
+    })
+  }, [filterRaffles, filters.raffleId, navigate])
 
   const purchasesQuery = useQuery({
     ...adminPurchasesQueryOptions(filters),
@@ -113,16 +122,13 @@ export function AdminPurchasesView() {
   const purchases: Array<PurchaseRow> = purchasesQuery.data?.data ?? []
   const total = purchasesQuery.data?.total ?? 0
   const pageSize = filters.limit ?? ADMIN_PURCHASES_PAGE_SIZE
-  const activeRaffleName = activeRaffles.find(
-    (raffle) => String(raffle.id) === filters.raffleId,
-  )?.name
+  const selectedRaffle = filterRaffles.find((r) => String(r.id) === filters.raffleId)
   const hasCustomFilters = Boolean(
     filters.search ||
       filters.start ||
       filters.end ||
       filters.status !== "all" ||
-      routeSearch.raffle_id === "all" ||
-      (filters.raffleId && filters.raffleId !== defaultRaffleId),
+      filters.raffleId,
   )
 
   const pendingCount = useMemo(
@@ -167,9 +173,9 @@ export function AdminPurchasesView() {
       <AdminPageHeader
         title={adminNavTitle("/admin/compras")}
         description={
-          activeRaffleName
-            ? `Últimas ${pageSize} compras de ${activeRaffleName}`
-            : `Últimas ${pageSize} compras`
+          selectedRaffle
+            ? `Últimas ${pageSize} compras de ${selectedRaffle.name} (${raffleStatusLabel(selectedRaffle.status)})`
+            : `Últimas ${pageSize} compras de todas las rifas`
         }
         actions={
           <Button
@@ -247,20 +253,23 @@ export function AdminPurchasesView() {
                 value={filters.raffleId || "all"}
                 onValueChange={(value) =>
                   updateSearch({
-                    raffle_id: value,
+                    raffle_id: value === "all" ? "all" : value,
                     page: 1,
                   })
                 }
+                disabled={dashboardQuery.isLoading || filterRaffles.length === 0}
               >
-                <SelectTrigger size="sm" className="w-[180px] max-w-full">
-                  <SelectValue placeholder="Rifa" />
+                <SelectTrigger size="sm" className="w-[200px] max-w-full">
+                  <SelectValue
+                    placeholder={filterRaffles.length === 0 ? "Sin rifas" : "Todas las rifas"}
+                  />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="all">Todas</SelectItem>
-                    {activeRaffles.map((r) => (
+                    <SelectItem value="all">Todas las rifas</SelectItem>
+                    {filterRaffles.map((r) => (
                       <SelectItem key={r.id} value={String(r.id)}>
-                        {r.name}
+                        {r.name} ({raffleStatusLabel(r.status)})
                       </SelectItem>
                     ))}
                   </SelectGroup>
@@ -291,7 +300,7 @@ export function AdminPurchasesView() {
                   onClick={() =>
                     updateSearch({
                       status: undefined,
-                      raffle_id: defaultRaffleId ?? undefined,
+                      raffle_id: "all",
                       q: undefined,
                       start: undefined,
                       end: undefined,

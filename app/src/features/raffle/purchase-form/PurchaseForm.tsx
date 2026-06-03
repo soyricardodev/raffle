@@ -25,8 +25,8 @@ import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseS
 import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
 import {
   clampQuantity,
-  getMinimumPurchasableQuantity,
   getPaymentMethodThresholds,
+  getPurchasableQuantityRange,
 } from "@/features/raffle/purchase-form/ticket-quantity-utils"
 import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-payment-method-selection"
 import { usePurchasePricing } from "@/features/raffle/purchase-form/use-purchase-pricing"
@@ -90,17 +90,18 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
 
   const available = live?.availability.available ?? (Number(raffle.tickets_available) || 0)
   const isPaused = live?.isPaused ?? raffle.status === "paused"
-  const effectiveMax = Math.min(maxPurchase, available)
 
   const methods = useMemo(
     () => activePaymentMethods(raffle.payment_methods),
     [raffle.payment_methods],
   )
 
-  const quantityMin = useMemo(
-    () => getMinimumPurchasableQuantity(minPurchase, methods),
-    [minPurchase, methods],
+  const quantityRange = useMemo(
+    () => getPurchasableQuantityRange(minPurchase, maxPurchase, available, methods),
+    [minPurchase, maxPurchase, available, methods],
   )
+  const quantityMin = quantityRange.min
+  const effectiveMax = quantityRange.max
 
   const paymentThresholds = useMemo(() => getPaymentMethodThresholds(methods), [methods])
 
@@ -304,9 +305,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const disabled =
     raffle.status !== "active" ||
     isPaused ||
-    available <= 0 ||
     purchaseMutation.isPending ||
-    effectiveMax < quantityMin
+    !quantityRange.hasPurchasableQuantity
 
   useBuyerPresence({
     raffleId: raffle.id,

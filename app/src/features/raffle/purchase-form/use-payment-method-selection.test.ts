@@ -31,4 +31,9 @@ describe("pickDefaultPaymentMethodId", () => {
     const methods = [method(1, "pago_movil", 10)]
     expect(pickDefaultPaymentMethodId(methods, 1)).toBeNull()
   })
+
+  it("keeps pago_movil selectable when zelle requires more tickets than the selected quantity", () => {
+    const methods = [method(1, "pago_movil", 10), method(2, "zelle", 60)]
+    expect(pickDefaultPaymentMethodId(methods, 10)).toBe(1)
+  })
 })

@@ -32,22 +32,13 @@ import {
   type AnalyticsPeriodState,
   type AnalyticsResponse,
 } from "@/features/admin/analytics/types"
+import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrency } from "@/lib/format"
 
 const POLL_MS = 60_000
-
-function raffleStatusLabel(status: string) {
-  const labels: Record<string, string> = {
-    active: "Activa",
-    paused: "Pausada",
-    finished: "Finalizada",
-    draft: "Borrador",
-  }
-  return labels[status] ?? status
-}
 
 export function AdminAnalytics() {
   const [period, setPeriod] = useState<AnalyticsPeriodState>({ kind: "preset", days: 30 })

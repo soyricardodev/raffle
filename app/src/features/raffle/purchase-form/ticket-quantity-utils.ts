@@ -5,6 +5,12 @@ export type QuickPickOption = {
   label: string
 }
 
+export type PurchasableQuantityRange = {
+  min: number
+  max: number
+  hasPurchasableQuantity: boolean
+}
+
 export function clampQuantity(value: number, min: number, max: number): number {
   if (!Number.isFinite(value)) return min
   return Math.min(max, Math.max(min, Math.floor(value)))
@@ -17,8 +23,7 @@ export function getMinimumPurchasableQuantity(
 ): number {
   const methodMins = methods
     .filter((m) => m.is_active !== false)
-    .map((m) => m.min_tickets ?? 0)
-    .filter((n) => n > 0)
+    .map((m) => Math.max(0, m.min_tickets ?? 0))
 
   if (methodMins.length === 0) return raffleMin
   return Math.max(raffleMin, Math.min(...methodMins))
@@ -32,6 +37,22 @@ export function getPaymentMethodThresholds(
     .map((m) => m.min_tickets ?? 0)
     .filter((n) => n > 0)
   return [...new Set(values)].sort((a, b) => a - b)
+}
+
+export function getPurchasableQuantityRange(
+  raffleMin: number,
+  raffleMax: number,
+  available: number,
+  methods: Pick<RafflePaymentMethod, "min_tickets" | "is_active">[],
+): PurchasableQuantityRange {
+  const min = getMinimumPurchasableQuantity(raffleMin, methods)
+  const max = Math.min(raffleMax, available)
+
+  return {
+    min,
+    max,
+    hasPurchasableQuantity: available > 0 && max >= min,
+  }
 }
 
 export function formatQuickPickLabel(value: number, max: number): string {
