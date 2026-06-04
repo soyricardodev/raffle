@@ -6,7 +6,7 @@ test.describe("public smoke", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     await expect(page).toHaveTitle(/rifas/i)
     await expect(
-      page.getByRole("navigation").getByRole("link", { name: "Verificar" }),
+      page.getByRole("navigation").getByRole("link", { name: "Verificar Boletos" }),
     ).toBeVisible()
   })
 

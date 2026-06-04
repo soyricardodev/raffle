@@ -29,15 +29,10 @@ export function PublicHeader() {
           {siteName ? <span className="truncate">{siteName}</span> : null}
         </Link>
         <nav className="flex shrink-0 items-center gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="size-10"
-            asChild
-            aria-label="Verificar boletos"
-          >
+          <Button variant="ghost" size="sm" className="h-10 gap-1.5 px-2.5" asChild>
             <Link to="/verificar">
-              <Search className="size-5" />
+              <Search className="size-4 shrink-0" aria-hidden />
+              Verificar Boletos
             </Link>
           </Button>
           <ThemeToggle />
