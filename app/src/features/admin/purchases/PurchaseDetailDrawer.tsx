@@ -14,7 +14,7 @@ import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
 import { PurchaseEmailsSection } from "@/features/admin/emails/PurchaseEmailsSection"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
-import { EditPurchaseCustomerDialog } from "@/features/admin/purchases/EditPurchaseCustomerDialog"
+import { EditPurchaseCustomerSheet } from "@/features/admin/purchases/EditPurchaseCustomerSheet"
 import { PurchaseCustomerFacts } from "@/features/admin/purchases/PurchaseCustomerFacts"
 import { useAdminPurchaseCustomerUpdate } from "@/features/admin/purchases/use-admin-purchase-customer-update"
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
@@ -150,6 +150,7 @@ export function PurchaseDetailDrawer({
   const loading = detailQuery.isLoading && !purchase
 
   return (
+    <>
     <Sheet open={open} onOpenChange={handleOpenChange}>
       <SheetContent
         side="right"
@@ -244,23 +245,27 @@ export function PurchaseDetailDrawer({
               onConfirm={(notes) => statusMutation.mutate({ status: "rejected", notes })}
             />
 
-            <EditPurchaseCustomerDialog
-              open={editContactOpen}
-              onOpenChange={setEditContactOpen}
-              purchase={purchase}
-              pending={customerUpdateMutation.isPending}
-              onSave={(payload) => {
-                customerUpdateMutation.mutate(payload, {
-                  onSuccess: () => {
-                    setEditContactOpen(false)
-                    void detailQuery.refetch()
-                  },
-                })
-              }}
-            />
           </>
         ) : null}
       </SheetContent>
     </Sheet>
+
+    {purchase ? (
+      <EditPurchaseCustomerSheet
+        open={editContactOpen}
+        onOpenChange={setEditContactOpen}
+        purchase={purchase}
+        pending={customerUpdateMutation.isPending}
+        onSave={(payload) => {
+          customerUpdateMutation.mutate(payload, {
+            onSuccess: () => {
+              setEditContactOpen(false)
+              void detailQuery.refetch()
+            },
+          })
+        }}
+      />
+    ) : null}
+    </>
   )
 }

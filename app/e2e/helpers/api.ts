@@ -89,10 +89,18 @@ export async function setPurchaseStatus(
   }
 }
 
+export type UpdatePurchaseCustomerPayload = {
+  customerName: string
+  customerPhone: string
+  customerEmail: string
+  customerCi: string
+  customerLocation: string
+}
+
 export async function updatePurchaseCustomerContact(
   request: APIRequestContext,
   purchaseId: number,
-  payload: { customerPhone?: string; customerCi?: string },
+  payload: UpdatePurchaseCustomerPayload,
 ): Promise<void> {
   const response = await request.put(`/api/admin/purchases/${purchaseId}/customer`, {
     data: payload,

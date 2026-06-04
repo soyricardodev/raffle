@@ -2,6 +2,7 @@ import fs from "node:fs"
 import { expect } from "@playwright/test"
 import {
   createPurchase,
+  DEFAULT_CUSTOMER_LOCATION,
   fetchFirstActiveRaffle,
   fetchFirstRafflePaymentMethodId,
   setPurchaseStatus,
@@ -112,9 +113,10 @@ describeWithDb("admin purchases", () => {
     const wrongPhone = `0412${String(Date.now()).slice(-7)}`
     const correctPhone = `0414${String(Date.now()).slice(-7)}`
 
+    const customerName = `E2E Phone Fix ${Date.now()}`
     const purchase = await createPurchase(request, {
       raffleId: raffle.id,
-      customerName: `E2E Phone Fix ${Date.now()}`,
+      customerName,
       customerPhone: wrongPhone,
       rafflePaymentMethodId,
       paymentReference: uniqueRef("e2e-phone-fix"),
@@ -123,7 +125,11 @@ describeWithDb("admin purchases", () => {
 
     await setPurchaseStatus(request, purchase.purchaseId, "approved")
     await updatePurchaseCustomerContact(request, purchase.purchaseId, {
+      customerName,
       customerPhone: correctPhone,
+      customerEmail: `buyer-${Date.now()}@e2e.test`,
+      customerCi: "V12345678",
+      customerLocation: DEFAULT_CUSTOMER_LOCATION,
     })
 
     const byWrong = await verifyTicketsByPhone(request, wrongPhone)

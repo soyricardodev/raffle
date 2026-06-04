@@ -14,19 +14,24 @@ import {
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog"
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 import { parsePurchaseLocationFormState } from "@/features/admin/purchases/parse-purchase-location"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
+import { cn } from "@/lib/utils"
+
+const SHEET_WIDTH_CLASS =
+  "z-[60] !w-full !max-w-full sm:!w-[min(96vw,28rem)] md:!w-[min(92vw,40rem)] lg:!w-[min(88vw,44rem)] sm:!max-w-[min(96vw,28rem)] md:!max-w-[min(92vw,40rem)] lg:!max-w-[min(88vw,44rem)]"
+
+const SHEET_LAYOUT_CLASS = "flex h-dvh max-h-dvh flex-col gap-0 overflow-hidden p-0"
 
 function inferPhoneMode(phone: string): PhoneInputMode {
   const trimmed = phone.trim()
@@ -49,7 +54,7 @@ export type EditPurchaseCustomerPayload = {
   customerLocation: string
 }
 
-type EditPurchaseCustomerDialogProps = {
+type EditPurchaseCustomerSheetProps = {
   open: boolean
   onOpenChange: (open: boolean) => void
   purchase: PurchaseDetail
@@ -57,13 +62,13 @@ type EditPurchaseCustomerDialogProps = {
   onSave: (payload: EditPurchaseCustomerPayload) => void
 }
 
-export function EditPurchaseCustomerDialog({
+export function EditPurchaseCustomerSheet({
   open,
   onOpenChange,
   purchase,
   pending = false,
   onSave,
-}: EditPurchaseCustomerDialogProps) {
+}: EditPurchaseCustomerSheetProps) {
   const [customerName, setCustomerName] = useState(purchase.customer_name)
   const [customerPhone, setCustomerPhone] = useState(purchase.customer_phone)
   const [customerEmail, setCustomerEmail] = useState(purchase.customer_email?.trim() ?? "")
@@ -173,105 +178,145 @@ export function EditPurchaseCustomerDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[min(92vh,720px)] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Editar datos del comprador</DialogTitle>
-          <DialogDescription>
-            Compra #{purchase.id}. Solo se actualiza esta compra; correos y verificación usarán los
-            datos corregidos.
-          </DialogDescription>
-        </DialogHeader>
+    <Sheet open={open} onOpenChange={onOpenChange}>
+      <SheetContent side="right" className={cn(SHEET_LAYOUT_CLASS, SHEET_WIDTH_CLASS)}>
+        <SheetHeader className="shrink-0 space-y-1 border-b px-4 py-3 pr-12 text-left">
+          <SheetTitle className="text-base">Editar datos del comprador</SheetTitle>
+          <SheetDescription className="text-left text-xs leading-snug">
+            Compra #{purchase.id} · {purchase.customer_name}. Solo esta compra se actualiza;
+            verificación y correos usarán los datos corregidos.
+          </SheetDescription>
+        </SheetHeader>
 
-        <div className="flex flex-col gap-4">
-          <LabeledIconField
-            id="admin-customer-name"
-            label="Nombre completo"
-            icon={<UserCircleIcon className="size-4" aria-hidden />}
-            value={customerName}
-            onChange={(value) => {
-              setCustomerName(value)
-              setNameHint(undefined)
-            }}
-            disabled={pending}
-            error={nameHint}
-            autoComplete="name"
-            placeholder="Ej. María González"
-          />
+        <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain px-4 py-4">
+          <div className="mx-auto w-full max-w-2xl">
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 md:gap-x-6">
+              <div className="md:col-span-2">
+                <LabeledIconField
+                  id="admin-customer-name"
+                  label="Nombre completo"
+                  description="Como aparece en la cédula o documento."
+                  icon={<UserCircleIcon className="size-4" aria-hidden />}
+                  value={customerName}
+                  onChange={(value) => {
+                    setCustomerName(value)
+                    setNameHint(undefined)
+                  }}
+                  disabled={pending}
+                  error={nameHint}
+                  autoComplete="name"
+                  placeholder="Ej. María González"
+                />
+              </div>
 
-          <PhoneInputField
-            value={customerPhone}
-            mode={phoneMode}
-            disabled={pending}
-            error={phoneHint}
-            onChange={(value) => {
-              setCustomerPhone(value)
-              setPhoneHint(undefined)
-            }}
-            onModeChange={(mode) => {
-              setPhoneMode(mode)
-              setPhoneHint(undefined)
-            }}
-          />
+              <div className="min-w-0">
+                <PhoneInputField
+                  value={customerPhone}
+                  mode={phoneMode}
+                  disabled={pending}
+                  error={phoneHint}
+                  onChange={(value) => {
+                    setCustomerPhone(value)
+                    setPhoneHint(undefined)
+                  }}
+                  onModeChange={(mode) => {
+                    setPhoneMode(mode)
+                    setPhoneHint(undefined)
+                  }}
+                />
+              </div>
 
-          <CiInputField
-            prefix={ciPrefix}
-            number={ciNumber}
-            disabled={pending}
-            error={ciHint}
-            onPrefixChange={setCiPrefix}
-            onNumberChange={(value) => {
-              setCiNumber(value)
-              setCiHint(undefined)
-            }}
-          />
+              <div className="min-w-0">
+                <CiInputField
+                  prefix={ciPrefix}
+                  number={ciNumber}
+                  disabled={pending}
+                  error={ciHint}
+                  onPrefixChange={setCiPrefix}
+                  onNumberChange={(value) => {
+                    setCiNumber(value)
+                    setCiHint(undefined)
+                  }}
+                />
+              </div>
 
-          <LabeledIconField
-            id="admin-customer-email"
-            label="Email"
-            icon={<EnvelopeSimpleIcon className="size-4" aria-hidden />}
-            value={customerEmail}
-            onChange={(value) => {
-              setCustomerEmail(value)
-              setEmailHint(undefined)
-            }}
-            disabled={pending}
-            error={emailHint}
-            type="email"
-            autoComplete="email"
-            placeholder="correo@ejemplo.com"
-          />
+              <div className="md:col-span-2">
+                <LabeledIconField
+                  id="admin-customer-email"
+                  label="Email"
+                  description="Para confirmaciones y avisos de la compra."
+                  icon={<EnvelopeSimpleIcon className="size-4" aria-hidden />}
+                  value={customerEmail}
+                  onChange={(value) => {
+                    setCustomerEmail(value)
+                    setEmailHint(undefined)
+                  }}
+                  disabled={pending}
+                  error={emailHint}
+                  type="email"
+                  autoComplete="email"
+                  placeholder="correo@ejemplo.com"
+                />
+              </div>
 
-          <LocationFields
-            locationType={locationType}
-            selectedState={selectedState}
-            customLocation={customLocation}
-            disabled={pending}
-            locationError={locationHint}
-            onLocationTypeChange={(type) => {
-              setLocationType(type)
-              setLocationHint(undefined)
-            }}
-            onSelectedStateChange={(state) => {
-              setSelectedState(state)
-              setLocationHint(undefined)
-            }}
-            onCustomLocationChange={(value) => {
-              setCustomLocation(value)
-              setLocationHint(undefined)
-            }}
-          />
+              <div className="md:col-span-2">
+                <LocationFields
+                  locationType={locationType}
+                  selectedState={selectedState}
+                  customLocation={customLocation}
+                  disabled={pending}
+                  locationError={locationHint}
+                  onLocationTypeChange={(type) => {
+                    setLocationType(type)
+                    setLocationHint(undefined)
+                  }}
+                  onSelectedStateChange={(state) => {
+                    setSelectedState(state)
+                    setLocationHint(undefined)
+                  }}
+                  onCustomLocationChange={(value) => {
+                    setCustomLocation(value)
+                    setLocationHint(undefined)
+                  }}
+                />
+              </div>
+            </div>
+          </div>
         </div>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" disabled={pending} onClick={() => onOpenChange(false)}>
-            Cancelar
-          </Button>
-          <Button type="button" disabled={!canSubmit} onClick={handleSubmit}>
-            Guardar cambios
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <div
+          className="shrink-0 border-t bg-background shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.12)] dark:shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.4)]"
+          role="group"
+          aria-label="Acciones"
+        >
+          <div className="box-border w-full max-w-full min-w-0 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+            {!hasChanges ? (
+              <p className="text-muted-foreground mb-2 text-center text-xs sm:text-left">
+                No hay cambios pendientes
+              </p>
+            ) : null}
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+              <Button
+                type="button"
+                variant="outline"
+                className="h-11 w-full min-w-0 sm:col-start-1 sm:h-9"
+                disabled={pending}
+                onClick={() => onOpenChange(false)}
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                className="h-11 w-full min-w-0 sm:col-start-2 sm:h-9"
+                disabled={!canSubmit}
+                onClick={handleSubmit}
+              >
+                {pending ? "Guardando…" : "Guardar cambios"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </SheetContent>
+    </Sheet>
   )
 }

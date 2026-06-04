@@ -4,7 +4,7 @@ import {
   pickPurchaseDetailPatch,
   type PurchaseDetailApi,
 } from "@/features/admin/purchases/purchase-detail-api"
-import type { EditPurchaseCustomerPayload } from "@/features/admin/purchases/EditPurchaseCustomerDialog"
+import type { EditPurchaseCustomerPayload } from "@/features/admin/purchases/EditPurchaseCustomerSheet"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { adminFetch } from "@/lib/admin-fetch"
 
@@ -30,8 +30,7 @@ export function useAdminPurchaseCustomerUpdate({
     onSuccess: async (data) => {
       onUpdated(pickPurchaseDetailPatch(data))
       void queryClient.invalidateQueries({ queryKey: ["admin"] })
-      toast.success("Datos de contacto actualizados")
-      return detail
+      toast.success("Datos del comprador actualizados")
     },
     onError: (error: Error) => toast.error(error.message),
   })
