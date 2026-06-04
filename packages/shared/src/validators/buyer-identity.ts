@@ -9,7 +9,14 @@ export type CountryScope = z.infer<typeof CountryScope>
 /** Phone and location share the same venezuela vs abroad scope. */
 export type PhoneInputMode = CountryScope
 
-export const VENEZUELAN_MOBILE_PREFIXES = ["0412", "0414", "0422", "0424", "0426"] as const
+export const VENEZUELAN_MOBILE_PREFIXES = [
+  "0412",
+  "0414",
+  "0416",
+  "0422",
+  "0424",
+  "0426",
+] as const
 export type VenezuelanMobilePrefix = (typeof VENEZUELAN_MOBILE_PREFIXES)[number]
 
 export const DEFAULT_VENEZUELAN_MOBILE_PREFIX: VenezuelanMobilePrefix = "0412"

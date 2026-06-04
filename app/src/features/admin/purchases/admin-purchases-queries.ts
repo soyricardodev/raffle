@@ -1,3 +1,4 @@
+import { PaymentMethod } from "@raffle/shared/payment-methods"
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
@@ -8,11 +9,13 @@ import { getDashboardStats } from "@/server/raffle.service"
 export const ADMIN_PURCHASES_PAGE_SIZE = 50
 
 const PurchaseStatusFilter = z.enum(["all", "pending", "approved", "rejected"]).catch("all")
+const PaymentMethodFilter = z.union([z.literal("all"), PaymentMethod]).catch("all")
 
 const AdminPurchasesInput = z.object({
   limit: z.number().int().min(1).max(100).catch(ADMIN_PURCHASES_PAGE_SIZE),
   page: z.number().int().min(1).catch(1),
   status: PurchaseStatusFilter,
+  paymentMethod: PaymentMethodFilter,
   raffleId: z.string().nullable().optional(),
   search: z.string().nullable().optional(),
   searchType: z.enum(["all", "name", "phone", "email", "ci"]).catch("all"),
@@ -26,6 +29,7 @@ export type AdminPurchasesResult = Awaited<ReturnType<typeof listAdminPurchases>
 
 export type AdminPurchaseSearchParams = {
   status?: string
+  payment_method?: string
   raffle_id?: string
   q?: string
   start?: string
@@ -59,6 +63,7 @@ export const fetchAdminPurchases = createServerFn({ method: "POST" })
       limit: data.limit,
       page: data.page,
       status: data.status,
+      paymentMethod: data.paymentMethod,
       raffleId: data.raffleId,
       search: data.search,
       searchType: data.searchType,
@@ -80,6 +85,7 @@ export function normalizeAdminPurchaseFilters(
     limit: search.limit ?? ADMIN_PURCHASES_PAGE_SIZE,
     page: search.page ?? 1,
     status: search.status ?? "all",
+    paymentMethod: search.payment_method ?? "all",
     raffleId,
     search: search.q?.trim() || null,
     searchType: "all",

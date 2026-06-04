@@ -10,6 +10,7 @@ import { adminNavRouteHead } from "@/features/admin/admin-page-title"
 
 type ComprasSearch = {
   status?: string
+  payment_method?: string
   raffle_id?: string
   q?: string
   start?: string
@@ -23,6 +24,8 @@ type ComprasSearch = {
 export const Route = createFileRoute("/admin/compras")({
   validateSearch: (search: Record<string, unknown>): ComprasSearch => ({
     status: typeof search.status === "string" ? search.status : undefined,
+    payment_method:
+      typeof search.payment_method === "string" ? search.payment_method : undefined,
     raffle_id: typeof search.raffle_id === "string" ? search.raffle_id : undefined,
     q: typeof search.q === "string" ? search.q : undefined,
     start: typeof search.start === "string" ? search.start : undefined,

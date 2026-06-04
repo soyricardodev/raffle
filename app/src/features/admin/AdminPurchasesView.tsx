@@ -1,4 +1,9 @@
 import { ArrowClockwiseIcon, MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react"
+import {
+  PAYMENT_METHOD_DEFINITIONS,
+  paymentMethodTypeLabel,
+  type PaymentMethod,
+} from "@raffle/shared/payment-methods"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
@@ -43,6 +48,13 @@ import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/compras")
 const POLL_MS = 30_000
+
+const PAYMENT_METHOD_FILTER_OPTIONS = (
+  Object.keys(PAYMENT_METHOD_DEFINITIONS) as Array<PaymentMethod>
+).map((code) => ({
+  value: code,
+  label: paymentMethodTypeLabel(code),
+}))
 
 export function AdminPurchasesView() {
   const routeSearch = routeApi.useSearch()
@@ -140,6 +152,7 @@ export function AdminPurchasesView() {
       filters.start ||
       filters.end ||
       filters.status !== "all" ||
+      filters.paymentMethod !== "all" ||
       filters.raffleId,
   )
 
@@ -262,6 +275,25 @@ export function AdminPurchasesView() {
               </Select>
 
               <Select
+                value={filters.paymentMethod}
+                onValueChange={(payment_method) => updateSearch({ payment_method, page: 1 })}
+              >
+                <SelectTrigger size="sm" className="w-[148px] max-w-full">
+                  <SelectValue placeholder="Método de pago" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="all">Todos los métodos</SelectItem>
+                    {PAYMENT_METHOD_FILTER_OPTIONS.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              <Select
                 value={filters.raffleId || "all"}
                 onValueChange={(value) =>
                   updateSearch({
@@ -312,6 +344,7 @@ export function AdminPurchasesView() {
                   onClick={() =>
                     updateSearch({
                       status: undefined,
+                      payment_method: undefined,
                       raffle_id: "all",
                       q: undefined,
                       start: undefined,

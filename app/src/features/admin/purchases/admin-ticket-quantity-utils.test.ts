@@ -20,6 +20,12 @@ describe("getAdminTicketTargetBounds", () => {
     expect(bounds.max).toBe(2400)
     expect(resolveAdminTicketTarget("1500", 400, 2000).target).toBe(1500)
   })
+
+  it("allows targets above 1000 when stock permits", () => {
+    const bounds = getAdminTicketTargetBounds(1000, 9000)
+    expect(bounds.max).toBe(10000)
+    expect(resolveAdminTicketTarget("7500", 1000, 9000).target).toBe(7500)
+  })
 })
 
 describe("resolveAdminTicketTarget", () => {

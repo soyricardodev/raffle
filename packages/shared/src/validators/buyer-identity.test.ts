@@ -41,6 +41,7 @@ describe("buyer identity phone helpers", () => {
 
   it("preserves suffix when changing operator", () => {
     expect(applyVenezuelanMobilePrefix("04121234567", "0414")).toBe("04141234567")
+    expect(applyVenezuelanMobilePrefix("04121234567", "0416")).toBe("04161234567")
   })
 
   it("normalizes legacy international scope", () => {

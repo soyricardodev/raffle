@@ -11,9 +11,9 @@ export function paymentReferenceValidationMessage(
   minLength: number,
 ): string | undefined {
   const trimmed = reference.trim()
-  if (!trimmed) return "Ingresa la referencia de pago"
+  if (!trimmed) return "Ingresa los últimos dígitos de tu pago"
   if (trimmed.length < minLength) {
-    return `La referencia debe tener al menos ${minLength} caracteres`
+    return `Debes ingresar al menos los últimos ${minLength} dígitos`
   }
   return undefined
 }

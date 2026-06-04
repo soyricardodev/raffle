@@ -197,7 +197,8 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
         <div>
           <p className="text-sm font-semibold">Confirma tu pago</p>
           <p className="text-muted-foreground text-xs leading-snug">
-            Paso final: indica la referencia y sube el comprobante para validar tu compra.
+            Paso final: indica los últimos dígitos de la referencia y sube el comprobante para
+            validar tu compra.
           </p>
         </div>
       </div>

@@ -248,6 +248,7 @@ export async function listAdminPurchases(params: {
   limit: number
   page: number
   status?: string
+  paymentMethod?: string
   raffleId?: string | null
   search?: string | null
   searchType?: string
@@ -255,12 +256,23 @@ export async function listAdminPurchases(params: {
   end?: string | null
 }) {
   const db = getDb()
-  const { limit, page, status = "all", raffleId, search, searchType = "all", start, end } = params
+  const {
+    limit,
+    page,
+    status = "all",
+    paymentMethod = "all",
+    raffleId,
+    search,
+    searchType = "all",
+    start,
+    end,
+  } = params
   const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100))
   const offset = (Math.max(1, Number(page) || 1) - 1) * safeLimit
 
   const conditions = [sql`1=1`]
   if (status !== "all") conditions.push(eq(purchases.status, status))
+  if (paymentMethod !== "all") conditions.push(eq(purchases.paymentMethod, paymentMethod))
   if (raffleId) conditions.push(eq(purchases.raffleId, Number(raffleId)))
   if (search && searchType === "all") {
     const term = `%${search}%`

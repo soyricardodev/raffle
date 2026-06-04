@@ -16,13 +16,13 @@ describe("payment reference helpers", () => {
   })
 
   it("validates reference length per method minimum", () => {
-    expect(paymentReferenceValidationMessage("", 8)).toBe("Ingresa la referencia de pago")
+    expect(paymentReferenceValidationMessage("", 8)).toBe("Ingresa los últimos dígitos de tu pago")
     expect(paymentReferenceValidationMessage("1234567", 8)).toBe(
-      "La referencia debe tener al menos 8 caracteres",
+      "Debes ingresar al menos los últimos 8 dígitos",
     )
     expect(paymentReferenceValidationMessage("12345678", 8)).toBeUndefined()
     expect(paymentReferenceValidationMessage("123456789", 10)).toBe(
-      "La referencia debe tener al menos 10 caracteres",
+      "Debes ingresar al menos los últimos 10 dígitos",
     )
   })
 })

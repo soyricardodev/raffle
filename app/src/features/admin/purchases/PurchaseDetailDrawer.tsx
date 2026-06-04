@@ -161,8 +161,8 @@ export function PurchaseDetailDrawer({
               <SheetDescription className="sr-only">Detalle de compra</SheetDescription>
             </SheetHeader>
 
-            <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-2">
-              <div className="flex min-h-0 flex-col gap-2 overflow-y-auto border-b p-3 lg:border-b-0 lg:border-r">
+            <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+              <div className="flex min-h-0 flex-col gap-2 overflow-y-auto border-b p-2.5 lg:border-b-0 lg:border-r lg:p-3">
                 <PurchaseCustomerFacts purchase={purchase} className="text-sm" />
                 <PurchaseEmailsSection purchase={purchase} />
                 <section className="rounded-lg border p-2">
@@ -180,13 +180,16 @@ export function PurchaseDetailDrawer({
                 </section>
               </div>
 
-              <div className="flex min-h-0 flex-col overflow-hidden p-3">
-                <p className="text-muted-foreground mb-1.5 shrink-0 text-xs font-medium uppercase">
+              <div className="flex min-h-0 flex-col overflow-hidden p-2.5 lg:p-3">
+                <p className="text-muted-foreground mb-1 shrink-0 text-xs font-medium uppercase">
                   Pago
                 </p>
                 <PaymentMeta purchase={purchase} />
                 {purchase.payment_proof_url ? (
-                  <PaymentProofPreview url={purchase.payment_proof_url} className="min-h-[160px]" />
+                  <PaymentProofPreview
+                    url={purchase.payment_proof_url}
+                    className="min-h-[min(72vh,520px)] flex-1"
+                  />
                 ) : null}
               </div>
             </div>

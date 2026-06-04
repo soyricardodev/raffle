@@ -38,8 +38,7 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor="payment-reference">Referencia del pago</FieldLabel>
       <FieldDescription>
-        Número que aparece en tu transferencia o pago móvil. Necesitas al menos {minLength}{" "}
-        caracteres.
+        Ingresa los últimos {minLength} dígitos que aparecen en tu transferencia o pago móvil.
       </FieldDescription>
       <InputGroup className={cn(formInputHeightClassName, "h-11")}>
         <InputGroupAddon align="inline-start">
@@ -52,8 +51,8 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
           disabled={disabled}
           aria-invalid={!!error}
           className="text-base"
-          placeholder={`Mín. ${minLength} caracteres`}
-          inputMode="text"
+          placeholder={`Últimos ${minLength} dígitos`}
+          inputMode="numeric"
           autoComplete="off"
           maxLength={PAYMENT_REFERENCE_MAX_LENGTH}
         />
@@ -80,12 +79,12 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
       />
       {!error && trimmedLength > 0 && !isComplete ? (
         <p className="text-muted-foreground text-xs tabular-nums">
-          Faltan {remaining} caracter{remaining === 1 ? "" : "es"}
+          Faltan {remaining} dígito{remaining === 1 ? "" : "s"}
         </p>
       ) : null}
       {!error && isComplete ? (
         <p className="text-xs text-emerald-700 tabular-nums dark:text-emerald-300">
-          Referencia completa
+          Últimos {minLength} dígitos completos
         </p>
       ) : null}
       <FieldError>{error}</FieldError>

@@ -90,7 +90,7 @@ export const PhoneInputField = memo(function PhoneInputField({
           variant="outline"
           size="sm"
           spacing={0}
-          className="grid w-full grid-cols-3 sm:grid-cols-5"
+          className="grid w-full grid-cols-3 sm:grid-cols-6"
           disabled={disabled}
           aria-label="Operador móvil"
         >

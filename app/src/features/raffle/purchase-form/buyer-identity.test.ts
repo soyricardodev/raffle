@@ -19,6 +19,7 @@ describe("buyer identity", () => {
     expect(isValidVenezuelanMobile("04121234567")).toBe(true)
     expect(isValidVenezuelanMobile("04131234567")).toBe(false)
     expect(isValidCustomerPhone("04141234567", "venezuela")).toBe(true)
+    expect(isValidCustomerPhone("04161234567", "venezuela")).toBe(true)
     expect(isValidCustomerPhone("+34600111222", "other")).toBe(true)
   })
 

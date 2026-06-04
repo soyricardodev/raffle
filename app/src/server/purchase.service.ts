@@ -303,11 +303,6 @@ export async function addTicketsToPurchase(
 
     assertRaffleOpenForAdminTicketChanges(raffle, purchase.raffleId)
 
-    const newQty = purchase.ticketQuantity + quantity
-    if (newQty > raffle.maxPurchase) {
-      throw new InvalidQuantityError(1, raffle.maxPurchase, newQty)
-    }
-
     if (raffle.ticketsAvailable < quantity) {
       throw new InsufficientTicketsError(raffle.ticketsAvailable, quantity)
     }
