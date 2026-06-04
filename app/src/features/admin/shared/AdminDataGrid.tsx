@@ -17,6 +17,7 @@ type AdminDataGridProps<TData> = {
   table: TanStackTable<TData>
   columnCount: number
   loading?: boolean
+  loadingMore?: boolean
   emptyMessage: string
   getRowClassName?: (row: TData) => string | undefined
   onRowClick?: (row: TData) => void
@@ -35,6 +36,7 @@ export function AdminDataGrid<TData>({
   table,
   columnCount,
   loading = false,
+  loadingMore = false,
   emptyMessage,
   getRowClassName,
   onRowClick,
@@ -76,23 +78,34 @@ export function AdminDataGrid<TData>({
               </TableCell>
             </TableRow>
           ) : (
-            rows.map((row) => (
-              <TableRow
-                key={row.id}
-                className={cn(
-                  "h-9",
-                  onRowClick && "cursor-pointer",
-                  getRowClassName?.(row.original),
-                )}
-                onClick={() => onRowClick?.(row.original)}
-              >
-                {row.getVisibleCells().map((cell) => (
-                  <TableCell key={cell.id} className="px-2 py-1.5 align-middle">
-                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                  </TableCell>
-                ))}
-              </TableRow>
-            ))
+            <>
+              {rows.map((row) => (
+                <TableRow
+                  key={row.id}
+                  className={cn(
+                    "h-9",
+                    onRowClick && "cursor-pointer",
+                    getRowClassName?.(row.original),
+                  )}
+                  onClick={() => onRowClick?.(row.original)}
+                >
+                  {row.getVisibleCells().map((cell) => (
+                    <TableCell key={cell.id} className="px-2 py-1.5 align-middle">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </TableCell>
+                  ))}
+                </TableRow>
+              ))}
+              {loadingMore
+                ? Array.from({ length: 3 }).map((_, index) => (
+                    <TableRow key={`loading-more-${index}`}>
+                      <TableCell colSpan={columnCount} className="px-2 py-1.5">
+                        <Skeleton className="h-7 rounded-xl" />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                : null}
+            </>
           )}
         </TableBody>
       </Table>

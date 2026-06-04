@@ -36,4 +36,29 @@ describeWithDb("ticket verifier", () => {
     expect(tickets.length).toBeGreaterThan(0)
     expect(tickets[0]?.raffle_name).toMatch(new RegExp(raffle.name, "i"))
   })
+
+  test("deep link auto-searches by phone on /verificar", async ({ page, request }) => {
+    const raffle = await fetchFirstActiveRaffle(request)
+    test.skip(!raffle, "No active raffle — run scripts/seed.ts")
+
+    const customerPhone = `0414${String(Date.now()).slice(-7)}`
+
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
+
+    await createPurchase(request, {
+      raffleId: raffle.id,
+      customerName: `E2E Verify Deep ${Date.now()}`,
+      customerPhone,
+      rafflePaymentMethodId,
+      paymentReference: uniqueRef("e2e-verify-deep"),
+      ticketQuantity: 1,
+    })
+
+    const encodedPhone = encodeURIComponent(customerPhone)
+    await page.goto(`/verificar?phone=${encodedPhone}&auto=1`, {
+      waitUntil: "domcontentloaded",
+    })
+
+    await expect(page.getByText(/boleto(s)? en/i)).toBeVisible({ timeout: 15_000 })
+  })
 })

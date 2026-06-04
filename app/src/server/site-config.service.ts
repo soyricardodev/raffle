@@ -28,6 +28,9 @@ export async function updateSiteConfigPatch(patch: AdminSiteConfigPatch) {
   if (parsed.email_settings !== undefined) {
     payload.email_settings = parsed.email_settings
   }
+  if (parsed.purchase_reject_reasons !== undefined) {
+    payload.purchase_reject_reasons = parsed.purchase_reject_reasons
+  }
   await settingsRepo.patchAppSettings(payload)
   if (parsed.email_settings !== undefined) {
     invalidateEmailSettingsCache()

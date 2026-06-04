@@ -3,13 +3,21 @@ import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import {
+  PurchaseSuccessTicketBadge,
+  getPurchaseSuccessTicketBadgeClassName,
+} from "@/features/raffle/purchase-form/purchase-success-ticket-badge"
+import {
   getHiddenTicketCount,
   getTicketListDisplayMode,
   getVisibleTicketNumbers,
   TICKET_COLLAPSE_THRESHOLD,
 } from "@/features/raffle/purchase-form/purchase-success-tickets"
 import { VirtualTicketBadgeGrid } from "@/features/raffle/purchase-form/VirtualTicketBadgeGrid"
+import { purchaseSuccessTicketsSectionClassName } from "@/features/raffle/purchase-form/field-styles"
 import { cn } from "@/lib/utils"
+
+/** Row height for h-9 badges + gap-1.5 in the virtual grid. */
+const PURCHASE_SUCCESS_TICKET_ROW_STRIDE_PX = 42
 
 type PurchaseSuccessTicketsProps = {
   purchaseId: number
@@ -19,7 +27,7 @@ type PurchaseSuccessTicketsProps = {
 }
 
 const listScrollClassName =
-  "bg-background/70 min-h-11 overflow-y-auto overscroll-contain rounded-md border p-1.5"
+  "border-amber-300/40 bg-background/80 min-h-14 overflow-y-auto overscroll-contain rounded-lg border p-2"
 
 export function PurchaseSuccessTickets({
   purchaseId,
@@ -49,7 +57,7 @@ export function PurchaseSuccessTickets({
   }
 
   return (
-    <div className="from-primary/8 to-primary/4 flex min-h-[124px] flex-1 flex-col rounded-xl border bg-gradient-to-br p-3">
+    <div className={purchaseSuccessTicketsSectionClassName}>
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
@@ -78,27 +86,25 @@ export function PurchaseSuccessTickets({
           listId={listId}
           ticketCount={ticketCount}
           className={cn(listScrollClassName, "max-h-[min(34vh,280px)]")}
+          getBadgeClassName={getPurchaseSuccessTicketBadgeClassName}
+          rowStridePx={PURCHASE_SUCCESS_TICKET_ROW_STRIDE_PX}
         />
       ) : (
         <div
           id={listId}
-          className={cn(listScrollClassName, expanded ? "max-h-[min(34vh,280px)]" : "max-h-[72px]")}
+          className={cn(listScrollClassName, expanded ? "max-h-[min(34vh,280px)]" : "max-h-[100px]")}
           role="list"
           aria-label={`Números de boletos asignados, ${ticketCount} en total`}
         >
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {visibleTickets.map((ticket) => (
-              <Badge
-                key={ticket}
-                variant="outline"
-                className="h-6 px-1.5 font-mono text-[10px] tabular-nums"
-                role="listitem"
-              >
-                {ticket}
-              </Badge>
+              <PurchaseSuccessTicketBadge key={ticket} ticket={ticket} />
             ))}
             {hiddenTicketCount > 0 ? (
-              <Badge variant="secondary" className="h-6 px-1.5 text-[10px] tabular-nums">
+              <Badge
+                variant="secondary"
+                className="h-9 min-w-[3.25rem] rounded-lg border border-amber-400/50 bg-amber-100 px-2.5 text-sm font-bold text-amber-950 tabular-nums dark:bg-amber-500/30 dark:text-amber-50"
+              >
                 +{hiddenTicketCount}
               </Badge>
             ) : null}

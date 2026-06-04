@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router"
 import type { ReactNode } from "react"
+import { buildVerifyHref } from "@/features/verify/build-verify-href"
 import { marqueeDurationSec } from "@/features/raffle/PurchaseActivityMarquee"
 import { cn } from "@/lib/utils"
 
@@ -29,7 +30,7 @@ export function buildTickerViewModel(
     return {
       label: (
         <StaticActivityLabel>
-          <Link to="/verificar" className="text-foreground hover:underline">
+          <Link {...buildVerifyHref()} className="text-foreground hover:underline">
             Sin rifa activa
           </Link>
         </StaticActivityLabel>

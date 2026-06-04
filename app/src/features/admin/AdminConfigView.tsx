@@ -21,6 +21,7 @@ import { ColorField } from "@/features/admin/config/ColorField"
 import { EmailConfigTab } from "@/features/admin/config/EmailConfigTab"
 import { OfficialLogosEditor } from "@/features/admin/config/OfficialLogosEditor"
 import { PostPurchasePromoConfigTab } from "@/features/admin/config/PostPurchasePromoConfigTab"
+import { PurchaseRejectReasonsEditor } from "@/features/admin/config/PurchaseRejectReasonsEditor"
 import { SitePreviewCard } from "@/features/admin/config/SitePreviewCard"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
@@ -153,6 +154,9 @@ export function AdminConfigView() {
           </TabsTrigger>
           <TabsTrigger value="contact" className="min-h-9 flex-1 text-xs sm:text-sm">
             Contacto
+          </TabsTrigger>
+          <TabsTrigger value="purchases" className="min-h-9 flex-1 text-xs sm:text-sm">
+            Compras
           </TabsTrigger>
           <TabsTrigger value="email" className="min-h-9 flex-1 text-xs sm:text-sm">
             Correos
@@ -496,6 +500,24 @@ export function AdminConfigView() {
                   />
                 </Field>
               </FieldGroup>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="purchases">
+          <Card>
+            <CardHeader>
+              <CardTitle>Compras</CardTitle>
+              <CardDescription>Motivos predefinidos al rechazar una compra en el panel.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <PurchaseRejectReasonsEditor
+                reasons={draft.purchase_reject_reasons}
+                onChange={(purchase_reject_reasons) =>
+                  update("purchase_reject_reasons", purchase_reject_reasons)
+                }
+                fieldError={fieldError}
+              />
             </CardContent>
           </Card>
         </TabsContent>

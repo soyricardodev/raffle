@@ -61,6 +61,18 @@ export function getStatusLabel(status: string) {
   return statusLabels[status] ?? status
 }
 
+const raffleEyebrowLabels: Record<string, string> = {
+  active: "Rifa activa",
+  paused: "Rifa pausada",
+  finished: "Rifa finalizada",
+  draft: "Rifa en borrador",
+  cancelled: "Rifa cancelada",
+}
+
+export function getRaffleEyebrowLabel(status: string) {
+  return raffleEyebrowLabels[status] ?? "Rifa en curso"
+}
+
 export function getPurchaseStatusClass(status: string) {
   switch (status) {
     case "approved":

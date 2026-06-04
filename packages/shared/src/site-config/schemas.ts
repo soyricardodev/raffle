@@ -84,6 +84,42 @@ export const PurchaseSuccessPromoSchema = z.object({
   tiktok_url: z.string().trim().max(200).default(""),
 })
 
+/** Default quick-reject reasons shown in admin and rejection dialog when unset. */
+export const DEFAULT_PURCHASE_REJECT_REASONS = [
+  "Pago duplicado",
+  "Referencia no compatible con la imagen",
+  "Imagen de pago no corresponde a lo que se espera",
+  "Comprobante ilegible o incompleto",
+  "Monto del pago no coincide con la compra",
+  "Pago no recibido o no verificado en el banco",
+] as const
+
+export const DUPLICATE_PAYMENT_REASON = DEFAULT_PURCHASE_REJECT_REASONS[0]
+
+/** Admin-only: editable quick-reject reason texts (max matches purchase status notes). */
+export const PurchaseRejectReasonsSchema = z
+  .array(z.string().trim().min(1, "El motivo no puede estar vacío").max(500, "Máximo 500 caracteres"))
+  .min(1, "Agrega al menos un motivo")
+  .max(20, "Máximo 20 motivos")
+
+export function normalizePurchaseRejectReasons(raw: unknown): string[] {
+  const parsed = PurchaseRejectReasonsSchema.safeParse(raw)
+  if (parsed.success && parsed.data.length > 0) {
+    return parsed.data
+  }
+  return [...DEFAULT_PURCHASE_REJECT_REASONS]
+}
+
+export function findDuplicatePurchaseRejectReasonIndex(reasons: string[]): number {
+  const seen = new Set<string>()
+  for (let i = 0; i < reasons.length; i++) {
+    const key = reasons[i]!.trim()
+    if (seen.has(key)) return i
+    seen.add(key)
+  }
+  return -1
+}
+
 /** Admin-only: transactional email sender and automation toggles. */
 export const EmailSettingsSchema = z.object({
   enabled: z.boolean().default(true),
@@ -105,6 +141,7 @@ export const AdminSiteConfigPatchSchema = z.object({
   seo_config: SeoConfigSchema.optional(),
   purchase_success_promo: PurchaseSuccessPromoSchema.optional(),
   email_settings: EmailSettingsSchema.optional(),
+  purchase_reject_reasons: PurchaseRejectReasonsSchema.optional(),
 })
 
 export type SiteInfo = z.infer<typeof SiteInfoSchema>

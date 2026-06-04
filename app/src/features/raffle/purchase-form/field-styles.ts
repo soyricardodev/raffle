@@ -47,3 +47,39 @@ export const paymentDetailsPanelClassName = cn(
 
 export const paymentCompletionBoxClassName =
   "flex flex-col gap-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3"
+
+/** CTA verificar boletos: amarillo suave, legible en light y dark. */
+export const verifyTicketsCtaCardClassName = cn(
+  "rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-100 via-amber-50/90 to-card py-0 shadow-sm shadow-amber-500/15",
+  "dark:border-amber-500/40 dark:from-amber-500/22 dark:via-amber-500/12 dark:to-card dark:shadow-amber-500/10",
+)
+
+export const verifyTicketsCtaIconClassName = cn(
+  "flex size-10 shrink-0 items-center justify-center rounded-xl",
+  "bg-amber-200/90 text-amber-900",
+  "dark:bg-amber-500/35 dark:text-amber-50",
+)
+
+export const verifyTicketsCtaHintClassName = cn(
+  "text-center text-xs text-amber-900/75",
+  "dark:text-amber-100/85",
+)
+
+export const verifyTicketsCtaButtonClassName = cn(
+  "min-h-11 w-full border text-base font-semibold shadow-sm",
+  "border-amber-400/70 bg-amber-200 text-amber-950 hover:bg-amber-300/95",
+  "dark:border-amber-400/50 dark:bg-amber-500/40 dark:text-amber-50 dark:hover:bg-amber-500/55",
+)
+
+/** Chip de número de boleto (post-compra y listados similares). */
+export const purchaseSuccessTicketBadgeClassName = cn(
+  "h-9 min-w-[3.25rem] rounded-lg border px-2.5 font-mono text-sm font-bold tabular-nums shadow-sm",
+  "border-amber-400/70 bg-gradient-to-br from-amber-200 to-amber-100 text-amber-950",
+  "dark:border-amber-400/50 dark:from-amber-500/55 dark:to-amber-500/35 dark:text-amber-50",
+)
+
+export const purchaseSuccessTicketsSectionClassName = cn(
+  "flex min-h-[124px] flex-1 flex-col rounded-xl border p-3 shadow-sm",
+  "border-amber-400/40 bg-gradient-to-br from-amber-100/90 via-amber-50/60 to-card",
+  "dark:border-amber-500/35 dark:from-amber-500/18 dark:via-amber-500/10 dark:to-card",
+)

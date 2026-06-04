@@ -10,6 +10,8 @@ import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField
 import { TicketVerifierEmpty } from "@/features/verify/TicketVerifierEmpty"
 import { useTicketVerify } from "@/features/verify/use-ticket-verify"
 import { VerifiedTicketsList } from "@/features/verify/VerifiedTicketsList"
+import { VerifyPurchaseStatusLegend } from "@/features/verify/VerifyPurchaseStatusLegend"
+import type { VerifyRouteSearch } from "@/features/verify/verify-route-search"
 import { VerifySearchMethodPicker } from "@/features/verify/VerifySearchMethodPicker"
 import { maskPhoneTail } from "@/features/verify/verify-profile"
 import {
@@ -17,7 +19,11 @@ import {
   verifySearchMethodLabel,
 } from "@/features/verify/verify-search-config"
 
-export function TicketVerifier() {
+type TicketVerifierProps = {
+  initialSearch?: VerifyRouteSearch
+}
+
+export function TicketVerifier({ initialSearch }: TicketVerifierProps) {
   const {
     resultsRef,
     form,
@@ -30,7 +36,7 @@ export function TicketVerifier() {
     verifyMutation,
     runSearch,
     runQuickPhoneSearch,
-  } = useTicketVerify()
+  } = useTicketVerify({ initialSearch })
 
   const tickets = verifyMutation.data ?? []
   const hasSearched = verifyMutation.isSuccess
@@ -174,7 +180,10 @@ export function TicketVerifier() {
         )}
 
         {tickets.length > 0 && !verifyMutation.isPending && (
-          <VerifiedTicketsList tickets={tickets} />
+          <>
+            <VerifiedTicketsList tickets={tickets} />
+            <VerifyPurchaseStatusLegend />
+          </>
         )}
       </div>
     </div>

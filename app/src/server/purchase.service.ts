@@ -10,11 +10,13 @@ import {
 } from "@raffle/shared/errors"
 import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
 import type { CustomerLocationType, PurchaseStatus } from "@raffle/shared/validators"
+import { normalizePhone } from "@raffle/shared/db"
 import {
   formatCustomerCi,
   parseCustomerCi,
   paymentReferenceValidationMessage,
   resolvePaymentReferenceMinLength,
+  type UpdatePurchaseCustomerInput,
 } from "@raffle/shared/validators"
 import { type WithRetryTransactionOptions, withRetryTransaction } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
@@ -430,6 +432,107 @@ export async function removeTicketsFromPurchase(
   }
 
   return result
+}
+
+function locationContextFromPurchase(customerLocation: string | null): {
+  locationType: CustomerLocationType
+  venezuelaState: string | null
+} {
+  const loc = customerLocation?.trim() ?? ""
+  if (loc.startsWith("Venezuela,")) {
+    const state = loc.slice("Venezuela,".length).trim()
+    return { locationType: "venezuela", venezuelaState: state || null }
+  }
+  if (loc) {
+    return { locationType: "other", venezuelaState: null }
+  }
+  return { locationType: "venezuela", venezuelaState: null }
+}
+
+function formatCiForStorage(ci: string): string {
+  const parsed = parseCustomerCi(ci)
+  if (!parsed) return ci.trim().substring(0, 20)
+  return formatCustomerCi(parsed.prefix, parsed.number)
+}
+
+export async function updatePurchaseCustomerContact(
+  purchaseId: number,
+  patch: UpdatePurchaseCustomerInput,
+  audit: PurchaseAdminAudit,
+) {
+  const outcome = await withRetryTransaction(async (tx) => {
+    const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
+    if (!purchase) throw new PurchaseNotFoundError(purchaseId)
+
+    const nextName = patch.customerName.trim()
+    const nextPhone = patch.customerPhone.trim()
+    const nextEmail = patch.customerEmail.trim()
+    const nextCiStored = formatCiForStorage(patch.customerCi)
+    const nextLocation = patch.customerLocation.trim()
+
+    const phoneNorm = normalizePhone(nextPhone)
+    const currentName = purchase.customerName.trim()
+    const currentEmail = (purchase.customerEmail ?? "").trim()
+    const currentLocation = (purchase.customerLocation ?? "").trim()
+    const currentCiStored = purchase.customerCi?.trim() || null
+
+    const nameChanged = nextName !== currentName
+    const phoneChanged = phoneNorm !== purchase.customerPhoneNormalized
+    const emailChanged = nextEmail !== currentEmail
+    const ciChanged = nextCiStored !== currentCiStored
+    const locationChanged = nextLocation !== currentLocation
+
+    if (!nameChanged && !phoneChanged && !emailChanged && !ciChanged && !locationChanged) {
+      return { noChange: true as const, raffleId: purchase.raffleId }
+    }
+
+    const { locationType, venezuelaState } = locationContextFromPurchase(nextLocation)
+    const { customerId } = await customersRepo.findOrCreateCustomer(tx, {
+      customerName: nextName,
+      customerPhone: nextPhone,
+      customerEmail: nextEmail,
+      customerCi: nextCiStored,
+      customerLocation: nextLocation,
+      locationType,
+      venezuelaState,
+    })
+
+    await purchasesRepo.updatePurchaseCustomerProfile(tx, purchaseId, {
+      customerName: nextName,
+      customerPhone: nextPhone,
+      customerPhoneNormalized: phoneNorm,
+      customerEmail: nextEmail,
+      customerCi: nextCiStored,
+      customerLocation: nextLocation,
+      customerId,
+    })
+
+    return {
+      noChange: false as const,
+      raffleId: purchase.raffleId,
+      fieldsChanged: [
+        ...(nameChanged ? (["name"] as const) : []),
+        ...(phoneChanged ? (["phone"] as const) : []),
+        ...(emailChanged ? (["email"] as const) : []),
+        ...(ciChanged ? (["ci"] as const) : []),
+        ...(locationChanged ? (["location"] as const) : []),
+      ],
+    }
+  }, purchaseRetryOptions)
+
+  if (outcome.noChange) {
+    return { message: "Sin cambios", ...outcome }
+  }
+
+  logPurchaseAudit("customer_contact_updated", {
+    purchaseId,
+    raffleId: outcome.raffleId,
+    adminUserId: audit.adminUserId,
+    fieldsChanged: outcome.fieldsChanged,
+  })
+  logger.info({ purchaseId, fieldsChanged: outcome.fieldsChanged }, "purchase:customer_contact_updated")
+
+  return { message: "Datos del comprador actualizados" }
 }
 
 export async function reassignTicketsToPurchase(

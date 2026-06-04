@@ -4,7 +4,7 @@ import {
   paymentMethodTypeLabel,
   type PaymentMethod,
 } from "@raffle/shared/payment-methods"
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -27,16 +27,19 @@ import {
 } from "@/components/ui/select"
 import {
   adminPurchasesDashboardQueryOptions,
-  adminPurchasesQueryOptions,
+  adminPurchasesInfiniteQueryOptions,
+  adminPurchasesRefetchInterval,
+  flattenAdminPurchasesPages,
   getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
 import { PurchaseDetailDrawer } from "@/features/admin/purchases/PurchaseDetailDrawer"
+import { PurchasesInfiniteLoadFooter } from "@/features/admin/purchases/PurchasesInfiniteLoadFooter"
 import {
   PurchasesDataTable,
   PurchasesMobileList,
 } from "@/features/admin/purchases/PurchasesDataTable"
-import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
+import { useInfiniteScrollSentinel } from "@/features/admin/purchases/use-infinite-scroll-sentinel"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
 import { raffleStatusLabel } from "@/features/admin/raffle-labels"
@@ -47,7 +50,6 @@ import { adminFetch } from "@/lib/admin-fetch"
 import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/compras")
-const POLL_MS = 30_000
 
 const PAYMENT_METHOD_FILTER_OPTIONS = (
   Object.keys(PAYMENT_METHOD_DEFINITIONS) as Array<PaymentMethod>
@@ -96,7 +98,6 @@ export function AdminPurchasesView() {
       search: (previous) => ({
         ...previous,
         q: nextSearch || undefined,
-        page: 1,
       }),
     })
   }, [debouncedSearch, filters.search, navigate])
@@ -113,10 +114,17 @@ export function AdminPurchasesView() {
     })
   }, [filterRaffles, filters.raffleId, navigate])
 
-  const purchasesQuery = useQuery({
-    ...adminPurchasesQueryOptions(filters),
-    refetchInterval: POLL_MS,
+  const purchasesQuery = useInfiniteQuery({
+    ...adminPurchasesInfiniteQueryOptions(filters),
+    refetchInterval: adminPurchasesRefetchInterval,
     refetchOnMount: false,
+  })
+
+  const sentinelRef = useInfiniteScrollSentinel({
+    hasNextPage: purchasesQuery.hasNextPage,
+    isFetching: purchasesQuery.isFetching,
+    isFetchingNextPage: purchasesQuery.isFetchingNextPage,
+    fetchNextPage: purchasesQuery.fetchNextPage,
   })
 
   const statusMutation = useMutation({
@@ -143,8 +151,8 @@ export function AdminPurchasesView() {
     onError: (error: Error) => toast.error(error.message),
   })
 
-  const purchases: Array<PurchaseRow> = purchasesQuery.data?.data ?? []
-  const total = purchasesQuery.data?.total ?? 0
+  const purchases: Array<PurchaseRow> = flattenAdminPurchasesPages(purchasesQuery.data?.pages)
+  const total = purchasesQuery.data?.pages[0]?.total ?? 0
   const pageSize = filters.limit
   const selectedRaffle = filterRaffles.find((r) => String(r.id) === filters.raffleId)
   const hasCustomFilters = Boolean(
@@ -160,6 +168,9 @@ export function AdminPurchasesView() {
     () => purchases.filter((p) => p.status === "pending").length,
     [purchases],
   )
+
+  const isInitialLoading = purchasesQuery.isPending && purchases.length === 0
+  const isLoadingMore = purchasesQuery.isFetchingNextPage
 
   function openPurchase(row: PurchaseRow) {
     setSelectedPurchaseId(row.id)
@@ -199,8 +210,8 @@ export function AdminPurchasesView() {
         title={adminNavTitle("/admin/compras")}
         description={
           selectedRaffle
-            ? `Últimas ${pageSize} compras de ${selectedRaffle.name} (${raffleStatusLabel(selectedRaffle.status)})`
-            : `Últimas ${pageSize} compras de todas las rifas`
+            ? `Compras de ${selectedRaffle.name} (${raffleStatusLabel(selectedRaffle.status)}) · ${pageSize} por carga`
+            : `Compras de todas las rifas · ${pageSize} por carga`
         }
         actions={
           <Button
@@ -227,7 +238,7 @@ export function AdminPurchasesView() {
                 {total.toLocaleString("es-VE")} resultado
                 {total === 1 ? "" : "s"}
                 {pendingCount > 0
-                  ? ` · ${pendingCount} pendiente${pendingCount === 1 ? "" : "s"} aquí`
+                  ? ` · ${pendingCount} pendiente${pendingCount === 1 ? "" : "s"} cargada${pendingCount === 1 ? "" : "s"}`
                   : ""}
               </p>
             </div>
@@ -259,7 +270,7 @@ export function AdminPurchasesView() {
             <div className="flex min-w-0 flex-wrap items-center gap-2">
               <Select
                 value={filters.status}
-                onValueChange={(status) => updateSearch({ status, page: 1 })}
+                onValueChange={(status) => updateSearch({ status })}
               >
                 <SelectTrigger size="sm" className="w-[136px]">
                   <SelectValue placeholder="Estado" />
@@ -276,7 +287,7 @@ export function AdminPurchasesView() {
 
               <Select
                 value={filters.paymentMethod}
-                onValueChange={(payment_method) => updateSearch({ payment_method, page: 1 })}
+                onValueChange={(payment_method) => updateSearch({ payment_method })}
               >
                 <SelectTrigger size="sm" className="w-[148px] max-w-full">
                   <SelectValue placeholder="Método de pago" />
@@ -298,7 +309,6 @@ export function AdminPurchasesView() {
                 onValueChange={(value) =>
                   updateSearch({
                     raffle_id: value === "all" ? "all" : value,
-                    page: 1,
                   })
                 }
                 disabled={dashboardQuery.isLoading || filterRaffles.length === 0}
@@ -331,7 +341,6 @@ export function AdminPurchasesView() {
                   updateSearch({
                     start: range.start,
                     end: range.end,
-                    page: 1,
                   })
                 }
               />
@@ -349,7 +358,6 @@ export function AdminPurchasesView() {
                       q: undefined,
                       start: undefined,
                       end: undefined,
-                      page: 1,
                     })
                   }
                 >
@@ -364,7 +372,8 @@ export function AdminPurchasesView() {
           <div className="hidden md:block">
             <PurchasesDataTable
               purchases={purchases}
-              loading={purchasesQuery.isPending}
+              loading={isInitialLoading}
+              loadingMore={isLoadingMore}
               pending={statusMutation.isPending}
               onView={openPurchase}
               onStatusChange={(id, status, notes) =>
@@ -375,7 +384,8 @@ export function AdminPurchasesView() {
           <div className="p-3 md:hidden">
             <PurchasesMobileList
               purchases={purchases}
-              loading={purchasesQuery.isPending}
+              loading={isInitialLoading}
+              loadingMore={isLoadingMore}
               pending={statusMutation.isPending}
               onView={openPurchase}
               onStatusChange={(id, status, notes) =>
@@ -383,12 +393,14 @@ export function AdminPurchasesView() {
               }
             />
           </div>
-          <AdminDataGridPagination
-            page={filters.page}
-            pageSize={pageSize}
+          <PurchasesInfiniteLoadFooter
+            loadedCount={purchases.length}
             total={total}
-            loading={purchasesQuery.isFetching}
-            onPageChange={(page) => updateSearch({ page })}
+            hasNextPage={purchasesQuery.hasNextPage}
+            isFetchingNextPage={purchasesQuery.isFetchingNextPage}
+            isFetching={purchasesQuery.isFetching}
+            onLoadMore={() => void purchasesQuery.fetchNextPage()}
+            sentinelRef={sentinelRef}
           />
         </CardContent>
       </Card>

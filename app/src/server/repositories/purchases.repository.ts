@@ -12,7 +12,12 @@ import { PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 import type { RecentPurchaseDbRow } from "@raffle/shared/public-recent-purchase"
 import type { PaymentMethod, PurchaseStatus } from "@raffle/shared/validators"
 import { isDollarMethod } from "@raffle/shared/validators"
-import { and, desc, eq, inArray, like, or, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, like, lt, or, sql, type SQL } from "drizzle-orm"
+import type { AdminPurchaseListCursor } from "@/server/admin-purchases-cursor"
+import {
+  adminPurchaseCursorFromRow,
+  encodeAdminPurchaseCursor,
+} from "@/server/admin-purchases-cursor"
 import { type DbTransaction, getDb } from "@/lib/db.server"
 
 export type PurchaseRow = typeof purchases.$inferSelect
@@ -157,6 +162,34 @@ export async function updatePurchaseTotals(
     .where(eq(purchases.id, purchaseId))
 }
 
+export async function updatePurchaseCustomerProfile(
+  tx: DbTransaction,
+  purchaseId: number,
+  data: {
+    customerName: string
+    customerPhone: string
+    customerPhoneNormalized: string
+    customerEmail: string
+    customerCi: string | null
+    customerLocation: string
+    customerId: number | null
+  },
+): Promise<void> {
+  await tx
+    .update(purchases)
+    .set({
+      customerName: data.customerName.substring(0, 200),
+      customerPhone: data.customerPhone.substring(0, 20),
+      customerPhoneNormalized: data.customerPhoneNormalized,
+      customerEmail: data.customerEmail.substring(0, 100),
+      customerCi: data.customerCi?.substring(0, 20) ?? null,
+      customerLocation: data.customerLocation.substring(0, 100),
+      customerId: data.customerId,
+      updatedAt: new Date(),
+    })
+    .where(eq(purchases.id, purchaseId))
+}
+
 export function pricePerTicketCents(
   paymentMethod: PaymentMethod,
   raffle: { priceBsCents: number; priceUsdCents: number },
@@ -244,9 +277,7 @@ export function mapPurchaseLegacy(p: PurchaseRow) {
   }
 }
 
-export async function listAdminPurchases(params: {
-  limit: number
-  page: number
+export type AdminPurchaseFilterParams = {
   status?: string
   paymentMethod?: string
   raffleId?: string | null
@@ -254,11 +285,25 @@ export async function listAdminPurchases(params: {
   searchType?: string
   start?: string | null
   end?: string | null
-}) {
-  const db = getDb()
+}
+
+export type ListAdminPurchasesParams = AdminPurchaseFilterParams & {
+  limit: number
+  /** Cursor for stable infinite scroll (preferred). */
+  cursor?: AdminPurchaseListCursor | null
+  /** Offset page for legacy callers (e.g. analytics explore). */
+  page?: number
+}
+
+export type AdminPurchasesListResult = {
+  data: ReturnType<typeof mapAdminPurchaseRows>
+  total: number
+  hasMore: boolean
+  nextCursor: string | null
+}
+
+function buildAdminPurchaseFilterConditions(params: AdminPurchaseFilterParams): SQL[] {
   const {
-    limit,
-    page,
     status = "all",
     paymentMethod = "all",
     raffleId,
@@ -267,10 +312,7 @@ export async function listAdminPurchases(params: {
     start,
     end,
   } = params
-  const safeLimit = Math.max(1, Math.min(Number(limit) || 25, 100))
-  const offset = (Math.max(1, Number(page) || 1) - 1) * safeLimit
-
-  const conditions = [sql`1=1`]
+  const conditions: SQL[] = [sql`1=1`]
   if (status !== "all") conditions.push(eq(purchases.status, status))
   if (paymentMethod !== "all") conditions.push(eq(purchases.paymentMethod, paymentMethod))
   if (raffleId) conditions.push(eq(purchases.raffleId, Number(raffleId)))
@@ -309,32 +351,25 @@ export async function listAdminPurchases(params: {
   if (end) {
     conditions.push(sql`date(${purchases.createdAt} / 1000, 'unixepoch') <= ${end}`)
   }
+  return conditions
+}
 
-  const whereClause = and(...conditions)
+function adminPurchaseCursorCondition(cursor: AdminPurchaseListCursor): SQL {
+  const cursorDate = new Date(cursor.createdAtMs)
+  return or(
+    lt(purchases.createdAt, cursorDate),
+    and(eq(purchases.createdAt, cursorDate), lt(purchases.id, cursor.id)),
+  )!
+}
 
-  const [countRow] = await db
-    .select({ total: sql<number>`count(distinct ${purchases.id})` })
-    .from(purchases)
-    .leftJoin(purchaseTickets, eq(purchases.id, purchaseTickets.purchaseId))
-    .where(whereClause)
-
-  const rows = await db
-    .select({
-      purchase: purchases,
-      raffleName: raffles.name,
-      ticketNumbers: sql<string>`group_concat(${purchaseTickets.ticketNumber}, ',' order by ${purchaseTickets.ticketNumber})`,
-    })
-    .from(purchases)
-    .innerJoin(raffles, eq(purchases.raffleId, raffles.id))
-    .leftJoin(purchaseTickets, eq(purchases.id, purchaseTickets.purchaseId))
-    .where(whereClause)
-    .groupBy(purchases.id)
-    .orderBy(desc(purchases.createdAt))
-    .limit(safeLimit)
-    .offset(offset)
-
-  const total = Number(countRow?.total ?? 0)
-  const data = rows.map((r) => ({
+function mapAdminPurchaseRows(
+  rows: Array<{
+    purchase: PurchaseRow
+    raffleName: string
+    ticketNumbers: string | null
+  }>,
+) {
+  return rows.map((r) => ({
     ...mapPurchaseLegacy(r.purchase),
     raffle_name: r.raffleName,
     ticket_numbers: r.ticketNumbers
@@ -344,8 +379,118 @@ export async function listAdminPurchases(params: {
           .join(",")
       : "",
   }))
+}
 
-  return { data, total, hasMore: offset + data.length < total }
+async function countAdminPurchases(filterWhereClause: SQL | undefined) {
+  const db = getDb()
+  const [countRow] = await db
+    .select({ total: sql<number>`count(distinct ${purchases.id})` })
+    .from(purchases)
+    .leftJoin(purchaseTickets, eq(purchases.id, purchaseTickets.purchaseId))
+    .where(filterWhereClause)
+  return Number(countRow?.total ?? 0)
+}
+
+async function queryAdminPurchaseRows(params: {
+  listWhereClause: SQL | undefined
+  limit: number
+  offset?: number
+}) {
+  const db = getDb()
+  const baseQuery = db
+    .select({
+      purchase: purchases,
+      raffleName: raffles.name,
+      ticketNumbers: sql<string>`group_concat(${purchaseTickets.ticketNumber}, ',' order by ${purchaseTickets.ticketNumber})`,
+    })
+    .from(purchases)
+    .innerJoin(raffles, eq(purchases.raffleId, raffles.id))
+    .leftJoin(purchaseTickets, eq(purchases.id, purchaseTickets.purchaseId))
+    .where(params.listWhereClause)
+    .groupBy(purchases.id)
+    .orderBy(desc(purchases.createdAt), desc(purchases.id))
+    .limit(params.limit)
+
+  return params.offset != null ? baseQuery.offset(params.offset) : baseQuery
+}
+
+function buildNextCursor(
+  data: ReturnType<typeof mapAdminPurchaseRows>,
+  safeLimit: number,
+): string | null {
+  const lastRow = data.at(-1)
+  if (data.length !== safeLimit || !lastRow) return null
+  return encodeAdminPurchaseCursor(adminPurchaseCursorFromRow(lastRow))
+}
+
+export async function listAdminPurchasesByCursor(
+  params: AdminPurchaseFilterParams & {
+    limit: number
+    cursor?: AdminPurchaseListCursor | null
+  },
+): Promise<AdminPurchasesListResult> {
+  const safeLimit = Math.max(1, Math.min(Number(params.limit) || 25, 100))
+  const filterConditions = buildAdminPurchaseFilterConditions(params)
+  const filterWhereClause = and(...filterConditions)
+
+  const listConditions = [...filterConditions]
+  if (params.cursor) {
+    listConditions.push(adminPurchaseCursorCondition(params.cursor))
+  }
+
+  const [total, rows] = await Promise.all([
+    countAdminPurchases(filterWhereClause),
+    queryAdminPurchaseRows({ listWhereClause: and(...listConditions), limit: safeLimit }),
+  ])
+
+  const data = mapAdminPurchaseRows(rows)
+  const nextCursor = buildNextCursor(data, safeLimit)
+
+  return {
+    data,
+    total,
+    hasMore: nextCursor != null,
+    nextCursor,
+  }
+}
+
+export async function listAdminPurchasesByPage(
+  params: AdminPurchaseFilterParams & {
+    limit: number
+    page: number
+  },
+): Promise<AdminPurchasesListResult> {
+  const safeLimit = Math.max(1, Math.min(Number(params.limit) || 25, 100))
+  const page = Math.max(1, Number(params.page) || 1)
+  const offset = (page - 1) * safeLimit
+  const filterConditions = buildAdminPurchaseFilterConditions(params)
+  const filterWhereClause = and(...filterConditions)
+
+  const [total, rows] = await Promise.all([
+    countAdminPurchases(filterWhereClause),
+    queryAdminPurchaseRows({
+      listWhereClause: filterWhereClause,
+      limit: safeLimit,
+      offset,
+    }),
+  ])
+
+  const data = mapAdminPurchaseRows(rows)
+
+  return {
+    data,
+    total,
+    hasMore: offset + data.length < total,
+    nextCursor: null,
+  }
+}
+
+export async function listAdminPurchases(params: ListAdminPurchasesParams): Promise<AdminPurchasesListResult> {
+  const { limit, cursor, page, ...filterParams } = params
+  if (page != null && page > 0 && cursor == null) {
+    return listAdminPurchasesByPage({ ...filterParams, limit, page })
+  }
+  return listAdminPurchasesByCursor({ ...filterParams, limit, cursor })
 }
 
 export async function getClientPurchases(params: {

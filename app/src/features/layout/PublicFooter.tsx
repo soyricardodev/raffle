@@ -8,6 +8,7 @@ import {
 import { buildSocialLinks } from "@/features/layout/social-links"
 import { PUBLIC_FOOTER_LEGAL_ID } from "@/features/layout/sticky-purchase-cta"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
+import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
 const FOOTER_NAV = [
   { label: "Inicio", to: "/" as const },
@@ -78,13 +79,22 @@ export function PublicFooter() {
                 <h2 className="mb-3 text-xs font-semibold tracking-wide uppercase">Secciones</h2>
                 <ul className="flex flex-col gap-2">
                   {FOOTER_NAV.map((item) => (
-                    <li key={item.to}>
-                      <Link
-                        to={item.to}
-                        className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-                      >
-                        {item.label}
-                      </Link>
+                    <li key={item.label}>
+                      {item.to === "/verificar" ? (
+                        <Link
+                          {...buildVerifyHref()}
+                          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                        >
+                          {item.label}
+                        </Link>
+                      ) : (
+                        <Link
+                          to={item.to}
+                          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
+                        >
+                          {item.label}
+                        </Link>
+                      )}
                     </li>
                   ))}
                 </ul>

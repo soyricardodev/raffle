@@ -97,6 +97,14 @@ async function seedAppSettings(db: ReturnType<typeof createScriptDb>) {
       send_status_updates: true,
       send_modifications: true,
     },
+    purchase_reject_reasons: [
+      "Pago duplicado",
+      "Referencia no compatible con la imagen",
+      "Imagen de pago no corresponde a lo que se espera",
+      "Comprobante ilegible o incompleto",
+      "Monto del pago no coincide con la compra",
+      "Pago no recibido o no verificado en el banco",
+    ],
   }
 
   await db.insert(appSettings).values({

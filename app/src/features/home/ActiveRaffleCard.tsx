@@ -3,6 +3,7 @@ import { ArrowRight, Pause } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { SalesProgressBar } from "@/features/home/SalesProgressBar"
+import { RaffleEyebrow } from "@/features/raffle/RaffleEyebrow"
 import { getRaffleStatusClass, getStatusLabel } from "@/lib/format"
 import { calculateRaffleSalesProgress } from "@/lib/raffle-progress"
 import { cn } from "@/lib/utils"
@@ -68,21 +69,11 @@ export function ActiveRaffleCard({
 
         <CardContent className="space-y-4 p-4 sm:p-5">
           {showHeader ? (
-            <div className="flex items-start justify-between gap-3">
-              <div className="min-w-0 space-y-1 text-left">
-                <p className="text-muted-foreground text-xs font-medium">Rifa en curso</p>
-                {showTitle ? (
-                  <h2 className="font-heading text-lg font-semibold leading-snug">{raffle.name}</h2>
-                ) : null}
-              </div>
-              <span
-                className={cn(
-                  "shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-                  getRaffleStatusClass(raffle.status ?? "active"),
-                )}
-              >
-                {isPaused ? "Pausada" : getStatusLabel(raffle.status ?? "active")}
-              </span>
+            <div className="space-y-1 text-left">
+              <RaffleEyebrow status={raffle.status ?? "active"} />
+              {showTitle ? (
+                <h2 className="font-heading text-lg font-semibold leading-snug">{raffle.name}</h2>
+              ) : null}
             </div>
           ) : null}
 

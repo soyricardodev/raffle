@@ -20,6 +20,7 @@ import type { LivePurchaseActivityVariant } from "@/features/raffle/live-activit
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
 import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
+import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
 export const Route = createFileRoute("/_public/")({
   loader: async ({ context: { queryClient } }) => {
@@ -82,7 +83,7 @@ function HomePage() {
 
           {activeRaffle && activeLoading ? (
             <div className="space-y-3">
-              <Skeleton className="-mx-4 aspect-[4/3] w-auto rounded-none sm:mx-0 sm:rounded-xl" />
+              <Skeleton className="-mx-4 aspect-[4/5] w-auto rounded-none sm:mx-0 sm:rounded-xl" />
               <Skeleton className="h-40 w-full rounded-xl" />
               <Skeleton className="h-56 w-full rounded-xl" />
             </div>
@@ -117,7 +118,7 @@ function HomePage() {
                     </p>
                   </div>
                   <Button variant="outline" size="sm" className="min-h-10" asChild>
-                    <Link to="/verificar">
+                    <Link {...buildVerifyHref()}>
                       <Search className="mr-2 size-4" />
                       Verificar boletos
                     </Link>
@@ -127,7 +128,7 @@ function HomePage() {
               <p className="text-muted-foreground text-center text-sm">
                 ¿Ya compraste?{" "}
                 <Link
-                  to="/verificar"
+                  {...buildVerifyHref()}
                   className="text-foreground font-medium underline-offset-4 hover:underline"
                 >
                   Verifica tus boletos

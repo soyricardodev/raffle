@@ -35,26 +35,25 @@ export function SalesProgressBar({
         <p
           id={labelId}
           className={cn(
-            "inline-flex items-center gap-2 text-xs font-semibold tracking-wide uppercase",
-            isOverlay ? "text-white/90" : "text-muted-foreground",
+            "uppercase tracking-wide",
+            isOverlay
+              ? "font-heading text-base font-extrabold text-white sm:text-lg"
+              : "inline-flex items-center gap-2.5 text-xs font-semibold text-muted-foreground",
           )}
         >
-          <span
-            className={cn(
-              "flex size-6 shrink-0 items-center justify-center rounded-full",
-              isOverlay
-                ? "bg-white/15 text-amber-200 ring-1 ring-white/25"
-                : "bg-primary/15 text-primary ring-1 ring-primary/20",
-            )}
-            aria-hidden
-          >
-            <TrendingUp className="size-3.5" strokeWidth={2.5} />
-          </span>
+          {!isOverlay ? (
+            <span
+              className="flex size-6 shrink-0 items-center justify-center rounded-full bg-primary/15 text-primary ring-1 ring-primary/20"
+              aria-hidden
+            >
+              <TrendingUp className="size-3.5" strokeWidth={2.5} />
+            </span>
+          ) : null}
           {isOverlay ? "Vendidos" : "Progreso de ventas"}
         </p>
         <p
           className={cn(
-            "font-heading text-xl font-bold tabular-nums leading-none sm:text-2xl",
+            "font-heading text-2xl font-extrabold tabular-nums leading-none sm:text-3xl",
             isOverlay ? "text-white" : "text-foreground",
             showMotion && isOverlay && "sales-progress-percent",
           )}

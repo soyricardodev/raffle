@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils"
 type PurchasesDataTableProps = {
   purchases: Array<PurchaseRow>
   loading?: boolean
+  loadingMore?: boolean
   pending?: boolean
   onView: (purchase: PurchaseRow) => void
   onStatusChange: (id: number, status: "approved" | "rejected", notes?: string) => void
@@ -20,6 +21,7 @@ type PurchasesDataTableProps = {
 export function PurchasesDataTable({
   purchases,
   loading = false,
+  loadingMore = false,
   pending = false,
   onView,
   onStatusChange,
@@ -132,6 +134,7 @@ export function PurchasesDataTable({
       table={table}
       columnCount={columns.length}
       loading={loading}
+      loadingMore={loadingMore}
       emptyMessage="No hay ventas para mostrar."
       getRowClassName={(row) => cn(row.status === "pending" && "bg-amber-500/5")}
       onRowClick={onView}
@@ -142,6 +145,7 @@ export function PurchasesDataTable({
 export function PurchasesMobileList({
   purchases,
   loading = false,
+  loadingMore = false,
   pending = false,
   onView,
   onStatusChange,
@@ -197,6 +201,11 @@ export function PurchasesMobileList({
           </div>
         </div>
       ))}
+      {loadingMore
+        ? Array.from({ length: 2 }).map((_, i) => (
+            <Skeleton key={`loading-more-${i}`} className="h-32 rounded-xl" />
+          ))
+        : null}
     </div>
   )
 }

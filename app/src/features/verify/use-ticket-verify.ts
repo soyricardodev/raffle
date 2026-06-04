@@ -1,12 +1,14 @@
 import type { VerifiedTicketRow, VerifyTicketInput } from "@raffle/shared/validators"
 import { VerifyTicketInput as VerifyTicketSchema } from "@raffle/shared/validators"
 import { useMutation } from "@tanstack/react-query"
-import { useCallback, useRef, useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { loadSavedBuyerProfile } from "@/features/raffle/purchase-form/buyer-profile-storage"
+import type { VerifyRouteSearch } from "@/features/verify/verify-route-search"
 import {
   createVerifySession,
   hydrateVerifyFormFromProfile,
+  parseVerifyRouteSearch,
   toVerifyInput,
   type VerifyFormState,
   type VerifySearchType,
@@ -14,14 +16,25 @@ import {
 } from "@/features/verify/verify-profile"
 import { publicFetch } from "@/lib/admin-fetch"
 
-export function useTicketVerify() {
+type UseTicketVerifyOptions = {
+  initialSearch?: VerifyRouteSearch
+}
+
+export function useTicketVerify(options: UseTicketVerifyOptions = {}) {
   const resultsRef = useRef<HTMLDivElement>(null)
+  const didAutoSearchRef = useRef(false)
   const [session] = useState(() =>
     createVerifySession(typeof window === "undefined" ? null : loadSavedBuyerProfile()),
   )
 
-  const [uiMode, setUiMode] = useState<VerifyUiMode>(session.uiMode)
-  const [form, setForm] = useState<VerifyFormState>(session.form)
+  const routeParsed = options.initialSearch
+    ? parseVerifyRouteSearch(options.initialSearch)
+    : null
+
+  const [uiMode, setUiMode] = useState<VerifyUiMode>(
+    routeParsed ? "manual" : session.uiMode,
+  )
+  const [form, setForm] = useState<VerifyFormState>(routeParsed?.form ?? session.form)
   const savedProfile = session.savedProfile
 
   const scrollToResults = useCallback(() => {
@@ -95,6 +108,12 @@ export function useTicketVerify() {
     setUiMode("quick")
     runSearch(quickForm)
   }, [savedProfile, runSearch])
+
+  useEffect(() => {
+    if (!routeParsed?.autoSearch || didAutoSearchRef.current) return
+    didAutoSearchRef.current = true
+    runSearch(routeParsed.form)
+  }, [routeParsed, runSearch])
 
   return {
     resultsRef,

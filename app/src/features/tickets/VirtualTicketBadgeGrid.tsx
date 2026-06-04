@@ -1,6 +1,7 @@
 import { useVirtualizer } from "@tanstack/react-virtual"
 import { useMemo, useRef } from "react"
 import { Badge } from "@/components/ui/badge"
+import { cn } from "@/lib/utils"
 import {
   chunkTicketRows,
   TICKET_GRID_COLUMNS,
@@ -12,13 +13,20 @@ type VirtualTicketBadgeGridProps = {
   listId: string
   ticketCount: number
   className?: string
+  getBadgeClassName?: (ticket: string) => string
+  rowStridePx?: number
 }
+
+const DEFAULT_BADGE_CLASS =
+  "h-6 min-w-[2.75rem] flex-1 px-1 font-mono text-[10px] tabular-nums"
 
 export function VirtualTicketBadgeGrid({
   ticketNumbers,
   listId,
   ticketCount,
   className,
+  getBadgeClassName,
+  rowStridePx = TICKET_ROW_STRIDE_PX,
 }: VirtualTicketBadgeGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
   const rows = useMemo(() => chunkTicketRows(ticketNumbers, TICKET_GRID_COLUMNS), [ticketNumbers])
@@ -26,7 +34,7 @@ export function VirtualTicketBadgeGrid({
   const virtualizer = useVirtualizer({
     count: rows.length,
     getScrollElement: () => scrollRef.current,
-    estimateSize: () => TICKET_ROW_STRIDE_PX,
+    estimateSize: () => rowStridePx,
     overscan: 6,
   })
 
@@ -47,7 +55,7 @@ export function VirtualTicketBadgeGrid({
               data-index={virtualRow.index}
               className="absolute top-0 left-0 flex w-full gap-1"
               style={{
-                height: `${TICKET_ROW_STRIDE_PX}px`,
+                height: `${rowStridePx}px`,
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
@@ -55,7 +63,7 @@ export function VirtualTicketBadgeGrid({
                 <Badge
                   key={ticket}
                   variant="outline"
-                  className="h-6 min-w-[2.75rem] flex-1 px-1 font-mono text-[10px] tabular-nums"
+                  className={cn(getBadgeClassName?.(ticket) ?? DEFAULT_BADGE_CLASS, "flex-1")}
                   role="listitem"
                 >
                   {ticket}

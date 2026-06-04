@@ -10,6 +10,19 @@ test.describe("public smoke", () => {
     ).toBeVisible()
   })
 
+  test("purchase form shows verify tickets CTA when raffle is active", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" })
+    const purchaseForm = page.locator("#purchase-form")
+    const hasPurchaseForm = await purchaseForm.isVisible().catch(() => false)
+    test.skip(!hasPurchaseForm, "No active raffle on home")
+
+    const cta = page.getByTestId("purchase-verify-cta")
+    await expect(cta).toBeVisible()
+    await cta.getByRole("link", { name: "Verificar boletos" }).click()
+    await expect(page).toHaveURL(/\/verificar/)
+    await expect(page.getByRole("heading", { name: "Verificar boletos" })).toBeVisible()
+  })
+
   test("home shows live activity ticker when applicable", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     const ticker = page.getByTestId("live-purchase-activity-ticker")

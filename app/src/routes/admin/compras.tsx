@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router"
 import { AdminPurchasesView } from "@/features/admin/AdminPurchasesView"
 import {
   adminPurchasesDashboardQueryOptions,
-  adminPurchasesQueryOptions,
+  adminPurchasesInfiniteQueryOptions,
   getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
@@ -15,7 +15,6 @@ type ComprasSearch = {
   q?: string
   start?: string
   end?: string
-  page?: number
   limit?: number
   /** Abre el drawer de detalle de esta compra */
   purchase?: number
@@ -30,7 +29,6 @@ export const Route = createFileRoute("/admin/compras")({
     q: typeof search.q === "string" ? search.q : undefined,
     start: typeof search.start === "string" ? search.start : undefined,
     end: typeof search.end === "string" ? search.end : undefined,
-    page: Number.isFinite(Number(search.page)) ? Math.max(1, Number(search.page)) : undefined,
     limit: Number.isFinite(Number(search.limit)) ? Math.max(1, Number(search.limit)) : undefined,
     purchase: Number.isFinite(Number(search.purchase))
       ? Math.max(1, Number(search.purchase))
@@ -44,7 +42,12 @@ export const Route = createFileRoute("/admin/compras")({
     const filters = normalizeAdminPurchaseFilters(deps, {
       defaultRaffleId: getDefaultAdminPurchasesRaffleId(dashboard),
     })
-    await queryClient.ensureQueryData(adminPurchasesQueryOptions(filters)).catch(() => null)
+    await queryClient
+      .prefetchInfiniteQuery({
+        ...adminPurchasesInfiniteQueryOptions(filters),
+        pages: 2,
+      })
+      .catch(() => null)
   },
   head: ({ matches }) => adminNavRouteHead(matches, "/admin/compras"),
   component: AdminPurchasesView,

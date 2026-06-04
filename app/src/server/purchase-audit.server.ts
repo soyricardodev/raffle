@@ -7,6 +7,7 @@ export type PurchaseAuditAction =
   | "tickets_removed"
   | "status_changed"
   | "tickets_reassigned"
+  | "customer_contact_updated"
 
 export function logPurchaseAudit(
   action: PurchaseAuditAction,
@@ -17,6 +18,8 @@ export function logPurchaseAudit(
     quantity?: number
     ticketNumbers?: string[]
     status?: string
+    /** Which identity fields changed (no raw PII in logs). */
+    fieldsChanged?: Array<"name" | "phone" | "email" | "ci" | "location">
   },
 ): void {
   logger.info(
@@ -29,6 +32,7 @@ export function logPurchaseAudit(
       quantity: fields.quantity,
       ticketCount: fields.ticketNumbers?.length,
       status: fields.status,
+      fieldsChanged: fields.fieldsChanged,
     },
     `audit:purchase:${action}`,
   )

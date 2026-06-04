@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_public/rifa/$id")({
 function RaffleDetailSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-lg flex-col gap-4 px-4 py-4">
-      <Skeleton className="aspect-[4/3] w-full rounded-xl" />
+      <Skeleton className="aspect-[4/5] w-full rounded-xl" />
       <Skeleton className="h-44 w-full rounded-xl" />
       <Skeleton className="h-56 w-full rounded-xl" />
     </div>

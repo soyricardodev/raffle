@@ -51,6 +51,11 @@ export function mapPurchaseDetailApiToDetail(data: PurchaseDetailApi): PurchaseD
 export function pickPurchaseDetailPatch(data: PurchaseDetailApi): Partial<PurchaseDetail> {
   return {
     status: data.status,
+    customer_name: data.customer_name,
+    customer_phone: data.customer_phone,
+    customer_email: data.customer_email ?? undefined,
+    customer_ci: data.customer_ci ?? undefined,
+    customer_location: data.customer_location ?? null,
     ticket_quantity: data.ticket_quantity,
     total_amount: data.total_amount,
     ticket_numbers: data.ticketNumbers.join(", "),

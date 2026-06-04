@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router"
 import { PartyPopper, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { buildVerifyHref } from "@/features/verify/build-verify-href"
 import {
   Sheet,
   SheetContent,
@@ -17,12 +18,14 @@ import type { PurchaseResult } from "@/features/raffle/types"
 
 type PurchaseSuccessDialogProps = {
   result: PurchaseResult | null
+  verifyPhone?: string
   raffleImageUrl?: string | null
   onClose: () => void
 }
 
 export function PurchaseSuccessDialog({
   result,
+  verifyPhone,
   raffleImageUrl,
   onClose,
 }: PurchaseSuccessDialogProps) {
@@ -94,7 +97,13 @@ export function PurchaseSuccessDialog({
 
         <SheetFooter className="border-border grid shrink-0 grid-cols-[1fr_auto] gap-2 border-t px-4 py-2.5 pb-[max(0.625rem,env(safe-area-inset-bottom))]">
           <Button variant="outline" className="min-h-10" asChild>
-            <Link to="/verificar">Verificar mis boletos</Link>
+            <Link
+              {...buildVerifyHref(
+                verifyPhone?.trim() ? { phone: verifyPhone.trim(), auto: true } : undefined,
+              )}
+            >
+              Verificar mis boletos
+            </Link>
           </Button>
           <Button
             variant="ghost"

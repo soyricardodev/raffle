@@ -14,7 +14,9 @@ import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
 import { PurchaseEmailsSection } from "@/features/admin/emails/PurchaseEmailsSection"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
+import { EditPurchaseCustomerDialog } from "@/features/admin/purchases/EditPurchaseCustomerDialog"
 import { PurchaseCustomerFacts } from "@/features/admin/purchases/PurchaseCustomerFacts"
+import { useAdminPurchaseCustomerUpdate } from "@/features/admin/purchases/use-admin-purchase-customer-update"
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
 import { RejectPurchaseDialog } from "@/features/admin/purchases/RejectPurchaseDialog"
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
@@ -76,6 +78,7 @@ export function PurchaseDetailDrawer({
   const queryClient = useQueryClient()
   const [confirmApprove, setConfirmApprove] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
+  const [editContactOpen, setEditContactOpen] = useState(false)
   const [localPatch, setLocalPatch] = useState<Partial<PurchaseDetail>>({})
 
   const handlePurchaseUpdated = (patch: Partial<PurchaseDetail>) => {
@@ -129,10 +132,16 @@ export function PurchaseDetailDrawer({
     onError: (error: Error) => toast.error(error.message),
   })
 
+  const customerUpdateMutation = useAdminPurchaseCustomerUpdate({
+    purchaseId,
+    onUpdated: handlePurchaseUpdated,
+  })
+
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setConfirmApprove(false)
       setRejectOpen(false)
+      setEditContactOpen(false)
       setLocalPatch({})
     }
     onOpenChange(next)
@@ -163,7 +172,12 @@ export function PurchaseDetailDrawer({
 
             <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
               <div className="flex min-h-0 flex-col gap-2 overflow-y-auto border-b p-2.5 lg:border-b-0 lg:border-r lg:p-3">
-                <PurchaseCustomerFacts purchase={purchase} className="text-sm" />
+                <PurchaseCustomerFacts
+                  purchase={purchase}
+                  className="text-sm"
+                  onEditContact={() => setEditContactOpen(true)}
+                  editContactDisabled={customerUpdateMutation.isPending}
+                />
                 <PurchaseEmailsSection purchase={purchase} />
                 <section className="rounded-lg border p-2">
                   <PurchaseTicketsPanel
@@ -228,6 +242,21 @@ export function PurchaseDetailDrawer({
               pending={purchase.status === "pending"}
               isPending={statusMutation.isPending}
               onConfirm={(notes) => statusMutation.mutate({ status: "rejected", notes })}
+            />
+
+            <EditPurchaseCustomerDialog
+              open={editContactOpen}
+              onOpenChange={setEditContactOpen}
+              purchase={purchase}
+              pending={customerUpdateMutation.isPending}
+              onSave={(payload) => {
+                customerUpdateMutation.mutate(payload, {
+                  onSuccess: () => {
+                    setEditContactOpen(false)
+                    void detailQuery.refetch()
+                  },
+                })
+              }}
             />
           </>
         ) : null}

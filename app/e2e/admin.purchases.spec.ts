@@ -6,6 +6,8 @@ import {
   fetchFirstRafflePaymentMethodId,
   setPurchaseStatus,
   uniqueRef,
+  updatePurchaseCustomerContact,
+  verifyTicketsByPhone,
 } from "./helpers/api"
 import { e2eEnv } from "./helpers/env"
 import { describeWithDb, test } from "./helpers/fixtures"
@@ -100,6 +102,37 @@ describeWithDb("admin purchases", () => {
     expect(approved.purchaseId).toBeGreaterThan(0)
   })
 
+  test("API: correct purchase phone and verify by new number", async ({ request }) => {
+    test.skip(!hasAdminSession(), "Admin session missing")
+
+    const raffle = await fetchFirstActiveRaffle(request)
+    test.skip(!raffle, "No active raffle — run scripts/seed.ts")
+
+    const rafflePaymentMethodId = await fetchFirstRafflePaymentMethodId(request, raffle.id)
+    const wrongPhone = `0412${String(Date.now()).slice(-7)}`
+    const correctPhone = `0414${String(Date.now()).slice(-7)}`
+
+    const purchase = await createPurchase(request, {
+      raffleId: raffle.id,
+      customerName: `E2E Phone Fix ${Date.now()}`,
+      customerPhone: wrongPhone,
+      rafflePaymentMethodId,
+      paymentReference: uniqueRef("e2e-phone-fix"),
+      ticketQuantity: 1,
+    })
+
+    await setPurchaseStatus(request, purchase.purchaseId, "approved")
+    await updatePurchaseCustomerContact(request, purchase.purchaseId, {
+      customerPhone: correctPhone,
+    })
+
+    const byWrong = await verifyTicketsByPhone(request, wrongPhone)
+    const byCorrect = await verifyTicketsByPhone(request, correctPhone)
+
+    expect(byWrong.some((t) => t.purchase_id === purchase.purchaseId)).toBe(false)
+    expect(byCorrect.some((t) => t.purchase_id === purchase.purchaseId)).toBe(true)
+  })
+
   test("API: approve and reject purchase status", async ({ request }) => {
     test.skip(!hasAdminSession(), "Admin session missing")
 
@@ -119,6 +152,41 @@ describeWithDb("admin purchases", () => {
 
     await setPurchaseStatus(request, purchase.purchaseId, "approved")
     await setPurchaseStatus(request, purchase.purchaseId, "rejected", "Pago duplicado")
+  })
+
+  test("compras page loads more purchases with smaller page size", async ({ page }) => {
+    test.skip(
+      !hasAdminSession(),
+      "Admin session missing — Fast Login / Better Auth must work (see docs/E2E.md)",
+    )
+
+    await page.goto("/admin/compras?limit=5&raffle_id=all", { waitUntil: "domcontentloaded" })
+    await page.waitForURL(/\/(admin\/compras|login)/, { timeout: 15_000 })
+    test.skip(page.url().includes("/login"), "Admin session expired")
+
+    await expect(page).toHaveTitle(/Compras/i)
+    await expect(page.getByRole("heading", { name: "Listado" })).toBeVisible({ timeout: 20_000 })
+
+    const status = page.getByRole("status")
+    await expect(status).toBeVisible()
+    const beforeText = await status.textContent()
+    const beforeMatch = beforeText?.match(/(\d[\d.]*)\s+de\s+(\d[\d.]*)/)
+    test.skip(!beforeMatch, "Could not parse loaded/total counts")
+
+    const loadedBefore = Number(beforeMatch[1].replace(/\./g, ""))
+    const total = Number(beforeMatch[2].replace(/\./g, ""))
+    test.skip(total <= 5, "Need more than 5 purchases to test infinite scroll")
+
+    const loadMore = page.getByRole("button", { name: "Cargar más" })
+    await expect(loadMore).toBeVisible()
+    await loadMore.click()
+
+    await expect(status).toContainText(String(Math.min(loadedBefore + 5, total)), {
+      timeout: 15_000,
+    })
+    if (loadedBefore + 5 < total) {
+      await expect(status).toContainText(String(total))
+    }
   })
 
   test("reject approved purchase from detail drawer with duplicate reason", async ({

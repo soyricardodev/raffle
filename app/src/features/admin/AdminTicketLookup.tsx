@@ -212,7 +212,6 @@ function TicketLookupResultCard({ match }: TicketLookupResultCardProps) {
               purchase: match.purchase_id,
               raffle_id: String(match.raffle_id),
               status: "all",
-              page: 1,
             }}
           >
             <ArrowSquareOut data-icon="inline-start" />

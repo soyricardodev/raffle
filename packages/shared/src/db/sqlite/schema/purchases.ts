@@ -48,6 +48,7 @@ export const purchases = sqliteTable(
   (t) => [
     index("purchases_raffle_status_idx").on(t.raffleId, t.status),
     index("purchases_raffle_created_idx").on(t.raffleId, t.createdAt),
+    index("purchases_created_id_idx").on(t.createdAt, t.id),
     index("purchases_phone_norm_idx").on(t.customerPhoneNormalized),
     uniqueIndex("purchases_raffle_payment_ref_uidx")
       .on(t.raffleId, t.paymentReference)

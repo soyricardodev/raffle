@@ -24,6 +24,7 @@ import {
 import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
 import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
 import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
+import { PurchaseVerifyTicketsCta } from "@/features/raffle/purchase-form/PurchaseVerifyTicketsCta"
 import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
 import {
   clampQuantity,
@@ -405,7 +406,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const isSubmitting = purchaseMutation.isPending
 
   return (
-    <>
+    <div className="space-y-3">
       <Card id="purchase-form" className="relative overflow-hidden">
         {isSubmitting ? (
           <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
@@ -523,11 +524,14 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         </CardContent>
       </Card>
 
+      <PurchaseVerifyTicketsCta />
+
       <PurchaseSuccessDialog
         result={successResult}
+        verifyPhone={customerPhone.trim() || undefined}
         raffleImageUrl={raffle.image_url}
         onClose={() => setSuccessResult(null)}
       />
-    </>
+    </div>
   )
 }

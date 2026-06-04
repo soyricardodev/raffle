@@ -64,6 +64,13 @@
       "when": 1779900700000,
       "tag": "0008_payment_reference_min_length",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1779900800000,
+      "tag": "0009_purchases_created_id_idx",
+      "breakpoints": true
     }
   ]
 }

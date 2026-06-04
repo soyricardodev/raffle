@@ -89,6 +89,36 @@ export async function setPurchaseStatus(
   }
 }
 
+export async function updatePurchaseCustomerContact(
+  request: APIRequestContext,
+  purchaseId: number,
+  payload: { customerPhone?: string; customerCi?: string },
+): Promise<void> {
+  const response = await request.put(`/api/admin/purchases/${purchaseId}/customer`, {
+    data: payload,
+  })
+  if (!response.ok()) {
+    throw new Error(`customer update failed: ${response.status()} ${await response.text()}`)
+  }
+}
+
+export async function verifyTicketsByPhone(
+  request: APIRequestContext,
+  phone: string,
+): Promise<Array<{ ticket_number: string; purchase_id: number | null }>> {
+  const response = await request.post("/api/tickets/verify", {
+    data: { phone },
+  })
+  if (!response.ok()) {
+    throw new Error(`verify failed: ${response.status()} ${await response.text()}`)
+  }
+  const data = (await response.json()) as Array<{
+    ticket_number: string
+    purchase_id: number | null
+  }>
+  return Array.isArray(data) ? data : []
+}
+
 const authHeaders = () => ({
   Origin: e2eEnv.baseUrl,
   Referer: `${e2eEnv.baseUrl}/login`,

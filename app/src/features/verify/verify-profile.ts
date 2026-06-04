@@ -1,6 +1,7 @@
 import type { CedulaPrefix, PhoneInputMode, VerifyTicketInput } from "@raffle/shared/validators"
-import { formatCustomerCi } from "@raffle/shared/validators"
+import { formatCustomerCi, parseCustomerCi } from "@raffle/shared/validators"
 import type { SavedBuyerProfile } from "@/features/raffle/purchase-form/buyer-profile-storage"
+import type { VerifyRouteSearch } from "@/features/verify/verify-route-search"
 
 export type VerifySearchType = "phone" | "cedula" | "email" | "ticket"
 
@@ -57,6 +58,62 @@ export function createVerifySession(profile: SavedBuyerProfile | null): {
     savedProfile: profile,
     uiMode: "quick",
   }
+}
+
+export type ParsedVerifyRouteSearch = {
+  form: VerifyFormState
+  autoSearch: boolean
+}
+
+export function parseVerifyRouteSearch(search: VerifyRouteSearch): ParsedVerifyRouteSearch | null {
+  if (search.phone) {
+    return {
+      form: {
+        ...emptyForm(),
+        method: "phone",
+        phone: search.phone,
+      },
+      autoSearch: search.auto === true,
+    }
+  }
+
+  if (search.ticket) {
+    return {
+      form: {
+        ...emptyForm(),
+        method: "ticket",
+        text: search.ticket,
+      },
+      autoSearch: search.auto === true,
+    }
+  }
+
+  if (search.cedula) {
+    const parsed = parseCustomerCi(search.cedula)
+    if (!parsed) return null
+    return {
+      form: {
+        ...emptyForm(),
+        method: "cedula",
+        ciPrefix: parsed.prefix,
+        ciNumber: parsed.number,
+      },
+      autoSearch: search.auto === true,
+    }
+  }
+
+  if (search.email) {
+    return {
+      form: {
+        ...emptyForm(),
+        method: "email",
+        text: search.email,
+      },
+      autoSearch: search.auto === true,
+    }
+  }
+
+  return null
 }
 
 export function toVerifyInput(form: VerifyFormState): VerifyTicketInput | null {

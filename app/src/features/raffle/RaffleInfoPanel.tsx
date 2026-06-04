@@ -3,9 +3,9 @@ import { Badge } from "@/components/ui/badge"
 import { SalesProgressBar } from "@/features/home/SalesProgressBar"
 import { useRaffleSalesProgress } from "@/features/home/use-raffle-sales-progress"
 import { PromotionCountdown } from "@/features/raffle/PromotionCountdown"
+import { RaffleEyebrow } from "@/features/raffle/RaffleEyebrow"
 import type { RafflePricing } from "@/features/raffle/promotion-types"
 import type { raffleTicketsInput } from "@/features/raffle/raffle-landing-types"
-import { getRaffleStatusClass, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 type RaffleInfoPanelProps = {
@@ -21,7 +21,7 @@ type RaffleInfoPanelProps = {
   pricing?: RafflePricing
   liveEnabled?: boolean
   showProgress?: boolean
-  /** Hide when status badge is already on the cover image. */
+  /** Used for sold-stat card when there is no cover progress bar. */
   showStatusBadge?: boolean
   headingLevel?: 1 | 2
   descriptionLineClamp?: number | false
@@ -71,29 +71,15 @@ export function RaffleInfoPanel({
 
   return (
     <section className="space-y-4" aria-labelledby="raffle-info-title">
-      <header className="flex items-start justify-between gap-3">
-        <div className="min-w-0 space-y-1">
-          <p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
-            Rifa en curso
-          </p>
-          <Heading
+      <header className="space-y-1">
+        <RaffleEyebrow status={status} />
+        <Heading
             id="raffle-info-title"
-            className="font-heading text-2xl font-semibold leading-snug text-balance sm:text-3xl"
+            className="font-heading text-2xl font-bold leading-snug text-balance sm:text-3xl"
             style={{ color: "var(--brand-primary, inherit)" }}
           >
             {name}
-          </Heading>
-        </div>
-        {showStatusBadge ? (
-          <span
-            className={cn(
-              "mt-5 shrink-0 rounded-md px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide",
-              getRaffleStatusClass(status),
-            )}
-          >
-            {isPaused ? "Pausada" : getStatusLabel(status)}
-          </span>
-        ) : null}
+        </Heading>
       </header>
 
       {description ? (
@@ -154,7 +140,7 @@ export function RaffleInfoPanel({
                 <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
                   Vendidos
                 </p>
-                <p className="font-semibold tabular-nums" aria-live="polite">
+                <p className="font-heading text-xl font-extrabold tabular-nums" aria-live="polite">
                   {progress.percentage.toFixed(1)}%
                 </p>
               </div>

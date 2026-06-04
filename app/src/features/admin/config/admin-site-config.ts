@@ -4,7 +4,9 @@ import {
   type EmailSettings,
   type OfficialFooterLogo,
   type PurchaseSuccessPromo,
+  findDuplicatePurchaseRejectReasonIndex,
   normalizeEmailSettings,
+  normalizePurchaseRejectReasons,
 } from "@raffle/shared/site-config"
 import {
   normalizeHeroConfig,
@@ -42,6 +44,7 @@ export type AdminSiteConfigDraft = {
   indexable: boolean
   purchase_success_promo: PurchaseSuccessPromo
   email_settings: EmailSettings
+  purchase_reject_reasons: string[]
 }
 
 export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
@@ -73,6 +76,7 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   indexable: true,
   purchase_success_promo: normalizePurchaseSuccessPromo(undefined),
   email_settings: normalizeEmailSettings(undefined),
+  purchase_reject_reasons: normalizePurchaseRejectReasons(undefined),
 })
 
 export function apiToDraft(data: Record<string, unknown> | undefined): AdminSiteConfigDraft {
@@ -116,6 +120,7 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     indexable: seo.indexable,
     purchase_success_promo: normalizePurchaseSuccessPromo(data.purchase_success_promo),
     email_settings: normalizeEmailSettings(data.email_settings),
+    purchase_reject_reasons: normalizePurchaseRejectReasons(data.purchase_reject_reasons),
   }
 }
 
@@ -187,6 +192,7 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
       send_status_updates: draft.email_settings.send_status_updates,
       send_modifications: draft.email_settings.send_modifications,
     },
+    purchase_reject_reasons: draft.purchase_reject_reasons.map((r) => r.trim()).filter((r) => r.length > 0),
   }
 }
 
@@ -218,6 +224,17 @@ export function validateDraft(draft: AdminSiteConfigDraft): DraftValidationResul
       ok: false,
       fieldErrors: {
         "email_settings.from_email": "Indica el email del remitente para enviar correos",
+      },
+    }
+  }
+
+  const rejectReasons = patch.purchase_reject_reasons ?? []
+  const dupIdx = findDuplicatePurchaseRejectReasonIndex(rejectReasons)
+  if (dupIdx >= 0) {
+    return {
+      ok: false,
+      fieldErrors: {
+        [`purchase_reject_reasons.${dupIdx}`]: "Este motivo está duplicado",
       },
     }
   }

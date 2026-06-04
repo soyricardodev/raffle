@@ -1,7 +1,6 @@
 import { Pause } from "lucide-react"
 import { SalesProgressBar } from "@/features/home/SalesProgressBar"
 import { useRaffleSalesProgress } from "@/features/home/use-raffle-sales-progress"
-import { getRaffleStatusClass, getStatusLabel } from "@/lib/format"
 import type { RaffleProgressInput } from "@/lib/raffle-progress"
 import { cn } from "@/lib/utils"
 
@@ -26,38 +25,26 @@ export function RaffleCoverHero({
 }: RaffleCoverHeroProps) {
   const progress = useRaffleSalesProgress({ raffleId, raffle: tickets, liveEnabled })
   const isPaused = status === "paused"
-  const isActive = status === "active"
 
   return (
     <figure
       className={cn(
-        "relative aspect-[4/3] w-full overflow-hidden bg-muted",
+        "relative w-full overflow-hidden bg-muted",
         edgeBleed ? "-mx-4 w-auto sm:mx-0 sm:rounded-xl" : "rounded-xl",
       )}
     >
       <img
         src={imageUrl}
         alt={imageAlt}
-        className="size-full object-cover"
+        className="block w-full h-auto max-h-[min(85vh,720px)]"
         fetchPriority="high"
         decoding="async"
       />
 
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/20 to-transparent"
+        className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/85 via-black/10 to-transparent"
         aria-hidden
       />
-
-      <span
-        className={cn(
-          "absolute top-3 right-3 z-10 shrink-0 rounded-full px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide shadow-md sm:top-4 sm:right-4",
-          isActive && "bg-emerald-600 text-white",
-          isPaused && "bg-amber-500 text-amber-950",
-          !isActive && !isPaused && getRaffleStatusClass(status),
-        )}
-      >
-        {isPaused ? "Pausada" : getStatusLabel(status)}
-      </span>
 
       <figcaption className="absolute inset-x-0 bottom-0 z-10 p-3 sm:p-4">
         <SalesProgressBar progress={progress} variant="overlay" animated />

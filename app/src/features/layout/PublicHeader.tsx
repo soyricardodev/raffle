@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router"
+import { buildVerifyHref } from "@/features/verify/build-verify-href"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
@@ -14,7 +15,7 @@ export function PublicHeader() {
       <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-3 px-4">
         <Link
           to="/"
-          className="font-heading flex min-w-0 items-center gap-2 text-base font-semibold tracking-tight sm:text-lg"
+          className="font-heading flex min-w-0 items-center gap-2 text-base font-bold tracking-tight sm:text-lg"
           style={{ color: "var(--brand-primary, inherit)" }}
         >
           {logoUrl ? (
@@ -30,7 +31,7 @@ export function PublicHeader() {
         </Link>
         <nav className="flex shrink-0 items-center gap-0.5">
           <Button variant="ghost" size="sm" className="h-10 gap-1.5 px-2.5" asChild>
-            <Link to="/verificar">
+            <Link {...buildVerifyHref()}>
               <Search className="size-4 shrink-0" aria-hidden />
               Verificar Boletos
             </Link>
