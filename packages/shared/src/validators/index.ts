@@ -280,17 +280,21 @@ export const UpdatePurchaseStatusInput = z.object({
 })
 export type UpdatePurchaseStatusInput = z.infer<typeof UpdatePurchaseStatusInput>
 
-/** Máximo de boletos por request admin add/remove (anti-abuso API). */
-export const ADMIN_MAX_TICKETS_PER_OPERATION = 500
-
-/** Cantidad por operación admin add/remove. */
-export const AddRemoveTicketsInput = z.object({
-  quantity: z.number().int().min(1).max(ADMIN_MAX_TICKETS_PER_OPERATION),
-})
-export type AddRemoveTicketsInput = z.infer<typeof AddRemoveTicketsInput>
-
 /** Boletos fijos de la plataforma: enteros 0–9999 (10.000 boletos). */
 export const PLATFORM_TOTAL_TICKETS = 10_000
+
+/** Cantidad por operación admin add/remove (tope = inventario máximo de la plataforma). */
+export const AddRemoveTicketsInput = z.object({
+  quantity: z.coerce
+    .number()
+    .int("La cantidad debe ser un número entero")
+    .min(1, "Debe agregar o quitar al menos 1 boleto")
+    .max(
+      PLATFORM_TOTAL_TICKETS,
+      `Máximo ${PLATFORM_TOTAL_TICKETS.toLocaleString("es-VE")} boletos por operación`,
+    ),
+})
+export type AddRemoveTicketsInput = z.infer<typeof AddRemoveTicketsInput>
 
 export const CreateRaffleInput = z.object({
   name: z.string().min(1).max(200),
