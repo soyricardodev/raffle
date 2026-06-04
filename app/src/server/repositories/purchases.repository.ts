@@ -7,6 +7,7 @@ import {
   raffles,
   ticketNumberToString,
 } from "@raffle/shared/db"
+import { isSqliteUniqueViolation } from "@raffle/shared/db"
 import { PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 import type { RecentPurchaseDbRow } from "@raffle/shared/public-recent-purchase"
 import type { PaymentMethod, PurchaseStatus } from "@raffle/shared/validators"
@@ -55,34 +56,44 @@ export async function insertPurchase(
     status?: PurchaseStatus
   },
 ): Promise<number> {
-  const [row] = await tx
-    .insert(purchases)
-    .values({
-      publicId: randomUUID(),
-      raffleId: data.raffleId,
-      customerId: data.customerId ?? null,
-      customerName: data.customerName.substring(0, 200),
-      customerPhone: data.customerPhone.substring(0, 20),
-      customerPhoneNormalized: normalizePhone(data.customerPhone),
-      customerEmail: data.customerEmail.substring(0, 100),
-      customerCi: data.customerCi.substring(0, 20),
-      customerLocation: data.customerLocation.substring(0, 100),
-      rafflePaymentMethodId: data.rafflePaymentMethodId ?? null,
-      paymentMethod: data.paymentMethod,
-      paymentReference: data.paymentReference.substring(0, 100),
-      paymentProofUrl: data.paymentProofUrl ?? null,
-      ticketQuantity: data.ticketQuantity,
-      totalAmountCents: data.totalAmountCents,
-      currency: data.currency,
-      promotionId: data.promotionId ?? null,
-      originalUnitPriceCents: data.originalUnitPriceCents ?? null,
-      discountUnitCents: data.discountUnitCents ?? null,
-      finalUnitPriceCents: data.finalUnitPriceCents ?? null,
-      status: data.status ?? "pending",
-    })
-    .returning({ id: purchases.id })
+  try {
+    const [row] = await tx
+      .insert(purchases)
+      .values({
+        publicId: randomUUID(),
+        raffleId: data.raffleId,
+        customerId: data.customerId ?? null,
+        customerName: data.customerName.substring(0, 200),
+        customerPhone: data.customerPhone.substring(0, 20),
+        customerPhoneNormalized: normalizePhone(data.customerPhone),
+        customerEmail: data.customerEmail.substring(0, 100),
+        customerCi: data.customerCi.substring(0, 20),
+        customerLocation: data.customerLocation.substring(0, 100),
+        rafflePaymentMethodId: data.rafflePaymentMethodId ?? null,
+        paymentMethod: data.paymentMethod,
+        paymentReference: data.paymentReference.substring(0, 100),
+        paymentProofUrl: data.paymentProofUrl ?? null,
+        ticketQuantity: data.ticketQuantity,
+        totalAmountCents: data.totalAmountCents,
+        currency: data.currency,
+        promotionId: data.promotionId ?? null,
+        originalUnitPriceCents: data.originalUnitPriceCents ?? null,
+        discountUnitCents: data.discountUnitCents ?? null,
+        finalUnitPriceCents: data.finalUnitPriceCents ?? null,
+        status: data.status ?? "pending",
+      })
+      .returning({ id: purchases.id })
 
-  return row!.id
+    return row!.id
+  } catch (error) {
+    if (isSqliteUniqueViolation(error)) {
+      const ref = data.paymentReference.trim()
+      if (ref) {
+        throw new PaymentReferenceDuplicateError(ref, data.raffleId)
+      }
+    }
+    throw error
+  }
 }
 
 export type PurchaseWithRaffleContext = PurchaseRow & {
@@ -186,6 +197,7 @@ export async function getPurchaseById(purchaseId: number) {
     .select({
       purchase: purchases,
       raffleName: raffles.name,
+      raffleTicketsAvailable: raffles.ticketsAvailable,
     })
     .from(purchases)
     .innerJoin(raffles, eq(purchases.raffleId, raffles.id))
@@ -203,6 +215,7 @@ export async function getPurchaseById(purchaseId: number) {
   return {
     ...mapPurchaseLegacy(row.purchase),
     raffle_name: row.raffleName,
+    raffle_tickets_available: row.raffleTicketsAvailable,
     ticketNumbers: ticketRows.map((t) => ticketNumberToString(t.ticketNumber)),
   }
 }

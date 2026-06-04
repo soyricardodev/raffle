@@ -30,4 +30,6 @@ export type PurchaseDetail = PurchaseRow & {
   payment_proof_url?: string | null
   /** Desde detalle API; preferir sobre `ticket_numbers` CSV */
   ticketNumbers?: Array<string>
+  /** Stock disponible en la rifa (solo tras cargar detalle admin) */
+  raffle_tickets_available?: number
 }

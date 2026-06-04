@@ -18,6 +18,10 @@ import { PurchaseCustomerFacts } from "@/features/admin/purchases/PurchaseCustom
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
 import { RejectPurchaseDialog } from "@/features/admin/purchases/RejectPurchaseDialog"
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
+import {
+  mapPurchaseDetailApiToDetail,
+  type PurchaseDetailApi,
+} from "@/features/admin/purchases/purchase-detail-api"
 import { PurchaseTicketsPanel } from "@/features/admin/purchases/PurchaseTicketsPanel"
 import type { PurchaseDetail, PurchaseRow } from "@/features/admin/purchases/types"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -25,50 +29,6 @@ import { formatCurrencyForMethod } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 const DRAWER_WIDTH_CLASS = "!w-full !max-w-full sm:!w-[min(96vw,72rem)] sm:!max-w-[min(96vw,72rem)]"
-
-type PurchaseApi = {
-  id: number
-  customer_name: string
-  customer_phone: string
-  customer_email?: string | null
-  customer_ci?: string | null
-  customer_location?: string | null
-  payment_method: string
-  payment_reference?: string | null
-  payment_proof_url?: string | null
-  ticket_quantity: number
-  total_amount: number | string
-  status: string
-  notes?: string | null
-  created_at: string | Date
-  raffle_name: string
-  ticketNumbers: Array<string>
-}
-
-function mapApiToDetail(data: PurchaseApi): PurchaseDetail {
-  return {
-    id: data.id,
-    customer_name: data.customer_name,
-    customer_phone: data.customer_phone,
-    customer_email: data.customer_email ?? undefined,
-    customer_ci: data.customer_ci ?? undefined,
-    customer_location: data.customer_location ?? null,
-    raffle_name: data.raffle_name,
-    ticket_quantity: data.ticket_quantity,
-    total_amount: data.total_amount,
-    payment_method: data.payment_method,
-    status: data.status,
-    notes: data.notes ?? undefined,
-    created_at:
-      typeof data.created_at === "string"
-        ? data.created_at
-        : new Date(data.created_at).toISOString(),
-    payment_reference: data.payment_reference ?? undefined,
-    payment_proof_url: data.payment_proof_url,
-    ticket_numbers: data.ticketNumbers.join(", "),
-    ticketNumbers: data.ticketNumbers,
-  }
-}
 
 function mapRowToDetail(row: PurchaseRow): PurchaseDetail {
   return { ...row }
@@ -125,13 +85,13 @@ export function PurchaseDetailDrawer({
 
   const detailQuery = useQuery({
     queryKey: ["admin", "purchase", purchaseId],
-    queryFn: () => adminFetch<PurchaseApi>(`/api/admin/purchases/${purchaseId}`),
+    queryFn: () => adminFetch<PurchaseDetailApi>(`/api/admin/purchases/${purchaseId}`),
     enabled: open && purchaseId != null,
   })
 
   const purchase: PurchaseDetail | null =
     detailQuery.data != null
-      ? { ...mapApiToDetail(detailQuery.data), ...localPatch }
+      ? { ...mapPurchaseDetailApiToDetail(detailQuery.data), ...localPatch }
       : fallbackPurchase != null
         ? { ...mapRowToDetail(fallbackPurchase), ...localPatch }
         : null
@@ -213,6 +173,7 @@ export function PurchaseDetailDrawer({
                   />
                   <PurchaseTicketManager
                     purchase={purchase}
+                    stockLoaded={detailQuery.isSuccess}
                     onUpdated={handlePurchaseUpdated}
                     embedded
                   />

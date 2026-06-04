@@ -205,9 +205,16 @@ export type CreatePurchaseInput = z.infer<typeof CreatePurchaseInput>
 
 /** Cuerpo camelCase (multipart FormData o JSON público). */
 export const CreatePurchaseBody = z.object({
-  raffleId: z.coerce.number().int().positive(),
-  customerName: z.string().trim().min(1, "Ingresa tu nombre").max(200),
-  customerPhone: z.string().trim().min(7).max(20),
+  raffleId: z.coerce
+    .number({ error: "Ingresa un identificador de rifa válido" })
+    .int("Ingresa un identificador de rifa válido")
+    .positive("Ingresa un identificador de rifa válido"),
+  customerName: z.string().trim().min(1, "Ingresa tu nombre").max(200, "Nombre demasiado largo"),
+  customerPhone: z
+    .string()
+    .trim()
+    .min(7, "El teléfono debe tener al menos 7 dígitos")
+    .max(20, "Teléfono demasiado largo"),
   customerEmail: z.string().trim().min(1, "Ingresa tu email").email("Email inválido").max(100),
   customerCi: z
     .string()
@@ -215,14 +222,21 @@ export const CreatePurchaseBody = z.object({
     .min(1, "Ingresa tu cédula")
     .max(20)
     .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
-  customerLocation: z.string().trim().min(1, "Indica tu ubicación").max(100),
-  rafflePaymentMethodId: z.coerce.number().int().positive(),
+  customerLocation: z.string().trim().min(1, "Indica tu ubicación").max(100, "Ubicación demasiado larga"),
+  rafflePaymentMethodId: z.coerce
+    .number({ error: "Selecciona un método de pago" })
+    .int("Selecciona un método de pago")
+    .positive("Selecciona un método de pago"),
   paymentReference: z
     .string()
     .trim()
     .min(1, "Ingresa la referencia de pago")
-    .max(100),
-  ticketQuantity: z.coerce.number().int().min(1).max(500),
+    .max(100, "Referencia demasiado larga"),
+  ticketQuantity: z.coerce
+    .number({ error: "Indica cuántos boletos quieres comprar" })
+    .int("Indica una cantidad válida de boletos")
+    .min(1, "Selecciona al menos 1 boleto")
+    .max(500, "Máximo 500 boletos por compra"),
   paymentProofUrl: z.string().trim().min(1, "Comprobante requerido").max(500),
 })
 
@@ -266,8 +280,12 @@ export const UpdatePurchaseStatusInput = z.object({
 })
 export type UpdatePurchaseStatusInput = z.infer<typeof UpdatePurchaseStatusInput>
 
+/** Máximo de boletos por request admin add/remove (anti-abuso API). */
+export const ADMIN_MAX_TICKETS_PER_OPERATION = 500
+
+/** Cantidad por operación admin add/remove. */
 export const AddRemoveTicketsInput = z.object({
-  quantity: z.number().int().min(1).max(50000),
+  quantity: z.number().int().min(1).max(ADMIN_MAX_TICKETS_PER_OPERATION),
 })
 export type AddRemoveTicketsInput = z.infer<typeof AddRemoveTicketsInput>
 

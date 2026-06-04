@@ -3,6 +3,8 @@ import { useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { parseTicketNumbers } from "@/features/admin/purchases/parseTicketNumbers"
+import { shouldVirtualizeTicketBadgeList } from "@/features/tickets/ticket-badge-grid"
+import { VirtualTicketBadgeGrid } from "@/features/tickets/VirtualTicketBadgeGrid"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { cn } from "@/lib/utils"
 
@@ -35,6 +37,7 @@ export function PurchaseTicketsPanel({
   }, [allTickets, debouncedQuery])
 
   const isFiltering = debouncedQuery.trim().length > 0
+  const useVirtualList = shouldVirtualizeTicketBadgeList(filteredTickets.length)
 
   if (allTickets.length === 0) {
     return (
@@ -75,7 +78,8 @@ export function PurchaseTicketsPanel({
 
       <div
         className={cn(
-          "max-h-20 overflow-y-auto overscroll-contain rounded-md border p-1",
+          "overscroll-contain rounded-md border p-1",
+          useVirtualList ? "max-h-40" : "max-h-20 overflow-y-auto",
           embedded ? "bg-background" : "bg-muted/30",
         )}
         role="list"
@@ -85,6 +89,13 @@ export function PurchaseTicketsPanel({
           <p className="text-muted-foreground px-1 py-3 text-center text-[11px]">
             Sin coincidencias
           </p>
+        ) : useVirtualList ? (
+          <VirtualTicketBadgeGrid
+            ticketNumbers={filteredTickets}
+            listId="admin-purchase-tickets"
+            ticketCount={filteredTickets.length}
+            className="max-h-36 overflow-y-auto overscroll-contain"
+          />
         ) : (
           <div className="flex flex-wrap gap-1">
             {filteredTickets.map((ticket) => (
