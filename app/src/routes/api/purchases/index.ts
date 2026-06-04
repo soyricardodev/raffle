@@ -1,42 +1,32 @@
-import { ValidationError } from "@raffle/shared/errors"
 import { createFileRoute } from "@tanstack/react-router"
 import { apiHandlers } from "@/lib/api-handler"
-import { parsePurchaseFromFormData, parsePurchaseFromJson } from "@/lib/parse-create-purchase"
-import { rateLimit } from "@/lib/rate-limit"
-import { savePaymentProof } from "@/lib/upload.server"
-import { createPurchase } from "@/server/purchase.service"
-import { sendPurchaseConfirmationEmail } from "@/server/purchase-notifications"
+import {
+  parseCreatePurchaseRequest,
+  purchaseFailureMetricFields,
+  submitPublicPurchase,
+} from "@/lib/purchase-api.server"
+import { recordPurchaseMetric, recordPurchaseTiming } from "@/lib/purchase-metrics.server"
 
 export const Route = createFileRoute("/api/purchases/")({
   server: {
     handlers: apiHandlers({
       POST: async ({ request }) => {
-        await rateLimit(request, { windowMs: 10_000, maxRequests: 5, keyPrefix: "purchase" })
+        const started = performance.now()
+        recordPurchaseMetric("purchase_attempt", {})
 
-        const contentType = request.headers.get("content-type") ?? ""
-
-        if (contentType.includes("multipart/form-data")) {
-          const form = await request.formData()
-          const proofFile = form.get("paymentProof")
-          if (!(proofFile instanceof File) || proofFile.size <= 0) {
-            throw new ValidationError("Sube el comprobante de pago")
-          }
-          const paymentProofUrl = await savePaymentProof(proofFile)
-
-          const params = parsePurchaseFromFormData(form, paymentProofUrl)
-          const result = await createPurchase(params)
-          void sendPurchaseConfirmationEmail(result.purchaseId)
+        try {
+          const params = await parseCreatePurchaseRequest(request)
+          const result = await submitPublicPurchase(request, params)
           return Response.json(result, { status: 201 })
+        } catch (error) {
+          recordPurchaseMetric("purchase_failure", {
+            durationMs: Math.round(performance.now() - started),
+            ...purchaseFailureMetricFields(error),
+          })
+          throw error
+        } finally {
+          recordPurchaseTiming("api_purchases_post", Math.round(performance.now() - started))
         }
-
-        const json = (await request.json()) as Record<string, unknown>
-        if (!json.paymentProofUrl || String(json.paymentProofUrl).trim() === "") {
-          throw new ValidationError("Comprobante de pago requerido")
-        }
-        const params = parsePurchaseFromJson(json)
-        const result = await createPurchase(params)
-        void sendPurchaseConfirmationEmail(result.purchaseId)
-        return Response.json(result, { status: 201 })
       },
     }),
   },

@@ -1,13 +1,11 @@
 import {
+  ConcurrentPurchaseError,
   InsufficientTicketsError,
   InvalidQuantityError,
   PurchaseNoTicketsError,
   PurchaseNotFoundError,
   PurchaseRejectedImmutableError,
-  RaffleFinishedError,
-  RaffleNotActiveError,
   RaffleNotFoundError,
-  RafflePausedError,
   ValidationError,
 } from "@raffle/shared/errors"
 import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
@@ -18,8 +16,15 @@ import {
   paymentReferenceValidationMessage,
   resolvePaymentReferenceMinLength,
 } from "@raffle/shared/validators"
-import { withRetryTransaction } from "@/lib/db.server"
+import { type WithRetryTransactionOptions, withRetryTransaction } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
+import { recordPurchaseMetric } from "@/lib/purchase-metrics.server"
+import { logPurchaseAudit } from "./purchase-audit.server"
+import type { PurchaseAdminAudit } from "./purchase-admin.types"
+import {
+  assertRaffleOpenForAdminTicketChanges,
+  assertRaffleOpenForPublicPurchase,
+} from "./raffle-sales-policy"
 import * as pauseService from "./pause.service"
 import * as customersRepo from "./repositories/customers.repository"
 import * as purchasesRepo from "./repositories/purchases.repository"
@@ -29,6 +34,16 @@ import * as rafflesRepo from "./repositories/raffles.repository"
 import * as ticketsRepo from "./repositories/tickets.repository"
 
 const logger = getLogger()
+
+const purchaseRetryOptions: WithRetryTransactionOptions = {
+  onRetry: ({ attempt, maxAttempts, error }) => {
+    recordPurchaseMetric("transaction_retry", {
+      attempt,
+      maxAttempts,
+      code: error instanceof ConcurrentPurchaseError ? "CONCURRENT_PURCHASE" : "SQLITE_BUSY",
+    })
+  },
+}
 
 export interface CreatePurchaseParams {
   raffleId: number
@@ -50,22 +65,9 @@ export async function createPurchase(params: CreatePurchaseParams) {
     const raffle = await rafflesRepo.findRaffleForUpdate(tx, params.raffleId)
     if (!raffle) throw new RaffleNotFoundError(params.raffleId)
 
-    if (raffle.status === "finished" || raffle.status === "cancelled") {
-      throw new RaffleFinishedError(params.raffleId)
-    }
-
-    if (raffle.status === "paused") {
-      const info = await pauseService.getPauseInfo(params.raffleId)
-      throw new RafflePausedError(params.raffleId, info ?? undefined)
-    }
-
-    if (raffle.drawDate && raffle.drawDate <= new Date()) {
-      throw new RaffleFinishedError(params.raffleId)
-    }
-
-    if (raffle.status !== "active") {
-      throw new RaffleNotActiveError(params.raffleId, raffle.status)
-    }
+    const pauseInfo =
+      raffle.status === "paused" ? await pauseService.getPauseInfo(params.raffleId) : null
+    assertRaffleOpenForPublicPurchase(raffle, params.raffleId, pauseInfo)
 
     if (params.ticketQuantity < raffle.minPurchase || params.ticketQuantity > raffle.maxPurchase) {
       throw new InvalidQuantityError(raffle.minPurchase, raffle.maxPurchase, params.ticketQuantity)
@@ -174,6 +176,11 @@ export async function createPurchase(params: CreatePurchaseParams) {
       raffleName: raffle.name,
       ticketCount: params.ticketQuantity,
     }
+  }, purchaseRetryOptions)
+
+  recordPurchaseMetric("ticket_allocation", {
+    raffleId: params.raffleId,
+    ticketQuantity: params.ticketQuantity,
   })
 
   logger.info(
@@ -202,7 +209,8 @@ export async function createPurchase(params: CreatePurchaseParams) {
 export async function updatePurchaseStatus(
   purchaseId: number,
   status: PurchaseStatus,
-  notes?: string,
+  notes: string | undefined,
+  audit: PurchaseAdminAudit,
 ) {
   const outcome = await withRetryTransaction(async (tx) => {
     const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
@@ -246,10 +254,16 @@ export async function updatePurchaseStatus(
       pauseReason: purchase.pauseReason,
       noChange: false as const,
     }
-  })
+  }, purchaseRetryOptions)
 
   if (outcome.noChange) return outcome
 
+  logPurchaseAudit("status_changed", {
+    purchaseId,
+    raffleId: outcome.raffleId,
+    adminUserId: audit.adminUserId,
+    status,
+  })
   logger.info({ purchaseId, newStatus: status }, "purchase:status_updated")
 
   if (
@@ -271,7 +285,11 @@ export async function updatePurchaseStatus(
   return outcome
 }
 
-export async function addTicketsToPurchase(purchaseId: number, quantity: number) {
+export async function addTicketsToPurchase(
+  purchaseId: number,
+  quantity: number,
+  audit: PurchaseAdminAudit,
+) {
   const result = await withRetryTransaction(async (tx) => {
     const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
     if (!purchase) throw new PurchaseNotFoundError(purchaseId)
@@ -282,6 +300,13 @@ export async function addTicketsToPurchase(purchaseId: number, quantity: number)
 
     const raffle = await rafflesRepo.findRaffleForUpdate(tx, purchase.raffleId)
     if (!raffle) throw new RaffleNotFoundError(purchase.raffleId)
+
+    assertRaffleOpenForAdminTicketChanges(raffle, purchase.raffleId)
+
+    const newQty = purchase.ticketQuantity + quantity
+    if (newQty > raffle.maxPurchase) {
+      throw new InvalidQuantityError(1, raffle.maxPurchase, newQty)
+    }
 
     if (raffle.ticketsAvailable < quantity) {
       throw new InsufficientTicketsError(raffle.ticketsAvailable, quantity)
@@ -302,20 +327,27 @@ export async function addTicketsToPurchase(purchaseId: number, quantity: number)
       priceUsdCents: purchase.priceUsdCents,
     })
     const additional = pricePerTicket * added.length
-    const newQty = purchase.ticketQuantity + added.length
+    const updatedQty = purchase.ticketQuantity + added.length
     const newTotal = purchase.totalAmountCents + additional
 
-    await purchasesRepo.updatePurchaseTotals(tx, purchaseId, newQty, newTotal)
+    await purchasesRepo.updatePurchaseTotals(tx, purchaseId, updatedQty, newTotal)
 
     return {
       addedTickets: added,
-      newQuantity: newQty,
+      newQuantity: updatedQty,
       newTotalAmount: newTotal / 100,
       additionalAmount: additional / 100,
       raffleId: purchase.raffleId,
     }
-  })
+  }, purchaseRetryOptions)
 
+  logPurchaseAudit("tickets_added", {
+    purchaseId,
+    raffleId: result.raffleId,
+    adminUserId: audit.adminUserId,
+    quantity: result.addedTickets.length,
+    ticketNumbers: result.addedTickets,
+  })
   logger.info({ purchaseId, added: result.addedTickets.length }, "purchase:tickets_added")
 
   void (async () => {
@@ -332,7 +364,11 @@ export async function addTicketsToPurchase(purchaseId: number, quantity: number)
   return result
 }
 
-export async function removeTicketsFromPurchase(purchaseId: number, quantity: number) {
+export async function removeTicketsFromPurchase(
+  purchaseId: number,
+  quantity: number,
+  audit: PurchaseAdminAudit,
+) {
   const result = await withRetryTransaction(async (tx) => {
     const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
     if (!purchase) throw new PurchaseNotFoundError(purchaseId)
@@ -340,6 +376,10 @@ export async function removeTicketsFromPurchase(purchaseId: number, quantity: nu
     if (purchase.status === "rejected") {
       throw new PurchaseRejectedImmutableError(purchaseId)
     }
+
+    const raffle = await rafflesRepo.findRaffleForUpdate(tx, purchase.raffleId)
+    if (!raffle) throw new RaffleNotFoundError(purchase.raffleId)
+    assertRaffleOpenForAdminTicketChanges(raffle, purchase.raffleId)
 
     if (quantity >= purchase.ticketQuantity) {
       throw new Error("No se pueden eliminar todos los boletos. Debe quedar al menos 1.")
@@ -376,8 +416,15 @@ export async function removeTicketsFromPurchase(purchaseId: number, quantity: nu
       autoPauseEnabled: purchase.autoPauseEnabled,
       pauseReason: purchase.pauseReason,
     }
-  })
+  }, purchaseRetryOptions)
 
+  logPurchaseAudit("tickets_removed", {
+    purchaseId,
+    raffleId: result.raffleId,
+    adminUserId: audit.adminUserId,
+    quantity: result.removedTickets.length,
+    ticketNumbers: result.removedTickets,
+  })
   logger.info({ purchaseId, removed: result.removedTickets.length }, "purchase:tickets_removed")
 
   if (result.autoPauseEnabled && result.pauseReason === "auto_full") {
@@ -390,8 +437,11 @@ export async function removeTicketsFromPurchase(purchaseId: number, quantity: nu
   return result
 }
 
-export async function reassignTicketsToPurchase(purchaseId: number) {
-  return withRetryTransaction(async (tx) => {
+export async function reassignTicketsToPurchase(
+  purchaseId: number,
+  audit: PurchaseAdminAudit,
+) {
+  const result = await withRetryTransaction(async (tx) => {
     const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
     if (!purchase || purchase.status !== "rejected") {
       throw new PurchaseNotFoundError(purchaseId)
@@ -399,6 +449,7 @@ export async function reassignTicketsToPurchase(purchaseId: number) {
 
     const raffle = await rafflesRepo.findRaffleForUpdate(tx, purchase.raffleId)
     if (!raffle) throw new RaffleNotFoundError(purchase.raffleId)
+    assertRaffleOpenForAdminTicketChanges(raffle, purchase.raffleId)
 
     const qty = purchase.ticketQuantity
     const pricePerTicket = purchasesRepo.unitPriceCentsForPurchase(purchase, {
@@ -420,15 +471,24 @@ export async function reassignTicketsToPurchase(purchaseId: number) {
     await purchasesRepo.updatePurchaseTotals(tx, purchaseId, ticketNumbers.length, newTotal)
     await purchasesRepo.updatePurchaseStatusRow(tx, purchaseId, "pending")
 
-    logger.info({ purchaseId, reassigned: ticketNumbers.length }, "purchase:reassigned")
-
     return {
       purchaseId,
       ticketNumbers,
       newQuantity: ticketNumbers.length,
       newTotalAmount: newTotal / 100,
+      raffleId: purchase.raffleId,
     }
+  }, purchaseRetryOptions)
+
+  logPurchaseAudit("tickets_reassigned", {
+    purchaseId,
+    raffleId: result.raffleId,
+    adminUserId: audit.adminUserId,
+    quantity: result.ticketNumbers.length,
+    ticketNumbers: result.ticketNumbers,
   })
+  logger.info({ purchaseId, reassigned: result.ticketNumbers.length }, "purchase:reassigned")
+  return result
 }
 
 export type ListAdminPurchasesParams = Parameters<typeof purchasesRepo.listAdminPurchases>[0]

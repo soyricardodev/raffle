@@ -1,4 +1,4 @@
-import { customers, normalizePhone } from "@raffle/shared/db"
+import { customers, isSqliteUniqueViolation, normalizePhone } from "@raffle/shared/db"
 import {
   formatCustomerCi,
   normalizeCustomerCi,
@@ -80,7 +80,30 @@ export async function findOrCreateCustomer(
     return { customerId: existing.id, isReturningCustomer: true }
   }
 
-  const [row] = await tx.insert(customers).values(values).returning({ id: customers.id })
-
-  return { customerId: row!.id, isReturningCustomer: false }
+  try {
+    const [row] = await tx.insert(customers).values(values).returning({ id: customers.id })
+    return { customerId: row!.id, isReturningCustomer: false }
+  } catch (error) {
+    if (!isSqliteUniqueViolation(error)) {
+      throw error
+    }
+    const [raceWinner] = await tx
+      .select({ id: customers.id })
+      .from(customers)
+      .where(
+        and(
+          eq(customers.customerPhoneNormalized, phoneNorm),
+          eq(customers.customerCiNormalized, ciNorm),
+        ),
+      )
+      .limit(1)
+    if (!raceWinner) {
+      throw error
+    }
+    await tx
+      .update(customers)
+      .set({ ...values, updatedAt: new Date() })
+      .where(eq(customers.id, raceWinner.id))
+    return { customerId: raceWinner.id, isReturningCustomer: true }
+  }
 }

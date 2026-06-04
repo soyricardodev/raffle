@@ -6,6 +6,7 @@
     "dev": "pnpm --filter app dev",
     "build": "pnpm --filter app build",
     "test": "pnpm --filter app test",
+    "test:load": "pnpm --filter app test:load",
     "test:e2e": "pnpm --filter app test:e2e",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

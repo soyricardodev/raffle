@@ -6,13 +6,12 @@ import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import { seedPagoMovilPaymentMethodForRaffle } from "@/test/payment-methods-test-helper"
 import { withTestBuyerDefaults } from "@/test/purchase-test-helper"
+import { assertRaffleTicketInvariants } from "./purchase-invariants"
 import { createPurchase } from "./purchase.service"
 
 const TOTAL_TICKETS = 50
 const MAX_PURCHASE = 5
-const hasDatabase = Boolean(process.env.DATABASE_URL)
-
-describe.skipIf(!hasDatabase)("purchase concurrency", () => {
+describe("purchase concurrency", () => {
   let raffleId: number
   let rafflePaymentMethodId: number
 
@@ -83,21 +82,9 @@ describe.skipIf(!hasDatabase)("purchase concurrency", () => {
     expect(succeeded).toBeGreaterThan(0)
     expect(succeeded + failed).toBe(10)
 
-    const db = getDb()
-    const ticketRows = await db
-      .select({ ticketNumber: purchaseTickets.ticketNumber })
-      .from(purchaseTickets)
-      .where(eq(purchaseTickets.raffleId, raffleId))
-
-    const uniqueNumbers = new Set(ticketRows.map((r) => r.ticketNumber))
-    expect(uniqueNumbers.size).toBe(ticketRows.length)
-
-    const [raffle] = await db.select().from(raffles).where(eq(raffles.id, raffleId)).limit(1)
-    expect(raffle).toBeDefined()
-    expect(raffle!.ticketsAvailable + raffle!.ticketsReserved + raffle!.ticketsSold).toBe(
-      TOTAL_TICKETS,
-    )
-    expect(raffle!.ticketsAvailable).toBeGreaterThanOrEqual(0)
+    const report = await assertRaffleTicketInvariants(getDb(), raffleId)
+    expect(report.counterSum).toBe(TOTAL_TICKETS)
+    expect(report.ticketsAvailable).toBeGreaterThanOrEqual(0)
   })
 
   it("rejects duplicate payment references", async () => {

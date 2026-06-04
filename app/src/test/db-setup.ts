@@ -19,6 +19,9 @@ const migrationSql = [
   readMigration("0003_customers_flexible_identity.sql"),
   readMigration("0004_raffle_buyer_presence.sql"),
   readMigration("0005_raffle_promotions.sql"),
+  readMigration("0006_client_analytics_events.sql"),
+  readMigration("0007_rename_purchase_success_analytics.sql"),
+  readMigration("0008_payment_reference_min_length.sql"),
 ].join("\n--> statement-breakpoint\n")
 
 /** Base SQLite en archivo temporal aislado por suite de tests. */

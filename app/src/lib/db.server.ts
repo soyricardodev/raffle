@@ -81,10 +81,22 @@ export function resetDbForTests(): void {
   _client = undefined
 }
 
+export type TransactionRetryContext = {
+  attempt: number
+  maxAttempts: number
+  error: unknown
+}
+
+export type WithRetryTransactionOptions = {
+  maxAttempts?: number
+  onRetry?: (ctx: TransactionRetryContext) => void
+}
+
 export async function withRetryTransaction<T>(
   fn: (tx: DbTransaction) => Promise<T>,
-  maxAttempts = 5,
+  options: WithRetryTransactionOptions = {},
 ): Promise<T> {
+  const maxAttempts = options.maxAttempts ?? 5
   let lastError: unknown
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -94,6 +106,7 @@ export async function withRetryTransaction<T>(
       if (!isRetryableTransactionError(err)) {
         throw err
       }
+      options.onRetry?.({ attempt: attempt + 1, maxAttempts, error: err })
       await new Promise((r) => setTimeout(r, 15 * (attempt + 1)))
     }
   }

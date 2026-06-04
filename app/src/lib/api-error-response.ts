@@ -1,10 +1,23 @@
+import { randomUUID } from "node:crypto"
 import { AppError } from "@raffle/shared/errors"
 import { ZodError } from "zod"
+import { getLogger } from "@/lib/logger"
+
+const logger = getLogger()
+
+export const GENERIC_INTERNAL_ERROR_MESSAGE =
+  "Ocurrió un error inesperado. Intenta de nuevo en unos minutos."
 
 export type ApiErrorPayload = {
   message: string
   code: string
   details?: unknown
+  traceId?: string
+  retryable?: boolean
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status >= 500
 }
 
 export function apiErrorPayload(error: unknown): ApiErrorPayload | null {
@@ -13,6 +26,7 @@ export function apiErrorPayload(error: unknown): ApiErrorPayload | null {
       message: error.message,
       code: error.code,
       details: error.details,
+      retryable: isRetryableStatus(error.statusCode),
     }
   }
 
@@ -20,7 +34,8 @@ export function apiErrorPayload(error: unknown): ApiErrorPayload | null {
     return {
       message: error.issues[0]?.message ?? "Datos inválidos",
       code: "VALIDATION_ERROR",
-      details: error.flatten().fieldErrors,
+      details: { fieldErrors: error.flatten().fieldErrors },
+      retryable: false,
     }
   }
 
@@ -36,15 +51,16 @@ export function apiErrorResponse(error: unknown): Response {
     return Response.json(payload, { status })
   }
 
-  if (error instanceof Error && error.message) {
-    return Response.json(
-      { message: error.message, code: "INTERNAL_ERROR" },
-      { status: 500 },
-    )
-  }
+  const traceId = randomUUID()
+  logger.error({ err: error, traceId }, "api:unhandled_error")
 
   return Response.json(
-    { message: "Error interno del servidor", code: "INTERNAL_ERROR" },
+    {
+      message: GENERIC_INTERNAL_ERROR_MESSAGE,
+      code: "INTERNAL_ERROR",
+      traceId,
+      retryable: true,
+    },
     { status: 500 },
   )
 }

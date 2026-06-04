@@ -40,8 +40,16 @@ import type {
   RaffleForPurchase,
   RafflePaymentMethod,
 } from "@/features/raffle/types"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
+import { PurchaseErrorSupportPanel } from "@/features/raffle/purchase-form/PurchaseErrorSupportPanel"
+import {
+  buildPurchaseSupportWhatsAppHref,
+  type PurchaseSupportErrorState,
+  resolvePurchaseSupportError,
+} from "@/features/raffle/purchase-form/purchase-error-support"
 import { useBuyerPresence } from "@/features/raffle/use-buyer-presence"
-import { getApiErrorMessage, publicFetch } from "@/lib/admin-fetch"
+import { publicFetch } from "@/lib/admin-fetch"
+import { getApiErrorMessage } from "@/lib/api-error-message"
 import { formatCurrency } from "@/lib/format"
 
 export type PurchaseFormProps = {
@@ -84,6 +92,8 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
 
 export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const queryClient = useQueryClient()
+  const branding = usePublicBranding()
+  const [supportError, setSupportError] = useState<PurchaseSupportErrorState | null>(null)
   const minPurchase = Number(raffle.min_purchase) || 1
   const maxPurchase = Number(raffle.max_purchase) || 10
 
@@ -298,19 +308,36 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       setPaymentProof(null)
       setQuantity(quantityMin)
       setTouched(false)
+      setSupportError(null)
       void queryClient.invalidateQueries({
         queryKey: raffleLiveQueryKeys.status(String(raffle.id)),
       })
     },
     onError: (error: unknown) => {
-      const message = getApiErrorMessage(error, "No se pudo procesar la compra")
+      const fallback = "No se pudo procesar la compra"
+      const support = resolvePurchaseSupportError(error, fallback)
+      const message = support?.message ?? getApiErrorMessage(error, fallback)
       toast.error(message)
+      setSupportError(support)
       if (message.includes("método de pago") || message.includes("Método de pago")) {
         void queryClient.invalidateQueries({ queryKey: raffleQueryKeys.detail(String(raffle.id)) })
         void queryClient.invalidateQueries({ queryKey: ["raffle", "first-active"] })
       }
     },
   })
+
+  const supportWhatsAppHref = useMemo(() => {
+    if (!supportError) return null
+    const digits = branding?.social.whatsapp ?? ""
+    if (!digits.replace(/\D/g, "")) return null
+    return buildPurchaseSupportWhatsAppHref(digits, supportError, {
+      raffleId: raffle.id,
+      raffleName: raffle.name,
+      ticketQuantity: quantity,
+      paymentMethodId: rafflePaymentMethodId,
+      pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
+    })
+  }, [supportError, branding?.social.whatsapp, raffle.id, raffle.name, quantity, rafflePaymentMethodId])
 
   const disabled =
     raffle.status !== "active" ||
@@ -359,6 +386,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
 
   function handleSubmit() {
     setTouched(true)
+    setSupportError(null)
     if (
       validationMessages.name ||
       validationMessages.phone ||
@@ -461,6 +489,15 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             onPaymentReferenceChange={setPaymentReference}
             onPaymentProofChange={setPaymentProof}
           />
+
+          {supportError ? (
+            <PurchaseErrorSupportPanel
+              support={supportError}
+              whatsappHref={supportWhatsAppHref}
+              isRetrying={isSubmitting}
+              onRetry={() => purchaseMutation.mutate()}
+            />
+          ) : null}
 
           <div className="sticky bottom-0 z-20 -mx-6 border-t border-border/80 bg-background/95 px-6 py-3 backdrop-blur-sm sm:static sm:z-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
             <Button

@@ -1,18 +1,16 @@
 import { AddRemoveTicketsInput } from "@raffle/shared/validators"
 import { createFileRoute } from "@tanstack/react-router"
 import { apiHandlers } from "@/lib/api-handler"
-import { requireAdmin } from "@/lib/auth-utils.server"
-import { parsePositiveRouteId } from "@/lib/parse-positive-route-id"
+import { adminPurchaseRouteContext } from "@/lib/admin-purchase-route.server"
 import { removeTicketsFromPurchase } from "@/server/purchase.service"
 
 export const Route = createFileRoute("/api/admin/purchases/$id/tickets/remove")({
   server: {
     handlers: apiHandlers({
       PUT: async ({ request, params }) => {
-        await requireAdmin(request)
-        const purchaseId = parsePositiveRouteId(params.id, "ID de compra")
+        const { purchaseId, audit } = await adminPurchaseRouteContext(request, params.id)
         const body = AddRemoveTicketsInput.parse(await request.json())
-        const result = await removeTicketsFromPurchase(purchaseId, body.quantity)
+        const result = await removeTicketsFromPurchase(purchaseId, body.quantity, audit)
         return Response.json(result)
       },
     }),

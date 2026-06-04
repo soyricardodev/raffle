@@ -12,10 +12,10 @@ describe("apiHandlers", () => {
 
     const res = await handlers.DELETE()
     expect(res.status).toBe(400)
-    await expect(res.json()).resolves.toEqual({
+    await expect(res.json()).resolves.toMatchObject({
       message: "No se puede eliminar: este método está asignado a la rifa #20",
       code: "VALIDATION_ERROR",
-      details: { fieldErrors: undefined },
+      retryable: false,
     })
   })
 })

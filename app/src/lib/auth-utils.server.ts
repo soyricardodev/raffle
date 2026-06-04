@@ -1,6 +1,7 @@
 import { ForbiddenError, UnauthorizedError } from "@raffle/shared/errors"
 import type { UserRole } from "@raffle/shared/validators"
 import { getAuth } from "./auth.server"
+import { assertSameOriginMutation } from "./origin-guard.server"
 import { getLogger } from "./logger"
 
 const logger = getLogger()
@@ -35,7 +36,11 @@ export async function requireRole(request: Request, ...roles: (UserRole | UserRo
   const flatRoles = roles.flat()
   const user = await requireAuth(request)
 
-  const userRole = (user.role || "admin") as UserRole
+  const userRole = user.role as UserRole | null | undefined
+  if (!userRole) {
+    logger.warn({ userId: user.id, requiredRoles: flatRoles }, "auth:missing_role")
+    throw new ForbiddenError(flatRoles)
+  }
 
   if (!flatRoles.includes(userRole)) {
     logger.warn({ userId: user.id, userRole, requiredRoles: flatRoles }, "auth:forbidden")
@@ -48,6 +53,12 @@ export async function requireRole(request: Request, ...roles: (UserRole | UserRo
 /** Shortcut: solo admin o super_admin */
 export async function requireAdmin(request: Request) {
   return requireRole(request, "admin", "super_admin")
+}
+
+/** Admin mutating APIs: session + role + same-origin CSRF check. */
+export async function requireAdminMutation(request: Request) {
+  assertSameOriginMutation(request)
+  return requireAdmin(request)
 }
 
 /** Shortcut: solo super_admin */

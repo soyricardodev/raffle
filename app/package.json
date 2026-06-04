@@ -7,6 +7,7 @@
     "build": "vite build",
     "preview": "vite preview",
     "test": "vitest run --config vitest.config.ts",
+    "test:load": "vitest run --config vitest.config.ts src/server/purchase.load.test.ts",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:headed": "playwright test --headed",

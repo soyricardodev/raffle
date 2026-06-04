@@ -1,4 +1,6 @@
 import { TooManyRequestsError } from "@raffle/shared/errors"
+import { getClientIp } from "./client-ip.server"
+import { recordPurchaseMetric } from "./purchase-metrics.server"
 import { getLogger } from "./logger"
 
 const logger = getLogger()
@@ -31,31 +33,42 @@ export type RateLimitConfig = {
   windowMs: number
   maxRequests: number
   keyPrefix?: string
+  /** Extra dimension (e.g. raffle id) for per-resource limits. */
+  keySuffix?: string
 }
 
-function getClientIp(request: Request): string {
-  const forwarded = request.headers.get("x-forwarded-for")
-  if (forwarded) {
-    return forwarded.split(",")[0]!.trim()
-  }
-  return "127.0.0.1"
-}
-
-function getStore(key: string): RateLimitStore {
-  let store = stores.get(key)
+function getStore(namespace: string): RateLimitStore {
+  let store = stores.get(namespace)
   if (!store) {
     store = new Map()
-    stores.set(key, store)
+    stores.set(namespace, store)
   }
   return store
+}
+
+function parsePurchaseRateLimit(): { windowMs: number; maxRequests: number } {
+  const windowMs = Number(process.env.RATE_LIMIT_PURCHASE_WINDOW_MS ?? 10_000)
+  const maxRequests = Number(process.env.RATE_LIMIT_PURCHASE_MAX ?? 5)
+  return {
+    windowMs: Number.isFinite(windowMs) && windowMs > 0 ? windowMs : 10_000,
+    maxRequests: Number.isFinite(maxRequests) && maxRequests > 0 ? maxRequests : 5,
+  }
+}
+
+/** Default limits for POST /api/purchases (overridable via env). */
+export function purchaseRateLimitConfig(): RateLimitConfig {
+  const { windowMs, maxRequests } = parsePurchaseRateLimit()
+  return { windowMs, maxRequests, keyPrefix: "purchase" }
 }
 
 export async function rateLimit(request: Request, config: RateLimitConfig): Promise<void> {
   startCleanup()
 
   const ip = getClientIp(request)
-  const key = `${config.keyPrefix ?? "global"}:${ip}`
-  const store = getStore(config.keyPrefix ?? "global")
+  const namespace = config.keyPrefix ?? "global"
+  const suffix = config.keySuffix ? `:${config.keySuffix}` : ""
+  const key = `${namespace}:${ip}${suffix}`
+  const store = getStore(namespace)
   const now = Date.now()
 
   let entry = store.get(key)
@@ -71,9 +84,24 @@ export async function rateLimit(request: Request, config: RateLimitConfig): Prom
   if (entry.count > config.maxRequests) {
     const retryAfterSec = Math.ceil((entry.resetAt - now) / 1000)
     logger.warn(
-      { ip, count: entry.count, max: config.maxRequests, prefix: config.keyPrefix },
+      { ip, count: entry.count, max: config.maxRequests, prefix: config.keyPrefix, keySuffix: config.keySuffix },
       "rate-limit:exceeded",
     )
+    if (config.keyPrefix === "purchase") {
+      recordPurchaseMetric("purchase_rate_limited", { ip, count: entry.count })
+    }
     throw new TooManyRequestsError(retryAfterSec)
   }
+}
+
+/** Per-IP + per-raffle purchase throttle (second layer on top of global IP limit). */
+export async function rateLimitPurchase(request: Request, raffleId: number): Promise<void> {
+  const base = purchaseRateLimitConfig()
+  await rateLimit(request, base)
+  await rateLimit(request, {
+    ...base,
+    keyPrefix: "purchase-raffle",
+    keySuffix: String(raffleId),
+    maxRequests: Math.max(3, Math.floor(base.maxRequests * 0.6)),
+  })
 }
