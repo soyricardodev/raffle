@@ -1,7 +1,9 @@
 import { CheckCircleIcon, EyeIcon, XCircleIcon } from "@phosphor-icons/react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
+import { useAdminUserPreferences } from "@/features/admin/preferences/use-admin-user-preferences"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { requestPurchaseApprove } from "@/features/admin/purchases/purchase-action-guard"
 import { RejectPurchaseDialog } from "@/features/admin/purchases/RejectPurchaseDialog"
 import type { PurchaseRow } from "@/features/admin/purchases/types"
 
@@ -20,6 +22,7 @@ export function PurchaseRowActions({
   pending,
   density = "comfortable",
 }: PurchaseRowActionsProps) {
+  const { skipApproveConfirm } = useAdminUserPreferences()
   const [confirmApprove, setConfirmApprove] = useState(false)
   const [rejectOpen, setRejectOpen] = useState(false)
   const buttonSize = density === "compact" ? "icon-xs" : "icon-sm"
@@ -46,7 +49,13 @@ export function PurchaseRowActions({
             variant="outline"
             className={buttonClassName}
             disabled={pending}
-            onClick={() => setConfirmApprove(true)}
+            onClick={() =>
+              requestPurchaseApprove({
+                skipConfirm: skipApproveConfirm,
+                onApprove: () => onStatusChange("approved"),
+                openConfirm: () => setConfirmApprove(true),
+              })
+            }
             title="Aprobar"
           >
             <CheckCircleIcon />

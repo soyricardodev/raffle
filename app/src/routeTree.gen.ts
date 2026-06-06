@@ -53,6 +53,7 @@ import { Route as ApiRafflesIdPauseInfoRouteImport } from './routes/api/raffles/
 import { Route as ApiAdminRafflesIdRouteImport } from './routes/api/admin/raffles/$id'
 import { Route as ApiAdminPurchasesIdRouteImport } from './routes/api/admin/purchases/$id'
 import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admin/payment-accounts/$id'
+import { Route as ApiAdminMePreferencesRouteImport } from './routes/api/admin/me/preferences'
 import { Route as ApiAdminEmailsStatsRouteImport } from './routes/api/admin/emails.stats'
 import { Route as ApiAdminEmailsHealthRouteImport } from './routes/api/admin/emails.health'
 import { Route as ApiAdminEmailsLogIdRouteImport } from './routes/api/admin/emails.$logId'
@@ -297,6 +298,11 @@ const ApiAdminPaymentAccountsIdRoute =
     path: '/api/admin/payment-accounts/$id',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiAdminMePreferencesRoute = ApiAdminMePreferencesRouteImport.update({
+  id: '/api/admin/me/preferences',
+  path: '/api/admin/me/preferences',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminEmailsStatsRoute = ApiAdminEmailsStatsRouteImport.update({
   id: '/stats',
   path: '/stats',
@@ -460,6 +466,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
+  '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
@@ -524,6 +531,7 @@ export interface FileRoutesByTo {
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
+  '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
@@ -592,6 +600,7 @@ export interface FileRoutesById {
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
+  '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
@@ -660,6 +669,7 @@ export interface FileRouteTypes {
     | '/api/admin/emails/$logId'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
+    | '/api/admin/me/preferences'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -724,6 +734,7 @@ export interface FileRouteTypes {
     | '/api/admin/emails/$logId'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
+    | '/api/admin/me/preferences'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -791,6 +802,7 @@ export interface FileRouteTypes {
     | '/api/admin/emails/$logId'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
+    | '/api/admin/me/preferences'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
     | '/api/admin/raffles/$id'
@@ -838,6 +850,7 @@ export interface RootRouteChildren {
   ApiTicketsVerifyRoute: typeof ApiTicketsVerifyRoute
   ApiPurchasesIndexRoute: typeof ApiPurchasesIndexRoute
   ApiRafflesIndexRoute: typeof ApiRafflesIndexRoute
+  ApiAdminMePreferencesRoute: typeof ApiAdminMePreferencesRoute
   ApiAdminPaymentAccountsIdRoute: typeof ApiAdminPaymentAccountsIdRouteWithChildren
   ApiAdminPurchasesIdRoute: typeof ApiAdminPurchasesIdRouteWithChildren
   ApiAdminRafflesIdRoute: typeof ApiAdminRafflesIdRouteWithChildren
@@ -1154,6 +1167,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin/payment-accounts/$id'
       fullPath: '/api/admin/payment-accounts/$id'
       preLoaderRoute: typeof ApiAdminPaymentAccountsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/me/preferences': {
+      id: '/api/admin/me/preferences'
+      path: '/api/admin/me/preferences'
+      fullPath: '/api/admin/me/preferences'
+      preLoaderRoute: typeof ApiAdminMePreferencesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/emails/stats': {
@@ -1530,6 +1550,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiTicketsVerifyRoute: ApiTicketsVerifyRoute,
   ApiPurchasesIndexRoute: ApiPurchasesIndexRoute,
   ApiRafflesIndexRoute: ApiRafflesIndexRoute,
+  ApiAdminMePreferencesRoute: ApiAdminMePreferencesRoute,
   ApiAdminPaymentAccountsIdRoute: ApiAdminPaymentAccountsIdRouteWithChildren,
   ApiAdminPurchasesIdRoute: ApiAdminPurchasesIdRouteWithChildren,
   ApiAdminRafflesIdRoute: ApiAdminRafflesIdRouteWithChildren,

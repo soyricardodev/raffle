@@ -1,9 +1,5 @@
 import { Badge } from "@/components/ui/badge"
-import { purchaseSuccessTicketBadgeClassName } from "@/features/raffle/purchase-form/field-styles"
-
-export function getPurchaseSuccessTicketBadgeClassName(_ticket?: string): string {
-  return purchaseSuccessTicketBadgeClassName
-}
+import { featuredTicketBadgeClassName } from "@/features/tickets/ticket-badge-styles"
 
 type PurchaseSuccessTicketBadgeProps = {
   ticket: string
@@ -13,7 +9,7 @@ export function PurchaseSuccessTicketBadge({ ticket }: PurchaseSuccessTicketBadg
   return (
     <Badge
       variant="outline"
-      className={purchaseSuccessTicketBadgeClassName}
+      className={featuredTicketBadgeClassName}
       role="listitem"
     >
       {ticket}

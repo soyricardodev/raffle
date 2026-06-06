@@ -13,7 +13,7 @@ type VirtualTicketBadgeGridProps = {
   listId: string
   ticketCount: number
   className?: string
-  getBadgeClassName?: (ticket: string) => string
+  badgeClassName?: string
   rowStridePx?: number
 }
 
@@ -25,7 +25,7 @@ export function VirtualTicketBadgeGrid({
   listId,
   ticketCount,
   className,
-  getBadgeClassName,
+  badgeClassName,
   rowStridePx = TICKET_ROW_STRIDE_PX,
 }: VirtualTicketBadgeGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -63,7 +63,7 @@ export function VirtualTicketBadgeGrid({
                 <Badge
                   key={ticket}
                   variant="outline"
-                  className={cn(getBadgeClassName?.(ticket) ?? DEFAULT_BADGE_CLASS, "flex-1")}
+                  className={cn(badgeClassName ?? DEFAULT_BADGE_CLASS, "flex-1")}
                   role="listitem"
                 >
                   {ticket}

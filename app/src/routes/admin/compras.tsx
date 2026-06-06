@@ -15,6 +15,7 @@ type ComprasSearch = {
   q?: string
   start?: string
   end?: string
+  sort?: string
   limit?: number
   /** Abre el drawer de detalle de esta compra */
   purchase?: number
@@ -29,6 +30,7 @@ export const Route = createFileRoute("/admin/compras")({
     q: typeof search.q === "string" ? search.q : undefined,
     start: typeof search.start === "string" ? search.start : undefined,
     end: typeof search.end === "string" ? search.end : undefined,
+    sort: typeof search.sort === "string" ? search.sort : undefined,
     limit: Number.isFinite(Number(search.limit)) ? Math.max(1, Number(search.limit)) : undefined,
     purchase: Number.isFinite(Number(search.purchase))
       ? Math.max(1, Number(search.purchase))

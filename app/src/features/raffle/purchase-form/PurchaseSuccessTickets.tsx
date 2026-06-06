@@ -2,10 +2,7 @@ import { ChevronDown, ChevronUp, Copy } from "lucide-react"
 import { useEffect, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  PurchaseSuccessTicketBadge,
-  getPurchaseSuccessTicketBadgeClassName,
-} from "@/features/raffle/purchase-form/purchase-success-ticket-badge"
+import { PurchaseSuccessTicketBadge } from "@/features/raffle/purchase-form/purchase-success-ticket-badge"
 import {
   getHiddenTicketCount,
   getTicketListDisplayMode,
@@ -13,11 +10,13 @@ import {
   TICKET_COLLAPSE_THRESHOLD,
 } from "@/features/raffle/purchase-form/purchase-success-tickets"
 import { VirtualTicketBadgeGrid } from "@/features/raffle/purchase-form/VirtualTicketBadgeGrid"
-import { purchaseSuccessTicketsSectionClassName } from "@/features/raffle/purchase-form/field-styles"
+import {
+  FEATURED_TICKET_ROW_STRIDE_PX,
+  featuredTicketBadgeClassName,
+  featuredTicketBadgeGridClassName,
+  featuredTicketSectionClassName,
+} from "@/features/tickets/ticket-badge-styles"
 import { cn } from "@/lib/utils"
-
-/** Row height for h-9 badges + gap-1.5 in the virtual grid. */
-const PURCHASE_SUCCESS_TICKET_ROW_STRIDE_PX = 42
 
 type PurchaseSuccessTicketsProps = {
   purchaseId: number
@@ -26,8 +25,7 @@ type PurchaseSuccessTicketsProps = {
   onExpandedChange?: (expanded: boolean) => void
 }
 
-const listScrollClassName =
-  "border-amber-300/40 bg-background/80 min-h-14 overflow-y-auto overscroll-contain rounded-lg border p-2"
+const listScrollClassName = featuredTicketBadgeGridClassName
 
 export function PurchaseSuccessTickets({
   purchaseId,
@@ -57,7 +55,7 @@ export function PurchaseSuccessTickets({
   }
 
   return (
-    <div className={purchaseSuccessTicketsSectionClassName}>
+    <div className={featuredTicketSectionClassName}>
       <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
         <div className="min-w-0">
           <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
@@ -86,8 +84,8 @@ export function PurchaseSuccessTickets({
           listId={listId}
           ticketCount={ticketCount}
           className={cn(listScrollClassName, "max-h-[min(34vh,280px)]")}
-          getBadgeClassName={getPurchaseSuccessTicketBadgeClassName}
-          rowStridePx={PURCHASE_SUCCESS_TICKET_ROW_STRIDE_PX}
+          badgeClassName={featuredTicketBadgeClassName}
+          rowStridePx={FEATURED_TICKET_ROW_STRIDE_PX}
         />
       ) : (
         <div

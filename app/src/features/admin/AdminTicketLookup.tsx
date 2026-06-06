@@ -19,6 +19,11 @@ import {
   type AdminTicketLookupResult,
   adminTicketLookupQueryOptions,
 } from "@/features/admin/tickets/admin-ticket-lookup-queries"
+import {
+  featuredTicketBadgeClassName,
+  featuredTicketSectionClassName,
+} from "@/features/tickets/ticket-badge-styles"
+import { Badge } from "@/components/ui/badge"
 import { formatDate, formatDateTime, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -154,7 +159,7 @@ function TicketLookupResultCard({ match }: TicketLookupResultCardProps) {
 
   return (
     <Card className={cn(isCurrentRaffle && "border-primary/40 ring-1 ring-primary/20")}>
-      <CardHeader className="gap-2 pb-2">
+      <CardHeader className="gap-3 pb-2">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <CardTitle className="text-base font-semibold">{match.raffle_name}</CardTitle>
           <div className="flex flex-wrap gap-1.5">
@@ -166,9 +171,16 @@ function TicketLookupResultCard({ match }: TicketLookupResultCardProps) {
             ) : null}
           </div>
         </div>
-        <p className="text-muted-foreground font-mono text-sm">
-          Boleto {match.ticket_number} · {getStatusLabel(match.ticket_status)}
-        </p>
+        <div className={cn(featuredTicketSectionClassName, "gap-2 p-3")}>
+          <div className="flex flex-wrap items-center gap-3">
+            <Badge variant="outline" className={cn(featuredTicketBadgeClassName, "text-base")}>
+              {match.ticket_number}
+            </Badge>
+            <p className="text-muted-foreground text-sm">
+              Estado del boleto: {getStatusLabel(match.ticket_status)}
+            </p>
+          </div>
+        </div>
       </CardHeader>
       <CardContent className="flex flex-col gap-3 pt-0">
         <div className="grid grid-cols-[88px_1fr] gap-x-2 gap-y-1.5 text-sm">

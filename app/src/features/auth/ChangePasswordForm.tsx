@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Field, FieldDescription, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
+import { AdminUserPreferencesCard } from "@/features/admin/preferences/AdminUserPreferencesCard"
 import { ADMIN_ACCOUNT_PAGE_TITLE } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { changePassword, signOut } from "@/features/auth/auth-client"
@@ -191,7 +192,7 @@ export function AdminAccountPage() {
         title={ADMIN_ACCOUNT_PAGE_TITLE}
         description="Gestiona la seguridad de tu acceso al panel administrador."
       />
-      <div className="max-w-lg">
+      <div className="max-w-lg space-y-6">
         <ChangePasswordCard
           formId={formId}
           currentPassword={currentPassword}
@@ -204,6 +205,7 @@ export function AdminAccountPage() {
           onConfirmPasswordChange={setConfirmPassword}
           onSubmit={handleSubmit}
         />
+        <AdminUserPreferencesCard />
       </div>
     </div>
   )

@@ -4,6 +4,11 @@ import { Badge } from "@/components/ui/badge"
 import { Input } from "@/components/ui/input"
 import { parseTicketNumbers } from "@/features/admin/purchases/parseTicketNumbers"
 import { shouldVirtualizeTicketBadgeList } from "@/features/tickets/ticket-badge-grid"
+import {
+  FEATURED_TICKET_ROW_STRIDE_PX,
+  featuredTicketBadgeClassName,
+  featuredTicketBadgeGridClassName,
+} from "@/features/tickets/ticket-badge-styles"
 import { VirtualTicketBadgeGrid } from "@/features/tickets/VirtualTicketBadgeGrid"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { cn } from "@/lib/utils"
@@ -12,14 +17,12 @@ type PurchaseTicketsPanelProps = {
   ticketNumbers?: Array<string>
   ticketNumbersCsv?: string
   className?: string
-  embedded?: boolean
 }
 
 export function PurchaseTicketsPanel({
   ticketNumbers,
   ticketNumbersCsv,
   className,
-  embedded = false,
 }: PurchaseTicketsPanelProps) {
   const [query, setQuery] = useState("")
 
@@ -78,9 +81,8 @@ export function PurchaseTicketsPanel({
 
       <div
         className={cn(
-          "overscroll-contain rounded-md border p-1",
-          useVirtualList ? "max-h-40" : "max-h-20 overflow-y-auto",
-          embedded ? "bg-background" : "bg-muted/30",
+          featuredTicketBadgeGridClassName,
+          useVirtualList ? "max-h-52" : "max-h-36",
         )}
         role="list"
         aria-label="Lista de boletos"
@@ -94,15 +96,17 @@ export function PurchaseTicketsPanel({
             ticketNumbers={filteredTickets}
             listId="admin-purchase-tickets"
             ticketCount={filteredTickets.length}
-            className="max-h-36 overflow-y-auto overscroll-contain"
+            className="max-h-48 overflow-y-auto overscroll-contain"
+            badgeClassName={featuredTicketBadgeClassName}
+            rowStridePx={FEATURED_TICKET_ROW_STRIDE_PX}
           />
         ) : (
-          <div className="flex flex-wrap gap-1">
+          <div className="flex flex-wrap gap-1.5">
             {filteredTickets.map((ticket) => (
               <Badge
                 key={ticket}
                 variant="outline"
-                className="h-5 px-1 font-mono text-[10px] tabular-nums"
+                className={featuredTicketBadgeClassName}
                 role="listitem"
               >
                 {ticket}

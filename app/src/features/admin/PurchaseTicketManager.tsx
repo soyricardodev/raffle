@@ -2,7 +2,9 @@ import { Minus, Plus, RefreshCw } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { useAdminUserPreferences } from "@/features/admin/preferences/use-admin-user-preferences"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { requestPurchaseTicketAction } from "@/features/admin/purchases/purchase-action-guard"
 import { useAdminPurchaseTicketAdjustments } from "@/features/admin/purchases/use-admin-purchase-ticket-adjustments"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { cn } from "@/lib/utils"
@@ -20,6 +22,7 @@ export function PurchaseTicketManager({
   onUpdated,
   embedded = false,
 }: PurchaseTicketManagerProps) {
+  const { skipTicketAdjustConfirm } = useAdminUserPreferences()
   const {
     targetDraft,
     setTargetDraft,
@@ -48,6 +51,15 @@ export function PurchaseTicketManager({
   const canStep =
     resolution != null && resolution.parsed != null && resolution.message == null
 
+  function submitTicketUpdate() {
+    const adjustDelta = target - currentQty
+    if (adjustDelta === 0) {
+      setConfirm(null)
+      return
+    }
+    adjustMutation.mutate(adjustDelta)
+  }
+
   return (
     <div
       className={cn(
@@ -70,7 +82,13 @@ export function PurchaseTicketManager({
             variant="secondary"
             size="sm"
             disabled={pending}
-            onClick={() => setConfirm("reassign")}
+            onClick={() =>
+              requestPurchaseTicketAction({
+                skipConfirm: skipTicketAdjustConfirm,
+                onAction: () => reassignMutation.mutate(),
+                openConfirm: () => setConfirm("reassign"),
+              })
+            }
           >
             <RefreshCw className="mr-1.5 size-3.5" />
             Reasignar
@@ -154,7 +172,13 @@ export function PurchaseTicketManager({
                 className="h-8 w-full"
                 size="sm"
                 disabled={pending || !canSubmitUpdate}
-                onClick={() => setConfirm("update")}
+                onClick={() =>
+                  requestPurchaseTicketAction({
+                    skipConfirm: skipTicketAdjustConfirm,
+                    onAction: submitTicketUpdate,
+                    openConfirm: () => setConfirm("update"),
+                  })
+                }
               >
                 Actualizar boletos
               </Button>
@@ -171,14 +195,7 @@ export function PurchaseTicketManager({
         confirmLabel="Actualizar"
         pending={pending}
         destructive={isDecrease}
-        onConfirm={() => {
-          const adjustDelta = target - currentQty
-          if (adjustDelta === 0) {
-            setConfirm(null)
-            return
-          }
-          adjustMutation.mutate(adjustDelta)
-        }}
+        onConfirm={submitTicketUpdate}
       />
 
       <ConfirmAction

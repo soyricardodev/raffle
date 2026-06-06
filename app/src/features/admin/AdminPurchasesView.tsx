@@ -4,7 +4,7 @@ import {
   paymentMethodTypeLabel,
   type PaymentMethod,
 } from "@raffle/shared/payment-methods"
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
@@ -43,10 +43,10 @@ import { useInfiniteScrollSentinel } from "@/features/admin/purchases/use-infini
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
 import { raffleStatusLabel } from "@/features/admin/raffle-labels"
+import { useAdminPurchaseStatusUpdate } from "@/features/admin/purchases/use-admin-purchase-status-update"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
-import { adminFetch } from "@/lib/admin-fetch"
 import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/compras")
@@ -61,8 +61,6 @@ const PAYMENT_METHOD_FILTER_OPTIONS = (
 export function AdminPurchasesView() {
   const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/compras" })
-  const queryClient = useQueryClient()
-
   const purchaseFromUrl =
     routeSearch.purchase != null && routeSearch.purchase > 0 ? routeSearch.purchase : null
 
@@ -127,28 +125,8 @@ export function AdminPurchasesView() {
     fetchNextPage: purchasesQuery.fetchNextPage,
   })
 
-  const statusMutation = useMutation({
-    mutationFn: async ({
-      id,
-      status,
-      notes,
-    }: {
-      id: number
-      status: "approved" | "rejected"
-      notes?: string
-    }) => {
-      const body: { status: string; notes?: string } = { status }
-      if (notes) body.notes = notes
-      return adminFetch(`/api/admin/purchases/${id}/status`, {
-        method: "PUT",
-        body: JSON.stringify(body),
-      })
-    },
-    onSuccess: () => {
-      toast.success("Estado actualizado")
-      void queryClient.invalidateQueries({ queryKey: ["admin"] })
-    },
-    onError: (error: Error) => toast.error(error.message),
+  const statusMutation = useAdminPurchaseStatusUpdate({
+    onSuccess: () => toast.success("Estado actualizado"),
   })
 
   const purchases: Array<PurchaseRow> = flattenAdminPurchasesPages(purchasesQuery.data?.pages)
@@ -161,7 +139,8 @@ export function AdminPurchasesView() {
       filters.end ||
       filters.status !== "all" ||
       filters.paymentMethod !== "all" ||
-      filters.raffleId,
+      filters.raffleId ||
+      filters.sort !== "newest",
   )
 
   const pendingCount = useMemo(
@@ -286,6 +265,21 @@ export function AdminPurchasesView() {
               </Select>
 
               <Select
+                value={filters.sort}
+                onValueChange={(sort) => updateSearch({ sort })}
+              >
+                <SelectTrigger size="sm" className="w-[168px] max-w-full">
+                  <SelectValue placeholder="Orden por fecha" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectGroup>
+                    <SelectItem value="newest">Más recientes primero</SelectItem>
+                    <SelectItem value="oldest">Más antiguas primero</SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+
+              <Select
                 value={filters.paymentMethod}
                 onValueChange={(payment_method) => updateSearch({ payment_method })}
               >
@@ -358,6 +352,7 @@ export function AdminPurchasesView() {
                       q: undefined,
                       start: undefined,
                       end: undefined,
+                      sort: undefined,
                     })
                   }
                 >
@@ -377,7 +372,7 @@ export function AdminPurchasesView() {
               pending={statusMutation.isPending}
               onView={openPurchase}
               onStatusChange={(id, status, notes) =>
-                statusMutation.mutate({ id, status, notes })
+                statusMutation.mutate({ purchaseId: id, status, notes })
               }
             />
           </div>
@@ -389,7 +384,7 @@ export function AdminPurchasesView() {
               pending={statusMutation.isPending}
               onView={openPurchase}
               onStatusChange={(id, status, notes) =>
-                statusMutation.mutate({ id, status, notes })
+                statusMutation.mutate({ purchaseId: id, status, notes })
               }
             />
           </div>

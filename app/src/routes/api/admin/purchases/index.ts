@@ -29,6 +29,7 @@ export const Route = createFileRoute("/api/admin/purchases/")({
           searchType: url.searchParams.get("search_type") ?? "all",
           start: url.searchParams.get("start"),
           end: url.searchParams.get("end"),
+          sort: url.searchParams.get("sort") === "oldest" ? "oldest" : "newest",
         })
 
         return Response.json(result)

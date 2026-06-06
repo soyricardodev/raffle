@@ -12,7 +12,9 @@ import { PaymentReferenceDuplicateError } from "@raffle/shared/errors"
 import type { RecentPurchaseDbRow } from "@raffle/shared/public-recent-purchase"
 import type { PaymentMethod, PurchaseStatus } from "@raffle/shared/validators"
 import { isDollarMethod } from "@raffle/shared/validators"
-import { and, desc, eq, inArray, like, lt, or, sql, type SQL } from "drizzle-orm"
+import { endOfDay, startOfDay } from "date-fns"
+import { and, asc, desc, eq, gt, gte, inArray, like, lt, lte, or, sql, type SQL } from "drizzle-orm"
+import { parseDateOnly } from "@/lib/date-input"
 import type { AdminPurchaseListCursor } from "@/server/admin-purchases-cursor"
 import {
   adminPurchaseCursorFromRow,
@@ -277,6 +279,8 @@ export function mapPurchaseLegacy(p: PurchaseRow) {
   }
 }
 
+export type AdminPurchaseSort = "newest" | "oldest"
+
 export type AdminPurchaseFilterParams = {
   status?: string
   paymentMethod?: string
@@ -285,6 +289,7 @@ export type AdminPurchaseFilterParams = {
   searchType?: string
   start?: string | null
   end?: string | null
+  sort?: AdminPurchaseSort
 }
 
 export type ListAdminPurchasesParams = AdminPurchaseFilterParams & {
@@ -300,6 +305,16 @@ export type AdminPurchasesListResult = {
   total: number
   hasMore: boolean
   nextCursor: string | null
+}
+
+/** Inclusive calendar-day bounds using server-local timezone (parseDateOnly + date-fns). */
+export function adminPurchaseDateRangeBounds(start?: string | null, end?: string | null) {
+  const from = start ? parseDateOnly(start) : undefined
+  const to = end ? parseDateOnly(end) : undefined
+  return {
+    startAt: from ? startOfDay(from) : undefined,
+    endAt: to ? endOfDay(to) : undefined,
+  }
 }
 
 function buildAdminPurchaseFilterConditions(params: AdminPurchaseFilterParams): SQL[] {
@@ -345,17 +360,31 @@ function buildAdminPurchaseFilterConditions(params: AdminPurchaseFilterParams): 
       )`,
     )
   }
-  if (start) {
-    conditions.push(sql`date(${purchases.createdAt} / 1000, 'unixepoch') >= ${start}`)
+  const { startAt, endAt } = adminPurchaseDateRangeBounds(start, end)
+  if (startAt) {
+    conditions.push(gte(purchases.createdAt, startAt))
   }
-  if (end) {
-    conditions.push(sql`date(${purchases.createdAt} / 1000, 'unixepoch') <= ${end}`)
+  if (endAt) {
+    conditions.push(lte(purchases.createdAt, endAt))
   }
   return conditions
 }
 
-function adminPurchaseCursorCondition(cursor: AdminPurchaseListCursor): SQL {
+function resolveAdminPurchaseSort(sort?: AdminPurchaseSort): AdminPurchaseSort {
+  return sort === "oldest" ? "oldest" : "newest"
+}
+
+function adminPurchaseCursorCondition(
+  cursor: AdminPurchaseListCursor,
+  sort: AdminPurchaseSort,
+): SQL {
   const cursorDate = new Date(cursor.createdAtMs)
+  if (sort === "oldest") {
+    return or(
+      gt(purchases.createdAt, cursorDate),
+      and(eq(purchases.createdAt, cursorDate), gt(purchases.id, cursor.id)),
+    )!
+  }
   return or(
     lt(purchases.createdAt, cursorDate),
     and(eq(purchases.createdAt, cursorDate), lt(purchases.id, cursor.id)),
@@ -395,8 +424,15 @@ async function queryAdminPurchaseRows(params: {
   listWhereClause: SQL | undefined
   limit: number
   offset?: number
+  sort?: AdminPurchaseSort
 }) {
   const db = getDb()
+  const sort = resolveAdminPurchaseSort(params.sort)
+  const order =
+    sort === "oldest"
+      ? [asc(purchases.createdAt), asc(purchases.id)]
+      : [desc(purchases.createdAt), desc(purchases.id)]
+
   const baseQuery = db
     .select({
       purchase: purchases,
@@ -408,7 +444,7 @@ async function queryAdminPurchaseRows(params: {
     .leftJoin(purchaseTickets, eq(purchases.id, purchaseTickets.purchaseId))
     .where(params.listWhereClause)
     .groupBy(purchases.id)
-    .orderBy(desc(purchases.createdAt), desc(purchases.id))
+    .orderBy(...order)
     .limit(params.limit)
 
   return params.offset != null ? baseQuery.offset(params.offset) : baseQuery
@@ -430,17 +466,22 @@ export async function listAdminPurchasesByCursor(
   },
 ): Promise<AdminPurchasesListResult> {
   const safeLimit = Math.max(1, Math.min(Number(params.limit) || 25, 100))
+  const sort = resolveAdminPurchaseSort(params.sort)
   const filterConditions = buildAdminPurchaseFilterConditions(params)
   const filterWhereClause = and(...filterConditions)
 
   const listConditions = [...filterConditions]
   if (params.cursor) {
-    listConditions.push(adminPurchaseCursorCondition(params.cursor))
+    listConditions.push(adminPurchaseCursorCondition(params.cursor, sort))
   }
 
   const [total, rows] = await Promise.all([
     countAdminPurchases(filterWhereClause),
-    queryAdminPurchaseRows({ listWhereClause: and(...listConditions), limit: safeLimit }),
+    queryAdminPurchaseRows({
+      listWhereClause: and(...listConditions),
+      limit: safeLimit,
+      sort,
+    }),
   ])
 
   const data = mapAdminPurchaseRows(rows)
@@ -461,6 +502,7 @@ export async function listAdminPurchasesByPage(
   },
 ): Promise<AdminPurchasesListResult> {
   const safeLimit = Math.max(1, Math.min(Number(params.limit) || 25, 100))
+  const sort = resolveAdminPurchaseSort(params.sort)
   const page = Math.max(1, Number(params.page) || 1)
   const offset = (page - 1) * safeLimit
   const filterConditions = buildAdminPurchaseFilterConditions(params)
@@ -472,6 +514,7 @@ export async function listAdminPurchasesByPage(
       listWhereClause: filterWhereClause,
       limit: safeLimit,
       offset,
+      sort,
     }),
   ])
 

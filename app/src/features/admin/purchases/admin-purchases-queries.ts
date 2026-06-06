@@ -12,6 +12,8 @@ export const ADMIN_PURCHASES_PAGE_SIZE = 50
 const PurchaseStatusFilter = z.enum(["all", "pending", "approved", "rejected"]).catch("all")
 const PaymentMethodFilter = z.union([z.literal("all"), PaymentMethod]).catch("all")
 
+const AdminPurchaseSortFilter = z.enum(["newest", "oldest"]).catch("newest")
+
 const AdminPurchasesListFiltersInput = z.object({
   limit: z.number().int().min(1).max(100).catch(ADMIN_PURCHASES_PAGE_SIZE),
   status: PurchaseStatusFilter,
@@ -21,6 +23,7 @@ const AdminPurchasesListFiltersInput = z.object({
   searchType: z.enum(["all", "name", "phone", "email", "ci"]).catch("all"),
   start: z.string().nullable().optional(),
   end: z.string().nullable().optional(),
+  sort: AdminPurchaseSortFilter,
 })
 
 const AdminPurchasesFetchInput = AdminPurchasesListFiltersInput.extend({
@@ -28,6 +31,11 @@ const AdminPurchasesFetchInput = AdminPurchasesListFiltersInput.extend({
 })
 
 export type AdminPurchaseListFilters = z.infer<typeof AdminPurchasesListFiltersInput>
+
+export function parseAdminPurchasesListFilters(value: unknown): AdminPurchaseListFilters | null {
+  const parsed = AdminPurchasesListFiltersInput.safeParse(value)
+  return parsed.success ? parsed.data : null
+}
 export type AdminDashboardStats = Awaited<ReturnType<typeof getDashboardStats>>
 export type AdminPurchasesResult = Awaited<ReturnType<typeof listAdminPurchases>>
 export type AdminPurchasesInfinitePage = AdminPurchasesResult
@@ -39,6 +47,7 @@ export type AdminPurchaseSearchParams = {
   q?: string
   start?: string
   end?: string
+  sort?: string
   limit?: number
   purchase?: number
 }
@@ -79,6 +88,7 @@ export const fetchAdminPurchases = createServerFn({ method: "POST" })
       searchType: data.searchType,
       start: data.start,
       end: data.end,
+      sort: data.sort,
     })
   })
 
@@ -100,6 +110,7 @@ export function normalizeAdminPurchaseFilters(
     searchType: "all",
     start: search.start || null,
     end: search.end || null,
+    sort: search.sort ?? "newest",
   })
 }
 

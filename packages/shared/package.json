@@ -20,7 +20,8 @@
     "./promotions/display": "./src/promotions/display.ts",
     "./public-recent-purchase": "./src/public-recent-purchase.ts",
     "./analytics": "./src/analytics/index.ts",
-    "./admin/email-list-filters": "./src/admin/email-list-filters.ts"
+    "./admin/email-list-filters": "./src/admin/email-list-filters.ts",
+    "./admin/user-preferences": "./src/admin/user-preferences.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",

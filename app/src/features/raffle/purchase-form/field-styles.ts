@@ -71,15 +71,7 @@ export const verifyTicketsCtaButtonClassName = cn(
   "dark:border-amber-400/50 dark:bg-amber-500/40 dark:text-amber-50 dark:hover:bg-amber-500/55",
 )
 
-/** Chip de número de boleto (post-compra y listados similares). */
-export const purchaseSuccessTicketBadgeClassName = cn(
-  "h-9 min-w-[3.25rem] rounded-lg border px-2.5 font-mono text-sm font-bold tabular-nums shadow-sm",
-  "border-amber-400/70 bg-gradient-to-br from-amber-200 to-amber-100 text-amber-950",
-  "dark:border-amber-400/50 dark:from-amber-500/55 dark:to-amber-500/35 dark:text-amber-50",
-)
-
-export const purchaseSuccessTicketsSectionClassName = cn(
-  "flex min-h-[124px] flex-1 flex-col rounded-xl border p-3 shadow-sm",
-  "border-amber-400/40 bg-gradient-to-br from-amber-100/90 via-amber-50/60 to-card",
-  "dark:border-amber-500/35 dark:from-amber-500/18 dark:via-amber-500/10 dark:to-card",
-)
+export {
+  featuredTicketBadgeClassName as purchaseSuccessTicketBadgeClassName,
+  featuredTicketSectionClassName as purchaseSuccessTicketsSectionClassName,
+} from "@/features/tickets/ticket-badge-styles"

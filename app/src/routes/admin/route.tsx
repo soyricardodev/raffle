@@ -2,6 +2,7 @@ import { createFileRoute, Outlet, useNavigate, useRouterState } from "@tanstack/
 import { useEffect } from "react"
 import { authClient } from "@/features/auth/auth-client"
 import { mapAuthSession } from "@/features/auth/session"
+import { adminUserPreferencesQueryOptions } from "@/features/admin/preferences/admin-user-preferences-queries"
 import { adminLayoutLoaderData, buildAdminLayoutHead } from "@/features/layout/document-head"
 import { ensurePublicSiteConfig } from "@/features/layout/public-page-loader"
 import { AdminLayoutShell } from "@/features/layout/AdminLayoutShell"
@@ -10,6 +11,7 @@ import { AdminRouteError, AdminRouteNotFound } from "@/features/layout/RouteErro
 export const Route = createFileRoute("/admin")({
   loader: async ({ context: { queryClient } }) => {
     const siteConfig = await ensurePublicSiteConfig(queryClient)
+    await queryClient.ensureQueryData(adminUserPreferencesQueryOptions()).catch(() => null)
     return adminLayoutLoaderData(siteConfig)
   },
   head: () => buildAdminLayoutHead(),
