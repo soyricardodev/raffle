@@ -18,7 +18,7 @@ import {
   paymentMethodCardPromoClassName,
   paymentSectionCardClassName,
 } from "@/features/raffle/purchase-form/field-styles"
-import { resolvePaymentReferenceMinLength } from "@raffle/shared/validators"
+import type { PaymentReferenceInputMode } from "@raffle/shared/validators"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { cn } from "@/lib/utils"
 
@@ -32,6 +32,8 @@ type PaymentStepProps = {
   methodPromotionHint?: string | null
   total: number
   paymentReference: string
+  referenceMinLength: number
+  referenceInputMode: PaymentReferenceInputMode
   paymentProof: File | null
   methodHint?: string
   referenceHint?: string
@@ -170,6 +172,7 @@ type PaymentCompletionFieldsProps = {
   disabled: boolean
   paymentReference: string
   referenceMinLength: number
+  referenceInputMode: PaymentReferenceInputMode
   paymentProof: File | null
   referenceHint?: string
   proofHint?: string
@@ -181,12 +184,15 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
   disabled,
   paymentReference,
   referenceMinLength,
+  referenceInputMode,
   paymentProof,
   referenceHint,
   proofHint,
   onPaymentReferenceChange,
   onPaymentProofChange,
 }: PaymentCompletionFieldsProps) {
+  const isNumeric = referenceInputMode === "numeric"
+
   return (
     <div className={paymentCompletionBoxClassName}>
       <div className="flex items-start gap-2">
@@ -197,8 +203,9 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
         <div>
           <p className="text-sm font-semibold">Confirma tu pago</p>
           <p className="text-muted-foreground text-xs leading-snug">
-            Paso final: indica los últimos dígitos de la referencia y sube el comprobante para
-            validar tu compra.
+            {isNumeric
+              ? "Paso final: indica los últimos dígitos de la referencia y sube el comprobante para validar tu compra."
+              : "Paso final: indica la referencia de tu transferencia y sube el comprobante para validar tu compra."}
           </p>
         </div>
       </div>
@@ -206,6 +213,7 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
       <PaymentReferenceField
         value={paymentReference}
         minLength={referenceMinLength}
+        inputMode={referenceInputMode}
         disabled={disabled}
         error={referenceHint}
         onChange={onPaymentReferenceChange}
@@ -233,6 +241,8 @@ export const PaymentStep = memo(function PaymentStep({
   methodPromotionHint,
   total,
   paymentReference,
+  referenceMinLength,
+  referenceInputMode,
   paymentProof,
   methodHint,
   referenceHint,
@@ -242,10 +252,6 @@ export const PaymentStep = memo(function PaymentStep({
   onPaymentReferenceChange,
   onPaymentProofChange,
 }: PaymentStepProps) {
-  const referenceMinLength = resolvePaymentReferenceMinLength(
-    selectedMethod?.min_reference_length,
-  )
-
   return (
     <section
       id="purchase-payment"
@@ -294,6 +300,7 @@ export const PaymentStep = memo(function PaymentStep({
                 disabled={disabled}
                 paymentReference={paymentReference}
                 referenceMinLength={referenceMinLength}
+                referenceInputMode={referenceInputMode}
                 paymentProof={paymentProof}
                 referenceHint={referenceHint}
                 proofHint={proofHint}

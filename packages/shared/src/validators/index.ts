@@ -113,8 +113,13 @@ export function customerLocationFieldError(
 export {
   DEFAULT_PAYMENT_REFERENCE_MIN_LENGTH,
   PAYMENT_REFERENCE_MAX_LENGTH,
+  type PaymentReferenceInputMode,
+  type PaymentReferencePolicy,
   paymentReferenceValidationMessage,
+  resolvePaymentReferenceInputMode,
   resolvePaymentReferenceMinLength,
+  resolvePaymentReferencePolicy,
+  sanitizePaymentReference,
 } from "./payment-reference.js"
 
 /** Métodos que se pagan en USD (price_usd) */

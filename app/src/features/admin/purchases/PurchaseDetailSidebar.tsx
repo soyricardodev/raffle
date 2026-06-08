@@ -3,6 +3,7 @@ import type { ReactNode } from "react"
 import { Button } from "@/components/ui/button"
 import { PurchaseEmailsSection } from "@/features/admin/emails/PurchaseEmailsSection"
 import { PurchaseTicketManager } from "@/features/admin/PurchaseTicketManager"
+import { PaymentReferenceValue } from "@/features/admin/purchases/PaymentReferenceHighlight"
 import { PurchaseTicketsPanel } from "@/features/admin/purchases/PurchaseTicketsPanel"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
 import { formatCurrencyForMethod, formatDateTime } from "@/lib/format"
@@ -95,9 +96,11 @@ export function PurchaseDetailSidebar({
           {formatCurrencyForMethod(purchase.total_amount, purchase.payment_method)}
         </DetailFact>
         <DetailFact label="Referencia" highlight>
-          <span className="font-mono text-sm font-bold break-all">
-            {purchase.payment_reference?.trim() || "—"}
-          </span>
+          {purchase.payment_reference?.trim() ? (
+            <PaymentReferenceValue reference={purchase.payment_reference} />
+          ) : (
+            "—"
+          )}
         </DetailFact>
 
         <DetailFact label="Método" className="capitalize">

@@ -15,6 +15,7 @@ import {
   formatCustomerCi,
   parseCustomerCi,
   paymentReferenceValidationMessage,
+  resolvePaymentReferenceInputMode,
   resolvePaymentReferenceMinLength,
   type UpdatePurchaseCustomerInput,
 } from "@raffle/shared/validators"
@@ -89,16 +90,17 @@ export async function createPurchase(params: CreatePurchaseParams) {
       )
     }
 
+    const paymentMethod = payMethod.method_type
     const referenceMinLength = resolvePaymentReferenceMinLength(payMethod.min_reference_length)
+    const referenceInputMode = resolvePaymentReferenceInputMode(paymentMethod)
     const referenceError = paymentReferenceValidationMessage(
       params.paymentReference,
       referenceMinLength,
+      referenceInputMode,
     )
     if (referenceError) {
       throw new ValidationError(referenceError)
     }
-
-    const paymentMethod = payMethod.method_type
 
     await purchasesRepo.assertUniquePaymentReference(tx, params.raffleId, params.paymentReference)
 

@@ -1,5 +1,8 @@
 import { CheckCircleIcon, HashIcon } from "@phosphor-icons/react"
-import { PAYMENT_REFERENCE_MAX_LENGTH } from "@raffle/shared/validators"
+import {
+  type PaymentReferenceInputMode,
+  PAYMENT_REFERENCE_MAX_LENGTH,
+} from "@raffle/shared/validators"
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
@@ -16,6 +19,7 @@ import { cn } from "@/lib/utils"
 type PaymentReferenceFieldProps = {
   value: string
   minLength: number
+  inputMode: PaymentReferenceInputMode
   disabled?: boolean
   error?: string
   onChange: (value: string) => void
@@ -24,10 +28,12 @@ type PaymentReferenceFieldProps = {
 export const PaymentReferenceField = memo(function PaymentReferenceField({
   value,
   minLength,
+  inputMode,
   disabled,
   error,
   onChange,
 }: PaymentReferenceFieldProps) {
+  const isNumeric = inputMode === "numeric"
   const trimmedLength = value.trim().length
   const isComplete = trimmedLength >= minLength
   const progressValue =
@@ -38,7 +44,9 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
     <Field data-invalid={!!error}>
       <FieldLabel htmlFor="payment-reference">Referencia del pago</FieldLabel>
       <FieldDescription>
-        Ingresa los últimos {minLength} dígitos que aparecen en tu transferencia o pago móvil.
+        {isNumeric
+          ? `Ingresa los últimos ${minLength} dígitos que aparecen en tu pago móvil.`
+          : `Ingresa al menos ${minLength} caracteres de la referencia de tu transferencia.`}
       </FieldDescription>
       <InputGroup className={cn(formInputHeightClassName, "h-11")}>
         <InputGroupAddon align="inline-start">
@@ -51,8 +59,8 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
           disabled={disabled}
           aria-invalid={!!error}
           className="text-base"
-          placeholder={`Últimos ${minLength} dígitos`}
-          inputMode="numeric"
+          placeholder={isNumeric ? `Últimos ${minLength} dígitos` : `Mín. ${minLength} caracteres`}
+          inputMode={isNumeric ? "numeric" : "text"}
           autoComplete="off"
           maxLength={PAYMENT_REFERENCE_MAX_LENGTH}
         />
@@ -79,12 +87,13 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
       />
       {!error && trimmedLength > 0 && !isComplete ? (
         <p className="text-muted-foreground text-xs tabular-nums">
-          Faltan {remaining} dígito{remaining === 1 ? "" : "s"}
+          Faltan {remaining} {isNumeric ? "dígito" : "carácter"}
+          {remaining === 1 ? "" : isNumeric ? "s" : "es"}
         </p>
       ) : null}
       {!error && isComplete ? (
         <p className="text-xs text-emerald-700 tabular-nums dark:text-emerald-300">
-          Últimos {minLength} dígitos completos
+          {isNumeric ? `Últimos ${minLength} dígitos completos` : "Referencia completa"}
         </p>
       ) : null}
       <FieldError>{error}</FieldError>

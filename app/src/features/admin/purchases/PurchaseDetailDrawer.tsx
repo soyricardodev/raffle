@@ -14,6 +14,7 @@ import { useAdminUserPreferences } from "@/features/admin/preferences/use-admin-
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { requestPurchaseApprove } from "@/features/admin/purchases/purchase-action-guard"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
+import { PaymentReferenceBanner } from "@/features/admin/purchases/PaymentReferenceHighlight"
 import { EditPurchaseCustomerSheet } from "@/features/admin/purchases/EditPurchaseCustomerSheet"
 import { PurchaseDetailSidebar } from "@/features/admin/purchases/PurchaseDetailSidebar"
 import { useAdminPurchaseCustomerUpdate } from "@/features/admin/purchases/use-admin-purchase-customer-update"
@@ -146,16 +147,17 @@ export function PurchaseDetailDrawer({
                 />
               </div>
 
-              <div className="relative min-h-[min(88vh,1000px)] bg-muted/10 lg:min-h-0 lg:overflow-hidden">
+              <div className="flex min-h-[min(88vh,1000px)] flex-col bg-muted/10 lg:min-h-0 lg:overflow-hidden">
+                <PaymentReferenceBanner reference={purchase.payment_reference} />
                 {purchase.payment_proof_url ? (
                   <PaymentProofPreview
                     url={purchase.payment_proof_url}
                     defaultZoomed
                     fillHeight
-                    className="absolute inset-0 h-full"
+                    className="relative min-h-0 flex-1"
                   />
                 ) : (
-                  <div className="text-muted-foreground flex h-full min-h-[40vh] items-center justify-center p-6 text-center text-sm">
+                  <div className="text-muted-foreground flex min-h-[40vh] flex-1 items-center justify-center p-6 text-center text-sm">
                     Sin comprobante adjunto
                   </div>
                 )}

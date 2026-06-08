@@ -9,7 +9,9 @@ import {
   isValidCustomerCi,
   isValidCustomerPhone,
   paymentReferenceValidationMessage,
-  resolvePaymentReferenceMinLength,
+  resolvePaymentReferenceInputMode,
+  resolvePaymentReferencePolicy,
+  sanitizePaymentReference,
 } from "@raffle/shared/validators"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
@@ -192,9 +194,30 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     setQuantity((current) => clampQuantity(current, quantityMin, effectiveMax))
   }, [quantityMin, effectiveMax])
 
-  const referenceMinLength = useMemo(
-    () => resolvePaymentReferenceMinLength(selectedMethod?.min_reference_length),
-    [selectedMethod?.min_reference_length],
+  const { minLength: referenceMinLength, inputMode: referenceInputMode } = useMemo(
+    () =>
+      resolvePaymentReferencePolicy(
+        selectedMethod?.method_type,
+        selectedMethod?.min_reference_length,
+      ),
+    [selectedMethod?.method_type, selectedMethod?.min_reference_length],
+  )
+
+  const handlePaymentReferenceChange = useCallback(
+    (value: string) => {
+      setPaymentReference(sanitizePaymentReference(value, referenceInputMode))
+    },
+    [referenceInputMode],
+  )
+
+  const handleSelectPaymentMethod = useCallback(
+    (id: number) => {
+      const method = methods.find((m) => m.id === id)
+      const nextMode = resolvePaymentReferenceInputMode(method?.method_type)
+      setPaymentReference((current) => sanitizePaymentReference(current, nextMode))
+      setRafflePaymentMethodId(id)
+    },
+    [methods, setRafflePaymentMethodId],
   )
 
   const validationMessages = useMemo<PurchaseFormHints>(
@@ -208,7 +231,11 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       email: emailHint(customerEmail),
       ci: ciHint(ciPrefix, ciNumber),
       location: customerLocationFieldError(locationType, selectedState, customLocation),
-      reference: paymentReferenceValidationMessage(paymentReference, referenceMinLength),
+      reference: paymentReferenceValidationMessage(
+        paymentReference,
+        referenceMinLength,
+        referenceInputMode,
+      ),
       proof: !paymentProof ? "Sube el comprobante de pago" : undefined,
       method: !rafflePaymentMethodId
         ? "Elige un método de pago"
@@ -228,6 +255,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       customLocation,
       paymentReference,
       referenceMinLength,
+      referenceInputMode,
       paymentProof,
       rafflePaymentMethodId,
       selectedBlockedReason,
@@ -481,13 +509,15 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             methodPromotionHint={methodPromotionHint}
             total={total}
             paymentReference={paymentReference}
+            referenceMinLength={referenceMinLength}
+            referenceInputMode={referenceInputMode}
             paymentProof={paymentProof}
             methodHint={methodHint}
             referenceHint={referenceHint}
             proofHint={proofHint}
             getEligibility={getEligibility}
-            onSelectMethod={setRafflePaymentMethodId}
-            onPaymentReferenceChange={setPaymentReference}
+            onSelectMethod={handleSelectPaymentMethod}
+            onPaymentReferenceChange={handlePaymentReferenceChange}
             onPaymentProofChange={setPaymentProof}
           />
 
