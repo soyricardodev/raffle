@@ -14,7 +14,7 @@ import { useAdminUserPreferences } from "@/features/admin/preferences/use-admin-
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { requestPurchaseApprove } from "@/features/admin/purchases/purchase-action-guard"
 import { PaymentProofPreview } from "@/features/admin/purchases/PaymentProofPreview"
-import { PaymentReferenceBanner } from "@/features/admin/purchases/PaymentReferenceHighlight"
+import { PurchaseProofSummaryBanner } from "@/features/admin/purchases/PaymentReferenceHighlight"
 import { EditPurchaseCustomerSheet } from "@/features/admin/purchases/EditPurchaseCustomerSheet"
 import { PurchaseDetailSidebar } from "@/features/admin/purchases/PurchaseDetailSidebar"
 import { useAdminPurchaseCustomerUpdate } from "@/features/admin/purchases/use-admin-purchase-customer-update"
@@ -148,7 +148,11 @@ export function PurchaseDetailDrawer({
               </div>
 
               <div className="flex min-h-[min(88vh,1000px)] flex-col bg-muted/10 lg:min-h-0 lg:overflow-hidden">
-                <PaymentReferenceBanner reference={purchase.payment_reference} />
+                <PurchaseProofSummaryBanner
+                  reference={purchase.payment_reference}
+                  totalAmount={purchase.total_amount}
+                  paymentMethod={purchase.payment_method}
+                />
                 {purchase.payment_proof_url ? (
                   <PaymentProofPreview
                     url={purchase.payment_proof_url}
