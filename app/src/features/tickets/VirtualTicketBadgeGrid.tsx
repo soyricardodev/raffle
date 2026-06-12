@@ -15,6 +15,7 @@ type VirtualTicketBadgeGridProps = {
   className?: string
   badgeClassName?: string
   rowStridePx?: number
+  columns?: number
 }
 
 const DEFAULT_BADGE_CLASS =
@@ -27,9 +28,10 @@ export function VirtualTicketBadgeGrid({
   className,
   badgeClassName,
   rowStridePx = TICKET_ROW_STRIDE_PX,
+  columns = TICKET_GRID_COLUMNS,
 }: VirtualTicketBadgeGridProps) {
   const scrollRef = useRef<HTMLDivElement>(null)
-  const rows = useMemo(() => chunkTicketRows(ticketNumbers, TICKET_GRID_COLUMNS), [ticketNumbers])
+  const rows = useMemo(() => chunkTicketRows(ticketNumbers, columns), [ticketNumbers, columns])
 
   const virtualizer = useVirtualizer({
     count: rows.length,

@@ -1,29 +1,17 @@
-export type AdminTicketTargetBounds = {
-  min: number
-  max: number
-  available: number
-}
-
-export type ResolveAdminTicketTargetResult = {
+export type ResolveAdminTicketOperationResult = {
   parsed: number | null
-  target: number
-  delta: number
   message: string | null
   canSubmit: boolean
-  bounds: AdminTicketTargetBounds
 }
 
-/** Máximo destino admin: boletos actuales + disponibles en la rifa. */
-export function getAdminTicketTargetBounds(
-  currentQty: number,
-  raffleTicketsAvailable: number,
-): AdminTicketTargetBounds {
-  const available = Math.max(0, raffleTicketsAvailable)
-  const max = Math.max(1, currentQty + available)
-  return { min: 1, max, available }
+const DEFAULT_OPERATION_QUANTITY = "1"
+
+/** Cantidad por defecto para operaciones add/remove (delta, no total de compra). */
+export function getDefaultAdminTicketOperationDraft(): string {
+  return DEFAULT_OPERATION_QUANTITY
 }
 
-export function parseAdminTicketTargetDraft(raw: string): number | null {
+export function parseAdminTicketOperationDraft(raw: string): number | null {
   const trimmed = raw.trim()
   if (!trimmed) return null
   const parsed = Number.parseInt(trimmed, 10)
@@ -31,73 +19,90 @@ export function parseAdminTicketTargetDraft(raw: string): number | null {
   return parsed
 }
 
-export function formatAdminStockHint(bounds: AdminTicketTargetBounds): string {
-  return `${bounds.available} disponibles en la rifa · máx. ${bounds.max} en esta compra`
-}
-
-/** Resuelve cantidad destino desde el borrador sin clamp silencioso. */
-export function resolveAdminTicketTarget(
-  draft: string,
-  currentQty: number,
-  raffleTicketsAvailable: number,
-): ResolveAdminTicketTargetResult {
-  const bounds = getAdminTicketTargetBounds(currentQty, raffleTicketsAvailable)
-  const parsed = parseAdminTicketTargetDraft(draft)
+/** Resuelve cantidad de operación desde el borrador (entero positivo, sin tope de stock en UI). */
+export function resolveAdminTicketOperation(draft: string): ResolveAdminTicketOperationResult {
+  const parsed = parseAdminTicketOperationDraft(draft)
 
   if (parsed == null) {
     if (draft.trim() !== "") {
       return {
         parsed: null,
-        target: currentQty,
-        delta: 0,
         message: "Ingresa una cantidad válida.",
         canSubmit: false,
-        bounds,
       }
     }
     return {
       parsed: null,
-      target: currentQty,
-      delta: 0,
       message: null,
       canSubmit: false,
-      bounds,
     }
   }
 
-  if (parsed < bounds.min) {
+  if (parsed < 1) {
     return {
       parsed,
-      target: currentQty,
-      delta: 0,
-      message: "La compra debe tener al menos 1 boleto.",
+      message: "La cantidad debe ser al menos 1.",
       canSubmit: false,
-      bounds,
     }
   }
 
-  if (parsed > bounds.max) {
-    const message =
-      bounds.available <= 0
-        ? "No hay boletos disponibles en la rifa."
-        : `Solo puedes agregar hasta ${bounds.available} boleto(s) más (stock disponible).`
-    return {
-      parsed,
-      target: currentQty,
-      delta: 0,
-      message,
-      canSubmit: false,
-      bounds,
-    }
-  }
-
-  const delta = parsed - currentQty
   return {
     parsed,
-    target: parsed,
-    delta,
     message: null,
-    canSubmit: delta !== 0,
-    bounds,
+    canSubmit: true,
   }
+}
+
+/** Remove delta must leave at least one ticket on the purchase. */
+export function validateAdminTicketRemoveQuantity(
+  quantity: number,
+  currentQty: number,
+): { message: string | null; canRemove: boolean } {
+  if (quantity >= currentQty) {
+    if (currentQty <= 1) {
+      return {
+        message: "No puedes quitar boletos: debe quedar al menos 1.",
+        canRemove: false,
+      }
+    }
+    return {
+      message: `Solo puedes quitar hasta ${currentQty - 1} boleto(s).`,
+      canRemove: false,
+    }
+  }
+  return { message: null, canRemove: true }
+}
+
+export function formatAdminTicketOperationHelp(
+  operation: "add" | "remove",
+  quantity: number,
+  currentQty: number,
+  estimatedTotal: string | null,
+): string {
+  const newQty = operation === "add" ? currentQty + quantity : currentQty - quantity
+  const action = operation === "add" ? "Agregar" : "Quitar"
+  if (operation === "remove" && newQty < 1) {
+    const maxRemovable = Math.max(0, currentQty - 1)
+    return maxRemovable === 0
+      ? "No puedes quitar boletos: debe quedar al menos 1."
+      : `Quitar ${quantity} → máximo ${maxRemovable} boleto(s)`
+  }
+  const totalPart = estimatedTotal != null ? ` · ~${estimatedTotal}` : ""
+  return `${action} ${quantity} → ${newQty} boleto(s)${totalPart}`
+}
+
+export function formatAdminTicketOperationConfirm(
+  operation: "add" | "remove",
+  quantity: number,
+  currentQty: number,
+  estimatedTotal: string | null,
+): string {
+  const newQty = operation === "add" ? currentQty + quantity : currentQty - quantity
+  const verb = operation === "add" ? "agregar" : "quitar"
+  if (operation === "remove" && newQty < 1) {
+    return `¿Quitar ${quantity} boleto(s)? Debe quedar al menos 1 boleto.`
+  }
+  const totalPart =
+    estimatedTotal != null ? ` Total aprox.: ${estimatedTotal}.` : ""
+  return `¿${verb.charAt(0).toUpperCase()}${verb.slice(1)} ${quantity} boleto(s)? De ${currentQty} a ${newQty}.${totalPart}`
 }

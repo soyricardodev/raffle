@@ -1,6 +1,8 @@
+import { PencilSimpleIcon } from "@phosphor-icons/react"
 import { useQuery } from "@tanstack/react-query"
 import { useState } from "react"
 import { toast } from "sonner"
+import { Button } from "@/components/ui/button"
 import {
   Sheet,
   SheetContent,
@@ -21,7 +23,6 @@ import { useAdminPurchaseCustomerUpdate } from "@/features/admin/purchases/use-a
 import { useAdminPurchaseStatusUpdate } from "@/features/admin/purchases/use-admin-purchase-status-update"
 import { PurchaseDrawerActions } from "@/features/admin/purchases/PurchaseDrawerActions"
 import { RejectPurchaseDialog } from "@/features/admin/purchases/RejectPurchaseDialog"
-import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
 import {
   mapPurchaseDetailApiToDetail,
   type PurchaseDetailApi,
@@ -131,7 +132,17 @@ export function PurchaseDetailDrawer({
             <SheetHeader className="shrink-0 border-b px-4 py-2.5">
               <div className="flex items-center justify-between gap-2 pr-8">
                 <SheetTitle className="text-base">Compra #{purchase.id}</SheetTitle>
-                <PurchaseStatusBadge status={purchase.status} />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="h-7 shrink-0 gap-1.5 text-xs"
+                  disabled={customerUpdateMutation.isPending}
+                  onClick={() => setEditContactOpen(true)}
+                >
+                  <PencilSimpleIcon className="size-3.5" aria-hidden />
+                  Editar datos
+                </Button>
               </div>
               <SheetDescription className="sr-only">Detalle de compra</SheetDescription>
             </SheetHeader>
@@ -141,8 +152,6 @@ export function PurchaseDetailDrawer({
                 <PurchaseDetailSidebar
                   purchase={purchase}
                   stockLoaded={detailQuery.isSuccess}
-                  onEditContact={() => setEditContactOpen(true)}
-                  editContactDisabled={customerUpdateMutation.isPending}
                   onUpdated={handlePurchaseUpdated}
                 />
               </div>

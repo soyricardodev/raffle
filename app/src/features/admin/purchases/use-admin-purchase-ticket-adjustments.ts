@@ -2,8 +2,11 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import {
-  formatAdminStockHint,
-  resolveAdminTicketTarget,
+  formatAdminTicketOperationConfirm,
+  formatAdminTicketOperationHelp,
+  getDefaultAdminTicketOperationDraft,
+  resolveAdminTicketOperation,
+  validateAdminTicketRemoveQuantity,
 } from "@/features/admin/purchases/admin-ticket-quantity-utils"
 import {
   pickPurchaseDetailPatch,
@@ -31,6 +34,8 @@ type TicketReassignResult = {
   newTotalAmount: number
 }
 
+type TicketOperation = "add" | "remove"
+
 type UseAdminPurchaseTicketAdjustmentsOptions = {
   purchase: PurchaseDetail
   stockLoaded: boolean
@@ -39,30 +44,42 @@ type UseAdminPurchaseTicketAdjustmentsOptions = {
 
 export function useAdminPurchaseTicketAdjustments({
   purchase,
-  stockLoaded,
   onUpdated,
 }: UseAdminPurchaseTicketAdjustmentsOptions) {
   const queryClient = useQueryClient()
-  const [targetDraft, setTargetDraft] = useState(String(purchase.ticket_quantity))
-  const [confirm, setConfirm] = useState<"update" | "reassign" | null>(null)
+  const [operationDraft, setOperationDraft] = useState(getDefaultAdminTicketOperationDraft())
+  const [confirm, setConfirm] = useState<"add" | "remove" | "reassign" | null>(null)
 
   const currentQty = purchase.ticket_quantity
-  const raffleTicketsAvailable = purchase.raffle_tickets_available ?? 0
 
-  const resolution = useMemo(() => {
-    if (!stockLoaded) return null
-    return resolveAdminTicketTarget(targetDraft, currentQty, raffleTicketsAvailable)
-  }, [stockLoaded, targetDraft, currentQty, raffleTicketsAvailable])
+  const resolution = useMemo(
+    () => resolveAdminTicketOperation(operationDraft),
+    [operationDraft],
+  )
+
+  const removeValidation = useMemo(() => {
+    if (resolution?.parsed == null) {
+      return { message: null, canRemove: false }
+    }
+    return validateAdminTicketRemoveQuantity(resolution.parsed, currentQty)
+  }, [resolution, currentQty])
+
+  const canSubmitAdd = Boolean(resolution?.canSubmit)
+  const canSubmitRemove = Boolean(resolution?.canSubmit && removeValidation.canRemove)
+  const validationMessage = resolution?.message ?? removeValidation.message ?? null
 
   useEffect(() => {
-    setTargetDraft(String(currentQty))
-  }, [purchase.id, currentQty])
+    setOperationDraft(getDefaultAdminTicketOperationDraft())
+  }, [purchase.id])
 
   useEffect(() => {
-    if (confirm === "update" && resolution && !resolution.canSubmit) {
+    if (confirm === "add" && !canSubmitAdd) {
       setConfirm(null)
     }
-  }, [confirm, resolution])
+    if (confirm === "remove" && !canSubmitRemove) {
+      setConfirm(null)
+    }
+  }, [confirm, canSubmitAdd, canSubmitRemove])
 
   const syncAfterChange = async (message: string) => {
     toast.success(message)
@@ -70,6 +87,7 @@ export function useAdminPurchaseTicketAdjustments({
     onUpdated(pickPurchaseDetailPatch(data))
     void queryClient.invalidateQueries({ queryKey: ["admin"] })
     setConfirm(null)
+    setOperationDraft(getDefaultAdminTicketOperationDraft())
   }
 
   const adjustMutation = useMutation({
@@ -116,71 +134,84 @@ export function useAdminPurchaseTicketAdjustments({
   const canAdjust = purchase.status === "approved" || purchase.status === "pending"
   const canReassign = purchase.status === "rejected"
 
-  const formattedCurrentTotal = formatCurrencyForMethod(
-    purchase.total_amount,
-    purchase.payment_method,
-  )
   const totalAmount = Number(purchase.total_amount)
   const unitPrice =
     currentQty > 0 && Number.isFinite(totalAmount) ? totalAmount / currentQty : null
 
-  const target = resolution?.target ?? currentQty
-  const delta = resolution?.delta ?? 0
-  const hasChange = delta !== 0
-  const isDecrease = delta < 0
-  const deltaLabel = delta > 0 ? `+${delta}` : String(delta)
+  const operationQuantity = resolution?.parsed ?? null
 
-  const estimatedTotal =
-    unitPrice != null && hasChange
-      ? formatCurrencyForMethod(unitPrice * target, purchase.payment_method)
-      : null
+  const estimatedTotalFor = (operation: TicketOperation) => {
+    if (operationQuantity == null || unitPrice == null) return null
+    const newQty =
+      operation === "add" ? currentQty + operationQuantity : currentQty - operationQuantity
+    if (newQty < 1) return null
+    return formatCurrencyForMethod(unitPrice * newQty, purchase.payment_method)
+  }
 
-  const helpText = hasChange
-    ? `${deltaLabel} · ~${estimatedTotal ?? formattedCurrentTotal}`
-    : `Total ${formattedCurrentTotal}`
+  const helpTextFor = (operation: TicketOperation) => {
+    if (operationQuantity == null) return `Actual: ${currentQty} boleto(s)`
+    return formatAdminTicketOperationHelp(
+      operation,
+      operationQuantity,
+      currentQty,
+      estimatedTotalFor(operation),
+    )
+  }
 
-  const stockHint = resolution ? formatAdminStockHint(resolution.bounds) : null
-
-  const updateConfirmDescription =
-    estimatedTotal != null
-      ? `De ${currentQty} a ${target} (${deltaLabel}). Total aprox.: ${estimatedTotal}.${stockHint ? ` ${stockHint}.` : ""}`
-      : `De ${currentQty} a ${target} (${deltaLabel}).${stockHint ? ` ${stockHint}.` : ""}`
+  const confirmDescriptionFor = (operation: TicketOperation) => {
+    if (operationQuantity == null) return ""
+    return formatAdminTicketOperationConfirm(
+      operation,
+      operationQuantity,
+      currentQty,
+      estimatedTotalFor(operation),
+    )
+  }
 
   const commitDraft = () => {
     if (!resolution || resolution.parsed == null) {
-      setTargetDraft(String(currentQty))
+      setOperationDraft(getDefaultAdminTicketOperationDraft())
       return
     }
     if (resolution.message != null) return
-    setTargetDraft(String(resolution.target))
+    setOperationDraft(String(resolution.parsed))
   }
 
-  const stepTarget = (step: -1 | 1) => {
+  const stepOperation = (step: -1 | 1) => {
     if (!resolution || resolution.parsed == null || resolution.message != null) return
-    setTargetDraft(String(resolution.parsed + step))
+    const next = resolution.parsed + step
+    if (next < 1) return
+    setOperationDraft(String(next))
+  }
+
+  const submitOperation = (operation: TicketOperation) => {
+    if (operationQuantity == null) return
+    if (operation === "add" && !canSubmitAdd) return
+    if (operation === "remove" && !canSubmitRemove) return
+    const delta = operation === "add" ? operationQuantity : -operationQuantity
+    adjustMutation.mutate(delta)
   }
 
   return {
-    targetDraft,
-    setTargetDraft,
+    operationDraft,
+    setOperationDraft,
     confirm,
     setConfirm,
     resolution,
-    stockLoaded,
     pending,
     canAdjust,
     canReassign,
-    canSubmitUpdate: Boolean(resolution?.canSubmit),
-    validationMessage: resolution?.message ?? null,
-    helpText,
-    stockHint,
-    updateConfirmDescription,
+    canSubmitAdd,
+    canSubmitRemove,
+    validationMessage,
+    helpTextFor,
+    confirmDescriptionFor,
     commitDraft,
-    stepTarget,
-    isDecrease,
+    stepOperation,
+    submitOperation,
     adjustMutation,
     reassignMutation,
     currentQty,
-    target,
+    operationQuantity,
   }
 }

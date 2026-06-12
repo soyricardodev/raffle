@@ -1,71 +1,99 @@
 import { describe, expect, it } from "vitest"
 import {
-  formatAdminStockHint,
-  getAdminTicketTargetBounds,
-  parseAdminTicketTargetDraft,
-  resolveAdminTicketTarget,
+  formatAdminTicketOperationConfirm,
+  formatAdminTicketOperationHelp,
+  getDefaultAdminTicketOperationDraft,
+  parseAdminTicketOperationDraft,
+  resolveAdminTicketOperation,
+  validateAdminTicketRemoveQuantity,
 } from "@/features/admin/purchases/admin-ticket-quantity-utils"
 
-describe("getAdminTicketTargetBounds", () => {
-  it("uses current quantity plus raffle available stock as max", () => {
-    expect(getAdminTicketTargetBounds(120, 880)).toEqual({
-      min: 1,
-      max: 1000,
-      available: 880,
-    })
-  })
-
-  it("allows targets above 500 when stock permits", () => {
-    const bounds = getAdminTicketTargetBounds(400, 2000)
-    expect(bounds.max).toBe(2400)
-    expect(resolveAdminTicketTarget("1500", 400, 2000).target).toBe(1500)
-  })
-
-  it("allows targets above 1000 when stock permits", () => {
-    const bounds = getAdminTicketTargetBounds(1000, 9000)
-    expect(bounds.max).toBe(10000)
-    expect(resolveAdminTicketTarget("7500", 1000, 9000).target).toBe(7500)
+describe("getDefaultAdminTicketOperationDraft", () => {
+  it("defaults to 1", () => {
+    expect(getDefaultAdminTicketOperationDraft()).toBe("1")
   })
 })
 
-describe("resolveAdminTicketTarget", () => {
-  it("blocks targets above stock-backed max without clamping target", () => {
-    const result = resolveAdminTicketTarget("200", 100, 50)
-    expect(result.message).toMatch(/stock disponible/i)
-    expect(result.target).toBe(100)
-    expect(result.parsed).toBe(200)
-    expect(result.canSubmit).toBe(false)
-  })
-
-  it("allows valid increases within stock", () => {
-    const result = resolveAdminTicketTarget("600", 100, 500)
+describe("resolveAdminTicketOperation", () => {
+  it("accepts any positive integer without stock caps", () => {
+    const result = resolveAdminTicketOperation("5000")
     expect(result.message).toBeNull()
-    expect(result.target).toBe(600)
-    expect(result.delta).toBe(500)
+    expect(result.parsed).toBe(5000)
     expect(result.canSubmit).toBe(true)
   })
 
+  it("rejects zero and negative values", () => {
+    expect(resolveAdminTicketOperation("0").canSubmit).toBe(false)
+    expect(resolveAdminTicketOperation("-3").canSubmit).toBe(false)
+  })
+
   it("rejects invalid draft text", () => {
-    const result = resolveAdminTicketTarget("abc", 10, 100)
+    const result = resolveAdminTicketOperation("abc")
     expect(result.message).toMatch(/válida/i)
     expect(result.canSubmit).toBe(false)
   })
 })
 
-describe("parseAdminTicketTargetDraft", () => {
+describe("parseAdminTicketOperationDraft", () => {
   it("parses integer drafts", () => {
-    expect(parseAdminTicketTargetDraft("750")).toBe(750)
+    expect(parseAdminTicketOperationDraft("750")).toBe(750)
   })
 
   it("returns null for invalid drafts", () => {
-    expect(parseAdminTicketTargetDraft("abc")).toBeNull()
+    expect(parseAdminTicketOperationDraft("abc")).toBeNull()
   })
 })
 
-describe("formatAdminStockHint", () => {
-  it("describes available stock and max for purchase", () => {
-    expect(formatAdminStockHint(getAdminTicketTargetBounds(100, 50))).toBe(
-      "50 disponibles en la rifa · máx. 150 en esta compra",
+describe("validateAdminTicketRemoveQuantity", () => {
+  it("allows removing fewer tickets than the current total", () => {
+    expect(validateAdminTicketRemoveQuantity(3, 10)).toEqual({
+      message: null,
+      canRemove: true,
+    })
+  })
+
+  it("rejects removing all tickets", () => {
+    expect(validateAdminTicketRemoveQuantity(5, 5).canRemove).toBe(false)
+    expect(validateAdminTicketRemoveQuantity(5, 5).message).toMatch(/hasta 4/)
+  })
+
+  it("rejects any remove when purchase has one ticket", () => {
+    const result = validateAdminTicketRemoveQuantity(1, 1)
+    expect(result.canRemove).toBe(false)
+    expect(result.message).toMatch(/al menos 1/)
+  })
+})
+
+describe("formatAdminTicketOperationHelp", () => {
+  it("describes add operation with estimated total", () => {
+    expect(formatAdminTicketOperationHelp("add", 5, 10, "Bs 100.00")).toBe(
+      "Agregar 5 → 15 boleto(s) · ~Bs 100.00",
+    )
+  })
+
+  it("describes remove operation", () => {
+    expect(formatAdminTicketOperationHelp("remove", 3, 10, null)).toBe(
+      "Quitar 3 → 7 boleto(s)",
+    )
+  })
+
+  it("avoids impossible totals for invalid remove amounts", () => {
+    expect(formatAdminTicketOperationHelp("remove", 5, 5, null)).toBe(
+      "Quitar 5 → máximo 4 boleto(s)",
+    )
+  })
+})
+
+describe("formatAdminTicketOperationConfirm", () => {
+  it("builds add confirmation copy", () => {
+    expect(formatAdminTicketOperationConfirm("add", 2, 5, "Bs 70.00")).toBe(
+      "¿Agregar 2 boleto(s)? De 5 a 7. Total aprox.: Bs 70.00.",
+    )
+  })
+
+  it("avoids impossible totals for invalid remove amounts", () => {
+    expect(formatAdminTicketOperationConfirm("remove", 5, 5, null)).toBe(
+      "¿Quitar 5 boleto(s)? Debe quedar al menos 1 boleto.",
     )
   })
 })
