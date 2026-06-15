@@ -317,6 +317,23 @@ export function adminPurchaseDateRangeBounds(start?: string | null, end?: string
   }
 }
 
+function adminPurchaseTicketSearchCondition(search: string): SQL {
+  const term = `%${search}%`
+  const digitsOnly = search.replace(/\D/g, "")
+  const parsedTicket = digitsOnly ? Number.parseInt(digitsOnly, 10) : Number.NaN
+  const hasExactTicket =
+    Number.isFinite(parsedTicket) && parsedTicket >= 0 && parsedTicket <= 9999
+
+  return sql`exists (
+    select 1 from ${purchaseTickets} pt
+    where pt.purchase_id = ${purchases.id}
+    and (
+      cast(pt.ticket_number as text) like ${term}
+      ${hasExactTicket ? sql`or pt.ticket_number = ${parsedTicket}` : sql``}
+    )
+  )`
+}
+
 function buildAdminPurchaseFilterConditions(params: AdminPurchaseFilterParams): SQL[] {
   const {
     status = "all",
@@ -340,6 +357,7 @@ function buildAdminPurchaseFilterConditions(params: AdminPurchaseFilterParams): 
         like(purchases.customerEmail, term),
         like(purchases.customerCi, term),
         like(purchases.paymentReference, term),
+        adminPurchaseTicketSearchCondition(search),
       )!,
     )
   } else if (search && searchType === "name") {
@@ -351,14 +369,7 @@ function buildAdminPurchaseFilterConditions(params: AdminPurchaseFilterParams): 
   } else if (search && searchType === "ci") {
     conditions.push(like(purchases.customerCi, `%${search}%`))
   } else if (search && searchType === "ticket") {
-    const term = `%${search}%`
-    conditions.push(
-      sql`exists (
-        select 1 from ${purchaseTickets} pt
-        where pt.purchase_id = ${purchases.id}
-        and cast(pt.ticket_number as text) like ${term}
-      )`,
-    )
+    conditions.push(adminPurchaseTicketSearchCondition(search))
   }
   const { startAt, endAt } = adminPurchaseDateRangeBounds(start, end)
   if (startAt) {

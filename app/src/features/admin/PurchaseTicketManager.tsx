@@ -28,6 +28,7 @@ function TicketOperationControls({
   commitDraft,
   stepOperation,
   requestOperation,
+  compact,
 }: {
   operationDraft: string
   setOperationDraft: (value: string) => void
@@ -40,6 +41,7 @@ function TicketOperationControls({
   commitDraft: () => void
   stepOperation: (step: -1 | 1) => void
   requestOperation: (operation: "add" | "remove") => void
+  compact?: boolean
 }) {
   const qtyDisplay = operationDraft.trim() !== "" ? operationDraft : "1"
   const numberSlotClassName =
@@ -47,13 +49,19 @@ function TicketOperationControls({
 
   return (
     <div
-      className="flex shrink-0 flex-nowrap items-center gap-1 rounded-lg border bg-muted/25 p-0.5"
+      className={cn(
+        "flex items-center gap-1 rounded-lg border bg-muted/25 p-0.5",
+        compact ? "w-full" : "shrink-0 flex-nowrap",
+      )}
       role="group"
       aria-label="Ajustar cantidad de boletos"
     >
       <Button
         type="button"
-        className="h-7 w-[7rem] shrink-0 justify-between gap-0 border-destructive/40 bg-transparent px-2 text-xs text-destructive hover:bg-destructive/10"
+        className={cn(
+          "h-9 justify-between gap-0 border-destructive/40 bg-transparent px-2 text-xs text-destructive hover:bg-destructive/10",
+          compact ? "min-h-9 flex-1" : "h-7 w-[7rem] shrink-0",
+        )}
         size="sm"
         variant="outline"
         disabled={pending || !canSubmitRemove}
@@ -63,12 +71,17 @@ function TicketOperationControls({
         <span className={numberSlotClassName}>{qtyDisplay}</span>
       </Button>
 
-      <div className="flex w-[7.5rem] shrink-0 items-center gap-0.5 rounded-md border bg-background px-0.5">
+      <div
+        className={cn(
+          "flex shrink-0 items-center gap-0.5 rounded-md border bg-background px-0.5",
+          compact ? "w-[7.5rem]" : "w-[7.5rem]",
+        )}
+      >
         <Button
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="size-7 shrink-0"
+          className={cn("shrink-0", compact ? "size-9" : "size-7")}
           disabled={pending || !canStep || operationQuantity == null || operationQuantity <= 1}
           onClick={() => stepOperation(-1)}
           aria-label="Reducir cantidad"
@@ -89,7 +102,10 @@ function TicketOperationControls({
               commitDraft()
             }
           }}
-          className="h-7 w-12 min-w-12 max-w-12 shrink-0 border-0 bg-transparent px-0 text-center text-xs shadow-none tabular-nums focus-visible:ring-0 [-moz-appearance:textfield] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          className={cn(
+            "w-12 min-w-12 max-w-12 shrink-0 border-0 bg-transparent px-0 text-center text-xs shadow-none tabular-nums focus-visible:ring-0 [-moz-appearance:textfield] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none",
+            compact ? "h-9" : "h-7",
+          )}
           aria-label="Cantidad de boletos a operar"
           aria-invalid={validationMessage != null}
           disabled={pending}
@@ -98,7 +114,7 @@ function TicketOperationControls({
           type="button"
           variant="ghost"
           size="icon-sm"
-          className="size-7 shrink-0"
+          className={cn("shrink-0", compact ? "size-9" : "size-7")}
           disabled={pending || !canStep}
           onClick={() => stepOperation(1)}
           aria-label="Aumentar cantidad"
@@ -109,7 +125,10 @@ function TicketOperationControls({
 
       <Button
         type="button"
-        className="h-7 w-[7rem] shrink-0 justify-between gap-0 px-2 text-xs"
+        className={cn(
+          "justify-between gap-0 px-2 text-xs",
+          compact ? "min-h-9 flex-1" : "h-7 w-[7rem] shrink-0",
+        )}
         size="sm"
         disabled={pending || !canSubmitAdd}
         onClick={() => requestOperation("add")}
@@ -176,6 +195,7 @@ export function PurchaseTicketManager({
         commitDraft={commitDraft}
         stepOperation={stepOperation}
         requestOperation={requestOperation}
+        compact={compactToolbar}
       />
     ) : canAdjust && !stockLoaded ? (
       <span className="text-muted-foreground shrink-0 text-[10px]">…</span>
@@ -237,8 +257,8 @@ export function PurchaseTicketManager({
 
   if (compactToolbar) {
     return (
-      <div className="flex shrink-0 flex-col gap-0.5">
-        <div className="flex shrink-0 flex-nowrap items-center gap-1">
+      <div className="flex w-full flex-col gap-0.5">
+        <div className="flex w-full flex-col gap-1 sm:flex-row sm:items-center">
           {adjustControls}
           {reassignControl}
         </div>

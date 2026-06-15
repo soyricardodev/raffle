@@ -6,7 +6,7 @@ import {
   type RaffleStatus,
   type UpdateRaffleInput,
 } from "@raffle/shared/validators"
-import { and, desc, eq, inArray, like, sql } from "drizzle-orm"
+import { and, desc, eq, inArray, like, ne, sql, type SQL } from "drizzle-orm"
 import { type DbTransaction, getDb } from "@/lib/db.server"
 import * as rafflePaymentMethodsRepo from "./raffle-payment-methods.repository"
 
@@ -99,16 +99,7 @@ export async function listAdminRaffles(params: {
   const safePage = params.page && params.page > 0 ? params.page : 1
   const offset = (safePage - 1) * safeLimit
 
-  const conditions = [sql`1=1`]
-  if (params.status && params.status !== "all") {
-    const statusList = params.status
-      .split(",")
-      .map((s) => s.trim())
-      .filter(Boolean)
-    if (statusList.length > 0) {
-      conditions.push(inArray(raffles.status, statusList))
-    }
-  }
+  const conditions = [sql`1=1`, ...buildAdminRaffleStatusCondition(params.status)]
   if (params.search?.trim()) {
     const term = `%${params.search.trim()}%`
     conditions.push(like(raffles.name, term))
@@ -131,6 +122,21 @@ export async function listAdminRaffles(params: {
 
   const total = Number(countRow?.total ?? 0)
   return { data: rows, total, hasMore: offset + rows.length < total }
+}
+
+function buildAdminRaffleStatusCondition(status?: string): SQL[] {
+  if (status && status !== "all") {
+    const statusList = status
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean)
+    if (statusList.length > 0) {
+      return [inArray(raffles.status, statusList)]
+    }
+    return []
+  }
+
+  return [ne(raffles.status, "cancelled")]
 }
 
 export async function findFirstActiveOrPaused(): Promise<RaffleRow | undefined> {

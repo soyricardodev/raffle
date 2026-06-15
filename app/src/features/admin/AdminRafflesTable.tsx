@@ -29,6 +29,7 @@ import type { RaffleRow } from "@/features/admin/raffles/types"
 import { useAdminRaffleLifecycle } from "@/features/admin/raffles/use-admin-raffle-lifecycle"
 import { AdminDataGridPagination } from "@/features/admin/shared/AdminDataGrid"
 import { adminNavTitle } from "@/features/admin/nav"
+import { adminRaffleListScopeLabel } from "@/features/admin/raffle-labels"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 import { cn } from "@/lib/utils"
@@ -75,6 +76,8 @@ export function AdminRafflesTable() {
   const pageSize = filters.limit ?? ADMIN_RAFFLES_PAGE_SIZE
   const hasCustomFilters = Boolean(filters.search || filters.status !== "active")
 
+  const statusLabel = adminRaffleListScopeLabel(filters.status)
+
   function updateSearch(patch: Partial<typeof routeSearch>) {
     void navigate({
       replace: true,
@@ -119,8 +122,7 @@ export function AdminRafflesTable() {
           <div>
             <CardTitle className="text-base">Listado</CardTitle>
             <p className="text-xs text-muted-foreground tabular-nums">
-              Mostrando rifas{" "}
-              {filters.status === "active" ? "activas" : `en estado «${filters.status}»`}
+              Mostrando rifas {statusLabel}
             </p>
           </div>
 
@@ -158,10 +160,11 @@ export function AdminRafflesTable() {
                 <SelectContent>
                   <SelectGroup>
                     <SelectItem value="active">Activas</SelectItem>
-                    <SelectItem value="all">Todas</SelectItem>
+                    <SelectItem value="all">Todas (sin canceladas)</SelectItem>
                     <SelectItem value="draft">Borrador</SelectItem>
                     <SelectItem value="paused">Pausadas</SelectItem>
                     <SelectItem value="finished">Finalizadas</SelectItem>
+                    <SelectItem value="cancelled">Canceladas</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>

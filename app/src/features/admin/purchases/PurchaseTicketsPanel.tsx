@@ -48,34 +48,36 @@ export function PurchaseTicketsPanel({
 
   return (
     <section className={cn("flex flex-col gap-1", className)}>
-      <div className="flex flex-nowrap items-center gap-1.5 overflow-x-auto">
-        <div className="flex shrink-0 items-center gap-1">
-          <Ticket className="text-muted-foreground size-3 shrink-0" />
-          <h3 className="text-[11px] font-medium uppercase text-muted-foreground">Boletos</h3>
-          <Badge variant="secondary" className="h-4 px-1 text-[10px] tabular-nums">
-            {allTickets.length}
-          </Badge>
-          {isFiltering ? (
-            <span className="text-muted-foreground text-[10px] tabular-nums">
-              {filteredTickets.length}/{allTickets.length}
-            </span>
-          ) : null}
+      <div className="flex flex-col gap-1.5">
+        <div className="flex items-center gap-1.5">
+          <div className="flex shrink-0 items-center gap-1">
+            <Ticket className="text-muted-foreground size-3 shrink-0" />
+            <h3 className="text-[11px] font-medium uppercase text-muted-foreground">Boletos</h3>
+            <Badge variant="secondary" className="h-4 px-1 text-[10px] tabular-nums">
+              {allTickets.length}
+            </Badge>
+            {isFiltering ? (
+              <span className="text-muted-foreground text-[10px] tabular-nums">
+                {filteredTickets.length}/{allTickets.length}
+              </span>
+            ) : null}
+          </div>
+
+          <div className="relative min-w-0 flex-1">
+            <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3 -translate-y-1/2" />
+            <Input
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar…"
+              className="h-7 pl-7 text-xs"
+              aria-label="Filtrar boletos"
+              disabled={allTickets.length === 0}
+            />
+          </div>
         </div>
 
-        <div className="relative min-w-[6rem] flex-1 basis-24">
-          <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-2 size-3 -translate-y-1/2" />
-          <Input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar…"
-            className="h-7 pl-7 text-xs"
-            aria-label="Filtrar boletos"
-            disabled={allTickets.length === 0}
-          />
-        </div>
-
-        {toolbarEnd}
+        {toolbarEnd ? <div className="w-full">{toolbarEnd}</div> : null}
       </div>
 
       {allTickets.length === 0 ? (

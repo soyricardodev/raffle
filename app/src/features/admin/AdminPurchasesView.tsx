@@ -33,6 +33,7 @@ import {
   getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
+import { useSanitizeAdminRaffleUrlParam } from "@/features/admin/shared/use-admin-raffle-url-scope"
 import { PurchaseDetailDrawer } from "@/features/admin/purchases/PurchaseDetailDrawer"
 import { PurchasesInfiniteLoadFooter } from "@/features/admin/purchases/PurchasesInfiniteLoadFooter"
 import {
@@ -42,6 +43,7 @@ import {
 import { useInfiniteScrollSentinel } from "@/features/admin/purchases/use-infinite-scroll-sentinel"
 import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
+import { AdminRaffleScopeSelect } from "@/features/admin/shared/AdminRaffleScopeSelect"
 import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { useAdminPurchaseStatusUpdate } from "@/features/admin/purchases/use-admin-purchase-status-update"
 import { adminNavTitle } from "@/features/admin/nav"
@@ -100,17 +102,11 @@ export function AdminPurchasesView() {
     })
   }, [debouncedSearch, filters.search, navigate])
 
-  useEffect(() => {
-    const id = filters.raffleId
-    if (!id || filterRaffles.some((r) => String(r.id) === id)) return
-    void navigate({
-      replace: true,
-      search: (previous) => ({
-        ...previous,
-        raffle_id: undefined,
-      }),
-    })
-  }, [filterRaffles, filters.raffleId, navigate])
+  useSanitizeAdminRaffleUrlParam({
+    raffleId: filters.raffleId ?? null,
+    filterRaffles,
+    from: "/admin/compras",
+  })
 
   const purchasesQuery = useInfiniteQuery({
     ...adminPurchasesInfiniteQueryOptions(filters),
@@ -229,7 +225,7 @@ export function AdminPurchasesView() {
                 <MagnifyingGlassIcon />
               </InputGroupAddon>
               <InputGroupInput
-                placeholder="Cliente, teléfono, cédula o referencia"
+                placeholder="Cliente, teléfono, cédula, referencia o boleto"
                 value={searchDraft}
                 onChange={(event) => setSearchDraft(event.target.value)}
               />
@@ -298,31 +294,18 @@ export function AdminPurchasesView() {
                 </SelectContent>
               </Select>
 
-              <Select
-                value={filters.raffleId || "all"}
+              <AdminRaffleScopeSelect
+                raffles={filterRaffles}
+                value={filters.raffleId ?? null}
                 onValueChange={(value) =>
                   updateSearch({
                     raffle_id: value === "all" ? "all" : value,
                   })
                 }
                 disabled={dashboardQuery.isLoading || filterRaffles.length === 0}
-              >
-                <SelectTrigger size="sm" className="w-[200px] max-w-full">
-                  <SelectValue
-                    placeholder={filterRaffles.length === 0 ? "Sin rifas" : "Todas las rifas"}
-                  />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectGroup>
-                    <SelectItem value="all">Todas las rifas</SelectItem>
-                    {filterRaffles.map((r) => (
-                      <SelectItem key={r.id} value={String(r.id)}>
-                        {r.name} ({raffleStatusLabel(r.status)})
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
+                size="sm"
+                triggerClassName="w-[200px] max-w-full"
+              />
 
               <DateRangePicker
                 start={filters.start}

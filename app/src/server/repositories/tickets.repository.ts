@@ -32,9 +32,15 @@ export type AdminTicketLookupRow = {
 /** Admin: dueño del boleto en cualquier rifa (activa, pausada o finalizada). */
 export async function lookupAdminTicketByNumber(
   ticketNumberRaw: string,
+  raffleId?: number | null,
 ): Promise<AdminTicketLookupRow[]> {
   const ticketNumber = ticketNumberToInt(ticketNumberRaw.trim())
   const db = getDb()
+
+  const conditions = [eq(purchaseTickets.ticketNumber, ticketNumber)]
+  if (raffleId != null) {
+    conditions.push(eq(purchaseTickets.raffleId, raffleId))
+  }
 
   const rows = await db
     .select({
@@ -55,7 +61,7 @@ export async function lookupAdminTicketByNumber(
     .from(purchaseTickets)
     .innerJoin(raffles, eq(purchaseTickets.raffleId, raffles.id))
     .innerJoin(purchases, eq(purchaseTickets.purchaseId, purchases.id))
-    .where(eq(purchaseTickets.ticketNumber, ticketNumber))
+    .where(and(...conditions))
     .orderBy(desc(raffles.createdAt))
 
   const priority = (status: string) => {

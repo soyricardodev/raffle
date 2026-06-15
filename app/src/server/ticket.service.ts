@@ -40,8 +40,11 @@ export async function countAvailableTickets(raffleId: number): Promise<number> {
   return row?.ticketsAvailable ?? 0
 }
 
-export async function lookupAdminTicketByNumber(ticketNumber: string) {
-  return ticketsRepo.lookupAdminTicketByNumber(ticketNumber)
+export async function lookupAdminTicketByNumber(
+  ticketNumber: string,
+  raffleId?: number | null,
+) {
+  return ticketsRepo.lookupAdminTicketByNumber(ticketNumber, raffleId)
 }
 
 export async function releasePurchaseTickets(purchaseId: number): Promise<number> {

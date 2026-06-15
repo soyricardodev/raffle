@@ -2,7 +2,7 @@ import { ArrowSquareOut, MagnifyingGlass, Ticket } from "@phosphor-icons/react"
 import { ticketNumberToString } from "@raffle/shared/db/ticket-number"
 import { useQuery } from "@tanstack/react-query"
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -14,10 +14,18 @@ import {
 import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import { adminNavTitle } from "@/features/admin/nav"
+import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { AdminRaffleScopeSelect } from "@/features/admin/shared/AdminRaffleScopeSelect"
+import { adminRaffleScopeSearchParam } from "@/features/admin/shared/admin-raffle-scope"
+import { useSanitizeAdminRaffleUrlParam } from "@/features/admin/shared/use-admin-raffle-url-scope"
+import { adminPurchasesDashboardQueryOptions } from "@/features/admin/purchases/admin-purchases-queries"
 import {
+  ADMIN_TICKET_LOOKUP_PATTERN,
   type AdminTicketLookupResult,
   adminTicketLookupQueryOptions,
+  getDefaultAdminTicketLookupRaffleId,
+  normalizeAdminTicketLookupFilters,
 } from "@/features/admin/tickets/admin-ticket-lookup-queries"
 import {
   featuredTicketBadgeClassName,
@@ -34,35 +42,81 @@ function normalizeTicketInput(value: string) {
 }
 
 export function AdminTicketLookup() {
-  const { ticket: ticketFromUrl } = routeApi.useSearch()
+  const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/boletos" })
 
-  const [draft, setDraft] = useState(ticketFromUrl ?? "")
-  const ticket = ticketFromUrl?.trim() ?? ""
+  const dashboardQuery = useQuery({
+    ...adminPurchasesDashboardQueryOptions(),
+    refetchOnMount: false,
+  })
+  const filterRaffles = dashboardQuery.data?.filter_raffles ?? []
+  const defaultRaffleId = getDefaultAdminTicketLookupRaffleId(dashboardQuery.data)
+  const filters = useMemo(
+    () => normalizeAdminTicketLookupFilters(routeSearch, { defaultRaffleId }),
+    [defaultRaffleId, routeSearch],
+  )
+
+  const [draft, setDraft] = useState(routeSearch.ticket ?? "")
+  const ticket = routeSearch.ticket?.trim() ?? ""
 
   useEffect(() => {
-    setDraft(ticketFromUrl ?? "")
-  }, [ticketFromUrl])
+    setDraft(routeSearch.ticket ?? "")
+  }, [routeSearch.ticket])
 
-  const lookupQuery = useQuery(adminTicketLookupQueryOptions(ticket))
+  useSanitizeAdminRaffleUrlParam({
+    raffleId: filters.raffleId,
+    filterRaffles,
+    from: "/admin/boletos",
+  })
+
+  const lookupQuery = useQuery(adminTicketLookupQueryOptions(ticket, filters.raffleId))
+
+  const selectedRaffle = filterRaffles.find((r) => String(r.id) === filters.raffleId)
+  const scopeLabel = selectedRaffle
+    ? `${selectedRaffle.name} (${raffleStatusLabel(selectedRaffle.status)})`
+    : "todas las rifas"
 
   function handleSearch() {
     const digits = normalizeTicketInput(draft)
     if (!digits) return
     const normalized = ticketNumberToString(Number.parseInt(digits, 10))
-    void navigate({ search: { ticket: normalized }, replace: true })
+    void navigate({
+      search: (previous) => ({
+        ...previous,
+        ticket: normalized,
+        raffle_id: adminRaffleScopeSearchParam(
+          routeSearch.raffle_id,
+          filters.raffleId,
+          defaultRaffleId,
+        ),
+      }),
+      replace: true,
+    })
+  }
+
+  function updateRaffleScope(value: string) {
+    void navigate({
+      replace: true,
+      search: (previous) => ({
+        ...previous,
+        raffle_id: value === "all" ? "all" : value,
+      }),
+    })
   }
 
   const isBusy = lookupQuery.isFetching
   const matches = lookupQuery.data ?? []
   const showEmpty =
-    /^\d{1,4}$/.test(ticket) && !isBusy && !lookupQuery.isError && matches.length === 0
+    ADMIN_TICKET_LOOKUP_PATTERN.test(ticket) &&
+    !isBusy &&
+    !lookupQuery.isError &&
+    matches.length === 0
 
   return (
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title={adminNavTitle("/admin/boletos")}
-        description="Consulta el dueño de un número en rifas activas o pasadas."
+        description={`Consulta el dueño de un número en ${scopeLabel}.`}
       />
 
       <Card>
@@ -74,6 +128,17 @@ export function AdminTicketLookup() {
               handleSearch()
             }}
           >
+            <AdminRaffleScopeSelect
+              id="ticket-lookup-raffle"
+              label="Rifa"
+              raffles={filterRaffles}
+              value={filters.raffleId}
+              onValueChange={updateRaffleScope}
+              disabled={dashboardQuery.isLoading || filterRaffles.length === 0}
+              triggerClassName="min-h-11 w-full"
+              placeholder="Rifa actual"
+            />
+
             <label htmlFor="ticket-lookup" className="text-sm font-medium">
               Número de boleto
             </label>
@@ -119,7 +184,7 @@ export function AdminTicketLookup() {
         <div className="flex flex-col gap-3">
           <p className="text-muted-foreground text-sm">
             {matches.length === 1
-              ? `1 resultado para el boleto ${ticket}`
+              ? `1 resultado para el boleto ${ticket} en ${scopeLabel}`
               : `${matches.length} rifas con el boleto ${ticket}`}
           </p>
           {matches.map((match) => (
@@ -133,7 +198,8 @@ export function AdminTicketLookup() {
           <CardContent className="text-muted-foreground py-8 text-center text-sm">
             <p className="font-medium text-foreground">No encontramos el boleto {ticket}</p>
             <p className="mt-1">
-              Puede estar libre, no haberse vendido aún, o haberse liberado tras rechazar la compra.
+              Puede estar libre en {scopeLabel}, no haberse vendido aún, o haberse liberado tras
+              rechazar la compra.
             </p>
           </CardContent>
         </Card>

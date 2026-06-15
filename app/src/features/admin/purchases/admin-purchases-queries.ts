@@ -3,6 +3,10 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
 import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import {
+  getDefaultAdminRaffleId,
+  resolveAdminRaffleScopeFromSearch,
+} from "@/features/admin/shared/admin-raffle-scope"
 import { decodeAdminPurchaseCursor } from "@/server/admin-purchases-cursor"
 import { listAdminPurchases } from "@/server/purchase.service"
 import { getDashboardStats } from "@/server/raffle.service"
@@ -20,7 +24,7 @@ const AdminPurchasesListFiltersInput = z.object({
   paymentMethod: PaymentMethodFilter,
   raffleId: z.string().nullable().optional(),
   search: z.string().nullable().optional(),
-  searchType: z.enum(["all", "name", "phone", "email", "ci"]).catch("all"),
+  searchType: z.enum(["all", "name", "phone", "email", "ci", "ticket"]).catch("all"),
   start: z.string().nullable().optional(),
   end: z.string().nullable().optional(),
   sort: AdminPurchaseSortFilter,
@@ -58,8 +62,7 @@ export const adminPurchasesQueryKeys = {
 }
 
 export function getDefaultAdminPurchasesRaffleId(dashboard?: AdminDashboardStats | null) {
-  const activeRaffle = dashboard?.filter_raffles.find((raffle) => raffle.status === "active")
-  return activeRaffle ? String(activeRaffle.id) : null
+  return getDefaultAdminRaffleId(dashboard)
 }
 
 export function flattenAdminPurchasesPages(
@@ -96,10 +99,7 @@ export function normalizeAdminPurchaseFilters(
   search: AdminPurchaseSearchParams,
   options?: { defaultRaffleId?: string | null },
 ): AdminPurchaseListFilters {
-  const raffleId =
-    search.raffle_id === "all"
-      ? null
-      : search.raffle_id || options?.defaultRaffleId || null
+  const raffleId = resolveAdminRaffleScopeFromSearch(search.raffle_id, options?.defaultRaffleId)
 
   return AdminPurchasesListFiltersInput.parse({
     limit: search.limit ?? ADMIN_PURCHASES_PAGE_SIZE,
