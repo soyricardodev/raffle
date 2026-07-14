@@ -83,7 +83,7 @@ export function renderVerifyCta(
 ): string {
   if (!customerPhone.trim()) return ""
   const href = verifyTicketsUrl(branding.appUrl, customerPhone)
-  return renderPrimaryCta(href, "Verificar mis boletos", branding.colors)
+  return renderPrimaryCta(href, "Buscar boletos", branding.colors)
 }
 
 export function renderTicketsBlock(

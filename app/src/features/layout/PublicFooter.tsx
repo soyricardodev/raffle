@@ -12,7 +12,7 @@ import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
 const FOOTER_NAV = [
   { label: "Inicio", to: "/" as const },
-  { label: "Verificar boletos", to: "/verificar" as const },
+  { label: "Buscar boletos", to: "/verificar" as const },
 ] as const
 
 export function PublicFooter() {

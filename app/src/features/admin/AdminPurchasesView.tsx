@@ -4,9 +4,9 @@ import {
   paymentMethodTypeLabel,
   type PaymentMethod,
 } from "@raffle/shared/payment-methods"
-import { useInfiniteQuery, useQuery } from "@tanstack/react-query"
+import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
@@ -48,7 +48,7 @@ import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { useAdminPurchaseStatusUpdate } from "@/features/admin/purchases/use-admin-purchase-status-update"
 import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
-import { useDebouncedValue } from "@/hooks/useDebouncedValue"
+import { useDebouncedSearchParam } from "@/hooks/useDebouncedSearchParam"
 import { cn } from "@/lib/utils"
 
 const routeApi = getRouteApi("/admin/compras")
@@ -77,30 +77,27 @@ export function AdminPurchasesView() {
     () => normalizeAdminPurchaseFilters(routeSearch, { defaultRaffleId }),
     [defaultRaffleId, routeSearch],
   )
-  const [searchDraft, setSearchDraft] = useState(filters.search ?? "")
 
-  const debouncedSearch = useDebouncedValue(searchDraft)
+  const commitSearch = useCallback(
+    (nextSearch: string) => {
+      void navigate({
+        replace: true,
+        search: (previous) => ({
+          ...previous,
+          q: nextSearch || undefined,
+        }),
+      })
+    },
+    [navigate],
+  )
 
-  useEffect(() => {
-    setSearchDraft(filters.search ?? "")
-  }, [filters.search])
+  const search = useDebouncedSearchParam(filters.search, commitSearch, {
+    delayMs: 400,
+  })
 
   useEffect(() => {
     setSelectedPurchaseId(purchaseFromUrl)
   }, [purchaseFromUrl])
-
-  useEffect(() => {
-    const nextSearch = debouncedSearch.trim()
-    if (nextSearch === (filters.search ?? "")) return
-
-    void navigate({
-      replace: true,
-      search: (previous) => ({
-        ...previous,
-        q: nextSearch || undefined,
-      }),
-    })
-  }, [debouncedSearch, filters.search, navigate])
 
   useSanitizeAdminRaffleUrlParam({
     raffleId: filters.raffleId ?? null,
@@ -110,9 +107,14 @@ export function AdminPurchasesView() {
 
   const purchasesQuery = useInfiniteQuery({
     ...adminPurchasesInfiniteQueryOptions(filters),
+    placeholderData: keepPreviousData,
     refetchInterval: adminPurchasesRefetchInterval,
     refetchOnMount: false,
   })
+
+  const isSearchBusy =
+    search.isDebouncing ||
+    (search.isDirty && purchasesQuery.isFetching && !purchasesQuery.isFetchingNextPage)
 
   const sentinelRef = useInfiniteScrollSentinel({
     hasNextPage: purchasesQuery.hasNextPage,
@@ -222,19 +224,25 @@ export function AdminPurchasesView() {
           <div className="flex flex-col gap-2 lg:flex-row lg:items-center">
             <InputGroup className="lg:max-w-80">
               <InputGroupAddon>
-                <MagnifyingGlassIcon />
+                {isSearchBusy ? (
+                  <ArrowClockwiseIcon className="size-4 animate-spin" aria-hidden />
+                ) : (
+                  <MagnifyingGlassIcon aria-hidden />
+                )}
               </InputGroupAddon>
               <InputGroupInput
+                {...search.bind}
                 placeholder="Cliente, teléfono, cédula, referencia o boleto"
-                value={searchDraft}
-                onChange={(event) => setSearchDraft(event.target.value)}
+                aria-busy={isSearchBusy}
+                autoComplete="off"
+                spellCheck={false}
               />
-              {searchDraft ? (
+              {search.inputValue && !isSearchBusy ? (
                 <InputGroupAddon align="inline-end">
                   <InputGroupButton
                     size="icon-xs"
                     aria-label="Limpiar búsqueda"
-                    onClick={() => setSearchDraft("")}
+                    onClick={search.clear}
                   >
                     <XIcon />
                   </InputGroupButton>
@@ -327,7 +335,8 @@ export function AdminPurchasesView() {
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={() =>
+                  onClick={() => {
+                    search.clear()
                     updateSearch({
                       status: undefined,
                       payment_method: undefined,
@@ -337,7 +346,7 @@ export function AdminPurchasesView() {
                       end: undefined,
                       sort: undefined,
                     })
-                  }
+                  }}
                 >
                   Limpiar
                 </Button>

@@ -14,6 +14,7 @@ vi.mock("./email-branding.server", async (importOriginal) => {
       colors: { primary: "#8B7355", secondary: "#F5F5DC", accent: "#FFD700" },
       logoUrl: null,
       contact: { phone: "", email: "", address: "" },
+      whatsapp: "",
     })),
   }
 })

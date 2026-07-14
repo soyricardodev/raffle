@@ -1,6 +1,5 @@
 import {
   CheckCircleIcon,
-  ClockIcon,
   CopyIcon,
   XCircleIcon,
 } from "@phosphor-icons/react"
@@ -17,15 +16,26 @@ import {
 import { formatDate, getPurchaseStatusClass, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
-function statusIcon(status: string) {
+function statusIcon(status: "approved" | "rejected") {
   switch (status) {
     case "approved":
       return CheckCircleIcon
     case "rejected":
       return XCircleIcon
-    default:
-      return ClockIcon
+    default: {
+      const _exhaustive: never = status
+      return _exhaustive
+    }
   }
+}
+
+function resolvedDisplayStatus(
+  purchaseStatus: string | null | undefined,
+): "approved" | "rejected" | null {
+  if (purchaseStatus === "approved" || purchaseStatus === "rejected") {
+    return purchaseStatus
+  }
+  return null
 }
 
 async function copyTicketNumber(ticketNumber: string) {
@@ -78,8 +88,8 @@ export function VerifiedTicketsList({ tickets }: VerifiedTicketsListProps) {
           <div className={cn(featuredTicketBadgeGridClassName, "max-h-[min(42vh,320px)]")}>
             <div className="flex flex-wrap gap-2">
               {raffleTickets.map((ticket) => {
-                const purchaseStatus = ticket.purchase_status ?? "pending"
-                const StatusIcon = statusIcon(purchaseStatus)
+                const displayStatus = resolvedDisplayStatus(ticket.purchase_status)
+                const StatusIcon = displayStatus ? statusIcon(displayStatus) : null
                 return (
                   <div
                     key={`${raffleName}-${ticket.ticket_number}`}
@@ -104,15 +114,17 @@ export function VerifiedTicketsList({ tickets }: VerifiedTicketsListProps) {
                         <CopyIcon className="size-3.5" aria-hidden />
                       </Button>
                     </div>
-                    <span
-                      className={cn(
-                        "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
-                        getPurchaseStatusClass(purchaseStatus),
-                      )}
-                    >
-                      <StatusIcon className="size-3" weight="fill" aria-hidden />
-                      {getStatusLabel(purchaseStatus)}
-                    </span>
+                    {displayStatus && StatusIcon ? (
+                      <span
+                        className={cn(
+                          "inline-flex max-w-full items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium",
+                          getPurchaseStatusClass(displayStatus),
+                        )}
+                      >
+                        <StatusIcon className="size-3" weight="fill" aria-hidden />
+                        {getStatusLabel(displayStatus)}
+                      </span>
+                    ) : null}
                     {ticket.customer_name ? (
                       <p className="text-muted-foreground max-w-full truncate text-center text-[10px]">
                         {ticket.customer_name}

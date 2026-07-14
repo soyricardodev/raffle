@@ -10,6 +10,7 @@ const mockBranding = {
   colors: { primary: "#8B7355", secondary: "#F5F5DC", accent: "#FFD700" },
   logoUrl: "https://rifas.example.com/uploads/site/logo.png",
   contact: { phone: "04141234567", email: "contacto@rifas.test", address: "" },
+  whatsapp: "584121234567",
 }
 
 vi.mock("./email-branding.server", async (importOriginal) => {
@@ -50,6 +51,8 @@ describe("email-templates", () => {
     expect(email.html).toContain("https://rifas.example.com/uploads/raffles/hero.jpg")
     expect(email.html).toContain("<td")
     expect(email.html).toContain("verificar?phone=")
+    expect(email.html).toContain("Buscar boletos")
+    expect(email.html).not.toContain("Pendiente de verificación")
     expect(email.html).not.toContain("Boletos: 1, 2")
   })
 
@@ -78,11 +81,26 @@ describe("email-templates", () => {
     expect(email.metadata?.new_status).toBe("rejected")
     expect(email.html).toContain("Motivo:")
     expect(email.html).toContain("Pago duplicado")
+    expect(email.html).toContain("wa.me/584121234567")
+    expect(email.html).toContain("Resolver por WhatsApp")
+    expect(email.html).toContain(encodeURIComponent("problema de mi pago"))
   })
 
   it("omits rejection reason when notes are empty", async () => {
     const email = await buildEmailForType("status_update", { ...ctx, notes: "" }, { status: "rejected" })
     expect(email.html).not.toContain("Motivo:")
+    expect(email.html).toContain("wa.me/584121234567")
+  })
+
+  it("omits WhatsApp CTA on rejection when WhatsApp is not configured", async () => {
+    const { loadEmailBranding } = await import("./email-branding.server")
+    vi.mocked(loadEmailBranding).mockResolvedValueOnce({
+      ...mockBranding,
+      whatsapp: "",
+    })
+    const email = await buildEmailForType("status_update", ctx, { status: "rejected" })
+    expect(email.html).not.toContain("wa.me/")
+    expect(email.html).not.toContain("Resolver por WhatsApp")
   })
 
   it("builds ticket modification email", async () => {

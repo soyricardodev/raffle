@@ -6,7 +6,7 @@ test.describe("public smoke", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     await expect(page).toHaveTitle(/rifas/i)
     await expect(
-      page.getByRole("navigation").getByRole("link", { name: "Verificar Boletos" }),
+      page.getByRole("navigation").getByRole("link", { name: "Buscar boletos" }),
     ).toBeVisible()
   })
 
@@ -18,9 +18,9 @@ test.describe("public smoke", () => {
 
     const cta = page.getByTestId("purchase-verify-cta")
     await expect(cta).toBeVisible()
-    await cta.getByRole("link", { name: "Verificar boletos" }).click()
+    await cta.getByRole("link", { name: "Buscar boletos" }).click()
     await expect(page).toHaveURL(/\/verificar/)
-    await expect(page.getByRole("heading", { name: "Verificar boletos" })).toBeVisible()
+    await expect(page.getByRole("heading", { name: "Buscar boletos" })).toBeVisible()
   })
 
   test("home shows live activity ticker when applicable", async ({ page }) => {
@@ -32,8 +32,8 @@ test.describe("public smoke", () => {
 
   test("/verificar page shows verifier UI", async ({ page }) => {
     await page.goto("/verificar", { waitUntil: "domcontentloaded" })
-    await expect(page).toHaveTitle(/Verificar boletos/i)
-    await expect(page.getByRole("heading", { name: "Verificar boletos" })).toBeVisible()
+    await expect(page).toHaveTitle(/Buscar boletos/i)
+    await expect(page.getByRole("heading", { name: "Buscar boletos" })).toBeVisible()
     const quickSearch = page.getByRole("button", { name: /ver mis boletos/i })
     const manualSearch = page.getByRole("button", { name: "Buscar boletos" })
     await expect(quickSearch.or(manualSearch)).toBeVisible()

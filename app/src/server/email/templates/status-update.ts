@@ -1,9 +1,14 @@
 import type { EmailBrandingContext } from "../email-branding.server"
-import { escapeHtml } from "../email-html"
+import {
+  buildRejectionSupportWhatsAppMessage,
+  escapeHtml,
+  whatsAppHrefWithText,
+} from "../email-html"
 import {
   renderEmailDocument,
   renderGreeting,
   renderHeading,
+  renderPrimaryCta,
   renderStatusBadge,
   renderSubtext,
 } from "../email-layout"
@@ -35,16 +40,33 @@ export function buildStatusUpdateEmail(
         "rgba(239, 68, 68, 0.35)",
       )
 
+  const supportWhatsAppHref =
+    !approved && branding.whatsapp
+      ? whatsAppHrefWithText(
+          branding.whatsapp,
+          buildRejectionSupportWhatsAppMessage({
+            customerName: ctx.customerName,
+            purchaseId: ctx.purchaseId,
+            raffleName: ctx.raffleName,
+          }),
+        )
+      : ""
+
+  const supportCta = supportWhatsAppHref
+    ? renderPrimaryCta(supportWhatsAppHref, "Resolver por WhatsApp", branding.colors)
+    : ""
+
   const bodyHtml = [
     renderGreeting(ctx.customerName),
     renderHeading(approved ? "¡Tu compra fue aprobada!" : "Tu compra fue rechazada", branding.colors),
     renderSubtext(
       approved
         ? "Tus boletos quedaron oficialmente registrados."
-        : "No pudimos validar tu pago. Revisa el motivo indicado abajo.",
+        : "No pudimos validar tu pago. Revisa el motivo indicado abajo y contáctanos por WhatsApp para resolverlo.",
     ),
     badge,
     reasonNote,
+    supportCta,
     renderPurchaseDetailsSection(ctx, branding),
     renderTicketsSection(ctx, branding, { includeVerifyCta: approved }),
   ].join("")

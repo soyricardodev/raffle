@@ -10,7 +10,7 @@ export function VerifyPageHelp() {
 
   const whatsappHrefResolved = whatsAppHrefWithText(
     whatsappDigits,
-    "Hola, necesito ayuda para verificar mis boletos.",
+    "Hola, necesito ayuda para buscar mis boletos.",
   )
   const telHref = contactPhone ? `tel:${contactPhone.replace(/\s/g, "")}` : ""
 

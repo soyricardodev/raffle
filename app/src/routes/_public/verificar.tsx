@@ -11,9 +11,9 @@ export const Route = createFileRoute("/_public/verificar")({
   validateSearch: (search: Record<string, unknown>) => parseVerifyRouteSearchInput(search),
   head: ({ matches }) =>
     buildPublicPageHead({
-      pageTitle: "Verificar boletos",
+      pageTitle: "Buscar boletos",
       description:
-        "Confirma que tus números estén registrados y revisa el estado de tu compra en segundos.",
+        "Busca tus números registrados y revisa si tu compra fue aprobada o rechazada.",
       matches,
     }),
   component: VerifyPage,
@@ -36,9 +36,9 @@ function VerifyPage() {
             <div className="bg-primary/10 text-primary inline-flex size-11 items-center justify-center rounded-2xl">
               <MagnifyingGlassIcon className="size-6" weight="duotone" aria-hidden />
             </div>
-            <h1 className="font-display text-2xl font-semibold tracking-tight">Verificar boletos</h1>
+            <h1 className="font-display text-2xl font-semibold tracking-tight">Buscar boletos</h1>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Confirma que tus números estén registrados y revisa el estado de tu compra en segundos.
+              Encuentra tus números registrados y revisa si tu compra fue aprobada o rechazada.
             </p>
             <p className="text-muted-foreground text-xs leading-relaxed">
               Busca por teléfono, cédula, correo electrónico o número de boleto.

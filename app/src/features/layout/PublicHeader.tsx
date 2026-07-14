@@ -33,7 +33,7 @@ export function PublicHeader() {
           <Button variant="ghost" size="sm" className="h-10 gap-1.5 px-2.5" asChild>
             <Link {...buildVerifyHref()}>
               <Search className="size-4 shrink-0" aria-hidden />
-              Verificar Boletos
+              Buscar boletos
             </Link>
           </Button>
           <ThemeToggle />

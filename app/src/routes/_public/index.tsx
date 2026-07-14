@@ -114,13 +114,13 @@ function HomePage() {
                   <div className="space-y-1">
                     <p className="font-medium">No hay rifas activas</p>
                     <p className="text-muted-foreground text-sm">
-                      Vuelve pronto o verifica tus boletos.
+                      Vuelve pronto o busca tus boletos.
                     </p>
                   </div>
                   <Button variant="outline" size="sm" className="min-h-10" asChild>
                     <Link {...buildVerifyHref()}>
                       <Search className="mr-2 size-4" />
-                      Verificar boletos
+                      Buscar boletos
                     </Link>
                   </Button>
                 </CardContent>
@@ -131,7 +131,7 @@ function HomePage() {
                   {...buildVerifyHref()}
                   className="text-foreground font-medium underline-offset-4 hover:underline"
                 >
-                  Verifica tus boletos
+                  Busca tus boletos
                 </Link>
               </p>
             </>

@@ -49,7 +49,7 @@ export function PurchaseVerifyTicketsCta() {
         <Button variant="ghost" className={verifyTicketsCtaButtonClassName} asChild>
           <Link {...verifyLink}>
             <MagnifyingGlassIcon className="mr-2 size-5" weight="bold" aria-hidden />
-            Verificar boletos
+            Buscar boletos
           </Link>
         </Button>
       </CardContent>

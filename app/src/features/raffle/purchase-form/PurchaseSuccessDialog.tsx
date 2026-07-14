@@ -102,7 +102,7 @@ export function PurchaseSuccessDialog({
                 verifyPhone?.trim() ? { phone: verifyPhone.trim(), auto: true } : undefined,
               )}
             >
-              Verificar mis boletos
+              Buscar boletos
             </Link>
           </Button>
           <Button

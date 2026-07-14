@@ -10,7 +10,6 @@ import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField
 import { TicketVerifierEmpty } from "@/features/verify/TicketVerifierEmpty"
 import { useTicketVerify } from "@/features/verify/use-ticket-verify"
 import { VerifiedTicketsList } from "@/features/verify/VerifiedTicketsList"
-import { VerifyPurchaseStatusLegend } from "@/features/verify/VerifyPurchaseStatusLegend"
 import type { VerifyRouteSearch } from "@/features/verify/verify-route-search"
 import { VerifySearchMethodPicker } from "@/features/verify/VerifySearchMethodPicker"
 import { maskPhoneTail } from "@/features/verify/verify-profile"
@@ -180,10 +179,7 @@ export function TicketVerifier({ initialSearch }: TicketVerifierProps) {
         )}
 
         {tickets.length > 0 && !verifyMutation.isPending && (
-          <>
-            <VerifiedTicketsList tickets={tickets} />
-            <VerifyPurchaseStatusLegend />
-          </>
+          <VerifiedTicketsList tickets={tickets} />
         )}
       </div>
     </div>

@@ -2,6 +2,7 @@ import {
   ContactInfoSchema,
   SiteColorsSchema,
   SiteInfoSchema,
+  SocialMediaSchema,
   type ContactInfo,
   type SiteColors,
   type SiteInfo,
@@ -18,6 +19,8 @@ export type EmailBrandingContext = {
   colors: SiteColors
   logoUrl: string | null
   contact: ContactInfo
+  /** Digits-only WhatsApp from site social config (for wa.me links). */
+  whatsapp: string
 }
 
 const DEFAULT_COLORS: SiteColors = {
@@ -38,6 +41,8 @@ const DEFAULT_CONTACT: ContactInfo = {
   address: "",
 }
 
+const DEFAULT_WHATSAPP = ""
+
 let brandingCache: { value: EmailBrandingContext; expiresAt: number } | null = null
 const BRANDING_CACHE_MS = 60_000
 
@@ -56,6 +61,12 @@ function parseContactInfo(raw: unknown): ContactInfo {
   return parsed.success ? parsed.data : DEFAULT_CONTACT
 }
 
+function parseWhatsapp(raw: unknown): string {
+  const parsed = SocialMediaSchema.safeParse(raw)
+  if (!parsed.success) return DEFAULT_WHATSAPP
+  return parsed.data.whatsapp.replace(/\D/g, "")
+}
+
 export async function loadEmailBranding(): Promise<EmailBrandingContext> {
   const now = Date.now()
   if (brandingCache && brandingCache.expiresAt > now) {
@@ -67,6 +78,7 @@ export async function loadEmailBranding(): Promise<EmailBrandingContext> {
   const colors = parseSiteColors(config.site_colors)
   const siteInfo = parseSiteInfo(config.site_info)
   const contact = parseContactInfo(config.contact_info)
+  const whatsapp = parseWhatsapp(config.social_media)
   const images = normalizeSiteImages(config.site_images)
   const logoPath = images.logo.trim() || images.footer_logo.trim()
 
@@ -77,6 +89,7 @@ export async function loadEmailBranding(): Promise<EmailBrandingContext> {
     colors,
     logoUrl: toAbsoluteAssetUrl(logoPath, appUrl),
     contact,
+    whatsapp,
   }
 
   brandingCache = { value, expiresAt: now + BRANDING_CACHE_MS }

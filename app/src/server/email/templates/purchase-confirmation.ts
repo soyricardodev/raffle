@@ -4,7 +4,6 @@ import {
   renderGreeting,
   renderHeading,
   renderInstructionsBox,
-  renderStatusBadge,
   renderSubtext,
 } from "../email-layout"
 import type { BuiltEmail, PurchaseEmailContext } from "../email-types"
@@ -22,11 +21,6 @@ export function buildPurchaseConfirmationEmail(
     renderGreeting(ctx.customerName),
     renderHeading("¡Compra registrada exitosamente!", branding.colors),
     renderSubtext("Tu participación en la rifa fue registrada. Estos son los detalles:"),
-    renderStatusBadge(
-      "Pendiente de verificación",
-      "linear-gradient(135deg, #f59e0b 0%, #f97316 100%)",
-      "rgba(245, 158, 11, 0.35)",
-    ),
     renderCustomerSection(ctx, branding),
     renderPurchaseDetailsSection(ctx, branding),
     renderTicketsSection(ctx, branding),
