@@ -146,6 +146,24 @@ export async function findFirstActiveRaffle(): Promise<EnrichedRaffle | null> {
   return enrichRaffleDetail(row)
 }
 
+export async function findLatestFinishedRaffle(): Promise<EnrichedRaffle | null> {
+  const row = await rafflesRepo.findLatestFinished()
+  if (!row) return null
+  return enrichRaffleDetail(row)
+}
+
+export async function findHomeRaffleDisplay(): Promise<{
+  active: EnrichedRaffle | null
+  latestFinished: EnrichedRaffle | null
+}> {
+  const active = await findFirstActiveRaffle()
+  if (active) {
+    return { active, latestFinished: null }
+  }
+  const latestFinished = await findLatestFinishedRaffle()
+  return { active: null, latestFinished }
+}
+
 export async function getFirstActiveRaffle(): Promise<EnrichedRaffle> {
   const raffle = await findFirstActiveRaffle()
   if (!raffle) throw new RaffleNotFoundError("first-active")

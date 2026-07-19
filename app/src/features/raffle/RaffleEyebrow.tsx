@@ -9,6 +9,7 @@ type RaffleEyebrowProps = {
 function StatusDot({ status }: { status: string }) {
   const isPaused = status === "paused"
   const isActive = status === "active"
+  const isFinished = status === "finished"
 
   return (
     <span
@@ -16,7 +17,8 @@ function StatusDot({ status }: { status: string }) {
         "size-1.5 shrink-0 rounded-full",
         isActive && "bg-emerald-500",
         isPaused && "bg-amber-500",
-        !isActive && !isPaused && "bg-muted-foreground/50",
+        isFinished && "bg-blue-500",
+        !isActive && !isPaused && !isFinished && "bg-muted-foreground/50",
       )}
       aria-hidden
     />

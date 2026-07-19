@@ -150,6 +150,17 @@ export async function findFirstActiveOrPaused(): Promise<RaffleRow | undefined> 
   return row
 }
 
+export async function findLatestFinished(): Promise<RaffleRow | undefined> {
+  const db = getDb()
+  const [row] = await db
+    .select()
+    .from(raffles)
+    .where(eq(raffles.status, "finished"))
+    .orderBy(desc(raffles.updatedAt))
+    .limit(1)
+  return row
+}
+
 export async function insertRaffle(tx: DbTransaction, input: CreateRaffleInput): Promise<number> {
   const total = PLATFORM_TOTAL_TICKETS
   const [row] = await tx

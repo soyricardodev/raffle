@@ -30,7 +30,7 @@ export const RAFFLE_STATUS_HINTS: Record<RaffleStatus, string> = {
   active: "En venta: los clientes pueden comprar boletos ahora mismo.",
   paused: "Pausada: las ventas están detenidas de forma temporal.",
   finished:
-    "Finalizada: las ventas están cerradas. Puedes publicar resultados cuando tengas ganador.",
+    "Finalizada: las ventas están cerradas. Puedes corregir órdenes y publicar resultados cuando estés listo.",
   cancelled: "Cancelada: la rifa no acepta compras ni aparece como activa.",
 }
 
@@ -85,7 +85,7 @@ export function getPrimaryLifecycleActions(
         {
           id: "finish",
           label: "Finalizar rifa",
-          description: "Cierra las ventas de forma definitiva",
+          description: "Cierra las ventas ahora — no hace falta llegar al 100%",
           icon: Flag,
           request: { intent: "finish" },
           variant: "destructive",
@@ -104,7 +104,7 @@ export function getPrimaryLifecycleActions(
         {
           id: "finish",
           label: "Finalizar rifa",
-          description: "Cierra las ventas sin reanudar",
+          description: "Cierra las ventas ahora — no hace falta llegar al 100%",
           icon: Flag,
           request: { intent: "finish" },
           variant: "destructive",
@@ -121,9 +121,25 @@ export function getPrimaryLifecycleActions(
             request: { intent: "publish_results" },
             variant: "default",
           },
+          {
+            id: "reactivate",
+            label: "Reabrir ventas",
+            description: "Vuelve a estado activo (uso excepcional)",
+            icon: Play,
+            request: { intent: "activate" },
+            variant: "outline",
+          },
         ]
       }
       return [
+        {
+          id: "unpublish",
+          label: "Ocultar del historial",
+          description: "Deja de mostrar esta rifa en el historial público",
+          icon: FileDashed,
+          request: { intent: "unpublish_results" },
+          variant: "outline",
+        },
         {
           id: "reactivate",
           label: "Reabrir ventas",
@@ -227,6 +243,12 @@ export function getConfirmCopy(
         title: "Publicar resultados",
         description: `Los resultados de «${raffleName}» serán visibles en la página pública.`,
         confirmLabel: "Publicar",
+      }
+    case "unpublish_results":
+      return {
+        title: "Ocultar del historial",
+        description: `«${raffleName}» dejará de aparecer en el historial público. Seguirá visible en inicio mientras no haya otra rifa activa.`,
+        confirmLabel: "Ocultar",
       }
     case "finish":
       return {

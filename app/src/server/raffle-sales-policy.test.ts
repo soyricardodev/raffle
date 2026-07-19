@@ -28,9 +28,15 @@ describe("assertRaffleOpenForAdminTicketChanges", () => {
     ).not.toThrow()
   })
 
-  it("rejects finished raffle", () => {
+  it("allows finished raffle for admin ticket ops", () => {
     expect(() =>
       assertRaffleOpenForAdminTicketChanges({ status: "finished", drawDate: future }, 1),
+    ).not.toThrow()
+  })
+
+  it("rejects cancelled raffle", () => {
+    expect(() =>
+      assertRaffleOpenForAdminTicketChanges({ status: "cancelled", drawDate: future }, 1),
     ).toThrow(RaffleFinishedError)
   })
 

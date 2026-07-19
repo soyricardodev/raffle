@@ -204,6 +204,14 @@ export async function transitionRaffle(raffleId: number, input: TransitionRaffle
       return { intent: input.intent, ...published }
     }
 
+    case "unpublish_results": {
+      if (from !== "finished") {
+        throw new RaffleNotActiveError(raffleId, from)
+      }
+      const unpublished = await publishRaffle(raffleId, false)
+      return { intent: input.intent, ...unpublished }
+    }
+
     case "set_status": {
       assertSetStatusAllowed(from, input.status)
       const change = await applyStatus(raffleId, input.status)

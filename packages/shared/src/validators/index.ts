@@ -390,6 +390,7 @@ export const RaffleLifecycleIntent = z.enum([
   "finish",
   "activate",
   "publish_results",
+  "unpublish_results",
   "set_status",
 ])
 export type RaffleLifecycleIntent = z.infer<typeof RaffleLifecycleIntent>
@@ -400,6 +401,7 @@ export const TransitionRaffleInput = z.discriminatedUnion("intent", [
   z.object({ intent: z.literal("finish") }),
   z.object({ intent: z.literal("activate") }),
   z.object({ intent: z.literal("publish_results") }),
+  z.object({ intent: z.literal("unpublish_results") }),
   z.object({ intent: z.literal("set_status"), status: RaffleStatus }),
 ])
 export type TransitionRaffleInput = z.infer<typeof TransitionRaffleInput>

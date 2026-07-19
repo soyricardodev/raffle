@@ -23,6 +23,8 @@ type RaffleInfoPanelProps = {
   showProgress?: boolean
   /** Used for sold-stat card when there is no cover progress bar. */
   showStatusBadge?: boolean
+  /** Hide price block (e.g. finished raffle on landing). */
+  showPricing?: boolean
   headingLevel?: 1 | 2
   descriptionLineClamp?: number | false
 }
@@ -49,18 +51,20 @@ export function RaffleInfoPanel({
   liveEnabled = true,
   showProgress = false,
   showStatusBadge = true,
+  showPricing = true,
   headingLevel = 1,
   descriptionLineClamp = 5,
 }: RaffleInfoPanelProps) {
   const progress = useRaffleSalesProgress({ raffleId, raffle: tickets, liveEnabled })
   const isPaused = status === "paused"
+  const isFinished = status === "finished"
   const Heading = headingLevel === 1 ? "h1" : "h2"
 
   const hasScheduledDraw = Boolean(drawDate)
   const showDrawCountdown =
     hasScheduledDraw && daysRemaining != null && Number.isFinite(daysRemaining)
-  /** Only when there is no cover (no overlay bar) and no scheduled draw. */
-  const showSoldStat = !showProgress && !showDrawCountdown && showStatusBadge
+  /** Only when there is no cover (no overlay bar) and no scheduled draw, or finished. */
+  const showSoldStat = (!showProgress && !showDrawCountdown && showStatusBadge) || isFinished
 
   const baseBs = Number(priceBs)
   const baseUsd = Number(priceUsd)
@@ -116,7 +120,7 @@ export function RaffleInfoPanel({
             showDrawCountdown && showSoldStat ? "grid-cols-2" : "grid-cols-1",
           )}
         >
-          {showDrawCountdown ? (
+          {showDrawCountdown && !isFinished ? (
             <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
               <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
                 <CalendarDays className="size-4" aria-hidden />
@@ -133,12 +137,17 @@ export function RaffleInfoPanel({
           ) : null}
           {showSoldStat ? (
             <div className="bg-muted/60 flex items-center gap-2.5 rounded-lg border px-3 py-2.5">
-              <span className="bg-primary/15 text-primary flex size-8 shrink-0 items-center justify-center rounded-md">
+              <span
+                className={cn(
+                  "flex size-8 shrink-0 items-center justify-center rounded-md",
+                  isFinished ? "bg-blue-500/15 text-blue-700 dark:text-blue-300" : "bg-primary/15 text-primary",
+                )}
+              >
                 <TrendingUp className="size-4" aria-hidden />
               </span>
               <div className="min-w-0">
                 <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
-                  Vendidos
+                  {isFinished ? "Vendido al cierre" : "Vendidos"}
                 </p>
                 <p className="font-heading text-xl font-extrabold tabular-nums" aria-live="polite">
                   {progress.percentage.toFixed(1)}%
@@ -149,6 +158,7 @@ export function RaffleInfoPanel({
         </div>
       ) : null}
 
+      {showPricing ? (
       <div className="rounded-xl border bg-card p-1 shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-2 px-3 pt-2">
           <p className="text-muted-foreground text-[10px] font-medium uppercase tracking-wide">
@@ -215,6 +225,7 @@ export function RaffleInfoPanel({
           </div>
         </div>
       </div>
+      ) : null}
     </section>
   )
 }

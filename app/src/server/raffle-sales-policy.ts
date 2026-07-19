@@ -27,8 +27,16 @@ export function assertRaffleOpenForPublicPurchase(
   }
 }
 
-/** Admin add/remove/reassign: no rifa terminada; activa o pausada. */
+/** Admin add/remove/reassign: activa, pausada o finalizada (para corregir órdenes). */
 export function assertRaffleOpenForAdminTicketChanges(raffle: RaffleSaleRow, raffleId: number): void {
+  if (raffle.status === "cancelled") {
+    throw new RaffleFinishedError(raffleId)
+  }
+
+  if (raffle.status === "finished") {
+    return
+  }
+
   assertRaffleNotEnded(raffle, raffleId)
 
   if (raffle.status !== "active" && raffle.status !== "paused") {
