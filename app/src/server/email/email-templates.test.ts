@@ -83,7 +83,9 @@ describe("email-templates", () => {
     expect(email.html).toContain("Pago duplicado")
     expect(email.html).toContain("wa.me/584121234567")
     expect(email.html).toContain("Resolver por WhatsApp")
-    expect(email.html).toContain(encodeURIComponent("problema de mi pago"))
+    expect(email.html).toContain(encodeURIComponent("Compra: #42"))
+    expect(email.html).toContain(encodeURIComponent("Nombre: María"))
+    expect(email.html).toContain(encodeURIComponent("Motivo: Pago duplicado"))
   })
 
   it("omits rejection reason when notes are empty", async () => {

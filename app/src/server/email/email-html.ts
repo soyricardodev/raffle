@@ -1,3 +1,5 @@
+import type { PurchaseEmailContext } from "./email-types"
+
 export function escapeHtml(text: string): string {
   return text
     .replace(/&/g, "&amp;")
@@ -30,12 +32,33 @@ export function whatsAppHrefWithText(digits: string, message: string): string {
   return `${base}?text=${encodeURIComponent(text)}`
 }
 
-export function buildRejectionSupportWhatsAppMessage(input: {
-  customerName: string
-  purchaseId: number
-  raffleName: string
-}): string {
-  const name = input.customerName.trim() || "cliente"
-  const raffle = input.raffleName.trim() || "la rifa"
-  return `Hola, soy ${name}. Mi compra #${input.purchaseId} de la rifa "${raffle}" fue rechazada y necesito ayuda para resolver el problema de mi pago.`
+export function buildRejectionSupportWhatsAppMessage(
+  ctx: Pick<
+    PurchaseEmailContext,
+    "customerName" | "customerPhone" | "customerCi" | "purchaseId" | "raffleName" | "notes"
+  >,
+): string {
+  const name = ctx.customerName.trim() || "cliente"
+  const raffle = ctx.raffleName.trim() || "la rifa"
+  const phone = ctx.customerPhone.trim()
+  const ci = ctx.customerCi?.trim() ?? ""
+  const notes = ctx.notes?.trim() ?? ""
+
+  const lines = [
+    "Hola, necesito ayuda con mi compra rechazada.",
+    "",
+    `Compra: #${ctx.purchaseId}`,
+    `Nombre: ${name}`,
+  ]
+
+  if (ci) lines.push(`Cédula: ${ci}`)
+  if (phone) lines.push(`Teléfono: ${phone}`)
+
+  lines.push(`Rifa: ${raffle}`)
+
+  if (notes) lines.push(`Motivo: ${notes}`)
+
+  lines.push("", "Por favor ayúdame a resolver el problema de mi pago. Gracias.")
+
+  return lines.join("\n")
 }

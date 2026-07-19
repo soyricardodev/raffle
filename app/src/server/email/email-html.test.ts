@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest"
-import { escapeHtml, toAbsoluteAssetUrl, verifyTicketsUrl } from "./email-html"
+import {
+  buildRejectionSupportWhatsAppMessage,
+  escapeHtml,
+  toAbsoluteAssetUrl,
+  verifyTicketsUrl,
+} from "./email-html"
 
 describe("email-html", () => {
   it("escapes HTML entities", () => {
@@ -27,6 +32,55 @@ describe("email-html", () => {
   it("verifyTicketsUrl encodes phone", () => {
     expect(verifyTicketsUrl("https://app.example", "0414 1234567")).toBe(
       "https://app.example/verificar?phone=0414%201234567",
+    )
+  })
+
+  it("buildRejectionSupportWhatsAppMessage includes order details and rejection reason", () => {
+    expect(
+      buildRejectionSupportWhatsAppMessage({
+        customerName: "María Pérez",
+        customerPhone: "04141234567",
+        customerCi: "V-12345678",
+        purchaseId: 42,
+        raffleName: "Rifa Test",
+        notes: "Pago duplicado",
+      }),
+    ).toBe(
+      [
+        "Hola, necesito ayuda con mi compra rechazada.",
+        "",
+        "Compra: #42",
+        "Nombre: María Pérez",
+        "Cédula: V-12345678",
+        "Teléfono: 04141234567",
+        "Rifa: Rifa Test",
+        "Motivo: Pago duplicado",
+        "",
+        "Por favor ayúdame a resolver el problema de mi pago. Gracias.",
+      ].join("\n"),
+    )
+  })
+
+  it("buildRejectionSupportWhatsAppMessage omits optional fields when empty", () => {
+    expect(
+      buildRejectionSupportWhatsAppMessage({
+        customerName: "María",
+        customerPhone: "",
+        customerCi: null,
+        purchaseId: 42,
+        raffleName: "Rifa Test",
+        notes: "   ",
+      }),
+    ).toBe(
+      [
+        "Hola, necesito ayuda con mi compra rechazada.",
+        "",
+        "Compra: #42",
+        "Nombre: María",
+        "Rifa: Rifa Test",
+        "",
+        "Por favor ayúdame a resolver el problema de mi pago. Gracias.",
+      ].join("\n"),
     )
   })
 })

@@ -44,11 +44,7 @@ export function buildStatusUpdateEmail(
     !approved && branding.whatsapp
       ? whatsAppHrefWithText(
           branding.whatsapp,
-          buildRejectionSupportWhatsAppMessage({
-            customerName: ctx.customerName,
-            purchaseId: ctx.purchaseId,
-            raffleName: ctx.raffleName,
-          }),
+          buildRejectionSupportWhatsAppMessage(ctx),
         )
       : ""
 
