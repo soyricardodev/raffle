@@ -6,8 +6,9 @@ import type { RafflePaymentMethod } from "@/features/raffle/types"
 export function pickDefaultPaymentMethodId(
   methods: RafflePaymentMethod[],
   quantity: number,
+  available?: number,
 ): number | null {
-  const eligible = methods.filter((m) => getMethodEligibility(m, quantity).canSelect)
+  const eligible = methods.filter((m) => getMethodEligibility(m, quantity, available).canSelect)
   if (eligible.length === 0) return null
 
   const pagoMovil = eligible.find((m) => m.method_type === "pago_movil")
@@ -16,7 +17,11 @@ export function pickDefaultPaymentMethodId(
   return (pagoMovil ?? fallback).id
 }
 
-export function usePaymentMethodSelection(methods: RafflePaymentMethod[], quantity: number) {
+export function usePaymentMethodSelection(
+  methods: RafflePaymentMethod[],
+  quantity: number,
+  available?: number,
+) {
   const [selectedId, setSelectedId] = useState<number | null>(null)
 
   const selectedMethod = useMemo(
@@ -26,9 +31,9 @@ export function usePaymentMethodSelection(methods: RafflePaymentMethod[], quanti
 
   useEffect(() => {
     if (selectedId != null) return
-    const defaultId = pickDefaultPaymentMethodId(methods, quantity)
+    const defaultId = pickDefaultPaymentMethodId(methods, quantity, available)
     if (defaultId != null) setSelectedId(defaultId)
-  }, [methods, selectedId, quantity])
+  }, [methods, selectedId, quantity, available])
 
   useEffect(() => {
     if (!selectedId) return
@@ -37,20 +42,22 @@ export function usePaymentMethodSelection(methods: RafflePaymentMethod[], quanti
       setSelectedId(null)
       return
     }
-    if (!getMethodEligibility(method, quantity).canSelect) {
+    if (!getMethodEligibility(method, quantity, available).canSelect) {
       setSelectedId(null)
     }
-  }, [quantity, selectedId, methods])
+  }, [quantity, selectedId, methods, available])
 
   const selectedBlockedReason = useMemo(
     () =>
-      selectedMethod ? getMethodEligibility(selectedMethod, quantity).blockedReason : undefined,
-    [selectedMethod, quantity],
+      selectedMethod
+        ? getMethodEligibility(selectedMethod, quantity, available).blockedReason
+        : undefined,
+    [selectedMethod, quantity, available],
   )
 
   const getEligibility = useCallback(
-    (method: RafflePaymentMethod) => getMethodEligibility(method, quantity),
-    [quantity],
+    (method: RafflePaymentMethod) => getMethodEligibility(method, quantity, available),
+    [quantity, available],
   )
 
   return {

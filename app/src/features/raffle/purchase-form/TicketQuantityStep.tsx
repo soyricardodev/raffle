@@ -33,6 +33,7 @@ type TicketQuantityStepProps = {
   totalUsd?: number
   currency?: "Bs" | "USD"
   priceIsEstimate?: boolean
+  selloutFlex?: boolean
   disabled: boolean
   onChange: (quantity: number) => void
 }
@@ -54,6 +55,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
   totalUsd,
   currency = "Bs",
   priceIsEstimate = false,
+  selloutFlex = false,
   disabled,
   onChange,
 }: TicketQuantityStepProps) {
@@ -141,6 +143,14 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
           </Badge>
         ) : null}
       </div>
+
+      {selloutFlex ? (
+        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs leading-snug text-emerald-950 dark:text-emerald-100">
+          Quedan pocos boletos: puedes comprar desde{" "}
+          <span className="font-semibold tabular-nums">1</span> hasta{" "}
+          <span className="font-semibold tabular-nums">{effectiveMax.toLocaleString("es-VE")}</span>.
+        </p>
+      ) : null}
 
       {paymentMinAboveRaffle ? (
         <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-950 dark:text-amber-100">

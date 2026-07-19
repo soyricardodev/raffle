@@ -45,6 +45,7 @@ describe("getPurchasableQuantityRange", () => {
       min: 10,
       max: 50,
       hasPurchasableQuantity: true,
+      selloutFlex: false,
     })
   })
 
@@ -55,14 +56,25 @@ describe("getPurchasableQuantityRange", () => {
       min: 1,
       max: 50,
       hasPurchasableQuantity: true,
+      selloutFlex: false,
     })
   })
 
-  it("marks the range unavailable when every method requires more than the remaining stock", () => {
+  it("allows partial purchases when stock is below every method minimum", () => {
     expect(getPurchasableQuantityRange(1, 100, 50, [{ min_tickets: 60 }])).toEqual({
-      min: 60,
+      min: 1,
       max: 50,
-      hasPurchasableQuantity: false,
+      hasPurchasableQuantity: true,
+      selloutFlex: true,
+    })
+  })
+
+  it("allows partial purchases when stock is below the raffle minimum", () => {
+    expect(getPurchasableQuantityRange(15, 100, 10, [{ min_tickets: 15 }])).toEqual({
+      min: 1,
+      max: 10,
+      hasPurchasableQuantity: true,
+      selloutFlex: true,
     })
   })
 })

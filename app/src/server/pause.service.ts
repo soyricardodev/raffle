@@ -74,16 +74,6 @@ export async function checkAutoPause(raffleId: number): Promise<AutoPauseResult>
     }
   }
 
-  if (availability.available < minPurchase) {
-    return {
-      needsPause: true,
-      reason: `Tickets insuficientes (${availability.available} < ${minPurchase})`,
-      pauseType: "auto_insufficient",
-      availability,
-      minPurchase,
-    }
-  }
-
   return {
     needsPause: false,
     reason: "Tickets disponibles suficientes",
@@ -152,7 +142,6 @@ export async function unpauseRaffle(raffleId: number): Promise<{
     }
 
     const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
-    const minPurchase = raffle.minPurchase
 
     let newStatus: RaffleStatus = "active"
     let message = "Rifa reactivada exitosamente"
@@ -160,9 +149,6 @@ export async function unpauseRaffle(raffleId: number): Promise<{
     if (availability.available === 0) {
       newStatus = "finished"
       message = "Rifa finalizada — no hay tickets disponibles"
-    } else if (availability.available < minPurchase) {
-      newStatus = "finished"
-      message = `Rifa finalizada — tickets insuficientes (${availability.available} < ${minPurchase})`
     }
 
     await withImmediateTransaction((tx) => rafflesRepo.unpauseRaffleRow(tx, raffleId, newStatus))

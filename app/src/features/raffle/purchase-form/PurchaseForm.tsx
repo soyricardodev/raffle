@@ -144,7 +144,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     selectedMethod,
     selectedBlockedReason,
     getEligibility,
-  } = usePaymentMethodSelection(methods, quantity)
+  } = usePaymentMethodSelection(methods, quantity, available)
 
   const {
     priceCurrency,
@@ -468,6 +468,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             totalUsd={totalUsd}
             currency="Bs"
             priceIsEstimate={priceIsEstimate}
+            selloutFlex={quantityRange.selloutFlex}
             disabled={disabled}
             onChange={setQuantity}
           />

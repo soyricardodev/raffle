@@ -108,7 +108,7 @@ describe.skipIf(!hasDatabase)("pause system", () => {
       .where(eq(raffles.id, raffleId))
   })
 
-  it("triggers auto-pause when available < minPurchase", async () => {
+  it("does not auto-pause when available < minPurchase", async () => {
     const db = getDb()
     await db
       .update(raffles)
@@ -116,8 +116,8 @@ describe.skipIf(!hasDatabase)("pause system", () => {
       .where(eq(raffles.id, raffleId))
 
     const checkResult = await checkAutoPause(raffleId)
-    expect(checkResult.needsPause).toBe(true)
-    expect(checkResult.pauseType).toBe("auto_insufficient")
+    expect(checkResult.needsPause).toBe(false)
+    expect(checkResult.availability?.available).toBe(1)
 
     await db
       .update(raffles)

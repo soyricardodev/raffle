@@ -9,6 +9,10 @@ import {
   ValidationError,
 } from "@raffle/shared/errors"
 import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
+import {
+  isPaymentMethodMinWaived,
+  isRaffleMinWaived,
+} from "@raffle/shared/purchase/quantity-policy"
 import type { CustomerLocationType, PurchaseStatus } from "@raffle/shared/validators"
 import { normalizePhone } from "@raffle/shared/db"
 import {
@@ -72,7 +76,13 @@ export async function createPurchase(params: CreatePurchaseParams) {
       raffle.status === "paused" ? await pauseService.getPauseInfo(params.raffleId) : null
     assertRaffleOpenForPublicPurchase(raffle, params.raffleId, pauseInfo)
 
-    if (params.ticketQuantity < raffle.minPurchase || params.ticketQuantity > raffle.maxPurchase) {
+    if (
+      !isRaffleMinWaived(raffle.ticketsAvailable, raffle.minPurchase) &&
+      params.ticketQuantity < raffle.minPurchase
+    ) {
+      throw new InvalidQuantityError(raffle.minPurchase, raffle.maxPurchase, params.ticketQuantity)
+    }
+    if (params.ticketQuantity > raffle.maxPurchase) {
       throw new InvalidQuantityError(raffle.minPurchase, raffle.maxPurchase, params.ticketQuantity)
     }
 
@@ -84,7 +94,11 @@ export async function createPurchase(params: CreatePurchaseParams) {
     if (!payMethod) {
       throw new ValidationError("El método de pago seleccionado no está disponible para esta rifa")
     }
-    if (payMethod.min_tickets != null && params.ticketQuantity < payMethod.min_tickets) {
+    if (
+      payMethod.min_tickets != null &&
+      !isPaymentMethodMinWaived(raffle.ticketsAvailable, payMethod.min_tickets) &&
+      params.ticketQuantity < payMethod.min_tickets
+    ) {
       throw new ValidationError(
         `Para pagar con este método necesitas comprar al menos ${payMethod.min_tickets} boletos`,
       )
@@ -103,10 +117,6 @@ export async function createPurchase(params: CreatePurchaseParams) {
     }
 
     await purchasesRepo.assertUniquePaymentReference(tx, params.raffleId, params.paymentReference)
-
-    if (raffle.ticketsAvailable < raffle.minPurchase && raffle.autoPauseEnabled) {
-      throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)
-    }
 
     if (raffle.ticketsAvailable < params.ticketQuantity) {
       throw new InsufficientTicketsError(raffle.ticketsAvailable, params.ticketQuantity)

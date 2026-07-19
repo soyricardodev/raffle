@@ -1,3 +1,7 @@
+import {
+  getStandardMinimumQuantity,
+  resolvePurchasableQuantityRange as resolveSharedPurchasableQuantityRange,
+} from "@raffle/shared/purchase/quantity-policy"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 
 export type QuickPickOption = {
@@ -9,6 +13,7 @@ export type PurchasableQuantityRange = {
   min: number
   max: number
   hasPurchasableQuantity: boolean
+  selloutFlex: boolean
 }
 
 export function clampQuantity(value: number, min: number, max: number): number {
@@ -21,12 +26,7 @@ export function getMinimumPurchasableQuantity(
   raffleMin: number,
   methods: Pick<RafflePaymentMethod, "min_tickets" | "is_active">[],
 ): number {
-  const methodMins = methods
-    .filter((m) => m.is_active !== false)
-    .map((m) => Math.max(0, m.min_tickets ?? 0))
-
-  if (methodMins.length === 0) return raffleMin
-  return Math.max(raffleMin, Math.min(...methodMins))
+  return getStandardMinimumQuantity(raffleMin, methods)
 }
 
 export function getPaymentMethodThresholds(
@@ -45,14 +45,12 @@ export function getPurchasableQuantityRange(
   available: number,
   methods: Pick<RafflePaymentMethod, "min_tickets" | "is_active">[],
 ): PurchasableQuantityRange {
-  const min = getMinimumPurchasableQuantity(raffleMin, methods)
-  const max = Math.min(raffleMax, available)
-
-  return {
-    min,
-    max,
-    hasPurchasableQuantity: available > 0 && max >= min,
-  }
+  return resolveSharedPurchasableQuantityRange({
+    raffleMin,
+    raffleMax,
+    available,
+    methods,
+  })
 }
 
 export function formatQuickPickLabel(value: number, max: number): string {
