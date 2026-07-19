@@ -27,6 +27,9 @@ app/test-raffle.db*
 packages/shared/test-raffle.db*
 app/uploads/
 
+# Generated exports (PII — do not commit)
+exports/
+
 # Logs
 *.log
 build-output.txt
