@@ -10,17 +10,14 @@ test.describe("public smoke", () => {
     ).toBeVisible()
   })
 
-  test("purchase form shows verify tickets CTA when raffle is active", async ({ page }) => {
+  test("purchase form does not show verify tickets CTA under submit", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     const purchaseForm = page.locator("#purchase-form")
     const hasPurchaseForm = await purchaseForm.isVisible().catch(() => false)
     test.skip(!hasPurchaseForm, "No active raffle on home")
 
-    const cta = page.getByTestId("purchase-verify-cta")
-    await expect(cta).toBeVisible()
-    await cta.getByRole("link", { name: "Buscar boletos" }).click()
-    await expect(page).toHaveURL(/\/verificar/)
-    await expect(page.getByRole("heading", { name: "Buscar boletos" })).toBeVisible()
+    await expect(page.getByTestId("purchase-verify-cta")).toHaveCount(0)
+    await expect(page.getByTestId("purchase-submit")).toBeVisible()
   })
 
   test("home shows live activity ticker when applicable", async ({ page }) => {

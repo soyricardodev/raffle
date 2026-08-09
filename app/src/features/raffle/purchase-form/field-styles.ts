@@ -48,27 +48,14 @@ export const paymentDetailsPanelClassName = cn(
 export const paymentCompletionBoxClassName =
   "flex flex-col gap-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3"
 
-/** CTA verificar boletos: amarillo suave, legible en light y dark. */
-export const verifyTicketsCtaCardClassName = cn(
-  "rounded-2xl border border-amber-400/50 bg-gradient-to-br from-amber-100 via-amber-50/90 to-card py-0 shadow-sm shadow-amber-500/15",
-  "dark:border-amber-500/40 dark:from-amber-500/22 dark:via-amber-500/12 dark:to-card dark:shadow-amber-500/10",
-)
-
-export const verifyTicketsCtaIconClassName = cn(
-  "flex size-10 shrink-0 items-center justify-center rounded-xl",
-  "bg-amber-200/90 text-amber-900",
-  "dark:bg-amber-500/35 dark:text-amber-50",
-)
-
-export const verifyTicketsCtaHintClassName = cn(
-  "text-center text-xs text-amber-900/75",
-  "dark:text-amber-100/85",
-)
-
-export const verifyTicketsCtaButtonClassName = cn(
-  "min-h-11 w-full border text-base font-semibold shadow-sm",
-  "border-amber-400/70 bg-amber-200 text-amber-950 hover:bg-amber-300/95",
-  "dark:border-amber-400/50 dark:bg-amber-500/40 dark:text-amber-50 dark:hover:bg-amber-500/55",
+/** CTA final de compra: contraste fuerte + animación (ver `.purchase-submit-cta`). */
+export const purchaseSubmitButtonClassName = cn(
+  "purchase-submit-cta",
+  "h-12 min-h-12 w-full gap-2 text-base font-bold tracking-wide sm:h-11 sm:min-h-11 sm:text-sm",
+  "border-0 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 text-white",
+  "shadow-lg shadow-emerald-600/35 ring-2 ring-emerald-400/55",
+  "hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 hover:shadow-xl hover:shadow-emerald-500/40",
+  "active:scale-[0.99]",
 )
 
 export {

@@ -112,6 +112,15 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           placeholder="Ej. María González"
         />
 
+        <CiInputField
+          prefix={ciPrefix}
+          number={ciNumber}
+          disabled={disabled}
+          error={hints.ci}
+          onPrefixChange={onCiPrefixChange}
+          onNumberChange={onCiNumberChange}
+        />
+
         <PhoneInputField
           value={customerPhone}
           mode={phoneMode}
@@ -135,15 +144,6 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           type="email"
           autoComplete="email"
           placeholder="tu@email.com"
-        />
-
-        <CiInputField
-          prefix={ciPrefix}
-          number={ciNumber}
-          disabled={disabled}
-          error={hints.ci}
-          onPrefixChange={onCiPrefixChange}
-          onNumberChange={onCiNumberChange}
         />
 
         <LocationFields
