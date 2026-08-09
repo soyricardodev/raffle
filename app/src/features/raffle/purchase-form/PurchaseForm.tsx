@@ -26,7 +26,7 @@ import {
 import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
 import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
 import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
-import { PurchaseVerifyTicketsCta } from "@/features/raffle/purchase-form/PurchaseVerifyTicketsCta"
+import { purchaseSubmitButtonClassName } from "@/features/raffle/purchase-form/field-styles"
 import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
 import {
   clampQuantity,
@@ -534,8 +534,9 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
           <div className="sticky bottom-0 z-20 -mx-6 border-t border-border/80 bg-background/95 px-6 py-3 backdrop-blur-sm sm:static sm:z-auto sm:mx-0 sm:border-0 sm:bg-transparent sm:px-0 sm:py-0 sm:backdrop-blur-none">
             <Button
               size="lg"
-              className="h-12 w-full text-base font-semibold shadow-md sm:h-10 sm:text-sm sm:shadow-none"
+              className={purchaseSubmitButtonClassName}
               data-testid="purchase-submit"
+              data-pending={isSubmitting ? "true" : undefined}
               disabled={disabled || isSubmitting || methods.length === 0}
               onClick={handleSubmit}
             >
@@ -547,15 +548,13 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
               ) : (
                 <>
                   Confirmar compra
-                  <span className="opacity-90">· {formatCurrency(total, priceCurrency)}</span>
+                  <span className="opacity-95">· {formatCurrency(total, priceCurrency)}</span>
                 </>
               )}
             </Button>
           </div>
         </CardContent>
       </Card>
-
-      <PurchaseVerifyTicketsCta />
 
       <PurchaseSuccessDialog
         result={successResult}

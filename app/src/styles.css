@@ -233,13 +233,122 @@
   animation: live-activity-pulse-dot 1.4s ease-in-out infinite;
 }
 
+@keyframes purchase-submit-bounce {
+  0%,
+  100% {
+    transform: translateY(0) scale(1);
+  }
+  35% {
+    transform: translateY(-3px) scale(1.025);
+  }
+  55% {
+    transform: translateY(0) scale(0.99);
+  }
+  70% {
+    transform: translateY(-1.5px) scale(1.01);
+  }
+}
+
+@keyframes purchase-submit-glow {
+  0%,
+  100% {
+    box-shadow:
+      0 10px 22px rgb(16 185 129 / 0.35),
+      0 0 0 2px rgb(52 211 153 / 0.5);
+  }
+  50% {
+    box-shadow:
+      0 16px 34px rgb(16 185 129 / 0.55),
+      0 0 0 3px rgb(52 211 153 / 0.75),
+      0 0 28px rgb(45 212 191 / 0.45);
+  }
+}
+
+@keyframes purchase-submit-shine {
+  0%,
+  55% {
+    transform: translateX(-140%) skewX(-16deg);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  85% {
+    transform: translateX(240%) skewX(-16deg);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translateX(240%) skewX(-16deg);
+    opacity: 0;
+  }
+}
+
+/** CTA “Confirmar compra”: rebote + glow + destello para captar atención. */
+.purchase-submit-cta {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  animation:
+    purchase-submit-bounce 2.35s ease-in-out infinite,
+    purchase-submit-glow 2.35s ease-in-out infinite;
+}
+
+.purchase-submit-cta::after {
+  content: "";
+  position: absolute;
+  inset: -10% auto -10% 0;
+  width: 42%;
+  background: linear-gradient(
+    105deg,
+    transparent 0%,
+    rgb(255 255 255 / 0.15) 35%,
+    rgb(255 255 255 / 0.55) 50%,
+    rgb(255 255 255 / 0.15) 65%,
+    transparent 100%
+  );
+  animation: purchase-submit-shine 2.8s ease-in-out infinite;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.purchase-submit-cta > * {
+  position: relative;
+  z-index: 2;
+}
+
+.purchase-submit-cta:hover {
+  animation-play-state: paused;
+}
+
+.purchase-submit-cta:hover::after {
+  animation-play-state: paused;
+}
+
+.purchase-submit-cta:disabled,
+.purchase-submit-cta[aria-disabled="true"],
+.purchase-submit-cta[data-pending="true"] {
+  animation: none;
+  transform: none;
+}
+
+.purchase-submit-cta:disabled::after,
+.purchase-submit-cta[aria-disabled="true"]::after,
+.purchase-submit-cta[data-pending="true"]::after {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sales-progress-fill,
   .sales-progress-shimmer,
   .sales-progress-track-overlay,
   .sales-progress-percent,
-  .live-activity-pulse-dot {
+  .live-activity-pulse-dot,
+  .purchase-submit-cta {
     animation: none;
+  }
+
+  .purchase-submit-cta::after {
+    display: none;
   }
 
   .live-activity-marquee-track {
