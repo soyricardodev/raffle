@@ -10,6 +10,7 @@ export async function invalidateAdminRaffleCaches(
 ) {
   const invalidations: Array<Promise<unknown>> = [
     queryClient.invalidateQueries({ queryKey: ["admin", "raffles"] }),
+    queryClient.invalidateQueries({ queryKey: homeQueryKeys.display }),
     queryClient.invalidateQueries({ queryKey: homeQueryKeys.firstActive }),
   ]
 

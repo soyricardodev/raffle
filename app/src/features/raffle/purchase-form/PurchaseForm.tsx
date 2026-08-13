@@ -1,5 +1,4 @@
 import { SpinnerGapIcon } from "@phosphor-icons/react"
-import type { PhoneInputMode } from "@raffle/shared/validators"
 import {
   type CedulaPrefix,
   type CustomerLocationType,
@@ -36,6 +35,7 @@ import {
 import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-payment-method-selection"
 import { usePurchasePricing } from "@/features/raffle/purchase-form/use-purchase-pricing"
 import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
+import { homeQueryKeys } from "@/features/home/home-queries"
 import { raffleLiveQueryKeys } from "@/features/raffle/raffle-live-queries"
 import { raffleQueryKeys } from "@/features/raffle/raffle-queries"
 import type {
@@ -127,7 +127,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const [customerEmail, setCustomerEmail] = useState("")
   const [ciPrefix, setCiPrefix] = useState<CedulaPrefix>("V")
   const [ciNumber, setCiNumber] = useState("")
-  const [phoneMode, setPhoneMode] = useState<PhoneInputMode>("venezuela")
   const [locationType, setLocationType] = useState<CustomerLocationType>("venezuela")
   const [selectedState, setSelectedState] = useState("")
   const [customLocation, setCustomLocation] = useState("")
@@ -177,7 +176,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     setCustomerEmail(profile.customerEmail)
     setCiPrefix(profile.ciPrefix)
     setCiNumber(profile.ciNumber)
-    setPhoneMode(profile.phoneMode)
     setLocationType(profile.locationType)
     setSelectedState(profile.selectedState)
     setCustomLocation(profile.customLocation)
@@ -223,10 +221,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const validationMessages = useMemo<PurchaseFormHints>(
     () => ({
       name: !customerName.trim() ? "Ingresa tu nombre completo" : undefined,
-      phone: !isValidCustomerPhone(customerPhone, phoneMode)
-        ? phoneMode === "other"
-          ? "Usa formato internacional (+código y número)"
-          : "Teléfono venezolano inválido (ej: 04121234567)"
+      phone: !isValidCustomerPhone(customerPhone)
+        ? "Teléfono inválido (ej: +58 412… o 0412…)"
         : undefined,
       email: emailHint(customerEmail),
       ci: ciHint(ciPrefix, ciNumber),
@@ -246,7 +242,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     [
       customerName,
       customerPhone,
-      phoneMode,
       customerEmail,
       ciPrefix,
       ciNumber,
@@ -313,7 +308,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         customerEmail: customerEmail.trim(),
         ciPrefix,
         ciNumber,
-        phoneMode,
         locationType,
         selectedState,
         customLocation,
@@ -324,7 +318,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         customerEmail: customerEmail.trim(),
         ciPrefix,
         ciNumber,
-        phoneMode,
         locationType,
         selectedState,
         customLocation,
@@ -341,6 +334,9 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       void queryClient.invalidateQueries({
         queryKey: raffleLiveQueryKeys.status(String(raffle.id)),
       })
+      void queryClient.invalidateQueries({ queryKey: homeQueryKeys.display })
+      void queryClient.invalidateQueries({ queryKey: homeQueryKeys.firstActive })
+      void queryClient.invalidateQueries({ queryKey: raffleQueryKeys.detail(String(raffle.id)) })
     },
     onError: (error: unknown) => {
       const fallback = "No se pudo procesar la compra"
@@ -350,7 +346,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       setSupportError(support)
       if (message.includes("método de pago") || message.includes("Método de pago")) {
         void queryClient.invalidateQueries({ queryKey: raffleQueryKeys.detail(String(raffle.id)) })
-        void queryClient.invalidateQueries({ queryKey: ["raffle", "first-active"] })
+        void queryClient.invalidateQueries({ queryKey: homeQueryKeys.display })
+        void queryClient.invalidateQueries({ queryKey: homeQueryKeys.firstActive })
       }
     },
   })
@@ -385,7 +382,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     setCustomerEmail("")
     setCiPrefix("V")
     setCiNumber("")
-    setPhoneMode("venezuela")
     setLocationType("venezuela")
     setSelectedState("")
     setCustomLocation("")
@@ -480,7 +476,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             customerEmail={customerEmail}
             ciPrefix={ciPrefix}
             ciNumber={ciNumber}
-            phoneMode={phoneMode}
             locationType={locationType}
             selectedState={selectedState}
             customLocation={customLocation}
@@ -492,7 +487,6 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             onCustomerEmailChange={setCustomerEmail}
             onCiPrefixChange={setCiPrefix}
             onCiNumberChange={setCiNumber}
-            onPhoneModeChange={setPhoneMode}
             onLocationTypeChange={setLocationType}
             onSelectedStateChange={setSelectedState}
             onCustomLocationChange={setCustomLocation}

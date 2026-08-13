@@ -1,5 +1,5 @@
 import { EnvelopeSimpleIcon, ShieldCheckIcon, UserCircleIcon } from "@phosphor-icons/react"
-import type { CedulaPrefix, CustomerLocationType, PhoneInputMode } from "@raffle/shared/validators"
+import type { CedulaPrefix, CustomerLocationType } from "@raffle/shared/validators"
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { FieldGroup } from "@/components/ui/field"
@@ -19,7 +19,6 @@ type CustomerDetailsStepProps = {
   customerEmail: string
   ciPrefix: CedulaPrefix
   ciNumber: string
-  phoneMode: PhoneInputMode
   locationType: CustomerLocationType
   selectedState: string
   customLocation: string
@@ -37,7 +36,6 @@ type CustomerDetailsStepProps = {
   onCustomerEmailChange: (value: string) => void
   onCiPrefixChange: (prefix: CedulaPrefix) => void
   onCiNumberChange: (number: string) => void
-  onPhoneModeChange: (mode: PhoneInputMode) => void
   onLocationTypeChange: (type: CustomerLocationType) => void
   onSelectedStateChange: (state: string) => void
   onCustomLocationChange: (value: string) => void
@@ -52,7 +50,6 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   customerEmail,
   ciPrefix,
   ciNumber,
-  phoneMode,
   locationType,
   selectedState,
   customLocation,
@@ -64,7 +61,6 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   onCustomerEmailChange,
   onCiPrefixChange,
   onCiNumberChange,
-  onPhoneModeChange,
   onLocationTypeChange,
   onSelectedStateChange,
   onCustomLocationChange,
@@ -123,11 +119,9 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
 
         <PhoneInputField
           value={customerPhone}
-          mode={phoneMode}
           disabled={disabled}
           error={hints.phone}
           onChange={onCustomerPhoneChange}
-          onModeChange={onPhoneModeChange}
         />
 
         <Separator />

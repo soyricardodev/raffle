@@ -181,6 +181,8 @@ export async function createPurchase(params: CreatePurchaseParams) {
       ticketsAvailable: raffle.ticketsAvailable,
     })
 
+    await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, params.raffleId)
+
     return {
       purchaseId,
       ticketNumbers,
@@ -205,17 +207,6 @@ export async function createPurchase(params: CreatePurchaseParams) {
     },
     "purchase:created",
   )
-
-  void (async () => {
-    try {
-      const autoCheck = await pauseService.checkAutoPause(params.raffleId)
-      if (autoCheck.needsPause && autoCheck.pauseType) {
-        await pauseService.pauseRaffle(params.raffleId, autoCheck.pauseType)
-      }
-    } catch (err) {
-      logger.error({ raffleId: params.raffleId, err }, "purchase:auto_pause_failed")
-    }
-  })()
 
   return result
 }
@@ -257,6 +248,7 @@ export async function updatePurchaseStatus(
         raffleId,
         currentStatus as "pending" | "approved" | "rejected",
       )
+      await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, raffleId)
     }
 
     return {
@@ -264,8 +256,6 @@ export async function updatePurchaseStatus(
       status,
       previousStatus: currentStatus,
       raffleId,
-      autoPauseEnabled: purchase.autoPauseEnabled,
-      pauseReason: purchase.pauseReason,
       noChange: false as const,
     }
   }, purchaseRetryOptions)
@@ -279,17 +269,6 @@ export async function updatePurchaseStatus(
     status,
   })
   logger.info({ purchaseId, newStatus: status }, "purchase:status_updated")
-
-  if (
-    outcome.status === "rejected" &&
-    outcome.autoPauseEnabled &&
-    outcome.pauseReason === "auto_full"
-  ) {
-    const availability = await pauseService.checkTicketAvailability(outcome.raffleId)
-    if (availability.available > 0) {
-      await pauseService.unpauseRaffle(outcome.raffleId)
-    }
-  }
 
   if (status === "approved" || status === "rejected") {
     const { sendPurchaseStatusEmail } = await import("./purchase-notifications")
@@ -340,6 +319,7 @@ export async function addTicketsToPurchase(
     const newTotal = purchase.totalAmountCents + additional
 
     await purchasesRepo.updatePurchaseTotals(tx, purchaseId, updatedQty, newTotal)
+    await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, purchase.raffleId)
 
     return {
       addedTickets: added,
@@ -358,17 +338,6 @@ export async function addTicketsToPurchase(
     ticketNumbers: result.addedTickets,
   })
   logger.info({ purchaseId, added: result.addedTickets.length }, "purchase:tickets_added")
-
-  void (async () => {
-    try {
-      const autoCheck = await pauseService.checkAutoPause(result.raffleId)
-      if (autoCheck.needsPause && autoCheck.pauseType) {
-        await pauseService.pauseRaffle(result.raffleId, autoCheck.pauseType)
-      }
-    } catch (err) {
-      logger.error({ raffleId: result.raffleId, err }, "purchase:add_tickets_auto_pause_failed")
-    }
-  })()
 
   return result
 }
@@ -415,6 +384,7 @@ export async function removeTicketsFromPurchase(
       ticketNumbers,
       purchase.status as "pending" | "approved" | "rejected",
     )
+    await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, purchase.raffleId)
 
     return {
       removedTickets: ticketNumbers,
@@ -422,8 +392,6 @@ export async function removeTicketsFromPurchase(
       newTotalAmount: newTotal / 100,
       deductedAmount: deduction / 100,
       raffleId: purchase.raffleId,
-      autoPauseEnabled: purchase.autoPauseEnabled,
-      pauseReason: purchase.pauseReason,
     }
   }, purchaseRetryOptions)
 
@@ -435,13 +403,6 @@ export async function removeTicketsFromPurchase(
     ticketNumbers: result.removedTickets,
   })
   logger.info({ purchaseId, removed: result.removedTickets.length }, "purchase:tickets_removed")
-
-  if (result.autoPauseEnabled && result.pauseReason === "auto_full") {
-    const availability = await pauseService.checkTicketAvailability(result.raffleId)
-    if (availability.available > 0) {
-      await pauseService.unpauseRaffle(result.raffleId)
-    }
-  }
 
   return result
 }
@@ -580,6 +541,7 @@ export async function reassignTicketsToPurchase(
 
     await purchasesRepo.updatePurchaseTotals(tx, purchaseId, ticketNumbers.length, newTotal)
     await purchasesRepo.updatePurchaseStatusRow(tx, purchaseId, "pending")
+    await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, purchase.raffleId)
 
     return {
       purchaseId,

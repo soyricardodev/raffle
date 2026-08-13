@@ -10,9 +10,8 @@ import { createPurchase } from "./purchase.service"
 const TOTAL = 10_000
 const PRE_SOLD = 9_950
 const FINAL_BATCH = 50
-const hasDatabase = Boolean(process.env.DATABASE_URL)
 
-describe.skipIf(!hasDatabase)("purchase near sellout", () => {
+describe("purchase near sellout", () => {
   let raffleId: number
   let anchorPurchaseId: number
   let rafflePaymentMethodId: number
@@ -52,7 +51,7 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
         customerPhone: "04120000001",
         customerPhoneNormalized: "04120000001",
         paymentMethod: "pago_movil",
-        paymentReference: "anchor-near-sellout",
+        paymentReference: "9000000001",
         ticketQuantity: PRE_SOLD,
         totalAmountCents: PRE_SOLD * 100,
         currency: "VES",
@@ -90,7 +89,7 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
         customerName: "Final Buyer",
         customerPhone: "04129999999",
         rafflePaymentMethodId,
-        paymentReference: `near-sellout-${Date.now()}`,
+        paymentReference: `${Date.now()}`.slice(-12),
         ticketQuantity: FINAL_BATCH,
       }),
     )
@@ -103,5 +102,7 @@ describe.skipIf(!hasDatabase)("purchase near sellout", () => {
     expect(raffle!.ticketsSold).toBe(PRE_SOLD)
     expect(raffle!.ticketsReserved).toBe(FINAL_BATCH)
     expect(raffle!.ticketsAvailable + raffle!.ticketsReserved + raffle!.ticketsSold).toBe(TOTAL)
+    expect(raffle!.status).toBe("finished")
+    expect(raffle!.pauseReason).toBeNull()
   })
 })

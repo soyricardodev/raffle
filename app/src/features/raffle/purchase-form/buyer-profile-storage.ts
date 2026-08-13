@@ -3,7 +3,6 @@ import {
   type CustomerLocationType,
   normalizeCountryScope,
 } from "@raffle/shared/validators"
-import type { PhoneInputMode } from "@raffle/shared/validators/buyer-identity"
 
 const STORAGE_KEY = "raffle:buyer-profile:v1"
 
@@ -13,7 +12,6 @@ export type SavedBuyerProfile = {
   customerEmail: string
   ciPrefix: CedulaPrefix
   ciNumber: string
-  phoneMode: PhoneInputMode
   locationType: CustomerLocationType
   selectedState: string
   customLocation: string
@@ -25,14 +23,13 @@ export function loadSavedBuyerProfile(): SavedBuyerProfile | null {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
-    const parsed = JSON.parse(raw) as Partial<SavedBuyerProfile> & { phoneMode?: string }
+    const parsed = JSON.parse(raw) as Partial<SavedBuyerProfile>
     if (
       !parsed.customerName ||
       !parsed.customerPhone ||
       !parsed.customerEmail ||
       !parsed.ciPrefix ||
       !parsed.ciNumber ||
-      !parsed.phoneMode ||
       !parsed.locationType
     ) {
       return null
@@ -43,7 +40,6 @@ export function loadSavedBuyerProfile(): SavedBuyerProfile | null {
       customerEmail: parsed.customerEmail,
       ciPrefix: parsed.ciPrefix,
       ciNumber: parsed.ciNumber,
-      phoneMode: normalizeCountryScope(parsed.phoneMode),
       locationType: normalizeCountryScope(parsed.locationType),
       selectedState: parsed.selectedState ?? "",
       customLocation: parsed.customLocation ?? "",
