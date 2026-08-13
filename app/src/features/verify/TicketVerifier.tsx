@@ -119,10 +119,8 @@ export function TicketVerifier({ initialSearch }: TicketVerifierProps) {
             {form.method === "phone" ? (
               <PhoneInputField
                 value={form.phone}
-                mode={form.phoneMode}
                 disabled={verifyMutation.isPending}
                 onChange={(phone) => patchForm({ phone })}
-                onModeChange={(phoneMode) => patchForm({ phoneMode })}
               />
             ) : form.method === "cedula" ? (
               <CiInputField

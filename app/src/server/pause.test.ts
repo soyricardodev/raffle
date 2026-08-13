@@ -1,19 +1,15 @@
-import { purchases, purchaseTickets, raffles } from "@raffle/shared/db"
-import { eq } from "drizzle-orm"
-import { afterAll, beforeAll, describe, expect, it } from "vitest"
+import { raffles } from "@raffle/shared/db"
+import { beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import {
-  checkAutoPause,
   checkTicketAvailability,
   getPauseInfo,
   pauseRaffle,
   unpauseRaffle,
 } from "./pause.service"
 
-const hasDatabase = Boolean(process.env.DATABASE_URL)
-
-describe.skipIf(!hasDatabase)("pause system", () => {
+describe("pause system", () => {
   let raffleId: number
 
   beforeAll(async () => {
@@ -41,26 +37,12 @@ describe.skipIf(!hasDatabase)("pause system", () => {
     raffleId = row!.id
   })
 
-  afterAll(async () => {
-    if (!raffleId) return
-    const db = getDb()
-    await db.delete(purchaseTickets).where(eq(purchaseTickets.raffleId, raffleId))
-    await db.delete(purchases).where(eq(purchases.raffleId, raffleId))
-    await db.delete(raffles).where(eq(raffles.id, raffleId))
-  })
-
   it("reports initial availability correctly", async () => {
     const av = await checkTicketAvailability(raffleId)
     expect(av.total).toBe(10)
     expect(av.available).toBe(10)
     expect(av.sold).toBe(0)
     expect(av.isFull).toBe(false)
-  })
-
-  it("does not trigger auto-pause when tickets are available", async () => {
-    const result = await checkAutoPause(raffleId)
-    expect(result.needsPause).toBe(false)
-    expect(result.availability?.available).toBe(10)
   })
 
   it("performs manual pause successfully", async () => {
@@ -89,39 +71,5 @@ describe.skipIf(!hasDatabase)("pause system", () => {
     expect(info.autoPauseEnabled).toBe(true)
     expect(info.availability.available).toBe(10)
     expect(info.availability.isFull).toBe(false)
-  })
-
-  it("triggers auto-pause when all tickets are sold", async () => {
-    const db = getDb()
-    await db
-      .update(raffles)
-      .set({ ticketsAvailable: 0, ticketsReserved: 0, ticketsSold: 10 })
-      .where(eq(raffles.id, raffleId))
-
-    const checkResult = await checkAutoPause(raffleId)
-    expect(checkResult.needsPause).toBe(true)
-    expect(checkResult.pauseType).toBe("auto_full")
-
-    await db
-      .update(raffles)
-      .set({ ticketsAvailable: 10, ticketsReserved: 0, ticketsSold: 0 })
-      .where(eq(raffles.id, raffleId))
-  })
-
-  it("does not auto-pause when available < minPurchase", async () => {
-    const db = getDb()
-    await db
-      .update(raffles)
-      .set({ ticketsAvailable: 1, ticketsReserved: 0, ticketsSold: 9 })
-      .where(eq(raffles.id, raffleId))
-
-    const checkResult = await checkAutoPause(raffleId)
-    expect(checkResult.needsPause).toBe(false)
-    expect(checkResult.availability?.available).toBe(1)
-
-    await db
-      .update(raffles)
-      .set({ ticketsAvailable: 10, ticketsReserved: 0, ticketsSold: 0 })
-      .where(eq(raffles.id, raffleId))
   })
 })

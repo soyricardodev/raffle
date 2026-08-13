@@ -2,7 +2,6 @@ import {
   formatCustomerCi,
   isValidCustomerCi,
   isValidCustomerPhone,
-  isValidVenezuelanMobile,
   normalizeCustomerCi,
   parseCustomerCi,
 } from "@raffle/shared/validators"
@@ -15,12 +14,11 @@ describe("buyer identity", () => {
     expect(normalizeCustomerCi("V12345678")).toBe("V12345678")
   })
 
-  it("validates Venezuelan mobile", () => {
-    expect(isValidVenezuelanMobile("04121234567")).toBe(true)
-    expect(isValidVenezuelanMobile("04131234567")).toBe(false)
-    expect(isValidCustomerPhone("04141234567", "venezuela")).toBe(true)
-    expect(isValidCustomerPhone("04161234567", "venezuela")).toBe(true)
-    expect(isValidCustomerPhone("+34600111222", "other")).toBe(true)
+  it("validates free-form phones", () => {
+    expect(isValidCustomerPhone("04121234567")).toBe(true)
+    expect(isValidCustomerPhone("+58 412 1234567")).toBe(true)
+    expect(isValidCustomerPhone("+34600111222")).toBe(true)
+    expect(isValidCustomerPhone("12")).toBe(false)
   })
 
   it("validates full CI string", () => {

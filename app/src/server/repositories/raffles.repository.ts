@@ -307,6 +307,38 @@ export async function setRaffleStatusRow(
   await tx.update(raffles).set(patch).where(eq(raffles.id, raffleId))
 }
 
+/**
+ * Keep raffle status aligned with ticket counters inside the same transaction.
+ * - active + no availability → finished
+ * - finished + availability → active
+ * - paused is never auto-changed (admin-only pause/resume)
+ */
+export async function reconcileRaffleAvailabilityStatus(
+  tx: DbTransaction,
+  raffleId: number,
+): Promise<RaffleStatus | null> {
+  const row = await findRaffleForUpdate(tx, raffleId)
+  if (!row) return null
+
+  const current = row.status as RaffleStatus
+  if (current === "paused" || current === "draft" || current === "cancelled") {
+    return null
+  }
+
+  if (row.ticketsAvailable <= 0) {
+    if (current === "finished") return null
+    await setRaffleStatusRow(tx, raffleId, "finished")
+    return "finished"
+  }
+
+  if (current === "finished") {
+    await setRaffleStatusRow(tx, raffleId, "active")
+    return "active"
+  }
+
+  return null
+}
+
 export async function finalizeExpiredRaffles(): Promise<number> {
   const db = getDb()
   const cutoff = new Date(Date.now() - 4 * 60 * 60 * 1000)

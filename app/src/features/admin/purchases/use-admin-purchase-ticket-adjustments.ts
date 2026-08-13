@@ -13,6 +13,7 @@ import {
   type PurchaseDetailApi,
 } from "@/features/admin/purchases/purchase-detail-api"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
+import { invalidateAdminRaffleCaches } from "@/features/admin/raffles/admin-raffle-cache"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatCurrencyForMethod } from "@/lib/format"
 
@@ -86,6 +87,7 @@ export function useAdminPurchaseTicketAdjustments({
     const data = await adminFetch<PurchaseDetailApi>(`/api/admin/purchases/${purchase.id}`)
     onUpdated(pickPurchaseDetailPatch(data))
     void queryClient.invalidateQueries({ queryKey: ["admin"] })
+    void invalidateAdminRaffleCaches(queryClient, purchase.raffle_id)
     setConfirm(null)
     setOperationDraft(getDefaultAdminTicketOperationDraft())
   }

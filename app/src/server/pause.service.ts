@@ -43,45 +43,6 @@ export async function checkTicketAvailability(raffleId: number): Promise<Availab
   return rafflesRepo.raffleAvailabilityFromCounters(row)
 }
 
-export interface AutoPauseResult {
-  needsPause: boolean
-  reason: string
-  pauseType?: PauseReason
-  availability?: Availability
-  minPurchase?: number
-}
-
-export async function checkAutoPause(raffleId: number): Promise<AutoPauseResult> {
-  const raffle = await rafflesRepo.findRaffleById(raffleId)
-  if (!raffle || raffle.status !== "active") {
-    return { needsPause: false, reason: "Rifa no activa o no encontrada" }
-  }
-
-  if (!raffle.autoPauseEnabled) {
-    return { needsPause: false, reason: "Pausa automática deshabilitada" }
-  }
-
-  const availability = rafflesRepo.raffleAvailabilityFromCounters(raffle)
-  const minPurchase = raffle.minPurchase
-
-  if (availability.isFull) {
-    return {
-      needsPause: true,
-      reason: "Todos los tickets están vendidos o reservados",
-      pauseType: "auto_full",
-      availability,
-      minPurchase,
-    }
-  }
-
-  return {
-    needsPause: false,
-    reason: "Tickets disponibles suficientes",
-    availability,
-    minPurchase,
-  }
-}
-
 export interface PauseResult {
   success: boolean
   pauseUntil?: Date
@@ -92,7 +53,7 @@ export interface PauseResult {
 
 export async function pauseRaffle(
   raffleId: number,
-  reason: PauseReason = "auto_full",
+  reason: PauseReason = "manual",
   durationMinutes: number | null = null,
 ): Promise<PauseResult> {
   try {

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { CreatePurchaseBody } from "./index.js"
 
 describe("CreatePurchaseBody Spanish messages", () => {
-  it("returns Spanish message for invalid phone length", () => {
+  it("returns Spanish message for invalid phone", () => {
     const result = CreatePurchaseBody.safeParse({
       raffleId: 1,
       customerName: "Juan",
@@ -17,7 +17,9 @@ describe("CreatePurchaseBody Spanish messages", () => {
     })
     expect(result.success).toBe(false)
     if (!result.success) {
-      expect(result.error.issues.some((i) => i.message.includes("7 dígitos"))).toBe(true)
+      expect(result.error.issues.some((i) => i.message.toLowerCase().includes("teléfono"))).toBe(
+        true,
+      )
     }
   })
 

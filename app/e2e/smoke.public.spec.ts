@@ -6,7 +6,7 @@ test.describe("public smoke", () => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     await expect(page).toHaveTitle(/rifas/i)
     await expect(
-      page.getByRole("navigation").getByRole("link", { name: "Buscar boletos" }),
+      page.getByRole("navigation").getByRole("link", { name: "Buscar mis boletos" }),
     ).toBeVisible()
   })
 
@@ -43,7 +43,7 @@ test.describe("public smoke", () => {
     await expect(page).toHaveTitle(/Iniciar sesión/i)
     await expect(page.locator('[data-slot="card-title"]')).toHaveText("Panel administrador")
     await expect(page.getByLabel("Email")).toBeVisible()
-    await expect(page.getByLabel("Contraseña")).toBeVisible()
+    await expect(page.getByRole("textbox", { name: "Contraseña" })).toBeVisible()
     await expect(page.getByRole("button", { name: "Entrar" })).toBeVisible()
   })
 })

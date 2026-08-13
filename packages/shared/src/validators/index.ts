@@ -138,34 +138,20 @@ export function isBolivarMethod(method: PaymentMethod): boolean {
 export const TicketNumber = z.string().regex(/^\d{4}$/, "Número de boleto inválido (0000-9999)")
 
 export {
-  applyVenezuelanMobilePrefix,
   CedulaPrefix,
   CountryScope,
   CustomerCi,
   CustomerEmail,
   CustomerPhone,
-  DEFAULT_VENEZUELAN_MOBILE_PREFIX,
   formatCustomerCi,
-  formatVenezuelanMobile,
   isValidCustomerCi,
   isValidCustomerPhone,
-  isValidInternationalPhone,
-  isValidVenezuelanMobile,
-  isVenezuelanMobilePrefix,
   normalizeCountryScope,
   normalizeCustomerCi,
-  type PhoneInputMode,
   parseCustomerCi,
-  parseVenezuelanMobilePrefix,
-  phoneDisplayValue,
+  phoneDigitCount,
   sanitizeCiDigits,
   sanitizePhoneInput,
-  splitVenezuelanMobile,
-  transitionPhoneScope,
-  updateVenezuelanMobileSuffix,
-  VENEZUELAN_MOBILE_PREFIXES,
-  type VenezuelanMobileParts,
-  type VenezuelanMobilePrefix,
 } from "./buyer-identity.js"
 
 /** VED currency: CI sin V/E/espacios */
@@ -218,8 +204,9 @@ export const CreatePurchaseBody = z.object({
   customerPhone: z
     .string()
     .trim()
-    .min(7, "El teléfono debe tener al menos 7 dígitos")
-    .max(20, "Teléfono demasiado largo"),
+    .min(1, "Ingresa tu teléfono")
+    .max(20, "Teléfono demasiado largo")
+    .refine((v) => isValidCustomerPhone(v), "Teléfono inválido (ej: +58 412… o 0412…)"),
   customerEmail: z.string().trim().min(1, "Ingresa tu email").email("Email inválido").max(100),
   customerCi: z
     .string()
@@ -286,33 +273,23 @@ export const UpdatePurchaseStatusInput = z.object({
 export type UpdatePurchaseStatusInput = z.infer<typeof UpdatePurchaseStatusInput>
 
 /** Admin: corregir datos del comprador en una compra individual. */
-export const UpdatePurchaseCustomerInput = z
-  .object({
-    customerName: z.string().trim().min(1, "Ingresa el nombre").max(200, "Nombre demasiado largo"),
-    customerPhone: z
-      .string()
-      .trim()
-      .min(7, "El teléfono debe tener al menos 7 dígitos")
-      .max(20, "Teléfono demasiado largo"),
-    customerEmail: z.string().trim().min(1, "Ingresa el email").email("Email inválido").max(100),
-    customerCi: z
-      .string()
-      .trim()
-      .min(1, "Ingresa la cédula")
-      .max(20)
-      .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
-    customerLocation: z.string().trim().min(1, "Indica la ubicación").max(100, "Ubicación demasiado larga"),
-  })
-  .superRefine((d, ctx) => {
-    const mode = d.customerPhone.trim().startsWith("+") ? "other" : "venezuela"
-    if (!isValidCustomerPhone(d.customerPhone, mode)) {
-      ctx.addIssue({
-        code: "custom",
-        message: "Teléfono inválido",
-        path: ["customerPhone"],
-      })
-    }
-  })
+export const UpdatePurchaseCustomerInput = z.object({
+  customerName: z.string().trim().min(1, "Ingresa el nombre").max(200, "Nombre demasiado largo"),
+  customerPhone: z
+    .string()
+    .trim()
+    .min(1, "Ingresa el teléfono")
+    .max(20, "Teléfono demasiado largo")
+    .refine((v) => isValidCustomerPhone(v), "Teléfono inválido"),
+  customerEmail: z.string().trim().min(1, "Ingresa el email").email("Email inválido").max(100),
+  customerCi: z
+    .string()
+    .trim()
+    .min(1, "Ingresa la cédula")
+    .max(20)
+    .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
+  customerLocation: z.string().trim().min(1, "Indica la ubicación").max(100, "Ubicación demasiado larga"),
+})
 export type UpdatePurchaseCustomerInput = z.infer<typeof UpdatePurchaseCustomerInput>
 
 /** Boletos fijos de la plataforma: enteros 0–9999 (10.000 boletos). */

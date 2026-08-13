@@ -6,10 +6,8 @@ import {
   isValidCustomerCi,
   isValidCustomerPhone,
   parseCustomerCi,
-  splitVenezuelanMobile,
   type CedulaPrefix,
   type CustomerLocationType,
-  type PhoneInputMode,
 } from "@raffle/shared/validators"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -32,13 +30,6 @@ const SHEET_WIDTH_CLASS =
   "z-[60] !w-full !max-w-full sm:!w-[min(96vw,28rem)] md:!w-[min(92vw,40rem)] lg:!w-[min(88vw,44rem)] sm:!max-w-[min(96vw,28rem)] md:!max-w-[min(92vw,40rem)] lg:!max-w-[min(88vw,44rem)]"
 
 const SHEET_LAYOUT_CLASS = "flex h-dvh max-h-dvh flex-col gap-0 overflow-hidden p-0"
-
-function inferPhoneMode(phone: string): PhoneInputMode {
-  const trimmed = phone.trim()
-  if (trimmed.startsWith("+")) return "other"
-  if (splitVenezuelanMobile(trimmed)) return "venezuela"
-  return "venezuela"
-}
 
 function ciPartsFromStored(ci: string | null | undefined): { prefix: CedulaPrefix; number: string } {
   const parsed = parseCustomerCi(ci?.trim() ?? "")
@@ -72,9 +63,6 @@ export function EditPurchaseCustomerSheet({
   const [customerName, setCustomerName] = useState(purchase.customer_name)
   const [customerPhone, setCustomerPhone] = useState(purchase.customer_phone)
   const [customerEmail, setCustomerEmail] = useState(purchase.customer_email?.trim() ?? "")
-  const [phoneMode, setPhoneMode] = useState<PhoneInputMode>(() =>
-    inferPhoneMode(purchase.customer_phone),
-  )
   const initialCi = ciPartsFromStored(purchase.customer_ci)
   const [ciPrefix, setCiPrefix] = useState<CedulaPrefix>(initialCi.prefix)
   const [ciNumber, setCiNumber] = useState(initialCi.number)
@@ -94,7 +82,6 @@ export function EditPurchaseCustomerSheet({
     setCustomerName(purchase.customer_name)
     setCustomerPhone(purchase.customer_phone)
     setCustomerEmail(purchase.customer_email?.trim() ?? "")
-    setPhoneMode(inferPhoneMode(purchase.customer_phone))
     const ci = ciPartsFromStored(purchase.customer_ci)
     setCiPrefix(ci.prefix)
     setCiNumber(ci.number)
@@ -121,7 +108,7 @@ export function EditPurchaseCustomerSheet({
 
   const nameValid = customerName.trim().length > 0
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
-  const phoneValid = isValidCustomerPhone(customerPhone, phoneMode)
+  const phoneValid = isValidCustomerPhone(customerPhone)
   const ciValid = formattedCi.length > 0 && isValidCustomerCi(formattedCi)
   const locationValid = !customerLocationFieldError(locationType, selectedState, customLocation)
 
@@ -212,15 +199,10 @@ export function EditPurchaseCustomerSheet({
               <div className="min-w-0">
                 <PhoneInputField
                   value={customerPhone}
-                  mode={phoneMode}
                   disabled={pending}
                   error={phoneHint}
                   onChange={(value) => {
                     setCustomerPhone(value)
-                    setPhoneHint(undefined)
-                  }}
-                  onModeChange={(mode) => {
-                    setPhoneMode(mode)
                     setPhoneHint(undefined)
                   }}
                 />

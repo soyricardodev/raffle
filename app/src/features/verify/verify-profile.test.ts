@@ -12,7 +12,6 @@ const profile: SavedBuyerProfile = {
   customerEmail: "r@example.com",
   ciPrefix: "V",
   ciNumber: "12345678",
-  phoneMode: "venezuela",
   locationType: "venezuela",
   selectedState: "Carabobo",
   customLocation: "",

@@ -163,6 +163,9 @@ export async function signInAdmin(request: APIRequestContext): Promise<void> {
   await ensureAdminSession(request)
 }
 
-export function uniqueRef(prefix: string): string {
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
+export function uniqueRef(_prefix = "ref"): string {
+  // Pago móvil (and similar) only accept digits in the payment reference.
+  return `${Date.now()}${Math.floor(Math.random() * 1_000_000)
+    .toString()
+    .padStart(6, "0")}`.slice(0, 12)
 }
