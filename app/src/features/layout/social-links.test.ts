@@ -109,6 +109,8 @@ describe("social-links", () => {
       "tiktok",
       "telegram",
     ])
+    expect(links.find((l) => l.id === "instagram")?.iconSrc).toBe("/brand/social/instagram.svg")
+    expect(links.find((l) => l.id === "facebook")?.iconSrc).toBe("/brand/social/facebook.svg")
     expect(links.find((l) => l.id === "tiktok")?.iconSrc).toBe("/brand/social/tiktok.svg")
     expect(links.find((l) => l.id === "telegram")?.iconSrc).toBe("/brand/social/telegram.svg")
   })

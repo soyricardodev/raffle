@@ -73,6 +73,10 @@ export function TikTokIcon({ className, ...props }: SVGProps<SVGSVGElement>) {
   )
 }
 
+export function hasInlineSocialBrandIcon(id: string): boolean {
+  return id === "telegram" || id === "tiktok"
+}
+
 export function SocialBrandIcon({
   id,
   className,
@@ -92,8 +96,9 @@ export function SocialLinkIcon({
   iconSrc?: string
   className?: string
 }) {
-  const brand = <SocialBrandIcon id={id} className={className} />
-  if (brand) return brand
+  if (hasInlineSocialBrandIcon(id)) {
+    return <SocialBrandIcon id={id} className={className} />
+  }
   if (iconSrc) {
     return <img src={iconSrc} alt="" className={className} aria-hidden />
   }
