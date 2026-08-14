@@ -365,7 +365,7 @@ html[data-sticky-purchase-cta] .public-site-footer {
   padding-bottom: calc(var(--sticky-purchase-cta-height) + 1rem);
 }
 
-html[data-sticky-purchase-cta] .whatsapp-fab {
+html[data-sticky-purchase-cta] .support-fab {
   bottom: calc(var(--sticky-purchase-cta-height) + 1rem + env(safe-area-inset-bottom, 0px));
 }
 

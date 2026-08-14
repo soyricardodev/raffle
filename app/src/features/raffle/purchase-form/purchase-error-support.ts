@@ -4,7 +4,7 @@ import {
   isNetworkFailure,
 } from "@/lib/api-client-error"
 import { getApiErrorMessage, normalizeFetchError } from "@/lib/api-error-message"
-import { whatsAppHrefWithText } from "@/features/layout/social-links"
+import type { ResolvedSupportChannel } from "@/features/layout/social-links"
 
 export type PurchaseSupportErrorState = {
   message: string
@@ -21,7 +21,7 @@ export type PurchaseSupportContext = {
   pageUrl?: string
 }
 
-/** Server / network failures that warrant WhatsApp support handoff (not validation). */
+/** Server / network failures that warrant support-channel handoff (not validation). */
 export function isPurchaseSupportableError(error: unknown): boolean {
   if (error instanceof ApiClientError) {
     if (error.code === "NETWORK_ERROR" || error.code === "RESPONSE_PARSE_ERROR") {
@@ -63,7 +63,7 @@ export function resolvePurchaseSupportError(
   }
 }
 
-export function buildPurchaseSupportWhatsAppMessage(
+export function buildPurchaseSupportMessage(
   support: PurchaseSupportErrorState,
   context: PurchaseSupportContext,
 ): string {
@@ -85,13 +85,13 @@ export function buildPurchaseSupportWhatsAppMessage(
   return lines.join("\n")
 }
 
-export function buildPurchaseSupportWhatsAppHref(
-  whatsappDigits: string,
+export function buildPurchaseSupportHref(
+  channel: ResolvedSupportChannel,
   support: PurchaseSupportErrorState,
   context: PurchaseSupportContext,
 ): string {
-  return whatsAppHrefWithText(
-    whatsappDigits,
-    buildPurchaseSupportWhatsAppMessage(support, context),
-  )
+  return channel.supportHrefWithText(buildPurchaseSupportMessage(support, context))
 }
+
+/** @deprecated Use buildPurchaseSupportMessage. */
+export const buildPurchaseSupportWhatsAppMessage = buildPurchaseSupportMessage

@@ -32,7 +32,18 @@ export function whatsAppHrefWithText(digits: string, message: string): string {
   return `${base}?text=${encodeURIComponent(text)}`
 }
 
-export function buildRejectionSupportWhatsAppMessage(
+export function telegramHrefWithText(value: string, message: string): string {
+  const trimmed = value.trim()
+  if (!trimmed) return ""
+  const base = /^https?:\/\//i.test(trimmed)
+    ? trimmed
+    : `https://t.me/${trimmed.replace(/^@/, "")}`
+  const text = message.trim()
+  if (!text) return base
+  return `${base}?text=${encodeURIComponent(text)}`
+}
+
+export function buildRejectionSupportMessage(
   ctx: Pick<
     PurchaseEmailContext,
     "customerName" | "customerPhone" | "customerCi" | "purchaseId" | "raffleName" | "notes"
@@ -62,3 +73,6 @@ export function buildRejectionSupportWhatsAppMessage(
 
   return lines.join("\n")
 }
+
+/** @deprecated Use buildRejectionSupportMessage. */
+export const buildRejectionSupportWhatsAppMessage = buildRejectionSupportMessage

@@ -1,10 +1,13 @@
 import { describe, expect, it } from "vitest"
 import {
+  buildPurchaseFinalizeSupportMessage,
   buildPurchaseFinalizeWhatsAppMessage,
   buildSocialLinks,
   facebookHref,
   instagramHref,
+  resolveSupportChannel,
   telegramHref,
+  telegramHrefWithText,
   tiktokHref,
   whatsAppChannelHref,
   whatsAppHref,
@@ -22,14 +25,51 @@ describe("social-links", () => {
   })
 
   it("builds purchase finalize message", () => {
-    const message = buildPurchaseFinalizeWhatsAppMessage({
+    const message = buildPurchaseFinalizeSupportMessage({
       customerName: "Ana López",
       raffleName: "Gran Rifa",
       ticketCount: 3,
+      channelLabel: "Telegram",
     })
     expect(message).toContain("Ana López")
     expect(message).toContain("Gran Rifa")
     expect(message).toContain("3 boletos")
+    expect(message).toContain("Telegram")
+    expect(
+      buildPurchaseFinalizeWhatsAppMessage({
+        customerName: "Ana López",
+        raffleName: "Gran Rifa",
+        ticketCount: 3,
+      }),
+    ).toContain("WhatsApp")
+  })
+
+  it("builds Telegram link with prefilled text", () => {
+    const href = telegramHrefWithText("yoiberifas", "Hola, soy Ana")
+    expect(href).toBe(`https://t.me/yoiberifas?text=${encodeURIComponent("Hola, soy Ana")}`)
+  })
+
+  it("resolves Telegram by default and WhatsApp when enabled", () => {
+    const telegram = resolveSupportChannel({
+      whatsappEnabled: false,
+      social: { telegram: "", whatsapp: "584121234567" },
+    })
+    expect(telegram.kind).toBe("telegram")
+    expect(telegram.supportHref).toBe("https://t.me/yoiberifas")
+    expect(telegram.channelHref).toBe("https://t.me/yoiberrifascanal")
+
+    const ignored = resolveSupportChannel({
+      whatsappEnabled: true,
+      social: { telegram: "yoiberifas", whatsapp: "584121234567", support_channel: "telegram" },
+    })
+    expect(ignored.kind).toBe("telegram")
+
+    const whatsapp = resolveSupportChannel({
+      whatsappEnabled: true,
+      social: { telegram: "yoiberifas", whatsapp: "584121234567", support_channel: "whatsapp" },
+    })
+    expect(whatsapp.kind).toBe("whatsapp")
+    expect(whatsapp.supportHref).toBe("https://wa.me/584121234567")
   })
 
   it("keeps WhatsApp channel invite URLs intact", () => {
@@ -70,6 +110,7 @@ describe("social-links", () => {
       "telegram",
     ])
     expect(links.find((l) => l.id === "tiktok")?.iconSrc).toBe("/brand/social/tiktok.svg")
+    expect(links.find((l) => l.id === "telegram")?.iconSrc).toBe("/brand/social/telegram.svg")
   })
 
   it("uses WhatsApp channel URL when provided for banner-style links", () => {

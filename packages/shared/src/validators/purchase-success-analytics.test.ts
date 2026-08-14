@@ -11,6 +11,14 @@ describe("PurchaseSuccessAnalyticsInputSchema", () => {
     expect(parsed.success).toBe(true)
   })
 
+  it("accepts telegram_cta_click with reminder source", () => {
+    const parsed = PurchaseSuccessAnalyticsInputSchema.safeParse({
+      event: "telegram_cta_click",
+      properties: { purchaseId: 26, ticketCount: 191, source: "reminder_toast" },
+    })
+    expect(parsed.success).toBe(true)
+  })
+
   it("accepts whatsapp_cta_click with reminder source", () => {
     const parsed = PurchaseSuccessAnalyticsInputSchema.safeParse({
       event: "whatsapp_cta_click",

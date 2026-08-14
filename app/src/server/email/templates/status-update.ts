@@ -1,7 +1,9 @@
 import type { EmailBrandingContext } from "../email-branding.server"
+import { DEFAULT_TELEGRAM_SUPPORT } from "@/features/layout/social-links"
 import {
-  buildRejectionSupportWhatsAppMessage,
+  buildRejectionSupportMessage,
   escapeHtml,
+  telegramHrefWithText,
   whatsAppHrefWithText,
 } from "../email-html"
 import {
@@ -40,16 +42,17 @@ export function buildStatusUpdateEmail(
         "rgba(239, 68, 68, 0.35)",
       )
 
-  const supportWhatsAppHref =
-    !approved && branding.whatsapp
-      ? whatsAppHrefWithText(
-          branding.whatsapp,
-          buildRejectionSupportWhatsAppMessage(ctx),
-        )
-      : ""
+  const rejectionMessage = buildRejectionSupportMessage(ctx)
+  const useWhatsApp = Boolean(branding.whatsappEnabled && branding.whatsapp)
+  const supportHref = !approved
+    ? useWhatsApp
+      ? whatsAppHrefWithText(branding.whatsapp, rejectionMessage)
+      : telegramHrefWithText(branding.telegram || DEFAULT_TELEGRAM_SUPPORT, rejectionMessage)
+    : ""
+  const supportLabel = useWhatsApp ? "WhatsApp" : "Telegram"
 
-  const supportCta = supportWhatsAppHref
-    ? renderPrimaryCta(supportWhatsAppHref, "Resolver por WhatsApp", branding.colors)
+  const supportCta = supportHref
+    ? renderPrimaryCta(supportHref, `Resolver por ${supportLabel}`, branding.colors)
     : ""
 
   const bodyHtml = [
@@ -58,7 +61,7 @@ export function buildStatusUpdateEmail(
     renderSubtext(
       approved
         ? "Tus boletos quedaron oficialmente registrados."
-        : "No pudimos validar tu pago. Revisa el motivo indicado abajo y contáctanos por WhatsApp para resolverlo.",
+        : `No pudimos validar tu pago. Revisa el motivo indicado abajo y contáctanos por ${supportLabel} para resolverlo.`,
     ),
     badge,
     reasonNote,

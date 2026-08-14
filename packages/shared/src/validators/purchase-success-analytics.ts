@@ -3,6 +3,7 @@ import { z } from "zod"
 export const PURCHASE_SUCCESS_ANALYTICS_EVENTS = [
   "purchase_success_open",
   "whatsapp_cta_click",
+  "telegram_cta_click",
   "instagram_cta_click",
   "tiktok_cta_click",
   "social_cta_click",
@@ -31,6 +32,15 @@ export const PurchaseSuccessAnalyticsInputSchema = z.discriminatedUnion("event",
   }),
   z.object({
     event: z.literal("whatsapp_cta_click"),
+    properties: z.object({
+      purchaseId: baseProps.purchaseId,
+      ticketCount: z.number().int().nonnegative(),
+      source: z.enum(["drawer", "reminder_toast"]).optional(),
+    }),
+    sessionId: z.string().trim().max(64).optional(),
+  }),
+  z.object({
+    event: z.literal("telegram_cta_click"),
     properties: z.object({
       purchaseId: baseProps.purchaseId,
       ticketCount: z.number().int().nonnegative(),

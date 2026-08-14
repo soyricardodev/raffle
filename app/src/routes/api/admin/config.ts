@@ -3,6 +3,7 @@ import { apiHandlers } from "@/lib/api-handler"
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
 import { requireAdmin } from "@/lib/auth-utils.server"
+import { getEnv } from "@/lib/env"
 import {
   getSiteConfigMap,
   updateSiteConfigKey,
@@ -23,7 +24,10 @@ export const Route = createFileRoute("/api/admin/config")({
     handlers: apiHandlers({
       GET: async ({ request }) => {
         await requireAdmin(request)
-        return Response.json(await getSiteConfigMap())
+        return Response.json({
+          ...(await getSiteConfigMap()),
+          features: { whatsapp_enabled: getEnv().ENABLE_WHATSAPP },
+        })
       },
       PUT: async ({ request }) => {
         await requireAdmin(request)

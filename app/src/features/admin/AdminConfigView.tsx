@@ -61,6 +61,9 @@ export function AdminConfigView() {
   }, [configQuery.data])
 
   const isDirty = useMemo(() => !draftsEqual(draft, saved), [draft, saved])
+  const whatsappEnabled = Boolean(
+    (configQuery.data?.features as { whatsapp_enabled?: boolean } | undefined)?.whatsapp_enabled,
+  )
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -364,6 +367,7 @@ export function AdminConfigView() {
               update("purchase_success_promo", purchase_success_promo)
             }
             fieldError={fieldError}
+            whatsappEnabled={whatsappEnabled}
           />
         </TabsContent>
 
@@ -415,7 +419,9 @@ export function AdminConfigView() {
           <Card>
             <CardHeader>
               <CardTitle>Contacto y redes</CardTitle>
-              <CardDescription>Datos visibles en el pie y botón de WhatsApp.</CardDescription>
+              <CardDescription>
+                Elige el canal de soporte. Por defecto es Telegram.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <FieldGroup>
@@ -450,14 +456,69 @@ export function AdminConfigView() {
                   />
                 </Field>
                 <Field>
-                  <FieldLabel htmlFor="whatsapp">WhatsApp (solo números)</FieldLabel>
+                  <FieldLabel id="support-channel-label">Canal de soporte</FieldLabel>
+                  <div
+                    role="group"
+                    aria-labelledby="support-channel-label"
+                    className="grid grid-cols-2 gap-2"
+                  >
+                    <Button
+                      type="button"
+                      variant={draft.support_channel === "telegram" ? "default" : "outline"}
+                      className="min-h-11"
+                      aria-pressed={draft.support_channel === "telegram"}
+                      onClick={() => update("support_channel", "telegram")}
+                    >
+                      Telegram
+                    </Button>
+                    <Button
+                      type="button"
+                      variant={draft.support_channel === "whatsapp" ? "default" : "outline"}
+                      className="min-h-11"
+                      aria-pressed={draft.support_channel === "whatsapp"}
+                      disabled={!whatsappEnabled}
+                      onClick={() => update("support_channel", "whatsapp")}
+                    >
+                      WhatsApp
+                    </Button>
+                  </div>
+                  <FieldDescription>
+                    {whatsappEnabled
+                      ? "FAB, verify, errores, post-compra y emails de rechazo usan este canal."
+                      : "WhatsApp está desactivado (ENABLE_WHATSAPP=false). El soporte usa Telegram."}
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="telegram">Telegram (soporte)</FieldLabel>
+                  <Input
+                    id="telegram"
+                    className="min-h-11"
+                    value={draft.telegram}
+                    onChange={(e) => update("telegram", e.target.value)}
+                    placeholder="yoiberifas o https://t.me/yoiberifas"
+                  />
+                  <FieldDescription>
+                    Usuario o URL de soporte. Si lo dejas vacío se usa yoiberifas.
+                  </FieldDescription>
+                </Field>
+                <Field>
+                  <FieldLabel htmlFor="whatsapp">
+                    WhatsApp (solo números)
+                    {!whatsappEnabled ? " — inactivo" : ""}
+                  </FieldLabel>
                   <Input
                     id="whatsapp"
                     className="min-h-11"
                     value={draft.whatsapp}
                     onChange={(e) => update("whatsapp", e.target.value)}
                     placeholder="584121234567"
+                    disabled={!whatsappEnabled}
                   />
+                  {!whatsappEnabled ? (
+                    <FieldDescription>
+                      Desactivado por env. Activa ENABLE_WHATSAPP para poder elegirlo.
+                    </FieldDescription>
+                  ) : null}
                 </Field>
                 <Field>
                   <FieldLabel htmlFor="instagram">Instagram</FieldLabel>
@@ -487,16 +548,6 @@ export function AdminConfigView() {
                     value={draft.tiktok}
                     onChange={(e) => update("tiktok", e.target.value)}
                     placeholder="@usuario o URL"
-                  />
-                </Field>
-                <Field>
-                  <FieldLabel htmlFor="telegram">Telegram</FieldLabel>
-                  <Input
-                    id="telegram"
-                    className="min-h-11"
-                    value={draft.telegram}
-                    onChange={(e) => update("telegram", e.target.value)}
-                    placeholder="@canal o URL"
                   />
                 </Field>
               </FieldGroup>

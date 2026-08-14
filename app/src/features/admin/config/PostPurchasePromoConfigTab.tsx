@@ -9,6 +9,7 @@ type PostPurchasePromoConfigTabProps = {
   promo: PurchaseSuccessPromo
   onChange: (promo: PurchaseSuccessPromo) => void
   fieldError: (path: string) => string | undefined
+  whatsappEnabled?: boolean
 }
 
 function FieldContentSwitch({
@@ -39,6 +40,7 @@ export function PostPurchasePromoConfigTab({
   promo,
   onChange,
   fieldError,
+  whatsappEnabled = false,
 }: PostPurchasePromoConfigTabProps) {
   function patch<K extends keyof PurchaseSuccessPromo>(key: K, value: PurchaseSuccessPromo[K]) {
     onChange({ ...promo, [key]: value })
@@ -49,7 +51,7 @@ export function PostPurchasePromoConfigTab({
       <CardHeader>
         <CardTitle>Drawer post-compra</CardTitle>
         <CardDescription>
-          Se muestra solo en la primera compra del comprador. El botón de finalización usa el WhatsApp
+          Se muestra solo en la primera compra del comprador. El botón de finalización usa Telegram
           de la pestaña Contacto con un mensaje prellenado. Las redes de Contacto también aparecen
           en el drawer.
         </CardDescription>
@@ -91,9 +93,26 @@ export function PostPurchasePromoConfigTab({
             <FieldDescription>Máx. 300 caracteres.</FieldDescription>
             <FieldError>{fieldError("purchase_success_promo.description")}</FieldError>
           </Field>
+          <Field data-invalid={!!fieldError("purchase_success_promo.telegram_channel_url")}>
+            <FieldLabel htmlFor="purchase-success-promo-telegram">Canal de Telegram</FieldLabel>
+            <Input
+              id="purchase-success-promo-telegram"
+              type="url"
+              className="min-h-11"
+              value={promo.telegram_channel_url}
+              onChange={(e) => patch("telegram_channel_url", e.target.value)}
+              placeholder="https://t.me/yoiberrifascanal"
+              aria-invalid={!!fieldError("purchase_success_promo.telegram_channel_url")}
+            />
+            <FieldDescription>
+              URL del canal. Si lo dejas vacío se usa https://t.me/yoiberrifascanal.
+            </FieldDescription>
+            <FieldError>{fieldError("purchase_success_promo.telegram_channel_url")}</FieldError>
+          </Field>
           <Field data-invalid={!!fieldError("purchase_success_promo.whatsapp_channel_url")}>
             <FieldLabel htmlFor="purchase-success-promo-whatsapp">
               Canal o comunidad de WhatsApp
+              {!whatsappEnabled ? " — inactivo" : ""}
             </FieldLabel>
             <Input
               id="purchase-success-promo-whatsapp"
@@ -105,7 +124,9 @@ export function PostPurchasePromoConfigTab({
               aria-invalid={!!fieldError("purchase_success_promo.whatsapp_channel_url")}
             />
             <FieldDescription>
-              URL de invitación al canal (no uses el número de soporte).
+              {whatsappEnabled
+                ? "URL de invitación al canal (no uses el número de soporte)."
+                : "Desactivado (ENABLE_WHATSAPP=false). No se muestra en el sitio."}
             </FieldDescription>
             <FieldError>{fieldError("purchase_success_promo.whatsapp_channel_url")}</FieldError>
           </Field>

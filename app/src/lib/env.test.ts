@@ -42,6 +42,27 @@ describe("getEnv", () => {
     expect(parsed.DATABASE_URL).toContain("libsql://")
   })
 
+  it("defaults ENABLE_WHATSAPP to false", () => {
+    resetEnvCache()
+    delete process.env.ENABLE_WHATSAPP
+    process.env.DATABASE_URL = "file:./packages/shared/data/raffle.db"
+    process.env.NODE_ENV = "test"
+    expect(getEnv().ENABLE_WHATSAPP).toBe(false)
+  })
+
+  it("parses ENABLE_WHATSAPP true from true/1", () => {
+    resetEnvCache()
+    process.env.DATABASE_URL = "file:./packages/shared/data/raffle.db"
+    process.env.NODE_ENV = "test"
+    process.env.ENABLE_WHATSAPP = "true"
+    expect(getEnv().ENABLE_WHATSAPP).toBe(true)
+
+    resetEnvCache()
+    process.env.ENABLE_WHATSAPP = "1"
+    expect(getEnv().ENABLE_WHATSAPP).toBe(true)
+    delete process.env.ENABLE_WHATSAPP
+  })
+
   it("maps legacy mysql DATABASE_URL to libsql file in development", () => {
     process.env.DATABASE_URL = "mysql://root:pass@localhost:3306/legacy"
     process.env.NODE_ENV = "development"

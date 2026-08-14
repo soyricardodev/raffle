@@ -41,6 +41,7 @@ function cloneSocial(value?: SocialMedia): SocialMedia {
     facebook: value?.facebook ?? "",
     tiktok: value?.tiktok ?? "",
     telegram: value?.telegram ?? "",
+    support_channel: value?.support_channel === "whatsapp" ? "whatsapp" : "telegram",
   }
 }
 
@@ -71,6 +72,7 @@ export type PublicBranding = {
   colors: SiteColors | undefined
   seo: SeoConfig
   purchaseSuccessPromo: PurchaseSuccessPromo
+  whatsappEnabled: boolean
 }
 
 export function resolvePublicBranding(
@@ -90,6 +92,7 @@ export function resolvePublicBranding(
     purchaseSuccessPromo: payload.purchase_success_promo
       ? normalizePurchaseSuccessPromo(payload.purchase_success_promo)
       : clonePurchaseSuccessPromo(),
+    whatsappEnabled: payload.features?.whatsapp_enabled ?? false,
   }
 }
 

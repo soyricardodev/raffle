@@ -13,7 +13,7 @@ Estados: `hecho` | `parcial` | `faltante`
 | Verificador en home | Sí | Sí (colapsable) | hecho | P1 |
 | Progreso vendidos+reservados | Sí | Sí | hecho | P1 |
 | Imagen rifa / premios con foto | Sí | Sí | hecho | P2 |
-| WhatsApp flotante | Sí | Sí | hecho | P2 |
+| Telegram flotante | Sí (WhatsApp) | Sí (Telegram; WhatsApp por ENABLE_WHATSAPP) | hecho | P2 |
 | In-app browser redirect | Sí | Sí | hecho | P2 |
 | Galería finalizadas + links | Sí | Parcial (links a /rifa) | parcial | P2 |
 | Pausa countdown overlay | Sí | Sí (PauseBanner) | hecho | P1 |

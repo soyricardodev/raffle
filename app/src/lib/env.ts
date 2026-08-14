@@ -30,6 +30,11 @@ const envSchema = z
     INNGEST_EVENT_KEY: z.string().optional(),
     INNGEST_SIGNING_KEY: z.string().optional(),
     LOG_LEVEL: z.enum(["trace", "debug", "info", "warn", "error"]).default("info"),
+    /** When true, WhatsApp becomes the public support channel again. Default: Telegram. */
+    ENABLE_WHATSAPP: z
+      .string()
+      .optional()
+      .transform((value) => value === "true" || value === "1"),
   })
   .refine((data) => data.NODE_ENV !== "production" || Boolean(data.DATABASE_URL), {
     message: "DATABASE_URL is required in production",

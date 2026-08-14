@@ -13,6 +13,7 @@ export {
 const FUNNEL_LABELS: Record<string, string> = {
   purchase_success_open: "Abrió confirmación",
   whatsapp_cta_click: "Clic WhatsApp",
+  telegram_cta_click: "Clic Telegram",
   instagram_cta_click: "Clic Instagram",
   tickets_expand: "Expandió boletos",
   tickets_collapse: "Colapsó boletos",

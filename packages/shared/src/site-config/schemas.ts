@@ -26,12 +26,20 @@ export const ContactInfoSchema = z.object({
   address: z.string().trim().max(200),
 })
 
+export const SupportChannelSchema = z.enum(["telegram", "whatsapp"])
+
+export function normalizeSupportChannel(raw: unknown): "telegram" | "whatsapp" {
+  return raw === "whatsapp" ? "whatsapp" : "telegram"
+}
+
 export const SocialMediaSchema = z.object({
   whatsapp: z.string().trim().max(20),
   instagram: z.string().trim().max(200),
   facebook: z.string().trim().max(200),
   tiktok: z.string().trim().max(200).default(""),
   telegram: z.string().trim().max(200).default(""),
+  /** Public support channel. WhatsApp also requires ENABLE_WHATSAPP. */
+  support_channel: SupportChannelSchema.default("telegram"),
 })
 
 export const HeroConfigSchema = z.object({
@@ -78,6 +86,8 @@ export const PurchaseSuccessPromoSchema = z.object({
   description: z.string().trim().max(300).default(""),
   /** Full WhatsApp channel/community invite URL (not wa.me digits). */
   whatsapp_channel_url: httpsUrlOrEmpty.default(""),
+  /** Full Telegram channel/community invite URL. */
+  telegram_channel_url: httpsUrlOrEmpty.default(""),
   /** Instagram handle or profile URL for community/promo. */
   instagram_url: z.string().trim().max(200).default(""),
   /** TikTok handle or profile URL for community/promo. */

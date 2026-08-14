@@ -2,15 +2,13 @@ import type { RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import type { ResolvedPurchaseSuccessPromo } from "@/features/raffle/purchase-form/resolve-purchase-success-promo"
 
-const WHATSAPP_ICON = "/brand/social/whatsapp.svg"
-
 type PurchaseSuccessPromoSectionProps = {
   promo: ResolvedPurchaseSuccessPromo
-  whatsappLinkRef: RefObject<HTMLAnchorElement | null>
+  supportLinkRef: RefObject<HTMLAnchorElement | null>
   logoSrc?: string | null
   raffleImageUrl?: string | null
   raffleName?: string
-  onWhatsappClick: () => void
+  onSupportClick: () => void
   onInstagramClick: () => void
   onTiktokClick: () => void
   onSocialLinkClick: (id: string) => void
@@ -18,23 +16,23 @@ type PurchaseSuccessPromoSectionProps = {
 
 export function PurchaseSuccessPromoSection({
   promo,
-  whatsappLinkRef,
+  supportLinkRef,
   logoSrc,
   raffleImageUrl,
   raffleName,
-  onWhatsappClick,
+  onSupportClick,
   onInstagramClick,
   onTiktokClick,
   onSocialLinkClick,
 }: PurchaseSuccessPromoSectionProps) {
   if (!promo.shouldShow) return null
 
-  const hasFinalizeCta = Boolean(promo.whatsappFinalizeHref)
+  const hasFinalizeCta = Boolean(promo.supportFinalizeHref)
   const finalizeTitle = hasFinalizeCta
     ? "Para finalizar tu compra"
     : "Gracias por participar"
   const finalizeDescription = hasFinalizeCta
-    ? "Escríbeme por WhatsApp con tu nombre y apellido para guardarte y confirmar tus datos."
+    ? `Escríbeme por ${promo.supportLabel} con tu nombre y apellido para guardarte y confirmar tus datos.`
     : "Abajo tienes mis redes oficiales para seguir conectado."
   const trimmedLogoSrc = logoSrc?.trim()
   const trimmedRaffleImageUrl = raffleImageUrl?.trim()
@@ -43,7 +41,7 @@ export function PurchaseSuccessPromoSection({
   const displayRaffleName = raffleName?.trim() || "Tu rifa"
 
   const socialLinks = promo.socialLinks
-    .filter((link) => (hasFinalizeCta ? link.id !== "whatsapp" : true))
+    .filter((link) => (hasFinalizeCta ? link.id !== promo.supportKind : true))
     .map((link) => {
       if (link.id === "instagram" && promo.instagramHref) {
         return { ...link, href: promo.instagramHref }
@@ -57,21 +55,20 @@ export function PurchaseSuccessPromoSection({
       className="mx-4 mb-2 shrink-0 overflow-hidden rounded-2xl border border-primary/20 bg-card shadow-sm"
       aria-labelledby="purchase-success-promo-title"
     >
-      <div className="relative flex items-center gap-3 overflow-hidden bg-gradient-to-br from-amber-300/20 via-background to-emerald-500/15 p-3">
+      <div className="relative flex items-center gap-3 overflow-hidden bg-gradient-to-br from-amber-300/20 via-background to-sky-500/15 p-3">
         <div className="pointer-events-none absolute -top-8 -right-8 size-20 rounded-full bg-pink-500/15 blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-10 left-10 size-24 rounded-full bg-emerald-500/15 blur-2xl" />
+        <div className="pointer-events-none absolute -bottom-10 left-10 size-24 rounded-full bg-sky-500/15 blur-2xl" />
         <div className="relative size-16 shrink-0 overflow-hidden rounded-2xl border bg-background shadow-sm ring-2 ring-white/70">
           {coverSrc ? (
             <img src={coverSrc} alt="" className="size-full object-cover" width={64} height={64} />
           ) : (
-            <span className="flex size-full items-center justify-center bg-gradient-to-br from-[#25D366] to-emerald-600">
-              <img
-                src={WHATSAPP_ICON}
-                alt=""
-                className="size-5 brightness-0 invert"
-                width={20}
-                height={20}
-              />
+            <span
+              className="flex size-full items-center justify-center"
+              style={{
+                background: `linear-gradient(to bottom right, ${promo.supportBrandColor}, #0d8ecf)`,
+              }}
+            >
+              <img src={promo.supportIconSrc} alt="" className="size-8" width={32} height={32} />
             </span>
           )}
           {showLogoBadge ? (
@@ -107,31 +104,32 @@ export function PurchaseSuccessPromoSection({
       <div className="flex flex-col gap-2 p-3 pt-0">
         {hasFinalizeCta ? (
           <Button
-            className="min-h-11 w-full border-0 bg-[#25D366] text-white shadow-sm hover:bg-[#1ebe5d] focus-visible:ring-[#25D366]/50"
+            className="min-h-11 w-full border-0 text-white shadow-sm"
+            style={{ backgroundColor: promo.supportBrandColor }}
             asChild
           >
             <a
-              ref={whatsappLinkRef}
-              href={promo.whatsappFinalizeHref}
+              ref={supportLinkRef}
+              href={promo.supportFinalizeHref}
               target="_blank"
               rel="noopener noreferrer"
-              aria-label="Finalizar compra por WhatsApp"
-              onClick={onWhatsappClick}
+              aria-label={`Finalizar compra por ${promo.supportLabel}`}
+              onClick={onSupportClick}
             >
               <img
-                src={WHATSAPP_ICON}
+                src={promo.supportIconSrc}
                 alt=""
-                className="mr-2 size-4 brightness-0 invert"
-                width={16}
-                height={16}
+                className="mr-2 size-5"
+                width={20}
+                height={20}
                 aria-hidden
               />
-              WhatsApp
+              {promo.supportLabel}
             </a>
           </Button>
         ) : null}
 
-        {socialLinks.length > 0 || promo.whatsappChannelHref ? (
+        {socialLinks.length > 0 || promo.supportChannelHref ? (
           <div className="flex flex-col gap-2 rounded-xl border border-primary/10 bg-gradient-to-br from-background via-muted/35 to-amber-300/10 p-2.5">
             <div className="flex items-center justify-between gap-2">
               <div className="min-w-0">
@@ -142,14 +140,14 @@ export function PurchaseSuccessPromoSection({
                   Nuevas rifas, ganadores, dinámicas y avisos oficiales.
                 </p>
               </div>
-              {promo.whatsappChannelHref ? (
+              {promo.supportChannelHref ? (
                 <a
-                  href={promo.whatsappChannelHref}
+                  href={promo.supportChannelHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs font-medium text-foreground underline-offset-4 hover:underline"
                 >
-                  Canal de WhatsApp
+                  Canal de {promo.supportLabel}
                 </a>
               ) : null}
             </div>

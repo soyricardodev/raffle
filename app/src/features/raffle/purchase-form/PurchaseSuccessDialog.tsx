@@ -32,9 +32,9 @@ export function PurchaseSuccessDialog({
   const branding = usePublicBranding()
   const {
     promo,
-    whatsappLinkRef,
+    supportLinkRef,
     copyTickets,
-    markWhatsappClicked,
+    markSupportClicked,
     handleTicketsExpandedChange,
     handleOpenChange,
     trackInstagramClick,
@@ -44,6 +44,7 @@ export function PurchaseSuccessDialog({
     result,
     purchaseSuccessPromo: branding?.purchaseSuccessPromo,
     social: branding?.social,
+    whatsappEnabled: branding?.whatsappEnabled,
     onClose,
   })
 
@@ -74,11 +75,11 @@ export function PurchaseSuccessDialog({
           <>
             <PurchaseSuccessPromoSection
               promo={promo}
-              whatsappLinkRef={whatsappLinkRef}
+              supportLinkRef={supportLinkRef}
               logoSrc={branding?.images.logo}
               raffleImageUrl={raffleImageUrl}
               raffleName={result.raffleName}
-              onWhatsappClick={() => markWhatsappClicked("drawer")}
+              onSupportClick={() => markSupportClicked("drawer")}
               onInstagramClick={trackInstagramClick}
               onTiktokClick={trackTiktokClick}
               onSocialLinkClick={trackSocialLinkClick}

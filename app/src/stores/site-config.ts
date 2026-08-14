@@ -73,6 +73,7 @@ export function normalizePurchaseSuccessPromo(raw: unknown): PurchaseSuccessProm
       title: "",
       description: "",
       whatsapp_channel_url: "",
+      telegram_channel_url: "",
       instagram_url: "",
       tiktok_url: "",
     }
@@ -83,6 +84,7 @@ export function normalizePurchaseSuccessPromo(raw: unknown): PurchaseSuccessProm
     title: String(promo.title ?? ""),
     description: String(promo.description ?? ""),
     whatsapp_channel_url: String(promo.whatsapp_channel_url ?? ""),
+    telegram_channel_url: String(promo.telegram_channel_url ?? ""),
     instagram_url: String(promo.instagram_url ?? ""),
     tiktok_url: String(promo.tiktok_url ?? ""),
   }
@@ -156,6 +158,7 @@ const defaults: Pick<
     facebook: "",
     tiktok: "",
     telegram: "",
+    support_channel: "telegram",
   },
   hero: {
     title: "",

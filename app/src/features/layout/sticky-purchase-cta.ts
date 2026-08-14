@@ -5,7 +5,7 @@ export const STICKY_PURCHASE_CTA_ATTR = "data-sticky-purchase-cta"
 
 const HEIGHT_VAR = "--sticky-purchase-cta-height"
 
-/** Syncs document state used by global CSS (footer clearance, WhatsApp offset). */
+/** Syncs document state used by global CSS (footer clearance, support FAB offset). */
 export function setStickyPurchaseCtaActive(active: boolean, heightPx = 0): void {
   if (typeof document === "undefined") return
   const html = document.documentElement
