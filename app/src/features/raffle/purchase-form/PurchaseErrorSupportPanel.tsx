@@ -1,5 +1,6 @@
 import { ArrowClockwiseIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
+import { SocialBrandIcon } from "@/features/layout/social-icons"
 import type { PurchaseSupportErrorState } from "@/features/raffle/purchase-form/purchase-error-support"
 
 type PurchaseErrorSupportPanelProps = {
@@ -7,7 +8,7 @@ type PurchaseErrorSupportPanelProps = {
   supportHref: string | null
   supportLabel: string
   supportBrandColor: string
-  supportIconSrc: string
+  supportKind: string
   onRetry: () => void
   isRetrying?: boolean
 }
@@ -17,7 +18,7 @@ export function PurchaseErrorSupportPanel({
   supportHref,
   supportLabel,
   supportBrandColor,
-  supportIconSrc,
+  supportKind,
   onRetry,
   isRetrying = false,
 }: PurchaseErrorSupportPanelProps) {
@@ -57,7 +58,7 @@ export function PurchaseErrorSupportPanel({
             asChild
           >
             <a href={supportHref} target="_blank" rel="noopener noreferrer">
-              <img src={supportIconSrc} alt="" className="size-5" width={20} height={20} />
+              <SocialBrandIcon id={supportKind} className="size-5" />
               Contactar soporte por {supportLabel}
             </a>
           </Button>

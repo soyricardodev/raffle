@@ -531,7 +531,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
               supportHref={supportHref}
               supportLabel={supportChannel.label}
               supportBrandColor={supportChannel.brandColor}
-              supportIconSrc={supportChannel.iconSrc}
+              supportKind={supportChannel.kind}
               isRetrying={isSubmitting}
               onRetry={() => purchaseMutation.mutate()}
             />

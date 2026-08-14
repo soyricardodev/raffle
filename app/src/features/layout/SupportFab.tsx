@@ -1,3 +1,4 @@
+import { SocialBrandIcon } from "@/features/layout/social-icons"
 import { resolveSupportChannel } from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { cn } from "@/lib/utils"
@@ -27,11 +28,11 @@ export function SupportFab() {
         "focus-visible:ring-3 active:scale-[0.97]",
         "support-fab bottom-[max(1rem,env(safe-area-inset-bottom))]",
         "dark:shadow-[0_4px_24px_rgba(0,0,0,0.45)]",
-        isTelegram && "overflow-hidden border-0",
+        isTelegram && "overflow-hidden border-0 bg-transparent",
       )}
     >
       {isTelegram ? (
-        <img src={support.iconSrc} alt="" className="size-14" width={56} height={56} />
+        <SocialBrandIcon id="telegram" className="size-14" />
       ) : (
         <span
           className="flex size-11 items-center justify-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
