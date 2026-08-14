@@ -1,11 +1,11 @@
 import {
+  buildPurchaseFinalizeSupportMessage,
   buildSocialLinks,
   instagramHref,
-  tiktokHref,
+  resolveSupportChannel,
   type SocialLink,
-  whatsAppChannelHref,
-  whatsAppHrefWithText,
-  buildPurchaseFinalizeWhatsAppMessage,
+  type SupportChannelKind,
+  tiktokHref,
 } from "@/features/layout/social-links"
 import type { PurchaseResult } from "@/features/raffle/types"
 import type { PurchaseSuccessPromo, SocialMedia } from "@/stores/site-config"
@@ -14,10 +14,12 @@ export type ResolvedPurchaseSuccessPromo = {
   shouldShow: boolean
   title: string
   description: string
-  /** wa.me link with prefilled finalize message (support number). */
-  whatsappFinalizeHref: string
-  /** Legacy channel invite URL from promo config. */
-  whatsappChannelHref: string
+  supportKind: SupportChannelKind
+  supportLabel: string
+  supportIconSrc: string
+  supportBrandColor: string
+  supportFinalizeHref: string
+  supportChannelHref: string
   instagramHref: string
   tiktokHref: string
   socialLinks: SocialLink[]
@@ -27,6 +29,7 @@ export type ResolvePurchaseSuccessPromoInput = {
   promo: PurchaseSuccessPromo | undefined
   social: SocialMedia | undefined
   purchase: PurchaseResult | null
+  whatsappEnabled?: boolean
 }
 
 export function resolvePurchaseSuccessPromo(
@@ -37,6 +40,7 @@ export function resolvePurchaseSuccessPromo(
     title: "",
     description: "",
     whatsapp_channel_url: "",
+    telegram_channel_url: "",
     instagram_url: "",
     tiktok_url: "",
   }
@@ -47,6 +51,7 @@ export function resolvePurchaseSuccessPromo(
     facebook: "",
     tiktok: "",
     telegram: "",
+    support_channel: "telegram",
   }
 
   const purchase = input.purchase
@@ -56,40 +61,47 @@ export function resolvePurchaseSuccessPromo(
   const description = normalized.description.trim()
   const promoEnabled = normalized.enabled
   const hasConfiguredPromo = promoEnabled && isFirstPurchase
-  const whatsappChannelHrefResolved = promoEnabled
-    ? whatsAppChannelHref(normalized.whatsapp_channel_url)
-    : ""
+  const support = resolveSupportChannel({
+    whatsappEnabled: input.whatsappEnabled ?? false,
+    social,
+    promo: normalized,
+  })
   const instagramHrefResolved =
     (promoEnabled ? instagramHref(normalized.instagram_url) : "") || instagramHref(social.instagram)
   const tiktokHrefResolved =
     (promoEnabled ? tiktokHref(normalized.tiktok_url) : "") || tiktokHref(social.tiktok)
 
-  const whatsappFinalizeHref =
+  const supportFinalizeHref =
     hasConfiguredPromo && purchase
-      ? whatsAppHrefWithText(
-          social.whatsapp,
-          buildPurchaseFinalizeWhatsAppMessage({
+      ? support.supportHrefWithText(
+          buildPurchaseFinalizeSupportMessage({
             customerName: purchase.customerName,
             raffleName: purchase.raffleName,
             ticketCount: purchase.ticketCount,
+            channelLabel: support.label,
           }),
         )
       : ""
 
+  const supportChannelHref = hasConfiguredPromo ? support.channelHref : ""
   const socialLinks = buildSocialLinks(social)
 
   const hasSocialContent = Boolean(socialLinks.length > 0 || instagramHrefResolved || tiktokHrefResolved)
   const hasFirstPurchaseContent = Boolean(
     hasConfiguredPromo &&
-      (title || description || whatsappFinalizeHref || whatsappChannelHrefResolved),
+      (title || description || supportFinalizeHref || supportChannelHref),
   )
 
   return {
     shouldShow: hasFirstPurchaseContent || hasSocialContent,
     title: hasConfiguredPromo ? title : "",
     description: hasConfiguredPromo ? description : "",
-    whatsappFinalizeHref,
-    whatsappChannelHref: hasConfiguredPromo ? whatsappChannelHrefResolved : "",
+    supportKind: support.kind,
+    supportLabel: support.label,
+    supportIconSrc: support.iconSrc,
+    supportBrandColor: support.brandColor,
+    supportFinalizeHref,
+    supportChannelHref,
     instagramHref: instagramHrefResolved,
     tiktokHref: tiktokHrefResolved,
     socialLinks,

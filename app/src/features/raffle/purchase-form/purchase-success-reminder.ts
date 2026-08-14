@@ -16,10 +16,10 @@ export function markPromoReminderShown(purchaseId: number): void {
 
 export function shouldShowPromoReminder(input: {
   promoEnabled: boolean
-  whatsappHref: string
-  whatsappClicked: boolean
+  finalizeHref: string
+  supportClicked: boolean
   purchaseId: number
 }): boolean {
-  if (!input.promoEnabled || !input.whatsappHref || input.whatsappClicked) return false
+  if (!input.promoEnabled || !input.finalizeHref || input.supportClicked) return false
   return !wasPromoReminderShown(input.purchaseId)
 }

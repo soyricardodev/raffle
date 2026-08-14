@@ -43,10 +43,11 @@ import type {
   RaffleForPurchase,
   RafflePaymentMethod,
 } from "@/features/raffle/types"
+import { resolveSupportChannel } from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { PurchaseErrorSupportPanel } from "@/features/raffle/purchase-form/PurchaseErrorSupportPanel"
 import {
-  buildPurchaseSupportWhatsAppHref,
+  buildPurchaseSupportHref,
   type PurchaseSupportErrorState,
   resolvePurchaseSupportError,
 } from "@/features/raffle/purchase-form/purchase-error-support"
@@ -352,18 +353,26 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     },
   })
 
-  const supportWhatsAppHref = useMemo(() => {
+  const supportChannel = useMemo(
+    () =>
+      resolveSupportChannel({
+        whatsappEnabled: branding?.whatsappEnabled ?? false,
+        social: branding?.social,
+        promo: branding?.purchaseSuccessPromo,
+      }),
+    [branding?.whatsappEnabled, branding?.social, branding?.purchaseSuccessPromo],
+  )
+
+  const supportHref = useMemo(() => {
     if (!supportError) return null
-    const digits = branding?.social.whatsapp ?? ""
-    if (!digits.replace(/\D/g, "")) return null
-    return buildPurchaseSupportWhatsAppHref(digits, supportError, {
+    return buildPurchaseSupportHref(supportChannel, supportError, {
       raffleId: raffle.id,
       raffleName: raffle.name,
       ticketQuantity: quantity,
       paymentMethodId: rafflePaymentMethodId,
       pageUrl: typeof window !== "undefined" ? window.location.href : undefined,
     })
-  }, [supportError, branding?.social.whatsapp, raffle.id, raffle.name, quantity, rafflePaymentMethodId])
+  }, [supportError, supportChannel, raffle.id, raffle.name, quantity, rafflePaymentMethodId])
 
   const disabled =
     raffle.status !== "active" ||
@@ -519,7 +528,10 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
           {supportError ? (
             <PurchaseErrorSupportPanel
               support={supportError}
-              whatsappHref={supportWhatsAppHref}
+              supportHref={supportHref}
+              supportLabel={supportChannel.label}
+              supportBrandColor={supportChannel.brandColor}
+              supportIconSrc={supportChannel.iconSrc}
               isRetrying={isSubmitting}
               onRetry={() => purchaseMutation.mutate()}
             />

@@ -30,5 +30,6 @@ describe("resolvePublicBranding", () => {
 
     expect(branding?.siteInfo.site_name).toBe("Lotería")
     expect(branding?.colors?.primary).toBe("#111111")
+    expect(branding?.whatsappEnabled).toBe(false)
   })
 })

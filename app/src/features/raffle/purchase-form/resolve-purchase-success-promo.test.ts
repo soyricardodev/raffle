@@ -17,36 +17,47 @@ const repeatPurchase: PurchaseResult = {
   isFirstPurchase: false,
 }
 
+const emptyPromo = {
+  enabled: false,
+  title: "Únete",
+  description: "Dinámicas",
+  whatsapp_channel_url: "https://whatsapp.com/channel/abc",
+  telegram_channel_url: "https://t.me/yoiberrifascanal",
+  instagram_url: "@rifas",
+  tiktok_url: "@rifas",
+}
+
 describe("resolvePurchaseSuccessPromo", () => {
   it("shows global social links even when promo is disabled", () => {
     const result = resolvePurchaseSuccessPromo({
-      promo: {
-        enabled: false,
-        title: "Únete",
-        description: "Dinámicas",
-        whatsapp_channel_url: "https://whatsapp.com/channel/abc",
-        instagram_url: "@rifas",
-        tiktok_url: "@rifas",
+      promo: emptyPromo,
+      social: {
+        whatsapp: "584121234567",
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        telegram: "yoiberifas",
+        support_channel: "telegram",
       },
-      social: { whatsapp: "584121234567", instagram: "", facebook: "", tiktok: "", telegram: "" },
       purchase: firstPurchase,
     })
     expect(result.shouldShow).toBe(true)
-    expect(result.whatsappFinalizeHref).toBe("")
+    expect(result.supportFinalizeHref).toBe("")
+    expect(result.socialLinks.map((l) => l.id)).toContain("telegram")
     expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
   })
 
   it("hides when promo is disabled and there are no global socials", () => {
     const result = resolvePurchaseSuccessPromo({
-      promo: {
-        enabled: false,
-        title: "Únete",
-        description: "Dinámicas",
-        whatsapp_channel_url: "https://whatsapp.com/channel/abc",
-        instagram_url: "@rifas",
-        tiktok_url: "@rifas",
+      promo: emptyPromo,
+      social: {
+        whatsapp: "",
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        telegram: "",
+        support_channel: "telegram",
       },
-      social: { whatsapp: "", instagram: "", facebook: "", tiktok: "", telegram: "" },
       purchase: firstPurchase,
     })
     expect(result.shouldShow).toBe(false)
@@ -55,39 +66,82 @@ describe("resolvePurchaseSuccessPromo", () => {
   it("keeps social links visible on repeat purchase without finalization", () => {
     const result = resolvePurchaseSuccessPromo({
       promo: {
+        ...emptyPromo,
         enabled: true,
-        title: "Únete",
         description: "",
         whatsapp_channel_url: "",
-        instagram_url: "@rifas",
+        telegram_channel_url: "",
         tiktok_url: "",
       },
-      social: { whatsapp: "584121234567", instagram: "", facebook: "", tiktok: "", telegram: "" },
+      social: {
+        whatsapp: "584121234567",
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        telegram: "yoiberifas",
+        support_channel: "telegram",
+      },
       purchase: repeatPurchase,
     })
     expect(result.shouldShow).toBe(true)
-    expect(result.whatsappFinalizeHref).toBe("")
-    expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
+    expect(result.supportFinalizeHref).toBe("")
+    expect(result.socialLinks.map((l) => l.id)).toContain("telegram")
   })
 
-  it("builds finalize WhatsApp link on first purchase", () => {
+  it("builds finalize Telegram link on first purchase", () => {
     const result = resolvePurchaseSuccessPromo({
       promo: {
         enabled: true,
         title: "",
         description: "",
         whatsapp_channel_url: "",
+        telegram_channel_url: "",
         instagram_url: "",
         tiktok_url: "",
       },
-      social: { whatsapp: "584121234567", instagram: "", facebook: "", tiktok: "", telegram: "" },
+      social: {
+        whatsapp: "584121234567",
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        telegram: "yoiberifas",
+        support_channel: "telegram",
+      },
       purchase: firstPurchase,
     })
     expect(result.shouldShow).toBe(true)
-    expect(result.whatsappFinalizeHref).toContain("https://wa.me/584121234567")
-    expect(result.whatsappFinalizeHref).toContain(encodeURIComponent("María Pérez"))
-    expect(result.whatsappFinalizeHref).toContain(encodeURIComponent("Rifa Oro"))
-    expect(result.whatsappFinalizeHref).toContain(encodeURIComponent("2 boletos"))
+    expect(result.supportKind).toBe("telegram")
+    expect(result.supportFinalizeHref).toContain("https://t.me/yoiberifas")
+    expect(result.supportFinalizeHref).toContain(encodeURIComponent("María Pérez"))
+    expect(result.supportFinalizeHref).toContain(encodeURIComponent("Rifa Oro"))
+    expect(result.supportFinalizeHref).toContain(encodeURIComponent("2 boletos"))
+    expect(result.supportChannelHref).toBe("https://t.me/yoiberrifascanal")
+  })
+
+  it("builds finalize WhatsApp link when WhatsApp is enabled", () => {
+    const result = resolvePurchaseSuccessPromo({
+      promo: {
+        enabled: true,
+        title: "",
+        description: "",
+        whatsapp_channel_url: "",
+        telegram_channel_url: "",
+        instagram_url: "",
+        tiktok_url: "",
+      },
+      social: {
+        whatsapp: "584121234567",
+        instagram: "",
+        facebook: "",
+        tiktok: "",
+        telegram: "yoiberifas",
+        support_channel: "whatsapp",
+      },
+      purchase: firstPurchase,
+      whatsappEnabled: true,
+    })
+    expect(result.supportKind).toBe("whatsapp")
+    expect(result.supportFinalizeHref).toContain("https://wa.me/584121234567")
   })
 
   it("includes social links and promo instagram on first purchase", () => {
@@ -97,6 +151,7 @@ describe("resolvePurchaseSuccessPromo", () => {
         title: "Únete a mi comunidad",
         description: "",
         whatsapp_channel_url: "",
+        telegram_channel_url: "",
         instagram_url: "@promo",
         tiktok_url: "@promotiktok",
       },
@@ -105,14 +160,15 @@ describe("resolvePurchaseSuccessPromo", () => {
         instagram: "@global",
         facebook: "",
         tiktok: "@globaltiktok",
-        telegram: "",
+        telegram: "yoiberifas",
+        support_channel: "telegram",
       },
       purchase: firstPurchase,
     })
     expect(result.shouldShow).toBe(true)
     expect(result.instagramHref).toBe("https://instagram.com/promo")
     expect(result.tiktokHref).toBe("https://www.tiktok.com/@promotiktok")
-    expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
+    expect(result.socialLinks.map((l) => l.id)).toContain("telegram")
     expect(result.socialLinks.map((l) => l.id)).toContain("instagram")
     expect(result.socialLinks.map((l) => l.id)).toContain("tiktok")
   })

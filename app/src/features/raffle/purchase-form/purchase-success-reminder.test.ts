@@ -14,12 +14,12 @@ describe("purchase-success-reminder", () => {
     sessionStorage.clear()
   })
 
-  it("shows reminder when promo active and WhatsApp not clicked", () => {
+  it("shows reminder when promo active and support not clicked", () => {
     expect(
       shouldShowPromoReminder({
         promoEnabled: true,
-        whatsappHref: "https://whatsapp.com/channel/x",
-        whatsappClicked: false,
+        finalizeHref: "https://t.me/yoiberifas",
+        supportClicked: false,
         purchaseId: 26,
       }),
     ).toBe(true)
@@ -31,8 +31,8 @@ describe("purchase-success-reminder", () => {
     expect(
       shouldShowPromoReminder({
         promoEnabled: true,
-        whatsappHref: "https://whatsapp.com/channel/x",
-        whatsappClicked: false,
+        finalizeHref: "https://t.me/yoiberifas",
+        supportClicked: false,
         purchaseId: 26,
       }),
     ).toBe(false)

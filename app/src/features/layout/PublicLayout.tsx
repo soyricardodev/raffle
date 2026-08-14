@@ -3,7 +3,7 @@ import { useSyncPublicSiteConfig } from "@/features/layout/use-sync-public-site-
 import { useInAppBrowserRedirect } from "@/hooks/useInAppBrowserRedirect"
 import { PublicFooter } from "./PublicFooter"
 import { PublicHeader } from "./PublicHeader"
-import { WhatsAppFab } from "./WhatsAppFab"
+import { SupportFab } from "./SupportFab"
 
 type PublicLayoutProps = {
   children: React.ReactNode
@@ -19,7 +19,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <PublicHeader />
       <main className="flex-1">{children}</main>
       <PublicFooter />
-      <WhatsAppFab />
+      <SupportFab />
     </div>
   )
 }

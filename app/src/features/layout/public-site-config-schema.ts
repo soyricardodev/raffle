@@ -10,6 +10,10 @@ import {
 import { z } from "zod"
 import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 import {
+  DEFAULT_TELEGRAM_CHANNEL_URL,
+  DEFAULT_TELEGRAM_SUPPORT,
+} from "@/features/layout/social-links"
+import {
   normalizeHeroConfig,
   normalizePurchaseSuccessPromo,
   normalizeSeoConfig,
@@ -35,6 +39,11 @@ export const PublicSiteConfigPayloadSchema = z.object({
   site_images: SiteImagesSchema.optional(),
   seo_config: SeoConfigSchema.optional(),
   purchase_success_promo: PurchaseSuccessPromoSchema.optional(),
+  features: z
+    .object({
+      whatsapp_enabled: z.boolean(),
+    })
+    .optional(),
 })
 
 function normalizeParsedField<T>(
@@ -69,5 +78,41 @@ export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSite
       data.purchase_success_promo,
       normalizePurchaseSuccessPromo,
     ),
+    features: parsed.data.features,
+  }
+}
+
+export function applyPublicWhatsAppVisibility(
+  payload: PublicSiteConfigPayload,
+  whatsappEnabled: boolean,
+): PublicSiteConfigPayload {
+  const social = payload.social_media ?? {
+    whatsapp: "",
+    instagram: "",
+    facebook: "",
+    tiktok: "",
+    telegram: "",
+    support_channel: "telegram" as const,
+  }
+
+  const promo = payload.purchase_success_promo
+  const useWhatsApp = whatsappEnabled && social.support_channel === "whatsapp"
+
+  return {
+    ...payload,
+    social_media: {
+      ...social,
+      whatsapp: useWhatsApp ? social.whatsapp : "",
+      telegram: social.telegram.trim() || DEFAULT_TELEGRAM_SUPPORT,
+      support_channel: useWhatsApp ? "whatsapp" : "telegram",
+    },
+    purchase_success_promo: promo
+      ? {
+          ...promo,
+          whatsapp_channel_url: useWhatsApp ? promo.whatsapp_channel_url : "",
+          telegram_channel_url: promo.telegram_channel_url.trim() || DEFAULT_TELEGRAM_CHANNEL_URL,
+        }
+      : promo,
+    features: { whatsapp_enabled: whatsappEnabled },
   }
 }

@@ -26,6 +26,7 @@ export function PublicFooter() {
     facebook: "",
     tiktok: "",
     telegram: "",
+    support_channel: "telegram",
   }
   const images = branding?.images
   const colors = branding?.colors

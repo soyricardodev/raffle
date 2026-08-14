@@ -15,6 +15,8 @@ vi.mock("./email-branding.server", async (importOriginal) => {
       logoUrl: null,
       contact: { phone: "", email: "", address: "" },
       whatsapp: "",
+      telegram: "yoiberifas",
+      whatsappEnabled: false,
     })),
   }
 })

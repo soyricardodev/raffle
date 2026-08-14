@@ -30,6 +30,7 @@ export type AdminSiteConfigDraft = {
   facebook: string
   tiktok: string
   telegram: string
+  support_channel: "telegram" | "whatsapp"
   hero_title: string
   hero_subtitle: string
   show_particles: boolean
@@ -62,6 +63,7 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   facebook: "",
   tiktok: "",
   telegram: "",
+  support_channel: "telegram",
   hero_title: "",
   hero_subtitle: "",
   show_particles: false,
@@ -106,6 +108,7 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     facebook: String(social?.facebook ?? base.facebook),
     tiktok: String(social?.tiktok ?? base.tiktok),
     telegram: String(social?.telegram ?? base.telegram),
+    support_channel: social?.support_channel === "whatsapp" ? "whatsapp" : "telegram",
     hero_title: hero.title,
     hero_subtitle: hero.subtitle,
     show_particles: hero.show_particles,
@@ -130,6 +133,7 @@ function trimPurchaseSuccessPromo(promo: PurchaseSuccessPromo): PurchaseSuccessP
     title: promo.title.trim(),
     description: promo.description.trim(),
     whatsapp_channel_url: promo.whatsapp_channel_url.trim(),
+    telegram_channel_url: promo.telegram_channel_url.trim(),
     instagram_url: promo.instagram_url.trim(),
     tiktok_url: promo.tiktok_url.trim(),
   }
@@ -158,6 +162,7 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
       facebook: draft.facebook.trim(),
       tiktok: draft.tiktok.trim(),
       telegram: draft.telegram.trim(),
+      support_channel: draft.support_channel,
     },
     hero_config: {
       title: draft.hero_title.trim(),

@@ -11,6 +11,8 @@ const mockBranding = {
   logoUrl: "https://rifas.example.com/uploads/site/logo.png",
   contact: { phone: "04141234567", email: "contacto@rifas.test", address: "" },
   whatsapp: "584121234567",
+  telegram: "yoiberifas",
+  whatsappEnabled: false,
 }
 
 vi.mock("./email-branding.server", async (importOriginal) => {
@@ -81,8 +83,8 @@ describe("email-templates", () => {
     expect(email.metadata?.new_status).toBe("rejected")
     expect(email.html).toContain("Motivo:")
     expect(email.html).toContain("Pago duplicado")
-    expect(email.html).toContain("wa.me/584121234567")
-    expect(email.html).toContain("Resolver por WhatsApp")
+    expect(email.html).toContain("t.me/yoiberifas")
+    expect(email.html).toContain("Resolver por Telegram")
     expect(email.html).toContain(encodeURIComponent("Compra: #42"))
     expect(email.html).toContain(encodeURIComponent("Nombre: María"))
     expect(email.html).toContain(encodeURIComponent("Motivo: Pago duplicado"))
@@ -91,18 +93,18 @@ describe("email-templates", () => {
   it("omits rejection reason when notes are empty", async () => {
     const email = await buildEmailForType("status_update", { ...ctx, notes: "" }, { status: "rejected" })
     expect(email.html).not.toContain("Motivo:")
-    expect(email.html).toContain("wa.me/584121234567")
+    expect(email.html).toContain("t.me/yoiberifas")
   })
 
-  it("omits WhatsApp CTA on rejection when WhatsApp is not configured", async () => {
+  it("uses WhatsApp CTA on rejection when WhatsApp is enabled", async () => {
     const { loadEmailBranding } = await import("./email-branding.server")
     vi.mocked(loadEmailBranding).mockResolvedValueOnce({
       ...mockBranding,
-      whatsapp: "",
+      whatsappEnabled: true,
     })
     const email = await buildEmailForType("status_update", ctx, { status: "rejected" })
-    expect(email.html).not.toContain("wa.me/")
-    expect(email.html).not.toContain("Resolver por WhatsApp")
+    expect(email.html).toContain("wa.me/584121234567")
+    expect(email.html).toContain("Resolver por WhatsApp")
   })
 
   it("builds ticket modification email", async () => {

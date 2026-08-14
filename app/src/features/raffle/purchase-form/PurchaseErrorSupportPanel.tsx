@@ -1,17 +1,23 @@
-import { ArrowClockwiseIcon, WhatsappLogoIcon } from "@phosphor-icons/react"
+import { ArrowClockwiseIcon } from "@phosphor-icons/react"
 import { Button } from "@/components/ui/button"
 import type { PurchaseSupportErrorState } from "@/features/raffle/purchase-form/purchase-error-support"
 
 type PurchaseErrorSupportPanelProps = {
   support: PurchaseSupportErrorState
-  whatsappHref: string | null
+  supportHref: string | null
+  supportLabel: string
+  supportBrandColor: string
+  supportIconSrc: string
   onRetry: () => void
   isRetrying?: boolean
 }
 
 export function PurchaseErrorSupportPanel({
   support,
-  whatsappHref,
+  supportHref,
+  supportLabel,
+  supportBrandColor,
+  supportIconSrc,
   onRetry,
   isRetrying = false,
 }: PurchaseErrorSupportPanelProps) {
@@ -42,16 +48,22 @@ export function PurchaseErrorSupportPanel({
             Reintentar
           </Button>
         ) : null}
-        {whatsappHref ? (
-          <Button type="button" size="sm" className="min-h-10 bg-[#25D366] text-white hover:bg-[#1ebe57]" asChild>
-            <a href={whatsappHref} target="_blank" rel="noopener noreferrer">
-              <WhatsappLogoIcon data-icon="inline-start" weight="fill" />
-              Contactar soporte por WhatsApp
+        {supportHref ? (
+          <Button
+            type="button"
+            size="sm"
+            className="min-h-10 text-white"
+            style={{ backgroundColor: supportBrandColor }}
+            asChild
+          >
+            <a href={supportHref} target="_blank" rel="noopener noreferrer">
+              <img src={supportIconSrc} alt="" className="size-5" width={20} height={20} />
+              Contactar soporte por {supportLabel}
             </a>
           </Button>
         ) : null}
       </div>
-      {!whatsappHref ? (
+      {!supportHref ? (
         <p className="text-muted-foreground text-xs">
           Guarda el código de soporte y contáctanos por los canales oficiales del sitio.
         </p>

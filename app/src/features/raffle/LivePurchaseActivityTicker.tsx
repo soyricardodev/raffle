@@ -99,8 +99,17 @@ function LivePurchaseActivityTickerLive({
   const live = useRaffleLiveDataOrFetch(raffleId)
   const branding = usePublicBranding()
   const socialLinks = buildSocialLinks(
-    branding?.social ?? { whatsapp: "", instagram: "", facebook: "", tiktok: "", telegram: "" },
-    { whatsappChannelUrl: branding?.purchaseSuccessPromo.whatsapp_channel_url ?? "" },
+    branding?.social ?? {
+      whatsapp: "",
+      instagram: "",
+      facebook: "",
+      tiktok: "",
+      telegram: "",
+      support_channel: "telegram",
+    },
+    branding?.whatsappEnabled
+      ? { whatsappChannelUrl: branding.purchaseSuccessPromo.whatsapp_channel_url ?? "" }
+      : undefined,
   )
   const view = buildTickerViewModel("live", {
     activeBuyersCount: live.data?.activeBuyersCount ?? 0,

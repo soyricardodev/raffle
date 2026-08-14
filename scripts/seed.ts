@@ -80,6 +80,17 @@ async function seedAppSettings(db: ReturnType<typeof createScriptDb>) {
       instagram: "@rifaspremium",
       facebook: "rifaspremium",
       tiktok: "@rifaspremium",
+      telegram: "yoiberifas",
+      support_channel: "telegram",
+    },
+    purchase_success_promo: {
+      enabled: true,
+      title: "",
+      description: "",
+      whatsapp_channel_url: "",
+      telegram_channel_url: "https://t.me/yoiberrifascanal",
+      instagram_url: "",
+      tiktok_url: "",
     },
     contact_info: {
       phone: "0412-1234567",

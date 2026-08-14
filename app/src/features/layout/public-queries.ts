@@ -1,6 +1,10 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
-import { parsePublicSiteConfig } from "@/features/layout/public-site-config-schema"
+import {
+  applyPublicWhatsAppVisibility,
+  parsePublicSiteConfig,
+} from "@/features/layout/public-site-config-schema"
+import { getEnv } from "@/lib/env"
 import { getSiteConfigMap } from "@/server/site-config.service"
 import type {
   ContactInfo,
@@ -26,11 +30,12 @@ export type PublicSiteConfigPayload = {
   site_images?: SiteImages
   seo_config?: SeoConfig
   purchase_success_promo?: PurchaseSuccessPromo
+  features?: { whatsapp_enabled: boolean }
 }
 
 export const fetchPublicSiteConfig = createServerFn({ method: "GET" }).handler(async () => {
   const data = await getSiteConfigMap()
-  return parsePublicSiteConfig(data)
+  return applyPublicWhatsAppVisibility(parsePublicSiteConfig(data), getEnv().ENABLE_WHATSAPP)
 })
 
 export function publicSiteConfigQueryOptions() {

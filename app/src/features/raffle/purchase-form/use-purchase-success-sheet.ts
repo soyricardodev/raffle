@@ -13,6 +13,7 @@ type UsePurchaseSuccessSheetParams = {
   result: PurchaseResult | null
   purchaseSuccessPromo: PurchaseSuccessPromo | undefined
   social: SocialMedia | undefined
+  whatsappEnabled?: boolean
   onClose: () => void
 }
 
@@ -20,21 +21,23 @@ export function usePurchaseSuccessSheet({
   result,
   purchaseSuccessPromo,
   social,
+  whatsappEnabled = false,
   onClose,
 }: UsePurchaseSuccessSheetParams) {
   const promo = resolvePurchaseSuccessPromo({
     promo: purchaseSuccessPromo,
     social,
     purchase: result,
+    whatsappEnabled,
   })
-  const [whatsappClicked, setWhatsappClicked] = useState(false)
-  const whatsappLinkRef = useRef<HTMLAnchorElement>(null)
+  const [supportClicked, setSupportClicked] = useState(false)
+  const supportLinkRef = useRef<HTMLAnchorElement>(null)
   const openedPurchaseIdRef = useRef<number | null>(null)
 
-  const whatsappReminderHref = promo.whatsappFinalizeHref
+  const finalizeHref = promo.supportFinalizeHref
 
   useEffect(() => {
-    setWhatsappClicked(false)
+    setSupportClicked(false)
   }, [result?.purchaseId])
 
   useEffect(() => {
@@ -48,12 +51,12 @@ export function usePurchaseSuccessSheet({
   }, [result, promo.shouldShow])
 
   useEffect(() => {
-    if (!result || !promo.shouldShow || !promo.whatsappFinalizeHref) return
+    if (!result || !promo.shouldShow || !promo.supportFinalizeHref) return
     const timer = window.setTimeout(() => {
-      whatsappLinkRef.current?.focus({ preventScroll: true })
+      supportLinkRef.current?.focus({ preventScroll: true })
     }, 150)
     return () => window.clearTimeout(timer)
-  }, [result?.purchaseId, promo.shouldShow, promo.whatsappFinalizeHref])
+  }, [result?.purchaseId, promo.shouldShow, promo.supportFinalizeHref])
 
   const copyTickets = useCallback(async () => {
     if (!result) return
@@ -65,17 +68,18 @@ export function usePurchaseSuccessSheet({
     toast.success("Boletos copiados al portapapeles")
   }, [result])
 
-  const markWhatsappClicked = useCallback(
+  const markSupportClicked = useCallback(
     (source: "drawer" | "reminder_toast") => {
       if (!result) return
-      setWhatsappClicked(true)
-      trackPurchaseSuccessEvent("whatsapp_cta_click", {
+      setSupportClicked(true)
+      const event = promo.supportKind === "whatsapp" ? "whatsapp_cta_click" : "telegram_cta_click"
+      trackPurchaseSuccessEvent(event, {
         purchaseId: result.purchaseId,
         ticketCount: result.ticketNumbers.length,
         source,
       })
     },
-    [result],
+    [result, promo.supportKind],
   )
 
   const handleTicketsExpandedChange = useCallback(
@@ -96,20 +100,20 @@ export function usePurchaseSuccessSheet({
       if (
         shouldShowPromoReminder({
           promoEnabled: promo.shouldShow,
-          whatsappHref: whatsappReminderHref,
-          whatsappClicked,
+          finalizeHref,
+          supportClicked,
           purchaseId: result.purchaseId,
         })
       ) {
         markPromoReminderShown(result.purchaseId)
-        toast("¿Finalizaste por WhatsApp?", {
+        toast(`¿Finalizaste por ${promo.supportLabel}?`, {
           description: "Escríbenos para confirmar tu compra y guardar tus datos.",
           duration: 10_000,
           action: {
             label: "Escribir",
             onClick: () => {
-              markWhatsappClicked("reminder_toast")
-              window.open(whatsappReminderHref, "_blank", "noopener,noreferrer")
+              markSupportClicked("reminder_toast")
+              window.open(finalizeHref, "_blank", "noopener,noreferrer")
             },
           },
         })
@@ -117,14 +121,22 @@ export function usePurchaseSuccessSheet({
 
       onClose()
     },
-    [result, promo.shouldShow, whatsappReminderHref, whatsappClicked, markWhatsappClicked, onClose],
+    [
+      result,
+      promo.shouldShow,
+      promo.supportLabel,
+      finalizeHref,
+      supportClicked,
+      markSupportClicked,
+      onClose,
+    ],
   )
 
   return {
     promo,
-    whatsappLinkRef,
+    supportLinkRef,
     copyTickets,
-    markWhatsappClicked,
+    markSupportClicked,
     handleTicketsExpandedChange,
     handleOpenChange,
     trackInstagramClick: useCallback(() => {

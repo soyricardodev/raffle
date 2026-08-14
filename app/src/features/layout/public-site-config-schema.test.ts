@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
-import { parsePublicSiteConfig } from "@/features/layout/public-site-config-schema"
+import {
+  applyPublicWhatsAppVisibility,
+  parsePublicSiteConfig,
+} from "@/features/layout/public-site-config-schema"
 
 describe("parsePublicSiteConfig", () => {
   it("parses valid keys and normalizes hero", () => {
@@ -63,6 +66,7 @@ describe("parsePublicSiteConfig", () => {
         title: "Únete",
         description: "Dinámicas",
         whatsapp_channel_url: "https://whatsapp.com/channel/x",
+        telegram_channel_url: "https://t.me/yoiberrifascanal",
         instagram_url: "@rifas",
         tiktok_url: "@rifas",
       },
@@ -73,9 +77,63 @@ describe("parsePublicSiteConfig", () => {
       title: "Únete",
       description: "Dinámicas",
       whatsapp_channel_url: "https://whatsapp.com/channel/x",
+      telegram_channel_url: "https://t.me/yoiberrifascanal",
       instagram_url: "@rifas",
       tiktok_url: "@rifas",
     })
+  })
+
+  it("strips WhatsApp from public payload when disabled and fills Telegram fallbacks", () => {
+    const result = applyPublicWhatsAppVisibility(
+      {
+        social_media: {
+          whatsapp: "584121234567",
+          instagram: "@rifas",
+          facebook: "",
+          tiktok: "",
+          telegram: "",
+          support_channel: "whatsapp",
+        },
+        purchase_success_promo: {
+          enabled: true,
+          title: "",
+          description: "",
+          whatsapp_channel_url: "https://whatsapp.com/channel/x",
+          telegram_channel_url: "",
+          instagram_url: "",
+          tiktok_url: "",
+        },
+      },
+      false,
+    )
+
+    expect(result.features?.whatsapp_enabled).toBe(false)
+    expect(result.social_media?.whatsapp).toBe("")
+    expect(result.social_media?.telegram).toBe("yoiberifas")
+    expect(result.social_media?.support_channel).toBe("telegram")
+    expect(result.purchase_success_promo?.whatsapp_channel_url).toBe("")
+    expect(result.purchase_success_promo?.telegram_channel_url).toBe(
+      "https://t.me/yoiberrifascanal",
+    )
+  })
+
+  it("keeps WhatsApp on public payload when env is on and config selects it", () => {
+    const result = applyPublicWhatsAppVisibility(
+      {
+        social_media: {
+          whatsapp: "584121234567",
+          instagram: "",
+          facebook: "",
+          tiktok: "",
+          telegram: "yoiberifas",
+          support_channel: "whatsapp",
+        },
+      },
+      true,
+    )
+
+    expect(result.social_media?.whatsapp).toBe("584121234567")
+    expect(result.social_media?.support_channel).toBe("whatsapp")
   })
 })
 

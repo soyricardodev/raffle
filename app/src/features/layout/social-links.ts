@@ -1,4 +1,13 @@
-import type { SocialMedia } from "@/stores/site-config"
+import type { PurchaseSuccessPromo, SocialMedia } from "@/stores/site-config"
+
+export const DEFAULT_TELEGRAM_SUPPORT = "yoiberifas"
+export const DEFAULT_TELEGRAM_CHANNEL_URL = "https://t.me/yoiberrifascanal"
+
+export const TELEGRAM_BRAND_COLOR = "#2AABEE"
+export const WHATSAPP_BRAND_COLOR = "#25D366"
+
+export const TELEGRAM_ICON = "/brand/social/telegram.svg"
+export const WHATSAPP_ICON = "/brand/social/whatsapp.svg"
 
 export function whatsAppHref(digits: string): string {
   const normalized = digits.replace(/\D/g, "")
@@ -13,18 +22,27 @@ export function whatsAppHrefWithText(digits: string, message: string): string {
   return `${base}?text=${encodeURIComponent(text)}`
 }
 
-export type PurchaseFinalizeWhatsAppInput = {
+export type PurchaseFinalizeSupportInput = {
   customerName: string
   raffleName: string
   ticketCount: number
+  channelLabel: string
 }
 
-export function buildPurchaseFinalizeWhatsAppMessage(input: PurchaseFinalizeWhatsAppInput): string {
+export function buildPurchaseFinalizeSupportMessage(input: PurchaseFinalizeSupportInput): string {
   const name = input.customerName.trim() || "comprador"
   const raffle = input.raffleName.trim() || "la rifa"
   const count = input.ticketCount
   const ticketLabel = count === 1 ? "1 boleto" : `${count} boletos`
-  return `Hola, soy ${name}. Para finalizar mi compra, compré ${ticketLabel} de la rifa "${raffle}". Te escribo para que me guardes en WhatsApp y confirmes mis datos.`
+  const channel = input.channelLabel.trim() || "Telegram"
+  return `Hola, soy ${name}. Para finalizar mi compra, compré ${ticketLabel} de la rifa "${raffle}". Te escribo para que me guardes en ${channel} y confirmes mis datos.`
+}
+
+/** @deprecated Use buildPurchaseFinalizeSupportMessage with channelLabel. */
+export function buildPurchaseFinalizeWhatsAppMessage(
+  input: Omit<PurchaseFinalizeSupportInput, "channelLabel">,
+): string {
+  return buildPurchaseFinalizeSupportMessage({ ...input, channelLabel: "WhatsApp" })
 }
 
 /** WhatsApp channel/community invite URL (must already be https). */
@@ -66,6 +84,21 @@ export function telegramHref(value: string): string {
   return `https://t.me/${handle}`
 }
 
+export function telegramHrefWithText(value: string, message: string): string {
+  const base = telegramHref(value)
+  if (!base) return ""
+  const text = message.trim()
+  if (!text) return base
+  return `${base}?text=${encodeURIComponent(text)}`
+}
+
+export function telegramChannelHref(url: string): string {
+  const trimmed = url.trim()
+  if (!trimmed) return ""
+  if (/^https?:\/\//i.test(trimmed)) return trimmed
+  return telegramHref(trimmed)
+}
+
 function genericSocialHref(value: string): string {
   const trimmed = value.trim()
   if (!trimmed) return ""
@@ -96,7 +129,7 @@ type SocialLinkDefinition = {
 const SOCIAL_LINK_DEFINITIONS: Record<string, SocialLinkDefinition> = {
   whatsapp: {
     label: "WhatsApp",
-    iconSrc: "/brand/social/whatsapp.svg",
+    iconSrc: WHATSAPP_ICON,
     href: whatsAppHref,
   },
   instagram: {
@@ -116,6 +149,7 @@ const SOCIAL_LINK_DEFINITIONS: Record<string, SocialLinkDefinition> = {
   },
   telegram: {
     label: "Telegram",
+    iconSrc: TELEGRAM_ICON,
     href: telegramHref,
   },
 }
@@ -166,4 +200,49 @@ export function buildSocialLinks(
   }
 
   return links
+}
+
+export type SupportChannelKind = "telegram" | "whatsapp"
+
+export type ResolvedSupportChannel = {
+  kind: SupportChannelKind
+  label: string
+  iconSrc: string
+  brandColor: string
+  supportHref: string
+  supportHrefWithText: (message: string) => string
+  channelHref: string
+}
+
+export function resolveSupportChannel(input: {
+  whatsappEnabled: boolean
+  social?: Partial<SocialMedia> | null
+  promo?: Partial<PurchaseSuccessPromo> | null
+}): ResolvedSupportChannel {
+  const whatsappDigits = (input.social?.whatsapp ?? "").replace(/\D/g, "")
+  const requestedWhatsApp = input.social?.support_channel === "whatsapp"
+  if (input.whatsappEnabled && requestedWhatsApp && whatsappDigits) {
+    return {
+      kind: "whatsapp",
+      label: "WhatsApp",
+      iconSrc: WHATSAPP_ICON,
+      brandColor: WHATSAPP_BRAND_COLOR,
+      supportHref: whatsAppHref(whatsappDigits),
+      supportHrefWithText: (message) => whatsAppHrefWithText(whatsappDigits, message),
+      channelHref: whatsAppChannelHref(input.promo?.whatsapp_channel_url ?? ""),
+    }
+  }
+
+  const telegram = (input.social?.telegram ?? "").trim() || DEFAULT_TELEGRAM_SUPPORT
+  const channelUrl =
+    (input.promo?.telegram_channel_url ?? "").trim() || DEFAULT_TELEGRAM_CHANNEL_URL
+  return {
+    kind: "telegram",
+    label: "Telegram",
+    iconSrc: TELEGRAM_ICON,
+    brandColor: TELEGRAM_BRAND_COLOR,
+    supportHref: telegramHref(telegram),
+    supportHrefWithText: (message) => telegramHrefWithText(telegram, message),
+    channelHref: telegramChannelHref(channelUrl),
+  }
 }

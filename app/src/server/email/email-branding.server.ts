@@ -21,6 +21,8 @@ export type EmailBrandingContext = {
   contact: ContactInfo
   /** Digits-only WhatsApp from site social config (for wa.me links). */
   whatsapp: string
+  telegram: string
+  whatsappEnabled: boolean
 }
 
 const DEFAULT_COLORS: SiteColors = {
@@ -42,6 +44,7 @@ const DEFAULT_CONTACT: ContactInfo = {
 }
 
 const DEFAULT_WHATSAPP = ""
+const DEFAULT_TELEGRAM = ""
 
 let brandingCache: { value: EmailBrandingContext; expiresAt: number } | null = null
 const BRANDING_CACHE_MS = 60_000
@@ -61,10 +64,20 @@ function parseContactInfo(raw: unknown): ContactInfo {
   return parsed.success ? parsed.data : DEFAULT_CONTACT
 }
 
-function parseWhatsapp(raw: unknown): string {
+function parseSocialSupport(raw: unknown): {
+  whatsapp: string
+  telegram: string
+  supportChannel: "telegram" | "whatsapp"
+} {
   const parsed = SocialMediaSchema.safeParse(raw)
-  if (!parsed.success) return DEFAULT_WHATSAPP
-  return parsed.data.whatsapp.replace(/\D/g, "")
+  if (!parsed.success) {
+    return { whatsapp: DEFAULT_WHATSAPP, telegram: DEFAULT_TELEGRAM, supportChannel: "telegram" }
+  }
+  return {
+    whatsapp: parsed.data.whatsapp.replace(/\D/g, ""),
+    telegram: parsed.data.telegram.trim(),
+    supportChannel: parsed.data.support_channel,
+  }
 }
 
 export async function loadEmailBranding(): Promise<EmailBrandingContext> {
@@ -78,7 +91,7 @@ export async function loadEmailBranding(): Promise<EmailBrandingContext> {
   const colors = parseSiteColors(config.site_colors)
   const siteInfo = parseSiteInfo(config.site_info)
   const contact = parseContactInfo(config.contact_info)
-  const whatsapp = parseWhatsapp(config.social_media)
+  const social = parseSocialSupport(config.social_media)
   const images = normalizeSiteImages(config.site_images)
   const logoPath = images.logo.trim() || images.footer_logo.trim()
 
@@ -89,7 +102,9 @@ export async function loadEmailBranding(): Promise<EmailBrandingContext> {
     colors,
     logoUrl: toAbsoluteAssetUrl(logoPath, appUrl),
     contact,
-    whatsapp,
+    whatsapp: social.whatsapp,
+    telegram: social.telegram,
+    whatsappEnabled: getEnv().ENABLE_WHATSAPP && social.supportChannel === "whatsapp",
   }
 
   brandingCache = { value, expiresAt: now + BRANDING_CACHE_MS }

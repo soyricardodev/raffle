@@ -1,20 +1,21 @@
 import { Link } from "@tanstack/react-router"
-import { whatsAppHrefWithText } from "@/features/layout/social-links"
+import { resolveSupportChannel } from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
 
 export function VerifyPageHelp() {
   const branding = usePublicBranding()
-  const whatsappDigits = branding?.social.whatsapp?.trim() ?? ""
   const contactPhone = branding?.contact.phone?.trim() ?? ""
   const contactEmail = branding?.contact.email?.trim() ?? ""
+  const support = resolveSupportChannel({
+    whatsappEnabled: branding?.whatsappEnabled ?? false,
+    social: branding?.social,
+    promo: branding?.purchaseSuccessPromo,
+  })
 
-  const whatsappHrefResolved = whatsAppHrefWithText(
-    whatsappDigits,
-    "Hola, necesito ayuda para buscar mis boletos.",
-  )
+  const supportHref = support.supportHrefWithText("Hola, necesito ayuda para buscar mis boletos.")
   const telHref = contactPhone ? `tel:${contactPhone.replace(/\s/g, "")}` : ""
 
-  if (!whatsappHrefResolved && !telHref && !contactEmail) {
+  if (!supportHref && !telHref && !contactEmail) {
     return (
       <p className="text-muted-foreground text-center text-xs leading-relaxed">
         ¿Problemas para encontrar tus boletos?{" "}
@@ -29,14 +30,14 @@ export function VerifyPageHelp() {
   return (
     <p className="text-muted-foreground text-center text-xs leading-relaxed">
       ¿Problemas?{" "}
-      {whatsappHrefResolved ? (
+      {supportHref ? (
         <a
-          href={whatsappHrefResolved}
+          href={supportHref}
           target="_blank"
           rel="noopener noreferrer"
           className="text-foreground font-medium underline-offset-4 hover:underline"
         >
-          Escríbenos por WhatsApp
+          Escríbenos por {support.label}
         </a>
       ) : telHref ? (
         <a href={telHref} className="text-foreground font-medium underline-offset-4 hover:underline">
