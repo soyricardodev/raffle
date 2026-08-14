@@ -5,6 +5,7 @@ import {
   DEFAULT_OFFICIAL_FOOTER_HEADING,
   resolveOfficialFooterLogos,
 } from "@/features/layout/footer-defaults"
+import { SocialLinkIcon } from "@/features/layout/social-icons"
 import { buildSocialLinks } from "@/features/layout/social-links"
 import { PUBLIC_FOOTER_LEGAL_ID } from "@/features/layout/sticky-purchase-cta"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
@@ -149,8 +150,8 @@ export function PublicFooter() {
                       aria-label={link.label}
                       className="bg-background/80 border-border/80 hover:bg-background flex size-11 items-center justify-center rounded-full border shadow-sm transition-colors"
                     >
-                      {link.iconSrc ? (
-                        <img src={link.iconSrc} alt="" className="size-5" width={20} height={20} />
+                      {link.iconSrc || link.id === "telegram" || link.id === "tiktok" ? (
+                        <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-5" />
                       ) : (
                         <span className="text-xs font-semibold" aria-hidden>
                           {link.label.slice(0, 1)}

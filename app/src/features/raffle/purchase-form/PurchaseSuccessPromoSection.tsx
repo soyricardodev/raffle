@@ -1,5 +1,6 @@
 import type { RefObject } from "react"
 import { Button } from "@/components/ui/button"
+import { SocialBrandIcon, SocialLinkIcon } from "@/features/layout/social-icons"
 import type { ResolvedPurchaseSuccessPromo } from "@/features/raffle/purchase-form/resolve-purchase-success-promo"
 
 type PurchaseSuccessPromoSectionProps = {
@@ -68,7 +69,7 @@ export function PurchaseSuccessPromoSection({
                 background: `linear-gradient(to bottom right, ${promo.supportBrandColor}, #0d8ecf)`,
               }}
             >
-              <img src={promo.supportIconSrc} alt="" className="size-8" width={32} height={32} />
+              <SocialBrandIcon id={promo.supportKind} className="size-8" />
             </span>
           )}
           {showLogoBadge ? (
@@ -116,14 +117,7 @@ export function PurchaseSuccessPromoSection({
               aria-label={`Finalizar compra por ${promo.supportLabel}`}
               onClick={onSupportClick}
             >
-              <img
-                src={promo.supportIconSrc}
-                alt=""
-                className="mr-2 size-5"
-                width={20}
-                height={20}
-                aria-hidden
-              />
+              <SocialBrandIcon id={promo.supportKind} className="mr-2 size-5" />
               {promo.supportLabel}
             </a>
           </Button>
@@ -172,15 +166,8 @@ export function PurchaseSuccessPromoSection({
                       onSocialLinkClick(link.id)
                     }}
                   >
-                    {link.iconSrc ? (
-                      <img
-                        src={link.iconSrc}
-                        alt=""
-                        className="size-4"
-                        width={16}
-                        height={16}
-                        aria-hidden
-                      />
+                    {link.iconSrc || link.id === "telegram" || link.id === "tiktok" ? (
+                      <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-4" />
                     ) : (
                       <span className="text-xs font-semibold">{link.label.slice(0, 1)}</span>
                     )}

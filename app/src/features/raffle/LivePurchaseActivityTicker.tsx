@@ -2,6 +2,7 @@ import {
   buildTickerViewModel,
   type LivePurchaseActivityVariant,
 } from "@/features/raffle/live-activity-ticker-config"
+import { SocialLinkIcon } from "@/features/layout/social-icons"
 import { buildSocialLinks, type SocialLink } from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { PurchaseActivityMarquee } from "@/features/raffle/PurchaseActivityMarquee"
@@ -75,8 +76,8 @@ function SocialFollowLinks({ links }: { links: SocialLink[] }) {
               "focus-visible:ring-ring/40 focus-visible:ring-2 focus-visible:outline-none active:scale-95",
             )}
           >
-            {link.iconSrc ? (
-              <img src={link.iconSrc} alt="" className="size-4" width={16} height={16} />
+            {link.iconSrc || link.id === "telegram" || link.id === "tiktok" ? (
+              <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-4" />
             ) : (
               <span className="text-[10px] font-semibold" aria-hidden>
                 {link.label.slice(0, 1)}
