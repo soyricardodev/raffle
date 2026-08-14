@@ -11,7 +11,7 @@ export function PublicHeader() {
   const logoUrl = branding?.images.logo ?? ""
 
   return (
-    <header className="border-border/60 bg-background/90 sticky top-0 z-40 border-b backdrop-blur-md">
+    <header className="border-border/60 bg-background/90 border-b backdrop-blur-md">
       <div className="mx-auto flex h-14 max-w-lg items-center justify-between gap-2 px-4">
         <Link
           to="/"
