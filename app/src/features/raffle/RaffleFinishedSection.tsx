@@ -9,7 +9,6 @@ import {
   raffleTicketsInput,
 } from "@/features/raffle/raffle-landing-types"
 import { buildVerifyHref } from "@/features/verify/build-verify-href"
-import { formatDate } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
 type FinishedPrize = {
@@ -36,7 +35,6 @@ export function RaffleFinishedSection({
 }: RaffleFinishedSectionProps) {
   const tickets = raffleTicketsInput(raffle)
   const hasCover = Boolean(raffle.image_url)
-  const published = Boolean(raffle.publish)
   const sortedPrizes = [...(raffle.prizes ?? [])].sort((a, b) => a.position - b.position)
 
   return (
@@ -53,7 +51,7 @@ export function RaffleFinishedSection({
         />
       ) : null}
 
-      <FinishedStatusBanner published={published} drawDate={raffle.draw_date} />
+      <FinishedStatusBanner />
 
       <RaffleInfoPanel
         raffleId={raffle.id}
@@ -81,13 +79,7 @@ export function RaffleFinishedSection({
   )
 }
 
-function FinishedStatusBanner({
-  published,
-  drawDate,
-}: {
-  published: boolean
-  drawDate?: string | null
-}) {
+function FinishedStatusBanner() {
   return (
     <div
       className={cn(
@@ -99,20 +91,23 @@ function FinishedStatusBanner({
         <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/15 text-blue-700 dark:text-blue-300">
           <CheckCircle2 className="size-5" aria-hidden />
         </span>
-        <div className="min-w-0 space-y-1">
+        <div className="flex min-w-0 flex-col gap-2">
           <p className="font-heading text-lg font-bold tracking-tight text-blue-950 dark:text-blue-50">
-            Rifa finalizada
+            Rifa finalizada con éxito:
           </p>
           <p className="text-muted-foreground text-sm leading-relaxed">
-            {published
-              ? "Esta rifa ya cerró ventas. Revisa tus boletos o consulta los detalles."
-              : "Las ventas están cerradas. Si compraste, verifica tus boletos abajo."}
+            Si no lograste registrar tu comprobante a tiempo, mantén la calma, lo puedes
+            registrar en la próxima liberación.
           </p>
-          {drawDate ? (
-            <p className="text-muted-foreground text-xs">
-              Sorteo: <span className="font-medium text-foreground">{formatDate(drawDate)}</span>
-            </p>
-          ) : null}
+          <p className="text-muted-foreground text-sm leading-relaxed">
+            Las ventas están cerradas. Si compraste verifica tus boletos arriba en{" "}
+            <Link
+              {...buildVerifyHref()}
+              className="text-foreground font-medium underline-offset-4 hover:underline"
+            >
+              “Buscar mis boletos”
+            </Link>
+          </p>
         </div>
       </div>
     </div>
