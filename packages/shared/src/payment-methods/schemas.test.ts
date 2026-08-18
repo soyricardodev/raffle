@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest"
-import { parseAccountInfo, safeParseAccountInfo } from "./schemas.js"
+import { parseAccountInfo, ReorderPaymentAccountsInput, safeParseAccountInfo } from "./schemas.js"
 
 describe("payment account schemas", () => {
   it("validates pago movil with normalized keys", () => {
@@ -66,5 +66,10 @@ describe("payment account schemas", () => {
   it("validates binance email only", () => {
     const data = parseAccountInfo("binance", { email: "a@b.com" })
     expect(data.email).toBe("a@b.com")
+  })
+
+  it("requires at least one id to reorder payment accounts", () => {
+    expect(ReorderPaymentAccountsInput.safeParse({ ordered_ids: [] }).success).toBe(false)
+    expect(ReorderPaymentAccountsInput.parse({ ordered_ids: [1, 2] }).ordered_ids).toEqual([1, 2])
   })
 })

@@ -1,0 +1,27 @@
+import { z } from "zod"
+
+function parseNorecordarSearch(value: unknown): boolean | undefined {
+  if (value === true || value === 1) return true
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase()
+    if (normalized === "1" || normalized === "true") return true
+  }
+  return undefined
+}
+
+const purchaseRouteSearchSchema = z.object({
+  norecordar: z.unknown().optional().transform(parseNorecordarSearch),
+})
+
+export type PurchaseRouteSearch = {
+  norecordar?: boolean
+}
+
+export function parsePurchaseRouteSearchInput(
+  search: Record<string, unknown>,
+): PurchaseRouteSearch {
+  const parsed = purchaseRouteSearchSchema.parse(search)
+  const result: PurchaseRouteSearch = {}
+  if (parsed.norecordar === true) result.norecordar = true
+  return result
+}

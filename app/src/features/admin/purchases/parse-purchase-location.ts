@@ -1,20 +1,28 @@
+import { parseCustomerLocation } from "@raffle/shared/analytics"
 import type { CustomerLocationType } from "@raffle/shared/validators"
 
 export function parsePurchaseLocationFormState(location: string | null | undefined): {
   locationType: CustomerLocationType
   selectedState: string
+  selectedMunicipality: string
   customLocation: string
 } {
-  const loc = location?.trim() ?? ""
-  if (loc.startsWith("Venezuela,")) {
+  const parsed = parseCustomerLocation(location)
+  if (parsed.kind === "venezuela") {
     return {
       locationType: "venezuela",
-      selectedState: loc.slice("Venezuela,".length).trim(),
+      selectedState: parsed.state ?? "",
+      selectedMunicipality: parsed.municipality ?? "",
       customLocation: "",
     }
   }
-  if (loc) {
-    return { locationType: "other", selectedState: "", customLocation: loc }
+  if (parsed.kind === "international") {
+    return {
+      locationType: "other",
+      selectedState: "",
+      selectedMunicipality: "",
+      customLocation: parsed.raw ?? "",
+    }
   }
-  return { locationType: "venezuela", selectedState: "", customLocation: "" }
+  return { locationType: "venezuela", selectedState: "", selectedMunicipality: "", customLocation: "" }
 }

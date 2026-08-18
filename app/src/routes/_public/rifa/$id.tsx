@@ -1,19 +1,21 @@
 import { useQuery } from "@tanstack/react-query"
 import { createFileRoute } from "@tanstack/react-router"
 import { Skeleton } from "@/components/ui/skeleton"
-import { PublicLayout } from "@/features/layout/PublicLayout"
 import { buildPublicPageHead, siteNameFromMatches } from "@/features/layout/document-head"
+import { PublicLayout } from "@/features/layout/PublicLayout"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
 import { LivePurchaseActivityTicker } from "@/features/raffle/LivePurchaseActivityTicker"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PrizesSection } from "@/features/raffle/PrizesSection"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
+import { parsePurchaseRouteSearchInput } from "@/features/raffle/purchase-form/purchase-route-search"
 import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 import { RaffleLiveProvider } from "@/features/raffle/raffle-live-context"
 import { raffleDetailQueryOptions } from "@/features/raffle/raffle-queries"
 import type { EnrichedRaffle } from "@/server/raffle.service"
 
 export const Route = createFileRoute("/_public/rifa/$id")({
+  validateSearch: (search: Record<string, unknown>) => parsePurchaseRouteSearchInput(search),
   loader: async ({ params, context: { queryClient } }) => {
     const raffle = await queryClient
       .ensureQueryData(raffleDetailQueryOptions(params.id))
@@ -53,6 +55,7 @@ function RaffleDetailSkeleton() {
 function RaffleDetailPage() {
   const { id } = Route.useParams()
   const { raffle: loaderRaffle } = Route.useLoaderData()
+  const { norecordar } = Route.useSearch()
 
   const { data: raffle = loaderRaffle, isError } = useQuery({
     ...raffleDetailQueryOptions(id),
@@ -105,7 +108,7 @@ function RaffleDetailPage() {
             ) : null}
 
             <div id="comprar" className="scroll-mt-16">
-              <PurchaseForm raffle={raffle} />
+              <PurchaseForm raffle={raffle} rememberBuyer={norecordar !== true} />
             </div>
           </RaffleActiveSection>
         </div>

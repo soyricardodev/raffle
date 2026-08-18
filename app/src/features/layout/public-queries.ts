@@ -30,12 +30,16 @@ export type PublicSiteConfigPayload = {
   site_images?: SiteImages
   seo_config?: SeoConfig
   purchase_success_promo?: PurchaseSuccessPromo
-  features?: { whatsapp_enabled: boolean }
+  features?: { whatsapp_enabled: boolean; venezuela_municipality_enabled?: boolean }
 }
 
 export const fetchPublicSiteConfig = createServerFn({ method: "GET" }).handler(async () => {
   const data = await getSiteConfigMap()
-  return applyPublicWhatsAppVisibility(parsePublicSiteConfig(data), getEnv().ENABLE_WHATSAPP)
+  return applyPublicWhatsAppVisibility(
+    parsePublicSiteConfig(data),
+    getEnv().ENABLE_WHATSAPP,
+    getEnv().ENABLE_VENEZUELA_MUNICIPALITY,
+  )
 })
 
 export function publicSiteConfigQueryOptions() {

@@ -5,6 +5,7 @@ import {
   customerLocationFieldError,
   formatCustomerCi,
   formatCustomerLocation,
+  singleMunicipalityName,
   isValidCustomerCi,
   isValidCustomerPhone,
   paymentReferenceValidationMessage,
@@ -58,6 +59,7 @@ import { formatCurrency } from "@/lib/format"
 
 export type PurchaseFormProps = {
   raffle: RaffleForPurchase
+  rememberBuyer?: boolean
 }
 
 type PurchaseFormHints = {
@@ -94,9 +96,10 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
   return undefined
 }
 
-export function PurchaseForm({ raffle }: PurchaseFormProps) {
+export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps) {
   const queryClient = useQueryClient()
   const branding = usePublicBranding()
+  const requireMunicipality = branding?.venezuelaMunicipalityEnabled ?? false
   const [supportError, setSupportError] = useState<PurchaseSupportErrorState | null>(null)
   const minPurchase = Number(raffle.min_purchase) || 1
   const maxPurchase = Number(raffle.max_purchase) || 10
@@ -130,6 +133,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   const [ciNumber, setCiNumber] = useState("")
   const [locationType, setLocationType] = useState<CustomerLocationType>("venezuela")
   const [selectedState, setSelectedState] = useState("")
+  const [selectedMunicipality, setSelectedMunicipality] = useState("")
   const [customLocation, setCustomLocation] = useState("")
   const [paymentReference, setPaymentReference] = useState("")
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
@@ -153,12 +157,9 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     methodPromotionHint,
     total,
     unitPriceBs,
-    originalUnitPriceBs,
     discountPerTicketBs,
     totalBs,
     unitPriceUsd,
-    originalUnitPriceUsd,
-    discountPerTicketUsd,
     totalUsd,
   } = usePurchasePricing({
     raffle,
@@ -179,15 +180,21 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     setCiNumber(profile.ciNumber)
     setLocationType(profile.locationType)
     setSelectedState(profile.selectedState)
+    setSelectedMunicipality(
+      requireMunicipality
+        ? profile.selectedMunicipality || singleMunicipalityName(profile.selectedState) || ""
+        : profile.selectedMunicipality || "",
+    )
     setCustomLocation(profile.customLocation)
-  }, [])
+  }, [requireMunicipality])
 
   useEffect(() => {
+    if (!rememberBuyer) return
     const saved = loadSavedBuyerProfile()
     if (!saved) return
     setSavedProfile(saved)
     applyProfile(saved)
-  }, [applyProfile])
+  }, [applyProfile, rememberBuyer])
 
   useEffect(() => {
     setQuantity((current) => clampQuantity(current, quantityMin, effectiveMax))
@@ -227,7 +234,13 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
         : undefined,
       email: emailHint(customerEmail),
       ci: ciHint(ciPrefix, ciNumber),
-      location: customerLocationFieldError(locationType, selectedState, customLocation),
+      location: customerLocationFieldError({
+        locationType,
+        selectedState,
+        selectedMunicipality,
+        customLocation,
+        requireMunicipality,
+      }),
       reference: paymentReferenceValidationMessage(
         paymentReference,
         referenceMinLength,
@@ -248,6 +261,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       ciNumber,
       locationType,
       selectedState,
+      selectedMunicipality,
+      requireMunicipality,
       customLocation,
       paymentReference,
       referenceMinLength,
@@ -286,7 +301,13 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       if (!rafflePaymentMethodId) throw new Error("Selecciona un método de pago")
       if (!paymentProof) throw new Error("Sube el comprobante de pago")
 
-      const customerLocation = formatCustomerLocation(locationType, selectedState, customLocation)
+      const customerLocation = formatCustomerLocation({
+        locationType,
+        selectedState,
+        selectedMunicipality,
+        customLocation,
+        requireMunicipality,
+      })
 
       const form = new FormData()
       form.append("raffleId", String(raffle.id))
@@ -303,28 +324,32 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       return publicFetch<PurchaseResult>("/api/purchases/", { method: "POST", body: form })
     },
     onSuccess: (result) => {
-      saveBuyerProfile({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
-        ciPrefix,
-        ciNumber,
-        locationType,
-        selectedState,
-        customLocation,
-      })
-      setSavedProfile({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
-        ciPrefix,
-        ciNumber,
-        locationType,
-        selectedState,
-        customLocation,
-        savedAt: Date.now(),
-      })
-      setSavedProfileDismissed(false)
+      if (rememberBuyer) {
+        saveBuyerProfile({
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail.trim(),
+          ciPrefix,
+          ciNumber,
+          locationType,
+          selectedState,
+          selectedMunicipality,
+          customLocation,
+        })
+        setSavedProfile({
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail.trim(),
+          ciPrefix,
+          ciNumber,
+          locationType,
+          selectedState,
+          selectedMunicipality,
+          customLocation,
+          savedAt: Date.now(),
+        })
+        setSavedProfileDismissed(false)
+      }
       setSuccessResult(result)
       setPaymentReference("")
       setRafflePaymentMethodId(null)
@@ -393,6 +418,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     setCiNumber("")
     setLocationType("venezuela")
     setSelectedState("")
+    setSelectedMunicipality("")
     setCustomLocation("")
   }, [])
 
@@ -455,7 +481,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             </p>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5 pb-2">
+        <CardContent className="flex flex-col gap-3.5 pb-2">
           <TicketQuantityStep
             quantity={quantity}
             quantityMin={quantityMin}
@@ -464,11 +490,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             available={available}
             paymentThresholds={paymentThresholds}
             unitPrice={unitPriceBs}
-            originalUnitPrice={discountPerTicketBs > 0 ? originalUnitPriceBs : undefined}
             discountPerTicket={discountPerTicketBs > 0 ? discountPerTicketBs : undefined}
             unitPriceUsd={unitPriceUsd}
-            originalUnitPriceUsd={discountPerTicketUsd > 0 ? originalUnitPriceUsd : undefined}
-            discountPerTicketUsd={discountPerTicketUsd > 0 ? discountPerTicketUsd : undefined}
             totalBs={totalBs}
             totalUsd={totalUsd}
             currency="Bs"
@@ -487,6 +510,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             ciNumber={ciNumber}
             locationType={locationType}
             selectedState={selectedState}
+            selectedMunicipality={selectedMunicipality}
             customLocation={customLocation}
             savedProfileName={savedProfile?.customerName ?? null}
             savedProfileDismissed={savedProfileDismissed}
@@ -498,9 +522,11 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             onCiNumberChange={setCiNumber}
             onLocationTypeChange={setLocationType}
             onSelectedStateChange={setSelectedState}
+            onSelectedMunicipalityChange={setSelectedMunicipality}
             onCustomLocationChange={setCustomLocation}
             onUseOtherSavedData={handleUseOtherSavedData}
             onRestoreSavedProfile={handleRestoreSavedProfile}
+            requireMunicipality={requireMunicipality}
           />
 
           <PaymentStep

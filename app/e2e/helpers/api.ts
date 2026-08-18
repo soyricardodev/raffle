@@ -14,7 +14,7 @@ export type PurchasePayload = {
   paymentProofUrl?: string
 }
 
-export const DEFAULT_CUSTOMER_LOCATION = "Venezuela, Carabobo"
+export const DEFAULT_CUSTOMER_LOCATION = "Venezuela, Carabobo, Valencia"
 export const DEFAULT_PAYMENT_PROOF_URL = "/uploads/payments/e2e-proof.jpg"
 
 export async function fetchFirstRafflePaymentMethodId(

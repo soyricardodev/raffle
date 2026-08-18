@@ -1,4 +1,7 @@
-import { VENEZUELA_STATES } from "../validators/index.js"
+import { normalizeMunicipality } from "../geo/venezuela-municipalities.js"
+import { normalizeVenezuelaState, splitVenezuelaLocation } from "../validators/index.js"
+
+export { normalizeVenezuelaState }
 
 export const INTERNATIONAL_LABEL = "Internacional"
 export const UNKNOWN_LOCATION_LABEL = "Sin ubicación"
@@ -8,6 +11,7 @@ export type LocationKind = "venezuela" | "international" | "unknown"
 export type ParsedCustomerLocation = {
   kind: LocationKind
   state: string | null
+  municipality: string | null
   raw: string | null
 }
 
@@ -23,69 +27,28 @@ export type LocationAggregateRow = {
   revenue: number
 }
 
-const LEGACY_STATE_ALIASES: Record<string, string> = {
-  caracas: "Distrito Capital",
-  vargas: "La Guaira",
-  "dtto capital": "Distrito Capital",
-  "distrito capital": "Distrito Capital",
-  "la guaira": "La Guaira",
-  tachira: "Táchira",
-  táchira: "Táchira",
-  merida: "Mérida",
-  mérida: "Mérida",
-  anzoategui: "Anzoátegui",
-  anzoátegui: "Anzoátegui",
-  falcon: "Falcón",
-  falcón: "Falcón",
-  "nueva esparta": "Nueva Esparta",
-  "delta amacuro": "Delta Amacuro",
-}
-
-const STATE_LOOKUP = new Map<string, string>()
-for (const state of VENEZUELA_STATES) {
-  STATE_LOOKUP.set(state.toLowerCase(), state)
-  STATE_LOOKUP.set(stripAccents(state).toLowerCase(), state)
-}
-for (const [alias, canonical] of Object.entries(LEGACY_STATE_ALIASES)) {
-  STATE_LOOKUP.set(alias.toLowerCase(), canonical)
-  STATE_LOOKUP.set(stripAccents(alias).toLowerCase(), canonical)
-}
-
-function stripAccents(value: string): string {
-  return value.normalize("NFD").replace(/\p{M}/gu, "")
-}
-
 export function parseCustomerLocation(location: string | null | undefined): ParsedCustomerLocation {
   const raw = location?.trim() || null
   if (!raw) {
-    return { kind: "unknown", state: null, raw: null }
+    return { kind: "unknown", state: null, municipality: null, raw: null }
   }
 
-  const lower = raw.toLowerCase()
-  if (lower.startsWith("venezuela,")) {
-    const statePart = raw.slice("venezuela,".length).trim()
-    return {
-      kind: "venezuela",
-      state: normalizeVenezuelaState(statePart),
-      raw,
-    }
+  const split = splitVenezuelaLocation(raw)
+  if (split) {
+    const state = normalizeVenezuelaState(split.statePart)
+    const municipality =
+      state && split.municipalityPart
+        ? normalizeMunicipality(state, split.municipalityPart)
+        : null
+    return { kind: "venezuela", state, municipality, raw }
   }
 
   const direct = normalizeVenezuelaState(raw)
   if (direct) {
-    return { kind: "venezuela", state: direct, raw }
+    return { kind: "venezuela", state: direct, municipality: null, raw }
   }
 
-  return { kind: "international", state: null, raw }
-}
-
-export function normalizeVenezuelaState(value: string | null | undefined): string | null {
-  const trimmed = value?.trim()
-  if (!trimmed) return null
-
-  const key = trimmed.toLowerCase()
-  const accentKey = stripAccents(trimmed).toLowerCase()
-  return STATE_LOOKUP.get(key) ?? STATE_LOOKUP.get(accentKey) ?? null
+  return { kind: "international", state: null, municipality: null, raw }
 }
 
 export function classifyLocationForAnalytics(location: string | null | undefined): string {

@@ -15,8 +15,8 @@ type LoginFormProps = {
 
 export function LoginForm({ redirectTo = "/admin" }: LoginFormProps) {
   const navigate = useNavigate()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [email, setEmail] = useState(import.meta.env.DEV ? "admin@rifas.com" : "")
+  const [password, setPassword] = useState(import.meta.env.DEV ? "admin123" : "")
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
 

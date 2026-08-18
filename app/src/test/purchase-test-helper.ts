@@ -15,7 +15,7 @@ export function withTestBuyerDefaults(
     >,
 ): CreatePurchaseParams {
   return {
-    customerLocation: "Venezuela, Carabobo",
+    customerLocation: "Venezuela, Carabobo, Valencia",
     customerEmail: "comprador@test.local",
     customerCi: "V12345678",
     paymentProofUrl: TEST_PAYMENT_PROOF_URL,

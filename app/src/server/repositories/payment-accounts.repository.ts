@@ -1,7 +1,7 @@
 import { paymentAccounts, rafflePaymentMethods, rafflePromotions, raffles } from "@raffle/shared/db"
 import { parseAccountInfo } from "@raffle/shared/payment-methods"
 import type { PaymentMethod } from "@raffle/shared/validators"
-import { and, desc, eq, inArray } from "drizzle-orm"
+import { and, asc, eq, inArray, max } from "drizzle-orm"
 import { type DbTransaction, getDb, withImmediateTransaction } from "@/lib/db.server"
 
 export type PaymentAccountRow = typeof paymentAccounts.$inferSelect
@@ -19,6 +19,7 @@ function mapAccountRow(row: PaymentAccountRow) {
     method_type: row.methodType as PaymentMethod,
     account_info: accountInfo,
     is_active: row.isActive,
+    sort_order: row.sortOrder,
     created_at: row.createdAt.toISOString(),
     updated_at: row.updatedAt.toISOString(),
   }
@@ -26,7 +27,10 @@ function mapAccountRow(row: PaymentAccountRow) {
 
 export async function listPaymentAccounts(options?: { activeOnly?: boolean }) {
   const db = getDb()
-  const rows = await db.select().from(paymentAccounts).orderBy(desc(paymentAccounts.createdAt))
+  const rows = await db
+    .select()
+    .from(paymentAccounts)
+    .orderBy(asc(paymentAccounts.sortOrder), asc(paymentAccounts.id))
 
   const filtered = options?.activeOnly ? rows.filter((r) => r.isActive) : rows
   return filtered.map(mapAccountRow)
@@ -44,18 +48,21 @@ export async function insertPaymentAccount(data: {
   accountInfo: Record<string, string>
   isActive?: boolean
 }) {
-  const db = getDb()
   const normalized = parseAccountInfo(data.methodType, data.accountInfo)
-  const [row] = await db
-    .insert(paymentAccounts)
-    .values({
-      label: data.label,
-      methodType: data.methodType,
-      accountInfo: JSON.stringify(normalized),
-      isActive: data.isActive ?? true,
-    })
-    .returning({ id: paymentAccounts.id })
-  return row!.id
+  return withImmediateTransaction(async (tx) => {
+    const [maxRow] = await tx.select({ max: max(paymentAccounts.sortOrder) }).from(paymentAccounts)
+    const [row] = await tx
+      .insert(paymentAccounts)
+      .values({
+        label: data.label,
+        methodType: data.methodType,
+        accountInfo: JSON.stringify(normalized),
+        isActive: data.isActive ?? true,
+        sortOrder: (maxRow?.max ?? -1) + 1,
+      })
+      .returning({ id: paymentAccounts.id })
+    return row!.id
+  })
 }
 
 export async function updatePaymentAccount(
@@ -177,6 +184,18 @@ export async function deletePaymentAccount(id: number) {
 
   await db.delete(paymentAccounts).where(eq(paymentAccounts.id, id))
   return { deleted: true as const }
+}
+
+export async function reorderPaymentAccounts(orderedIds: number[]) {
+  await withImmediateTransaction(async (tx) => {
+    const now = new Date()
+    for (const [index, id] of orderedIds.entries()) {
+      await tx
+        .update(paymentAccounts)
+        .set({ sortOrder: index, updatedAt: now })
+        .where(eq(paymentAccounts.id, id))
+    }
+  })
 }
 
 export async function findAccountsByIds(tx: DbTransaction, ids: number[]) {

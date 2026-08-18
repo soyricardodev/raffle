@@ -1,5 +1,6 @@
 import { parseCustomerLocation } from "@raffle/shared/analytics"
 import { type CreatePurchaseBody, parseCreatePurchaseBody } from "@raffle/shared/validators"
+import { getEnv } from "@/lib/env"
 import type { CreatePurchaseParams } from "@/server/purchase.service"
 
 export function formDataToPurchaseRecord(form: FormData): Record<string, unknown> {
@@ -27,6 +28,7 @@ export function toCreatePurchaseParams(body: CreatePurchaseBody): CreatePurchase
     customerLocation: body.customerLocation,
     locationType: parsed.kind === "international" ? "other" : "venezuela",
     venezuelaState: parsed.state,
+    venezuelaMunicipality: parsed.municipality,
     rafflePaymentMethodId: body.rafflePaymentMethodId,
     paymentReference: body.paymentReference,
     ticketQuantity: body.ticketQuantity,
@@ -39,13 +41,20 @@ export function parsePurchaseFromFormData(
   paymentProofUrl: string,
 ): CreatePurchaseParams {
   return toCreatePurchaseParams(
-    parseCreatePurchaseBody({
-      ...formDataToPurchaseRecord(form),
-      paymentProofUrl,
-    }),
+    parseCreatePurchaseBody(
+      {
+        ...formDataToPurchaseRecord(form),
+        paymentProofUrl,
+      },
+      { requireMunicipality: getEnv().ENABLE_VENEZUELA_MUNICIPALITY },
+    ),
   )
 }
 
 export function parsePurchaseFromJson(raw: unknown): CreatePurchaseParams {
-  return toCreatePurchaseParams(parseCreatePurchaseBody(raw as Record<string, unknown>))
+  return toCreatePurchaseParams(
+    parseCreatePurchaseBody(raw as Record<string, unknown>, {
+      requireMunicipality: getEnv().ENABLE_VENEZUELA_MUNICIPALITY,
+    }),
+  )
 }

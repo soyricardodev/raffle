@@ -80,8 +80,7 @@ export function validatePaymentProofFile(file: File): PaymentProofValidation {
   if (isHeicPaymentProof(file)) {
     return {
       ok: false,
-      error:
-        "Formato HEIC no compatible. En iPhone: Ajustes → Cámara → Formatos → «Más compatible», o usa «Tomar foto» aquí.",
+      error: "Formato HEIC no compatible. Usa JPG, PNG, WEBP, GIF o PDF.",
     }
   }
 

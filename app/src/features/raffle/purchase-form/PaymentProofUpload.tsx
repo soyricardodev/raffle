@@ -1,10 +1,4 @@
-import {
-  CameraIcon,
-  CheckCircleIcon,
-  FilePdfIcon,
-  ImagesIcon,
-  XIcon,
-} from "@phosphor-icons/react"
+import { CheckCircleIcon, FilePdfIcon, ImagesIcon, XIcon } from "@phosphor-icons/react"
 import { type ChangeEvent, memo, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
@@ -31,7 +25,6 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
 }: PaymentProofUploadProps) {
   const baseId = useId()
   const galleryInputRef = useRef<HTMLInputElement>(null)
-  const cameraInputRef = useRef<HTMLInputElement>(null)
   const [localError, setLocalError] = useState<string | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
 
@@ -39,7 +32,7 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
   const galleryInputId = `${baseId}-gallery`
 
   useEffect(() => {
-    if (!file || !file.type.startsWith("image/")) {
+    if (!file?.type.startsWith("image/")) {
       setPreviewUrl(null)
       return
     }
@@ -48,20 +41,19 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
     return () => URL.revokeObjectURL(url)
   }, [file])
 
-  function clearInputs() {
+  function clearInput() {
     if (galleryInputRef.current) galleryInputRef.current.value = ""
-    if (cameraInputRef.current) cameraInputRef.current.value = ""
   }
 
   function clearFile() {
     setLocalError(null)
     onChange(null)
-    clearInputs()
+    clearInput()
   }
 
   function selectFile(nextFile: File | null) {
     // Always reset so the same file can be picked again after a reject/success.
-    clearInputs()
+    clearInput()
 
     if (!nextFile) {
       setLocalError(null)
@@ -101,16 +93,6 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
         className="sr-only"
         disabled={disabled}
         data-testid="payment-proof-input"
-        onChange={onInputChange}
-      />
-      <input
-        ref={cameraInputRef}
-        type="file"
-        accept="image/*"
-        capture="environment"
-        className="sr-only"
-        disabled={disabled}
-        data-testid="payment-proof-camera-input"
         onChange={onInputChange}
       />
 
@@ -170,44 +152,28 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
           </div>
         </div>
       ) : (
-        <div className="flex flex-col gap-2">
-          <button
-            type="button"
-            disabled={disabled}
-            onClick={() => galleryInputRef.current?.click()}
-            aria-invalid={!!displayError}
-            className={cn(
-              "flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-4 transition-colors",
-              "border-emerald-500/35 bg-emerald-500/8 hover:border-emerald-500/55 hover:bg-emerald-500/12",
-              displayError && "border-destructive",
-              disabled && "pointer-events-none opacity-50",
-            )}
-          >
-            <span className="flex size-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
-              <ImagesIcon className="size-6" aria-hidden />
-            </span>
-            <span className="text-sm font-medium">Elegir de la galería</span>
-            <span className="text-muted-foreground text-center text-xs">
-              Captura de pantalla o foto guardada
-            </span>
-          </button>
-
-          <Button
-            type="button"
-            variant="outline"
-            className="min-h-11 w-full"
-            disabled={disabled}
-            onClick={() => cameraInputRef.current?.click()}
-          >
-            <CameraIcon data-icon="inline-start" />
-            Tomar foto ahora
-          </Button>
-        </div>
+        <button
+          type="button"
+          disabled={disabled}
+          onClick={() => galleryInputRef.current?.click()}
+          aria-invalid={!!displayError}
+          className={cn(
+            "flex min-h-24 w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed px-4 py-4 transition-colors",
+            "border-emerald-500/35 bg-emerald-500/8 hover:border-emerald-500/55 hover:bg-emerald-500/12",
+            displayError && "border-destructive",
+            disabled && "pointer-events-none opacity-50",
+          )}
+        >
+          <span className="flex size-12 items-center justify-center rounded-full bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+            <ImagesIcon className="size-6" aria-hidden />
+          </span>
+          <span className="text-sm font-medium">Elegir de la galería</span>
+          <span className="text-muted-foreground text-center text-xs">
+            Captura de pantalla o foto guardada
+          </span>
+        </button>
       )}
 
-      <p className="text-muted-foreground text-[10px] leading-snug">
-        Si no carga: prueba «Tomar foto ahora», o en iPhone usa formato «Más compatible» (no HEIC).
-      </p>
       <FieldError>{displayError}</FieldError>
     </Field>
   )

@@ -1,7 +1,7 @@
 import { paymentAccounts, rafflePaymentMethods, rafflePromotions } from "@raffle/shared/db"
 import { ValidationError } from "@raffle/shared/errors"
 import type { PaymentMethod } from "@raffle/shared/validators"
-import { and, eq } from "drizzle-orm"
+import { and, asc, eq } from "drizzle-orm"
 import { type DbTransaction, getDb } from "@/lib/db.server"
 
 export type ResolvedRafflePaymentMethod = {
@@ -33,6 +33,7 @@ export async function listPaymentMethodsByRaffle(raffleId: number, activeOnly = 
     .from(rafflePaymentMethods)
     .innerJoin(paymentAccounts, eq(rafflePaymentMethods.accountId, paymentAccounts.id))
     .where(eq(rafflePaymentMethods.raffleId, raffleId))
+    .orderBy(asc(paymentAccounts.sortOrder), asc(paymentAccounts.id))
 
   const filtered = activeOnly ? rows.filter((r) => r.rpm.isActive && r.account.isActive) : rows
 

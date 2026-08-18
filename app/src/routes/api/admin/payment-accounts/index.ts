@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { apiHandlers } from "@/lib/api-handler"
 import { requireAdmin } from "@/lib/auth-utils.server"
-import { createPaymentAccount, listPaymentAccounts } from "@/server/payment-accounts.service"
+import {
+  createPaymentAccount,
+  listPaymentAccounts,
+  reorderPaymentAccounts,
+} from "@/server/payment-accounts.service"
 
 export const Route = createFileRoute("/api/admin/payment-accounts/")({
   server: {
@@ -17,6 +21,11 @@ export const Route = createFileRoute("/api/admin/payment-accounts/")({
         const body = await request.json()
         const result = await createPaymentAccount(body)
         return Response.json(result, { status: 201 })
+      },
+      PUT: async ({ request }) => {
+        await requireAdmin(request)
+        const body = await request.json()
+        return Response.json(await reorderPaymentAccounts(body))
       },
     }),
   },

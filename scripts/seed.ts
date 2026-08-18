@@ -189,7 +189,7 @@ async function seedActiveRaffle(db: ReturnType<typeof createScriptDb>) {
     },
   ]
 
-  for (const acc of accounts) {
+  for (const [index, acc] of accounts.entries()) {
     const [row] = await db
       .insert(paymentAccounts)
       .values({
@@ -197,6 +197,7 @@ async function seedActiveRaffle(db: ReturnType<typeof createScriptDb>) {
         methodType: acc.methodType,
         accountInfo: JSON.stringify(acc.accountInfo),
         isActive: true,
+        sortOrder: index,
       })
       .returning({ id: paymentAccounts.id })
 

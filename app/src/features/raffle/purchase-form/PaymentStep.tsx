@@ -1,24 +1,17 @@
-import {
-  paymentMethodCurrencyLabel,
-  paymentMethodDisplayLabel,
-} from "@raffle/shared/payment-methods"
-import { CheckCircleIcon, LockKeyIcon, ReceiptIcon } from "@phosphor-icons/react"
+import { ReceiptIcon } from "@phosphor-icons/react"
+import type { PaymentReferenceInputMode } from "@raffle/shared/validators"
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Separator } from "@/components/ui/separator"
 import type { MethodEligibility } from "@/features/raffle/payment-method-eligibility"
-import { PaymentDetailsPanel } from "@/features/raffle/purchase-form/PaymentDetailsPanel"
-import { PaymentProofUpload } from "@/features/raffle/purchase-form/PaymentProofUpload"
-import { PaymentReferenceField } from "@/features/raffle/purchase-form/PaymentReferenceField"
 import {
   paymentCompletionBoxClassName,
-  paymentMethodCardActiveClassName,
-  paymentMethodCardInactiveClassName,
-  paymentMethodCardPromoClassName,
   paymentSectionCardClassName,
 } from "@/features/raffle/purchase-form/field-styles"
-import type { PaymentReferenceInputMode } from "@raffle/shared/validators"
+import { PaymentMethodCard } from "@/features/raffle/purchase-form/PaymentMethodCard"
+import { PaymentProofUpload } from "@/features/raffle/purchase-form/PaymentProofUpload"
+import { PaymentReferenceField } from "@/features/raffle/purchase-form/PaymentReferenceField"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { cn } from "@/lib/utils"
 
@@ -50,6 +43,8 @@ type PaymentMethodPickerProps = {
   selectedId: number | null
   methodPromotionBadges?: Record<number, string>
   methodHint?: string
+  total: number
+  quantity: number
   getEligibility: (method: RafflePaymentMethod) => MethodEligibility
   onSelectMethod: (id: number) => void
 }
@@ -60,6 +55,8 @@ const PaymentMethodPicker = memo(function PaymentMethodPicker({
   selectedId,
   methodPromotionBadges = {},
   methodHint,
+  total,
+  quantity,
   getEligibility,
   onSelectMethod,
 }: PaymentMethodPickerProps) {
@@ -73,95 +70,20 @@ const PaymentMethodPicker = memo(function PaymentMethodPicker({
           Toca una opción para ver los datos y copiar rápido.
         </p>
       </div>
-      <div
-        role="radiogroup"
-        aria-labelledby="payment-method-label"
-        className="flex flex-col gap-2"
-      >
-        {methods.map((method) => {
-          const active = selectedId === method.id
-          const { locked, minTickets } = getEligibility(method)
-          const currency = paymentMethodCurrencyLabel(method.method_type)
-          const title = paymentMethodDisplayLabel(method)
-          const promoBadge = methodPromotionBadges[method.id]
-
-          return (
-            // biome-ignore lint/a11y/useSemanticElements: These custom radio cards preserve the existing large mobile tap target.
-            <button
-              key={`rpm-${method.id}`}
-              type="button"
-              role="radio"
-              aria-checked={active}
-              data-testid={`payment-method-${method.id}`}
-              disabled={disabled || locked}
-              onClick={() => onSelectMethod(method.id)}
-              className={cn(
-                "group flex min-h-16 w-full items-center gap-3 rounded-xl border p-3 text-left shadow-sm transition-all focus-visible:border-emerald-500 focus-visible:ring-[3px] focus-visible:ring-emerald-500/40",
-                active ? paymentMethodCardActiveClassName : paymentMethodCardInactiveClassName,
-                promoBadge && !active && paymentMethodCardPromoClassName,
-                locked && "cursor-not-allowed opacity-50",
-              )}
-            >
-              <span
-                className={cn(
-                  "flex size-8 shrink-0 items-center justify-center rounded-full border-2 transition-colors",
-                  active
-                    ? "border-white/90 bg-white/20"
-                    : "border-emerald-500/50 bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-                )}
-                aria-hidden
-              >
-                {active ? (
-                  <CheckCircleIcon weight="fill" className="text-white" />
-                ) : (
-                  <span className="size-3 rounded-full bg-emerald-500" />
-                )}
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block truncate text-base font-bold">{title}</span>
-                <span
-                  className={cn(
-                    "block text-xs",
-                    active ? "text-white/85" : "text-muted-foreground",
-                  )}
-                >
-                  Paga en {currency}
-                </span>
-              </span>
-              <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                {active ? (
-                  <Badge className="border-0 bg-white/20 text-white hover:bg-white/20">
-                    Seleccionado
-                  </Badge>
-                ) : null}
-                <Badge
-                  variant="outline"
-                  className={cn(
-                    "text-[10px]",
-                    active && "border-white/35 bg-white/10 text-white",
-                    !active && "border-emerald-500/35 text-emerald-800 dark:text-emerald-200",
-                  )}
-                >
-                  {currency}
-                </Badge>
-                {promoBadge ? (
-                  <Badge
-                    className="shrink-0 bg-emerald-600 text-[10px] font-semibold text-white tabular-nums hover:bg-emerald-600"
-                    title="Promoción exclusiva de este método"
-                  >
-                    {promoBadge}
-                  </Badge>
-                ) : null}
-                {locked ? (
-                  <span className="text-destructive flex shrink-0 items-center gap-1 whitespace-nowrap text-[10px]">
-                    <LockKeyIcon />
-                    Mínimo {minTickets} boletos
-                  </span>
-                ) : null}
-              </span>
-            </button>
-          )
-        })}
+      <div role="radiogroup" aria-labelledby="payment-method-label" className="flex flex-col gap-2">
+        {methods.map((method) => (
+          <PaymentMethodCard
+            key={`rpm-${method.id}`}
+            method={method}
+            active={selectedId === method.id}
+            disabled={disabled}
+            eligibility={getEligibility(method)}
+            promoBadge={methodPromotionBadges[method.id]}
+            total={total}
+            quantity={quantity}
+            onSelect={onSelectMethod}
+          />
+        ))}
       </div>
       <FieldError>{methodHint}</FieldError>
     </Field>
@@ -289,25 +211,24 @@ export const PaymentStep = memo(function PaymentStep({
             selectedId={selectedId}
             methodPromotionBadges={methodPromotionBadges}
             methodHint={methodHint}
+            total={total}
+            quantity={quantity}
             getEligibility={getEligibility}
             onSelectMethod={onSelectMethod}
           />
 
           {selectedMethod ? (
-            <>
-              <PaymentDetailsPanel method={selectedMethod} total={total} quantity={quantity} />
-              <PaymentCompletionFields
-                disabled={disabled}
-                paymentReference={paymentReference}
-                referenceMinLength={referenceMinLength}
-                referenceInputMode={referenceInputMode}
-                paymentProof={paymentProof}
-                referenceHint={referenceHint}
-                proofHint={proofHint}
-                onPaymentReferenceChange={onPaymentReferenceChange}
-                onPaymentProofChange={onPaymentProofChange}
-              />
-            </>
+            <PaymentCompletionFields
+              disabled={disabled}
+              paymentReference={paymentReference}
+              referenceMinLength={referenceMinLength}
+              referenceInputMode={referenceInputMode}
+              paymentProof={paymentProof}
+              referenceHint={referenceHint}
+              proofHint={proofHint}
+              onPaymentReferenceChange={onPaymentReferenceChange}
+              onPaymentProofChange={onPaymentProofChange}
+            />
           ) : (
             <p className="text-muted-foreground rounded-lg border border-dashed border-emerald-500/30 bg-emerald-500/5 px-3 py-4 text-center text-xs">
               Elige un método arriba para ver los datos de pago y completar tu compra.

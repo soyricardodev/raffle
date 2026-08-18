@@ -1,5 +1,4 @@
 import { PAYMENT_METHOD_DEFINITIONS, summarizeAccountInfo } from "@raffle/shared/payment-methods"
-import type { PaymentMethod } from "@raffle/shared/validators"
 import { useQuery } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
 import { Badge } from "@/components/ui/badge"
@@ -7,17 +6,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Field, FieldDescription, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
+import type { AdminPaymentAccount } from "@/features/admin/payment-methods/types"
 import type { PaymentMethodAssignment } from "@/features/admin/raffles/types"
 import { adminFetch } from "@/lib/admin-fetch"
 import { cn } from "@/lib/utils"
-
-type PaymentAccount = {
-  id: number
-  label: string
-  method_type: PaymentMethod
-  account_info: Record<string, string>
-  is_active: boolean
-}
 
 type RafflePaymentMethodsPickerProps = {
   assignments: Array<PaymentMethodAssignment>
@@ -30,7 +22,7 @@ export function RafflePaymentMethodsPicker({
 }: RafflePaymentMethodsPickerProps) {
   const accountsQuery = useQuery({
     queryKey: ["admin", "payment-accounts", "active"],
-    queryFn: () => adminFetch<PaymentAccount[]>("/api/admin/payment-accounts?active=true"),
+    queryFn: () => adminFetch<AdminPaymentAccount[]>("/api/admin/payment-accounts?active=true"),
   })
 
   const selectedIds = new Set(assignments.map((a) => a.account_id))
@@ -40,7 +32,10 @@ export function RafflePaymentMethodsPicker({
       onChange(assignments.filter((a) => a.account_id !== accountId))
       return
     }
-    onChange([...assignments, { account_id: accountId, min_tickets: "", min_reference_length: "", is_active: true }])
+    onChange([
+      ...assignments,
+      { account_id: accountId, min_tickets: "", min_reference_length: "", is_active: true },
+    ])
   }
 
   function updateAssignment(accountId: number, patch: Partial<PaymentMethodAssignment>) {
@@ -53,10 +48,11 @@ export function RafflePaymentMethodsPicker({
         <div>
           <CardTitle>Métodos de pago</CardTitle>
           <CardDescription>
-            Elige cuentas ya configuradas.{" "}
+            Elige cuentas ya configuradas. El orden y el método por defecto se definen en{" "}
             <Link to="/admin/metodos-pago" className="text-primary underline">
-              Gestionar cuentas
+              Métodos de pago
             </Link>
+            .
           </CardDescription>
         </div>
       </CardHeader>

@@ -1,53 +1,76 @@
 import { MapPinIcon } from "@phosphor-icons/react"
-import { type CustomerLocationType, VENEZUELA_STATES } from "@raffle/shared/validators"
-import { memo } from "react"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
-import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
+  type CustomerLocationType,
+  VENEZUELA_STATES,
+  municipalitiesForState,
+  municipalityPickerLabel,
+  municipalitySearchText,
+  singleMunicipalityName,
+} from "@raffle/shared/validators"
+import { memo, useMemo } from "react"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
+import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
-import { formInputHeightClassName } from "@/features/raffle/purchase-form/field-styles"
+import { FieldReadyMark } from "@/features/raffle/purchase-form/FieldReadyMark"
+import { SearchableSelect } from "@/features/raffle/purchase-form/SearchableSelect"
+import {
+  fieldReadyInputClassName,
+  formInputHeightClassName,
+} from "@/features/raffle/purchase-form/field-styles"
 import { cn } from "@/lib/utils"
 
 type LocationFieldsProps = {
   locationType: CustomerLocationType
   selectedState: string
+  selectedMunicipality: string
   customLocation: string
   disabled: boolean
   locationError?: string
+  success?: boolean
   onLocationTypeChange: (type: CustomerLocationType) => void
   onSelectedStateChange: (state: string) => void
+  onSelectedMunicipalityChange: (municipality: string) => void
   onCustomLocationChange: (value: string) => void
+  requireMunicipality?: boolean
 }
+
+const STATE_OPTIONS = VENEZUELA_STATES.map((state) => ({ value: state, label: state }))
 
 export const LocationFields = memo(function LocationFields({
   locationType,
   selectedState,
+  selectedMunicipality,
   customLocation,
   disabled,
   locationError,
+  success,
   onLocationTypeChange,
   onSelectedStateChange,
+  onSelectedMunicipalityChange,
   onCustomLocationChange,
+  requireMunicipality = false,
 }: LocationFieldsProps) {
+  const ready = Boolean(success) && !locationError
+  const municipalityOptions = useMemo(
+    () =>
+      municipalitiesForState(selectedState).map((item) => ({
+        value: item.name,
+        label: municipalityPickerLabel(item),
+        keywords: municipalitySearchText(item),
+      })),
+    [selectedState],
+  )
+
   return (
-    <Field data-invalid={!!locationError}>
-      <FieldLabel
-        htmlFor={locationType === "venezuela" ? "customer-state" : "customer-location-other"}
-      >
-        Ubicación
-      </FieldLabel>
-      <FieldDescription>
-        {locationType === "venezuela"
-          ? "Selecciona el estado donde vives."
-          : "Indica tu país y ciudad."}
-      </FieldDescription>
+    <Field data-invalid={!!locationError} className="gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <FieldLabel
+          htmlFor={locationType === "venezuela" ? "customer-state" : "customer-location-other"}
+        >
+          Ubicación
+        </FieldLabel>
+        <FieldReadyMark visible={ready} />
+      </div>
 
       <CountryScopeToggle
         value={locationType}
@@ -57,30 +80,44 @@ export const LocationFields = memo(function LocationFields({
       />
 
       {locationType === "venezuela" ? (
-        <Select
-          value={selectedState || undefined}
-          onValueChange={onSelectedStateChange}
-          disabled={disabled}
-        >
-          <SelectTrigger
+        <div className="flex flex-col gap-2">
+          <SearchableSelect
             id="customer-state"
-            className={cn(formInputHeightClassName, "w-full")}
-            aria-invalid={!!locationError}
-          >
-            <SelectValue placeholder="Selecciona tu estado" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectGroup>
-              {VENEZUELA_STATES.map((state) => (
-                <SelectItem key={state} value={state}>
-                  {state}
-                </SelectItem>
-              ))}
-            </SelectGroup>
-          </SelectContent>
-        </Select>
+            value={selectedState}
+            options={STATE_OPTIONS}
+            placeholder="Selecciona tu estado"
+            searchPlaceholder="Buscar estado..."
+            disabled={disabled}
+            invalid={!!locationError && !selectedState}
+            ready={ready}
+            onValueChange={(state) => {
+              onSelectedStateChange(state)
+              onSelectedMunicipalityChange(
+                requireMunicipality ? (singleMunicipalityName(state) ?? "") : "",
+              )
+            }}
+          />
+          {requireMunicipality ? (
+            <>
+              <SearchableSelect
+                id="customer-municipality"
+                value={selectedMunicipality}
+                options={municipalityOptions}
+                placeholder={selectedState ? "Selecciona tu municipio" : "Primero elige el estado"}
+                searchPlaceholder="Buscar municipio o ciudad..."
+                disabled={disabled || !selectedState}
+                invalid={!!locationError && Boolean(selectedState) && !selectedMunicipality}
+                ready={ready}
+                onValueChange={onSelectedMunicipalityChange}
+              />
+              <p className="text-muted-foreground text-xs leading-snug">
+                Puedes buscar por municipio o por ciudad.
+              </p>
+            </>
+          ) : null}
+        </div>
       ) : (
-        <InputGroup className={formInputHeightClassName}>
+        <InputGroup className={cn(formInputHeightClassName, ready && fieldReadyInputClassName)}>
           <InputGroupAddon align="inline-start">
             <MapPinIcon className="size-4" aria-hidden />
           </InputGroupAddon>

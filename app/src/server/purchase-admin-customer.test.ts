@@ -62,7 +62,7 @@ describe("admin purchase customer contact update", () => {
         customerPhone: correctPhone,
         customerEmail: "comprador@test.local",
         customerCi: "V87654321",
-        customerLocation: "Venezuela, Carabobo",
+        customerLocation: "Venezuela, Carabobo, Valencia",
       },
       { adminUserId: "test-admin" },
     )
@@ -106,7 +106,7 @@ describe("admin purchase customer contact update", () => {
         customerPhone: "04143333333",
         customerEmail: "comprador@test.local",
         customerCi: "v22222222",
-        customerLocation: "Venezuela, Carabobo",
+        customerLocation: "Venezuela, Carabobo, Valencia",
       },
       { adminUserId: "test-admin" },
     )

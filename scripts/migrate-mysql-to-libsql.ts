@@ -13,11 +13,11 @@ import { randomUUID } from "node:crypto"
 import { createClient } from "@libsql/client"
 import { normalizePhone, schema, ticketNumberToInt, toCents } from "@raffle/shared/db"
 import {
-  resolveOrCreatePaymentAccount,
-  resolveOrCreateRafflePaymentMethod,
   type PaymentAccountCache,
   type PaymentMethod,
   type RafflePaymentMethodCache,
+  resolveOrCreatePaymentAccount,
+  resolveOrCreateRafflePaymentMethod,
 } from "@raffle/shared/payment-methods"
 import { hashPassword } from "better-auth/crypto"
 import { eq } from "drizzle-orm"
@@ -224,6 +224,14 @@ async function main() {
       rpmIdByRaffleAndType.set(typeKey, rpmId)
     }
   }
+
+  await client.execute(`
+    UPDATE payment_accounts
+    SET sort_order = CASE
+      WHEN method_type = 'pago_movil' THEN id
+      ELSE id + 100000
+    END
+  `)
 
   console.log(
     `   ${payRowCount} legacy rows → ${accountsCreated} cuentas, ${rpmsCreated} assignments (${payRowCount - accountsCreated} cuentas dedup, ${payRowCount - rpmsCreated} assignments dedup)`,

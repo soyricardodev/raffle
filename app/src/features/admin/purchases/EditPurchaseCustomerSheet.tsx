@@ -24,6 +24,7 @@ import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { cn } from "@/lib/utils"
 
 const SHEET_WIDTH_CLASS =
@@ -60,6 +61,7 @@ export function EditPurchaseCustomerSheet({
   pending = false,
   onSave,
 }: EditPurchaseCustomerSheetProps) {
+  const requireMunicipality = usePublicBranding()?.venezuelaMunicipalityEnabled ?? false
   const [customerName, setCustomerName] = useState(purchase.customer_name)
   const [customerPhone, setCustomerPhone] = useState(purchase.customer_phone)
   const [customerEmail, setCustomerEmail] = useState(purchase.customer_email?.trim() ?? "")
@@ -69,6 +71,9 @@ export function EditPurchaseCustomerSheet({
   const initialLocation = parsePurchaseLocationFormState(purchase.customer_location)
   const [locationType, setLocationType] = useState<CustomerLocationType>(initialLocation.locationType)
   const [selectedState, setSelectedState] = useState(initialLocation.selectedState)
+  const [selectedMunicipality, setSelectedMunicipality] = useState(
+    initialLocation.selectedMunicipality,
+  )
   const [customLocation, setCustomLocation] = useState(initialLocation.customLocation)
 
   const [nameHint, setNameHint] = useState<string | undefined>()
@@ -88,6 +93,7 @@ export function EditPurchaseCustomerSheet({
     const loc = parsePurchaseLocationFormState(purchase.customer_location)
     setLocationType(loc.locationType)
     setSelectedState(loc.selectedState)
+    setSelectedMunicipality(loc.selectedMunicipality)
     setCustomLocation(loc.customLocation)
     setNameHint(undefined)
     setEmailHint(undefined)
@@ -104,13 +110,25 @@ export function EditPurchaseCustomerSheet({
   ])
 
   const formattedCi = ciNumber.trim() ? formatCustomerCi(ciPrefix, ciNumber) : ""
-  const customerLocation = formatCustomerLocation(locationType, selectedState, customLocation)
+  const customerLocation = formatCustomerLocation({
+    locationType,
+    selectedState,
+    selectedMunicipality,
+    customLocation,
+    requireMunicipality,
+  })
 
   const nameValid = customerName.trim().length > 0
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail.trim())
   const phoneValid = isValidCustomerPhone(customerPhone)
   const ciValid = formattedCi.length > 0 && isValidCustomerCi(formattedCi)
-  const locationValid = !customerLocationFieldError(locationType, selectedState, customLocation)
+  const locationValid = !customerLocationFieldError({
+    locationType,
+    selectedState,
+    selectedMunicipality,
+    customLocation,
+    requireMunicipality,
+  })
 
   const snapshot: EditPurchaseCustomerPayload = {
     customerName: customerName.trim(),
@@ -157,7 +175,15 @@ export function EditPurchaseCustomerSheet({
       valid = false
     }
     if (!locationValid) {
-      setLocationHint(customerLocationFieldError(locationType, selectedState, customLocation))
+      setLocationHint(
+        customerLocationFieldError({
+          locationType,
+          selectedState,
+          selectedMunicipality,
+          customLocation,
+          requireMunicipality,
+        }),
+      )
       valid = false
     }
     if (!valid || !hasChanges) return
@@ -245,15 +271,21 @@ export function EditPurchaseCustomerSheet({
                 <LocationFields
                   locationType={locationType}
                   selectedState={selectedState}
+                  selectedMunicipality={selectedMunicipality}
                   customLocation={customLocation}
                   disabled={pending}
                   locationError={locationHint}
+                  requireMunicipality={requireMunicipality}
                   onLocationTypeChange={(type) => {
                     setLocationType(type)
                     setLocationHint(undefined)
                   }}
                   onSelectedStateChange={(state) => {
                     setSelectedState(state)
+                    setLocationHint(undefined)
+                  }}
+                  onSelectedMunicipalityChange={(municipality) => {
+                    setSelectedMunicipality(municipality)
                     setLocationHint(undefined)
                   }}
                   onCustomLocationChange={(value) => {

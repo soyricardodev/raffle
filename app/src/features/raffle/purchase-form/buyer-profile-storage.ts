@@ -14,6 +14,7 @@ export type SavedBuyerProfile = {
   ciNumber: string
   locationType: CustomerLocationType
   selectedState: string
+  selectedMunicipality: string
   customLocation: string
   savedAt: number
 }
@@ -42,6 +43,7 @@ export function loadSavedBuyerProfile(): SavedBuyerProfile | null {
       ciNumber: parsed.ciNumber,
       locationType: normalizeCountryScope(parsed.locationType),
       selectedState: parsed.selectedState ?? "",
+      selectedMunicipality: parsed.selectedMunicipality ?? "",
       customLocation: parsed.customLocation ?? "",
       savedAt: parsed.savedAt ?? 0,
     }

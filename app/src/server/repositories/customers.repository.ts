@@ -15,6 +15,7 @@ export type UpsertCustomerInput = {
   customerLocation: string
   locationType: string
   venezuelaState?: string | null
+  venezuelaMunicipality?: string | null
 }
 
 function customerCiForStorage(ci: string): string {
@@ -39,6 +40,7 @@ function toCustomerValues(
     customerLocation: input.customerLocation.substring(0, 100),
     locationType: input.locationType,
     venezuelaState: input.venezuelaState?.substring(0, 100) ?? null,
+    venezuelaMunicipality: input.venezuelaMunicipality?.substring(0, 100) ?? null,
   }
 }
 

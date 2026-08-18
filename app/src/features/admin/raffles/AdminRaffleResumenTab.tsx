@@ -1,5 +1,4 @@
 import { ChartBar, Receipt, Ticket } from "@phosphor-icons/react"
-import { paymentMethodDisplayLabel } from "@raffle/shared/payment-methods"
 import { PLATFORM_TOTAL_TICKETS, RaffleStatus } from "@raffle/shared/validators"
 import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
@@ -13,9 +12,16 @@ import { PaymentMethodSummary } from "@/features/raffle/PaymentMethodSummary"
 type AdminRaffleResumenTabProps = {
   raffleId: string
   raffle: AdminRaffleDetail
+  onCreatePromotion: () => void
+  onManagePromotions: () => void
 }
 
-export function AdminRaffleResumenTab({ raffleId, raffle }: AdminRaffleResumenTabProps) {
+export function AdminRaffleResumenTab({
+  raffleId,
+  raffle,
+  onCreatePromotion,
+  onManagePromotions,
+}: AdminRaffleResumenTabProps) {
   const sold = raffle.tickets_sold
   const reserved = raffle.tickets_reserved
   const total = raffle.total_tickets || PLATFORM_TOTAL_TICKETS
@@ -63,6 +69,14 @@ export function AdminRaffleResumenTab({ raffleId, raffle }: AdminRaffleResumenTa
           </CardContent>
         </Card>
 
+        <RafflePromotionsPanel
+          pricing={raffle.pricing}
+          priceBs={raffle.price_bs}
+          priceUsd={raffle.price_usd}
+          onCreate={onCreatePromotion}
+          onManage={onManagePromotions}
+        />
+
         {raffle.prizes.length > 0 ? (
           <Card>
             <CardHeader>
@@ -96,16 +110,6 @@ export function AdminRaffleResumenTab({ raffleId, raffle }: AdminRaffleResumenTa
             </CardContent>
           </Card>
         ) : null}
-
-        <RafflePromotionsPanel
-          raffleId={raffleId}
-          priceBs={raffle.price_bs}
-          priceUsd={raffle.price_usd}
-          paymentMethods={raffle.payment_methods.map((m) => ({
-            id: m.id,
-            label: paymentMethodDisplayLabel(m),
-          }))}
-        />
 
         {raffle.payment_methods.length > 0 ? (
           <Card>

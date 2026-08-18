@@ -5,30 +5,33 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
 import { HomeSiteBanner } from "@/features/home/HomeSiteBanner"
-import { HomeStickyCta } from "@/features/home/HomeStickyCta"
 import { homeRaffleDisplayQueryOptions } from "@/features/home/home-queries"
 import { PublicHomeShell } from "@/features/home/public-home-shell"
-import { PublicLayout } from "@/features/layout/PublicLayout"
 import {
   buildPublicPageHead,
   siteConfigFromMatches,
   siteNameFromMatches,
 } from "@/features/layout/document-head"
+import { PublicLayout } from "@/features/layout/PublicLayout"
 import { ensureRaffleLive } from "@/features/layout/public-page-loader"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
 import type { LivePurchaseActivityVariant } from "@/features/raffle/live-activity-ticker-config"
 import { PauseBanner } from "@/features/raffle/PauseBanner"
 import { PurchaseForm } from "@/features/raffle/PurchaseForm"
+import { parsePurchaseRouteSearchInput } from "@/features/raffle/purchase-form/purchase-route-search"
 import { RaffleActiveSection } from "@/features/raffle/RaffleActiveSection"
 import { RaffleFinishedSection } from "@/features/raffle/RaffleFinishedSection"
 import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
 export const Route = createFileRoute("/_public/")({
+  validateSearch: (search: Record<string, unknown>) => parsePurchaseRouteSearchInput(search),
   loader: async ({ context: { queryClient } }) => {
-    const display = await queryClient.ensureQueryData(homeRaffleDisplayQueryOptions()).catch(() => ({
-      active: null,
-      latestFinished: null,
-    }))
+    const display = await queryClient
+      .ensureQueryData(homeRaffleDisplayQueryOptions())
+      .catch(() => ({
+        active: null,
+        latestFinished: null,
+      }))
 
     if (display.active?.id != null) {
       await ensureRaffleLive(queryClient, display.active.id)
@@ -55,7 +58,9 @@ function resolveHomeTickerVariant(
 ): LivePurchaseActivityVariant | null {
   if (loading && activeRaffle == null && finishedRaffle == null) return null
   if (activeRaffle != null) {
-    return activeRaffle.status === "active" || activeRaffle.status === "paused" ? "live" : "finished"
+    return activeRaffle.status === "active" || activeRaffle.status === "paused"
+      ? "live"
+      : "finished"
   }
   if (finishedRaffle != null) return "finished"
   return "idle"
@@ -63,6 +68,7 @@ function resolveHomeTickerVariant(
 
 function HomePage() {
   const { display: loaderDisplay } = Route.useLoaderData()
+  const { norecordar } = Route.useSearch()
 
   const displayQuery = useQuery({
     ...homeRaffleDisplayQueryOptions(),
@@ -72,10 +78,8 @@ function HomePage() {
 
   const activeRaffle = displayQuery.data?.active ?? null
   const finishedRaffle = displayQuery.data?.latestFinished ?? null
-  const loading =
-    displayQuery.isFetching && activeRaffle == null && finishedRaffle == null
+  const loading = displayQuery.isFetching && activeRaffle == null && finishedRaffle == null
 
-  const showStickyCta = activeRaffle != null && activeRaffle.status === "active"
   const liveEnabled = activeRaffle?.status === "active" || activeRaffle?.status === "paused"
   const tickerVariant = resolveHomeTickerVariant(activeRaffle, finishedRaffle, loading)
   const shellRaffleId = activeRaffle?.id ?? finishedRaffle?.id
@@ -109,7 +113,7 @@ function HomePage() {
                 descriptionLineClamp={5}
               >
                 <div id="comprar" className="scroll-mt-16">
-                  <PurchaseForm raffle={activeRaffle} />
+                  <PurchaseForm raffle={activeRaffle} rememberBuyer={norecordar !== true} />
                 </div>
               </RaffleActiveSection>
             </div>
@@ -151,8 +155,6 @@ function HomePage() {
           ) : null}
         </div>
       </PublicHomeShell>
-
-      <HomeStickyCta visible={showStickyCta} />
     </PublicLayout>
   )
 }

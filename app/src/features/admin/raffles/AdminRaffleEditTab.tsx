@@ -2,9 +2,10 @@ import type { UpdateRaffleInput } from "@raffle/shared/validators"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useMemo } from "react"
 import { toast } from "sonner"
-import type { AdminRaffleDetail } from "@/features/admin/raffles/admin-raffle-detail-queries"
 import { invalidateAdminRaffleCaches } from "@/features/admin/raffles/admin-raffle-cache"
+import type { AdminRaffleDetail } from "@/features/admin/raffles/admin-raffle-detail-queries"
 import { mapDetailToForm } from "@/features/admin/raffles/map-detail-to-form"
+import { summarizeActivePromotion } from "@/features/admin/raffles/promotion-form-utils"
 import { RaffleForm } from "@/features/admin/raffles/RaffleForm"
 import { adminFetch } from "@/lib/admin-fetch"
 
@@ -13,9 +14,16 @@ type AdminRaffleEditTabProps = {
   detail: AdminRaffleDetail
   formKey: string
   onDone: () => void
+  onManagePromotions: () => void
 }
 
-export function AdminRaffleEditTab({ raffleId, detail, formKey, onDone }: AdminRaffleEditTabProps) {
+export function AdminRaffleEditTab({
+  raffleId,
+  detail,
+  formKey,
+  onDone,
+  onManagePromotions,
+}: AdminRaffleEditTabProps) {
   const queryClient = useQueryClient()
   const initial = useMemo(() => mapDetailToForm(detail), [detail])
 
@@ -42,6 +50,12 @@ export function AdminRaffleEditTab({ raffleId, detail, formKey, onDone }: AdminR
       isPending={saveMutation.isPending}
       onSubmit={(payload) => saveMutation.mutate(payload)}
       onCancel={onDone}
+      onManagePromotions={onManagePromotions}
+      promotionSummary={summarizeActivePromotion(
+        detail.pricing,
+        Number(detail.price_bs),
+        Number(detail.price_usd),
+      )}
     />
   )
 }

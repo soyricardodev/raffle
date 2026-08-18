@@ -31,9 +31,10 @@ describe.skipIf(!hasDatabase)("customers.repository", () => {
   const base = {
     customerName: "Test Buyer",
     customerEmail: "buyer@test.local",
-    customerLocation: "Venezuela, Carabobo",
+    customerLocation: "Venezuela, Carabobo, Valencia",
     locationType: "venezuela",
     venezuelaState: "Carabobo",
+    venezuelaMunicipality: "Valencia",
   }
 
   it("reuses the same row when phone and CI match", async () => {
@@ -52,6 +53,18 @@ describe.skipIf(!hasDatabase)("customers.repository", () => {
     expect(second.customerId).toBe(first.customerId)
     expect(first.isReturningCustomer).toBe(false)
     expect(second.isReturningCustomer).toBe(true)
+
+    const db = getDb()
+    const [row] = await db
+      .select({
+        venezuelaMunicipality: customers.venezuelaMunicipality,
+        customerLocation: customers.customerLocation,
+      })
+      .from(customers)
+      .where(eq(customers.id, second.customerId))
+      .limit(1)
+    expect(row?.venezuelaMunicipality).toBe("Valencia")
+    expect(row?.customerLocation).toBe("Venezuela, Carabobo, Valencia")
   })
 
   it("creates separate rows for same phone with different CI", async () => {
