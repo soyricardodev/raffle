@@ -28,6 +28,7 @@ import { Switch } from "@/components/ui/switch"
 import { Textarea } from "@/components/ui/textarea"
 import { RafflePaymentMethodsPicker } from "@/features/admin/payment-methods/RafflePaymentMethodsPicker"
 import { drawDatePresets } from "@/features/admin/raffles/draw-date-presets"
+import type { PromotionSummary } from "@/features/admin/raffles/promotion-form-utils"
 import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import type { RaffleFormState } from "@/features/admin/raffles/types"
 import { defaultPrize } from "@/features/admin/raffles/types"
@@ -44,6 +45,8 @@ type RaffleFormPropsBase = {
   initial: RaffleFormState
   isPending?: boolean
   onCancel?: () => void
+  onManagePromotions?: () => void
+  promotionSummary?: PromotionSummary | null
 }
 
 type RaffleFormProps =
@@ -96,7 +99,15 @@ function buildPayload(state: RaffleFormState): CreateRaffleInput {
 }
 
 export function RaffleForm(props: RaffleFormProps) {
-  const { mode, initial, isPending = false, onSubmit, onCancel } = props
+  const {
+    mode,
+    initial,
+    isPending = false,
+    onSubmit,
+    onCancel,
+    onManagePromotions,
+    promotionSummary,
+  } = props
   const title = "title" in props ? props.title : undefined
   const description = "description" in props ? props.description : undefined
   const raffleId = props.mode === "edit" ? props.raffleId : undefined
@@ -244,6 +255,32 @@ export function RaffleForm(props: RaffleFormProps) {
                     />
                   </Field>
                 </div>
+                {mode === "edit" && onManagePromotions ? (
+                  <div className="flex flex-col gap-2 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium">
+                        {promotionSummary?.title ?? "Promociones"}
+                      </p>
+                      {promotionSummary?.priceHint ? (
+                        <p className="text-muted-foreground mt-1 text-xs tabular-nums">
+                          {promotionSummary.priceHint}
+                        </p>
+                      ) : null}
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 shrink-0"
+                      onClick={onManagePromotions}
+                    >
+                      Gestionar
+                    </Button>
+                  </div>
+                ) : mode === "create" ? (
+                  <p className="text-muted-foreground text-sm">
+                    Después de crear la rifa puedes agregar una promoción de precio.
+                  </p>
+                ) : null}
               </FieldGroup>
             </CardContent>
           </Card>
