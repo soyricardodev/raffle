@@ -8,7 +8,6 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --sticky-purchase-cta-height: 0px;
   --background: oklch(0.978 0.007 95);
   --foreground: oklch(0.153 0.006 107.1);
   --card: oklch(0.995 0.004 95);
@@ -337,13 +336,29 @@
   display: none;
 }
 
+@keyframes payment-method-details-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.payment-method-details-enter {
+  animation: payment-method-details-in 220ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sales-progress-fill,
   .sales-progress-shimmer,
   .sales-progress-track-overlay,
   .sales-progress-percent,
   .live-activity-pulse-dot,
-  .purchase-submit-cta {
+  .purchase-submit-cta,
+  .payment-method-details-enter {
     animation: none;
   }
 
@@ -354,19 +369,6 @@
   .live-activity-marquee-track {
     animation-duration: 90s;
   }
-}
-
-/* Sticky “Ir a comprar” bar: measured height + footer clearance (not Tailwind variants). */
-html[data-sticky-purchase-cta] {
-  scroll-padding-bottom: var(--sticky-purchase-cta-height);
-}
-
-html[data-sticky-purchase-cta] .public-site-footer {
-  padding-bottom: calc(var(--sticky-purchase-cta-height) + 1rem);
-}
-
-html[data-sticky-purchase-cta] .support-fab {
-  bottom: calc(var(--sticky-purchase-cta-height) + 1rem + env(safe-area-inset-bottom, 0px));
 }
 
 @layer base {

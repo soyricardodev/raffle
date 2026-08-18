@@ -85,6 +85,13 @@
       "when": 1779901000000,
       "tag": "0011_phone_normalize_and_auto_full_repair",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "6",
+      "when": 1779901100000,
+      "tag": "0012_payment_accounts_sort_order",
+      "breakpoints": true
     }
   ]
 }

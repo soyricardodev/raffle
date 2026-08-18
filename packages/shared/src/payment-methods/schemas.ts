@@ -2,10 +2,7 @@ import { z } from "zod"
 import { getFieldsForType } from "./definitions.js"
 import { normalizeAccountInfoKeys } from "./normalize.js"
 import { PaymentMethod } from "./types.js"
-import {
-  getZelleContactValue,
-  looksLikeZelleEmail,
-} from "./zelle-contact.js"
+import { getZelleContactValue, looksLikeZelleEmail } from "./zelle-contact.js"
 
 const digitsOnly = (label: string) =>
   z.string().min(1, `${label} requerido`).regex(/^\d+$/, `${label}: solo números`)
@@ -123,6 +120,11 @@ export type CreatePaymentAccountInput = z.infer<typeof CreatePaymentAccountInput
 
 export const UpdatePaymentAccountInput = CreatePaymentAccountInput.partial()
 export type UpdatePaymentAccountInput = z.infer<typeof UpdatePaymentAccountInput>
+
+export const ReorderPaymentAccountsInput = z.object({
+  ordered_ids: z.array(z.number().int().positive()).min(1),
+})
+export type ReorderPaymentAccountsInput = z.infer<typeof ReorderPaymentAccountsInput>
 
 export function validatePaymentAccountInput(input: {
   method_type: PaymentMethod

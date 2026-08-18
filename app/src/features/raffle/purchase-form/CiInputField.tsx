@@ -1,10 +1,12 @@
 import { IdentificationBadgeIcon } from "@phosphor-icons/react"
 import { type CedulaPrefix, sanitizeCiDigits } from "@raffle/shared/validators"
 import { memo } from "react"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
+import { FieldReadyMark } from "@/features/raffle/purchase-form/FieldReadyMark"
 import {
+  fieldReadyInputClassName,
   formInputHeightClassName,
   segmentToggleItemClassName,
 } from "@/features/raffle/purchase-form/field-styles"
@@ -23,6 +25,7 @@ type CiInputFieldProps = {
   number: string
   disabled?: boolean
   error?: string
+  success?: boolean
   onPrefixChange: (prefix: CedulaPrefix) => void
   onNumberChange: (number: string) => void
 }
@@ -32,21 +35,24 @@ export const CiInputField = memo(function CiInputField({
   number,
   disabled,
   error,
+  success,
   onPrefixChange,
   onNumberChange,
 }: CiInputFieldProps) {
+  const ready = Boolean(success) && !error
+
   function handlePrefixChange(value: string) {
     if (!value) return
     onPrefixChange(value as CedulaPrefix)
   }
 
   return (
-    <Field data-invalid={!!error}>
-      <FieldLabel htmlFor="customer-ci-number">Cédula de identidad</FieldLabel>
-      <FieldDescription>
-        Tipo {PREFIX_LABELS[prefix].toLowerCase()} · solo números, sin puntos ni guiones.
-      </FieldDescription>
-      <InputGroup className={formInputHeightClassName}>
+    <Field data-invalid={!!error} className="gap-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <FieldLabel htmlFor="customer-ci-number">Cédula de identidad</FieldLabel>
+        <FieldReadyMark visible={ready} />
+      </div>
+      <InputGroup className={cn(formInputHeightClassName, ready && fieldReadyInputClassName)}>
         <InputGroupAddon align="inline-start" className="px-1">
           <ToggleGroup
             type="single"

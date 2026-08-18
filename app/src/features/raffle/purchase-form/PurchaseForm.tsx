@@ -58,6 +58,7 @@ import { formatCurrency } from "@/lib/format"
 
 export type PurchaseFormProps = {
   raffle: RaffleForPurchase
+  rememberBuyer?: boolean
 }
 
 type PurchaseFormHints = {
@@ -94,7 +95,7 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
   return undefined
 }
 
-export function PurchaseForm({ raffle }: PurchaseFormProps) {
+export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps) {
   const queryClient = useQueryClient()
   const branding = usePublicBranding()
   const [supportError, setSupportError] = useState<PurchaseSupportErrorState | null>(null)
@@ -153,12 +154,9 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
     methodPromotionHint,
     total,
     unitPriceBs,
-    originalUnitPriceBs,
     discountPerTicketBs,
     totalBs,
     unitPriceUsd,
-    originalUnitPriceUsd,
-    discountPerTicketUsd,
     totalUsd,
   } = usePurchasePricing({
     raffle,
@@ -183,11 +181,12 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
   }, [])
 
   useEffect(() => {
+    if (!rememberBuyer) return
     const saved = loadSavedBuyerProfile()
     if (!saved) return
     setSavedProfile(saved)
     applyProfile(saved)
-  }, [applyProfile])
+  }, [applyProfile, rememberBuyer])
 
   useEffect(() => {
     setQuantity((current) => clampQuantity(current, quantityMin, effectiveMax))
@@ -303,28 +302,30 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
       return publicFetch<PurchaseResult>("/api/purchases/", { method: "POST", body: form })
     },
     onSuccess: (result) => {
-      saveBuyerProfile({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
-        ciPrefix,
-        ciNumber,
-        locationType,
-        selectedState,
-        customLocation,
-      })
-      setSavedProfile({
-        customerName: customerName.trim(),
-        customerPhone: customerPhone.trim(),
-        customerEmail: customerEmail.trim(),
-        ciPrefix,
-        ciNumber,
-        locationType,
-        selectedState,
-        customLocation,
-        savedAt: Date.now(),
-      })
-      setSavedProfileDismissed(false)
+      if (rememberBuyer) {
+        saveBuyerProfile({
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail.trim(),
+          ciPrefix,
+          ciNumber,
+          locationType,
+          selectedState,
+          customLocation,
+        })
+        setSavedProfile({
+          customerName: customerName.trim(),
+          customerPhone: customerPhone.trim(),
+          customerEmail: customerEmail.trim(),
+          ciPrefix,
+          ciNumber,
+          locationType,
+          selectedState,
+          customLocation,
+          savedAt: Date.now(),
+        })
+        setSavedProfileDismissed(false)
+      }
       setSuccessResult(result)
       setPaymentReference("")
       setRafflePaymentMethodId(null)
@@ -455,7 +456,7 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             </p>
           </div>
         </CardHeader>
-        <CardContent className="flex flex-col gap-5 pb-2">
+        <CardContent className="flex flex-col gap-3.5 pb-2">
           <TicketQuantityStep
             quantity={quantity}
             quantityMin={quantityMin}
@@ -464,11 +465,8 @@ export function PurchaseForm({ raffle }: PurchaseFormProps) {
             available={available}
             paymentThresholds={paymentThresholds}
             unitPrice={unitPriceBs}
-            originalUnitPrice={discountPerTicketBs > 0 ? originalUnitPriceBs : undefined}
             discountPerTicket={discountPerTicketBs > 0 ? discountPerTicketBs : undefined}
             unitPriceUsd={unitPriceUsd}
-            originalUnitPriceUsd={discountPerTicketUsd > 0 ? originalUnitPriceUsd : undefined}
-            discountPerTicketUsd={discountPerTicketUsd > 0 ? discountPerTicketUsd : undefined}
             totalBs={totalBs}
             totalUsd={totalUsd}
             currency="Bs"

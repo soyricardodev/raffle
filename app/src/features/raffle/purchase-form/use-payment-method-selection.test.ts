@@ -17,12 +17,17 @@ function method(
 }
 
 describe("pickDefaultPaymentMethodId", () => {
-  it("prefers pago_movil when eligible", () => {
-    const methods = [method(1, "binance"), method(2, "pago_movil"), method(3, "zelle")]
-    expect(pickDefaultPaymentMethodId(methods, 1)).toBe(2)
+  it("selects the first eligible method in catalog order", () => {
+    const methods = [method(1, "pago_movil"), method(2, "binance"), method(3, "zelle")]
+    expect(pickDefaultPaymentMethodId(methods, 1)).toBe(1)
   })
 
-  it("falls back to first eligible when pago_movil is locked", () => {
+  it("follows a custom catalog order when pago_movil is not first", () => {
+    const methods = [method(1, "binance"), method(2, "pago_movil"), method(3, "zelle")]
+    expect(pickDefaultPaymentMethodId(methods, 1)).toBe(1)
+  })
+
+  it("skips a locked first method", () => {
     const methods = [method(1, "pago_movil", 5), method(2, "binance")]
     expect(pickDefaultPaymentMethodId(methods, 1)).toBe(2)
   })
@@ -32,7 +37,7 @@ describe("pickDefaultPaymentMethodId", () => {
     expect(pickDefaultPaymentMethodId(methods, 1)).toBeNull()
   })
 
-  it("keeps pago_movil selectable when zelle requires more tickets than the selected quantity", () => {
+  it("keeps the first eligible method when a later one requires more tickets", () => {
     const methods = [method(1, "pago_movil", 10), method(2, "zelle", 60)]
     expect(pickDefaultPaymentMethodId(methods, 10)).toBe(1)
   })

@@ -2,6 +2,9 @@ import { cn } from "@/lib/utils"
 
 export const formInputHeightClassName = "h-10"
 
+export const fieldReadyInputClassName =
+  "border-emerald-500/45 bg-emerald-500/8 ring-1 ring-emerald-500/20"
+
 export const segmentToggleItemClassName = cn(
   "transition-colors",
   "data-[state=on]:bg-primary data-[state=on]:text-primary-foreground data-[state=on]:shadow-sm",
@@ -21,7 +24,7 @@ export const purchaseSectionCardClassName = cn(
 )
 
 export const quickPickToggleItemClassName = cn(
-  "h-10 min-w-11 shrink-0 rounded-full px-3.5 text-sm font-medium tabular-nums",
+  "h-10 min-w-0 flex-1 rounded-xl px-1 text-sm font-medium tabular-nums",
   segmentToggleItemClassName,
 )
 
@@ -40,10 +43,6 @@ export const paymentMethodCardInactiveClassName = cn(
 )
 
 export const paymentMethodCardPromoClassName = "border-emerald-500/50 bg-emerald-500/10"
-
-export const paymentDetailsPanelClassName = cn(
-  "rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-500/12 via-card to-teal-500/6 p-3 shadow-sm",
-)
 
 export const paymentCompletionBoxClassName =
   "flex flex-col gap-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3"

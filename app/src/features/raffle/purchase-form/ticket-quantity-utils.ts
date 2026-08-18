@@ -127,6 +127,14 @@ export function buildSmartQuickPicks(
     return [{ value: min, label: formatQuickPickLabel(min, max) }]
   }
 
+  const inclusiveCount = max - min + 1
+  if (inclusiveCount <= maxChips) {
+    return Array.from({ length: inclusiveCount }, (_, index) => {
+      const value = min + index
+      return { value, label: formatQuickPickLabel(value, max) }
+    })
+  }
+
   const paymentThresholds = options?.paymentThresholds ?? []
   const sorted = collectCandidateValues(min, max, paymentThresholds)
   const values = pickSpacedValues(sorted, min, max, maxChips, paymentThresholds)

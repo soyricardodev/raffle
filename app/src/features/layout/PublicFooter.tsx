@@ -1,26 +1,19 @@
-import { Link } from "@tanstack/react-router"
-import { Mail, MapPin, Phone } from "lucide-react"
 import {
   DEFAULT_OFFICIAL_FOOTER_DESCRIPTION,
   DEFAULT_OFFICIAL_FOOTER_HEADING,
   resolveOfficialFooterLogos,
 } from "@/features/layout/footer-defaults"
 import { SocialLinkIcon } from "@/features/layout/social-icons"
-import { buildSocialLinks } from "@/features/layout/social-links"
+import { buildSocialLinks, resolveSupportChannel } from "@/features/layout/social-links"
 import { PUBLIC_FOOTER_LEGAL_ID } from "@/features/layout/sticky-purchase-cta"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
-import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
-const FOOTER_NAV = [
-  { label: "Inicio", to: "/" as const },
-  { label: "Buscar boletos", to: "/verificar" as const },
-] as const
+const TELEGRAM_SUPPORT_NUMBER = "+58 424 474 2262"
 
 export function PublicFooter() {
   const branding = usePublicBranding()
 
   const siteInfo = branding?.siteInfo ?? { site_name: "", tagline: "", runlot_id: "" }
-  const contact = branding?.contact ?? { phone: "", email: "", address: "" }
   const social = branding?.social ?? {
     whatsapp: "",
     instagram: "",
@@ -30,112 +23,41 @@ export function PublicFooter() {
     support_channel: "telegram",
   }
   const images = branding?.images
-  const colors = branding?.colors
 
-  const footerLogo = (images?.footer_logo.trim() || images?.logo.trim()) ?? ""
   const socialLinks = buildSocialLinks(social)
   const officialLogos = resolveOfficialFooterLogos(images?.official_logos)
   const runlotId = siteInfo.runlot_id?.trim() ?? ""
+  const support = resolveSupportChannel({
+    whatsappEnabled: branding?.whatsappEnabled ?? false,
+    social,
+    promo: branding?.purchaseSuccessPromo,
+  })
+  const telegramHref = support.kind === "telegram" ? support.supportHref : ""
 
-  const hasMainContent =
-    siteInfo.site_name ||
-    siteInfo.tagline ||
-    contact.phone ||
-    contact.email ||
-    contact.address ||
-    socialLinks.length > 0
-
-  const brandColor = colors?.primary
+  const hasMainContent = Boolean(telegramHref) || socialLinks.length > 0
 
   return (
     <footer className="public-site-footer border-border/80 bg-muted/40 mt-auto border-t">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-8 px-4 py-10">
         {hasMainContent ? (
           <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-3">
-              {footerLogo ? (
-                <img
-                  src={footerLogo}
-                  alt=""
-                  className="h-9 w-auto max-w-[160px] object-contain object-left"
-                  width={160}
-                  height={36}
-                />
-              ) : siteInfo.site_name ? (
-                <p
-                  className="font-heading text-lg font-semibold tracking-tight"
-                  style={{ color: brandColor ?? undefined }}
+            {telegramHref ? (
+              <div>
+                <h2 className="mb-3 text-xs font-semibold tracking-wide uppercase">
+                  Contacto directo a Telegram
+                </h2>
+                <p className="text-muted-foreground mb-2 text-sm">Escríbeme y te ayudo</p>
+                <a
+                  href={telegramHref}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
                 >
-                  {siteInfo.site_name}
-                </p>
-              ) : null}
-              {siteInfo.tagline ? (
-                <p className="text-muted-foreground max-w-sm text-sm leading-relaxed">
-                  {siteInfo.tagline}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="grid gap-6 sm:grid-cols-2">
-              <div>
-                <h2 className="mb-3 text-xs font-semibold tracking-wide uppercase">Secciones</h2>
-                <ul className="flex flex-col gap-2">
-                  {FOOTER_NAV.map((item) => (
-                    <li key={item.label}>
-                      {item.to === "/verificar" ? (
-                        <Link
-                          {...buildVerifyHref()}
-                          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-                        >
-                          {item.label}
-                        </Link>
-                      ) : (
-                        <Link
-                          to={item.to}
-                          className="text-muted-foreground hover:text-foreground text-sm transition-colors"
-                        >
-                          {item.label}
-                        </Link>
-                      )}
-                    </li>
-                  ))}
-                </ul>
+                  <SocialLinkIcon id="telegram" className="size-5" />
+                  {TELEGRAM_SUPPORT_NUMBER}
+                </a>
               </div>
-
-              <div>
-                <h2 className="mb-3 text-xs font-semibold tracking-wide uppercase">Contacto</h2>
-                <ul className="text-muted-foreground flex flex-col gap-2.5 text-sm">
-                  {contact.phone ? (
-                    <li className="flex items-start gap-2">
-                      <Phone className="mt-0.5 size-4 shrink-0" aria-hidden />
-                      <a
-                        href={`tel:${contact.phone.replace(/\s/g, "")}`}
-                        className="hover:text-foreground"
-                      >
-                        {contact.phone}
-                      </a>
-                    </li>
-                  ) : null}
-                  {contact.email ? (
-                    <li className="flex items-start gap-2">
-                      <Mail className="mt-0.5 size-4 shrink-0" aria-hidden />
-                      <a
-                        href={`mailto:${contact.email}`}
-                        className="hover:text-foreground break-all"
-                      >
-                        {contact.email}
-                      </a>
-                    </li>
-                  ) : null}
-                  {contact.address ? (
-                    <li className="flex items-start gap-2">
-                      <MapPin className="mt-0.5 size-4 shrink-0" aria-hidden />
-                      <span>{contact.address}</span>
-                    </li>
-                  ) : null}
-                </ul>
-              </div>
-            </div>
+            ) : null}
 
             {socialLinks.length > 0 ? (
               <div>

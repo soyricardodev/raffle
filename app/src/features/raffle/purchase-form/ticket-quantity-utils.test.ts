@@ -112,4 +112,10 @@ describe("buildSmartQuickPicks", () => {
   it("returns single chip when min equals max", () => {
     expect(buildSmartQuickPicks(5, 5)).toEqual([{ value: 5, label: "5" }])
   })
+
+  it("returns every value when the range fits in the chip limit", () => {
+    expect(buildSmartQuickPicks(1, 10, { maxChips: 10 }).map((pick) => pick.value)).toEqual([
+      1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
+    ])
+  })
 })

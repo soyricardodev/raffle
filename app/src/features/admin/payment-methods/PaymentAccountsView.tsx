@@ -1,17 +1,11 @@
-import {
-  emptyAccountInfoDraft,
-  PAYMENT_METHOD_DEFINITIONS,
-  summarizeAccountInfo,
-} from "@raffle/shared/payment-methods"
-import type { PaymentMethod } from "@raffle/shared/validators"
+import { emptyAccountInfoDraft, PAYMENT_METHOD_DEFINITIONS } from "@raffle/shared/payment-methods"
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query"
 import { Link } from "@tanstack/react-router"
-import { Pencil, Plus, Trash } from "lucide-react"
+import { Plus } from "lucide-react"
 import { useState } from "react"
 import { toast } from "sonner"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import {
   Sheet,
   SheetContent,
@@ -20,22 +14,17 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { Skeleton } from "@/components/ui/skeleton"
+import { adminNavTitle } from "@/features/admin/nav"
+import { moveItemInList } from "@/features/admin/payment-methods/move-item-in-list"
+import { PaymentAccountCard } from "@/features/admin/payment-methods/PaymentAccountCard"
 import {
   PaymentAccountForm,
   type PaymentAccountFormValues,
 } from "@/features/admin/payment-methods/PaymentAccountForm"
+import type { AdminPaymentAccount } from "@/features/admin/payment-methods/types"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
-import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { adminFetch, getApiErrorMessage } from "@/lib/admin-fetch"
-
-type PaymentAccount = {
-  id: number
-  label: string
-  method_type: PaymentMethod
-  account_info: Record<string, string>
-  is_active: boolean
-}
 
 const QUERY_KEY = ["admin", "payment-accounts"]
 
@@ -129,20 +118,19 @@ function defaultFormValues(): PaymentAccountFormValues {
 export function PaymentAccountsView() {
   const queryClient = useQueryClient()
   const [sheetOpen, setSheetOpen] = useState(false)
-  const [editing, setEditing] = useState<PaymentAccount | null>(null)
+  const [editing, setEditing] = useState<AdminPaymentAccount | null>(null)
   const [deleteId, setDeleteId] = useState<number | null>(null)
 
   const accountsQuery = useQuery({
     queryKey: QUERY_KEY,
-    queryFn: () => adminFetch<PaymentAccount[]>("/api/admin/payment-accounts"),
+    queryFn: () => adminFetch<AdminPaymentAccount[]>("/api/admin/payment-accounts"),
   })
 
   const deleteTarget = accountsQuery.data?.find((account) => account.id === deleteId)
 
   const usageQuery = useQuery({
     queryKey: ["admin", "payment-account-usage", deleteId],
-    queryFn: () =>
-      adminFetch<PaymentAccountUsage>(`/api/admin/payment-accounts/${deleteId}/usage`),
+    queryFn: () => adminFetch<PaymentAccountUsage>(`/api/admin/payment-accounts/${deleteId}/usage`),
     enabled: deleteId !== null,
   })
 
@@ -176,12 +164,35 @@ export function PaymentAccountsView() {
     onError: (e: Error) => toast.error(getApiErrorMessage(e)),
   })
 
+  const reorderMutation = useMutation({
+    mutationFn: (next: AdminPaymentAccount[]) =>
+      adminFetch("/api/admin/payment-accounts/", {
+        method: "PUT",
+        body: JSON.stringify({ ordered_ids: next.map((account) => account.id) }),
+      }),
+    onMutate: async (next) => {
+      await queryClient.cancelQueries({ queryKey: QUERY_KEY })
+      const previous = queryClient.getQueryData<AdminPaymentAccount[]>(QUERY_KEY)
+      queryClient.setQueryData(QUERY_KEY, next)
+      return { previous }
+    },
+    onSuccess: () => {
+      toast.success("Orden actualizado")
+      void queryClient.invalidateQueries({ queryKey: QUERY_KEY })
+    },
+    onError: (e: Error, _orderedIds, context) => {
+      if (context?.previous) {
+        queryClient.setQueryData(QUERY_KEY, context.previous)
+      }
+      toast.error(getApiErrorMessage(e))
+    },
+  })
+
   const deleteMutation = useMutation({
     mutationFn: ({ id, force }: { id: number; force?: boolean }) =>
-      adminFetch(
-        `/api/admin/payment-accounts/${id}${force ? "?force=true" : ""}`,
-        { method: "DELETE" },
-      ),
+      adminFetch(`/api/admin/payment-accounts/${id}${force ? "?force=true" : ""}`, {
+        method: "DELETE",
+      }),
     onSuccess: (_data, variables) => {
       toast.success(
         variables.force
@@ -200,7 +211,7 @@ export function PaymentAccountsView() {
     setSheetOpen(true)
   }
 
-  function openEdit(account: PaymentAccount) {
+  function openEdit(account: AdminPaymentAccount) {
     setEditing(account)
     setSheetOpen(true)
   }
@@ -218,7 +229,7 @@ export function PaymentAccountsView() {
     <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 pb-24">
       <AdminPageHeader
         title={adminNavTitle("/admin/metodos-pago")}
-        description="Cuentas reutilizables. Asígnalas al crear o editar una rifa."
+        description="Cuentas reutilizables. El orden de esta lista es el que ven los compradores; el primero queda seleccionado por defecto."
       />
 
       <div className="flex justify-end">
@@ -244,48 +255,23 @@ export function PaymentAccountsView() {
         </Card>
       ) : (
         <div className="flex flex-col gap-3">
-          {accountsQuery.data?.map((account) => {
-            const def = PAYMENT_METHOD_DEFINITIONS[account.method_type]
-            return (
-              <Card key={account.id}>
-                <CardHeader className="flex flex-row items-start justify-between gap-2 pb-2">
-                  <div className="min-w-0">
-                    <CardTitle className="text-base">{account.label}</CardTitle>
-                    <CardDescription className="truncate">
-                      {summarizeAccountInfo(account.method_type, account.account_info)}
-                    </CardDescription>
-                  </div>
-                  <div className="flex shrink-0 gap-1">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-11"
-                      aria-label="Editar"
-                      onClick={() => openEdit(account)}
-                    >
-                      <Pencil className="size-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      className="size-11"
-                      aria-label="Eliminar"
-                      onClick={() => setDeleteId(account.id)}
-                    >
-                      <Trash className="size-4" />
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent className="flex flex-wrap gap-2 pt-0">
-                  <Badge variant="secondary">{def.label}</Badge>
-                  <Badge variant="outline">{def.currency === "USD" ? "USD" : "Bs"}</Badge>
-                  {!account.is_active ? <Badge variant="outline">Inactivo</Badge> : null}
-                </CardContent>
-              </Card>
-            )
-          })}
+          {accountsQuery.data?.map((account, index, accounts) => (
+            <PaymentAccountCard
+              key={account.id}
+              account={account}
+              index={index}
+              isFirst={index === 0}
+              isLast={index === accounts.length - 1}
+              reorderPending={reorderMutation.isPending}
+              onMove={(delta) => {
+                const next = moveItemInList(accounts, index, delta)
+                if (next === accounts) return
+                reorderMutation.mutate(next)
+              }}
+              onEdit={() => openEdit(account)}
+              onDelete={() => setDeleteId(account.id)}
+            />
+          ))}
         </div>
       )}
 

@@ -1,14 +1,13 @@
 import { CopyIcon } from "@phosphor-icons/react"
 import {
   formatAccountInfoForDisplay,
+  paymentMethodCurrencyLabel,
   paymentMethodDisplayLabel,
 } from "@raffle/shared/payment-methods"
-import { isDollarMethod } from "@raffle/shared/validators"
 import { memo, useCallback, useMemo } from "react"
 import { toast } from "sonner"
-import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { Button } from "@/components/ui/button"
-import { paymentDetailsPanelClassName } from "@/features/raffle/purchase-form/field-styles"
+import type { RafflePaymentMethod } from "@/features/raffle/types"
 import { formatCurrency } from "@/lib/format"
 
 function formatPaymentDetailForClipboard(value: string) {
@@ -22,13 +21,15 @@ function formatPaymentDetailForClipboard(value: string) {
 const CopyableRow = memo(function CopyablePaymentDetailRow({
   label,
   value,
+  copyValue,
 }: {
   label: string
   value: string
+  copyValue?: string
 }) {
   async function copy() {
     try {
-      await navigator.clipboard.writeText(formatPaymentDetailForClipboard(value))
+      await navigator.clipboard.writeText(copyValue ?? formatPaymentDetailForClipboard(value))
       toast.success("Copiado")
     } catch {
       toast.error("No se pudo copiar")
@@ -38,14 +39,14 @@ const CopyableRow = memo(function CopyablePaymentDetailRow({
   return (
     <div className="flex items-center justify-between gap-2 py-1.5">
       <div className="min-w-0">
-        <p className="text-muted-foreground text-[10px]">{label}</p>
-        <p className="truncate text-sm font-medium">{value}</p>
+        <p className="text-[10px] text-white/70">{label}</p>
+        <p className="truncate text-sm font-medium text-white">{value}</p>
       </div>
       <Button
         type="button"
         variant="ghost"
         size="icon-xs"
-        className="text-emerald-700 hover:bg-emerald-500/15 hover:text-emerald-800 dark:text-emerald-300 dark:hover:text-emerald-200"
+        className="text-white hover:bg-white/15 hover:text-white"
         aria-label={`Copiar ${label}`}
         onClick={() => void copy()}
       >
@@ -70,17 +71,17 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanelInner({
     () => formatAccountInfoForDisplay(method.method_type, method.account_info),
     [method.account_info, method.method_type],
   )
-  const currency = useMemo(
-    () => (isDollarMethod(method.method_type) ? "USD" : "Bs"),
-    [method.method_type],
-  )
+  const currency = paymentMethodCurrencyLabel(method.method_type)
   const displayName = useMemo(() => paymentMethodDisplayLabel(method), [method])
+  const amountLabel = formatCurrency(total, currency)
+  const amountCopyValue = Number.isFinite(total) ? total.toFixed(2) : amountLabel
 
   const copyAll = useCallback(async () => {
     const text = [
       displayName,
+      `Monto: ${amountLabel}`,
       ...lines.map((l) => `${l.label}: ${formatPaymentDetailForClipboard(l.value)}`),
-      formatCurrency(total, currency),
+      `${quantity} boleto${quantity === 1 ? "" : "s"}`,
     ].join("\n")
     try {
       await navigator.clipboard.writeText(text)
@@ -88,22 +89,19 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanelInner({
     } catch {
       toast.error("No se pudo copiar")
     }
-  }, [currency, displayName, lines, total])
+  }, [amountLabel, displayName, lines, quantity])
 
   return (
-    <div className={paymentDetailsPanelClassName}>
-      <div className="mb-3 flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <p className="text-[10px] font-semibold tracking-wide text-emerald-700 uppercase dark:text-emerald-300">
-            Datos para transferir
-          </p>
-          <p className="truncate text-base font-bold">{displayName}</p>
-        </div>
+    <div>
+      <div className="mb-2 flex items-center justify-between gap-3">
+        <p className="text-[10px] font-semibold tracking-wide text-white/80 uppercase">
+          Datos para transferir
+        </p>
         <Button
           type="button"
           variant="outline"
           size="xs"
-          className="border-emerald-500/40 bg-emerald-500/10 text-emerald-900 hover:bg-emerald-500/20 dark:text-emerald-50"
+          className="border-white/35 bg-white/10 text-white hover:bg-white/20 hover:text-white"
           onClick={() => void copyAll()}
         >
           <CopyIcon data-icon="inline-start" />
@@ -111,7 +109,8 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanelInner({
         </Button>
       </div>
 
-      <div className="divide-border overflow-hidden rounded-xl border border-emerald-500/20 bg-background/70 px-3">
+      <div className="divide-white/15 overflow-hidden rounded-xl border border-white/20 bg-black/20 px-3">
+        <CopyableRow label="Monto" value={amountLabel} copyValue={amountCopyValue} />
         {lines.map((line) => (
           <CopyableRow
             key={`${method.id}-${line.label}-${line.value}`}
@@ -119,15 +118,6 @@ export const PaymentDetailsPanel = memo(function PaymentDetailsPanelInner({
             value={line.value}
           />
         ))}
-      </div>
-
-      <div className="mt-3 flex items-baseline justify-between rounded-xl border border-emerald-500/25 bg-gradient-to-r from-emerald-500/20 to-teal-500/15 px-3 py-2.5">
-        <span className="text-muted-foreground text-xs">
-          {quantity} boleto{quantity === 1 ? "" : "s"}
-        </span>
-        <span className="text-xl font-extrabold text-emerald-950 tabular-nums dark:text-emerald-50">
-          {formatCurrency(total, currency)}
-        </span>
       </div>
     </div>
   )

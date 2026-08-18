@@ -3,7 +3,6 @@ import type { CedulaPrefix, CustomerLocationType } from "@raffle/shared/validato
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { FieldGroup } from "@/components/ui/field"
-import { Separator } from "@/components/ui/separator"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
 import { purchaseSectionCardClassName } from "@/features/raffle/purchase-form/field-styles"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
@@ -67,8 +66,10 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   onUseOtherSavedData,
   onRestoreSavedProfile,
 }: CustomerDetailsStepProps) {
+  const usingSavedProfile = Boolean(savedProfileName) && !savedProfileDismissed
+
   return (
-    <section className={cn(purchaseSectionCardClassName, "flex flex-col gap-3")}>
+    <section className={cn(purchaseSectionCardClassName, "flex flex-col gap-2.5")}>
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
@@ -94,16 +95,16 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
         />
       ) : null}
 
-      <FieldGroup className="gap-4">
+      <FieldGroup className="gap-2.5">
         <LabeledIconField
           id="customer-name"
           label="Nombre completo"
-          description="Como aparece en tu cédula o documento."
           icon={<UserCircleIcon className="size-4" aria-hidden />}
           value={customerName}
           onChange={onCustomerNameChange}
           disabled={disabled}
           error={hints.name}
+          success={usingSavedProfile && customerName.trim().length > 0}
           autoComplete="name"
           placeholder="Ej. María González"
         />
@@ -113,6 +114,7 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           number={ciNumber}
           disabled={disabled}
           error={hints.ci}
+          success={usingSavedProfile && ciNumber.trim().length > 0}
           onPrefixChange={onCiPrefixChange}
           onNumberChange={onCiNumberChange}
         />
@@ -121,20 +123,19 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           value={customerPhone}
           disabled={disabled}
           error={hints.phone}
+          success={usingSavedProfile && customerPhone.trim().length > 0}
           onChange={onCustomerPhoneChange}
         />
-
-        <Separator />
 
         <LabeledIconField
           id="customer-email"
           label="Correo electrónico"
-          description="Te enviaremos la confirmación de tu compra."
           icon={<EnvelopeSimpleIcon className="size-4" aria-hidden />}
           value={customerEmail}
           onChange={onCustomerEmailChange}
           disabled={disabled}
           error={hints.email}
+          success={usingSavedProfile && customerEmail.trim().length > 0}
           type="email"
           autoComplete="email"
           placeholder="tu@email.com"
@@ -146,6 +147,12 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           customLocation={customLocation}
           disabled={disabled}
           locationError={hints.location}
+          success={
+            usingSavedProfile &&
+            (locationType === "venezuela"
+              ? selectedState.trim().length > 0
+              : customLocation.trim().length > 0)
+          }
           onLocationTypeChange={onLocationTypeChange}
           onSelectedStateChange={onSelectedStateChange}
           onCustomLocationChange={onCustomLocationChange}

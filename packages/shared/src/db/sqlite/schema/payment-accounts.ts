@@ -8,6 +8,7 @@ export const paymentAccounts = sqliteTable(
     methodType: text("method_type").notNull(),
     accountInfo: text("account_info").notNull(),
     isActive: integer("is_active", { mode: "boolean" }).notNull().default(true),
+    sortOrder: integer("sort_order").notNull().default(0),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),
@@ -16,5 +17,8 @@ export const paymentAccounts = sqliteTable(
       .$defaultFn(() => new Date())
       .$onUpdate(() => new Date()),
   },
-  (t) => [index("payment_accounts_method_active_idx").on(t.methodType, t.isActive)],
+  (t) => [
+    index("payment_accounts_method_active_idx").on(t.methodType, t.isActive),
+    index("payment_accounts_sort_order_idx").on(t.sortOrder),
+  ],
 )

@@ -2,19 +2,14 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { getMethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import type { RafflePaymentMethod } from "@/features/raffle/types"
 
-/** Prefer Pago móvil when eligible; otherwise first eligible method. */
+/** First eligible method in catalog order. Pago móvil is first by default. */
 export function pickDefaultPaymentMethodId(
   methods: RafflePaymentMethod[],
   quantity: number,
   available?: number,
 ): number | null {
   const eligible = methods.filter((m) => getMethodEligibility(m, quantity, available).canSelect)
-  if (eligible.length === 0) return null
-
-  const pagoMovil = eligible.find((m) => m.method_type === "pago_movil")
-  const fallback = eligible[0]
-  if (!fallback) return null
-  return (pagoMovil ?? fallback).id
+  return eligible[0]?.id ?? null
 }
 
 export function usePaymentMethodSelection(
