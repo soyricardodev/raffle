@@ -1,7 +1,18 @@
 import { z } from "zod"
+import { normalizeMunicipality } from "../geo/venezuela-municipalities.js"
 import { isBolivarMethodType, isDollarMethodType } from "../payment-methods/definitions.js"
 import { CountryScope, isValidCustomerCi, isValidCustomerPhone } from "./buyer-identity.js"
 import { passwordSchema } from "./password.js"
+
+export {
+  isValidVenezuelaMunicipality,
+  municipalitiesForState,
+  municipalityPickerLabel,
+  municipalitySearchText,
+  normalizeMunicipality,
+  singleMunicipalityName,
+  type VenezuelaMunicipality,
+} from "../geo/venezuela-municipalities.js"
 
 export {
   ChangePasswordFormInput,
@@ -82,30 +93,145 @@ export type VenezuelaState = z.infer<typeof VenezuelaState>
 export const CustomerLocationType = CountryScope
 export type CustomerLocationType = CountryScope
 
-/** Formato enviado a la API: `Venezuela, {estado}` u otro texto libre. */
-export function formatCustomerLocation(
-  locationType: CustomerLocationType,
-  selectedState: string,
-  customLocation: string,
-): string {
-  if (locationType === "venezuela") {
-    return selectedState ? `Venezuela, ${selectedState}` : ""
-  }
-  return customLocation.trim()
+export type CustomerLocationInput = {
+  locationType: CustomerLocationType
+  selectedState: string
+  selectedMunicipality?: string
+  customLocation: string
+  requireMunicipality?: boolean
 }
 
-export function customerLocationFieldError(
-  locationType: CustomerLocationType,
-  selectedState: string,
-  customLocation: string,
-): string | undefined {
-  if (locationType === "venezuela" && !selectedState) {
-    return "Selecciona tu estado"
+const LEGACY_STATE_ALIASES: Record<string, string> = {
+  caracas: "Distrito Capital",
+  vargas: "La Guaira",
+  "dtto capital": "Distrito Capital",
+  "distrito capital": "Distrito Capital",
+  "la guaira": "La Guaira",
+  tachira: "Táchira",
+  táchira: "Táchira",
+  merida: "Mérida",
+  mérida: "Mérida",
+  anzoategui: "Anzoátegui",
+  anzoátegui: "Anzoátegui",
+  falcon: "Falcón",
+  falcón: "Falcón",
+  "nueva esparta": "Nueva Esparta",
+  "delta amacuro": "Delta Amacuro",
+}
+
+function stripLocationAccents(value: string): string {
+  return value.normalize("NFD").replace(/\p{M}/gu, "")
+}
+
+const STATE_LOOKUP = new Map<string, string>()
+for (const state of VENEZUELA_STATES) {
+  STATE_LOOKUP.set(state.toLowerCase(), state)
+  STATE_LOOKUP.set(stripLocationAccents(state).toLowerCase(), state)
+}
+for (const [alias, canonical] of Object.entries(LEGACY_STATE_ALIASES)) {
+  STATE_LOOKUP.set(alias.toLowerCase(), canonical)
+  STATE_LOOKUP.set(stripLocationAccents(alias).toLowerCase(), canonical)
+}
+
+export function normalizeVenezuelaState(value: string | null | undefined): string | null {
+  const trimmed = value?.trim()
+  if (!trimmed) return null
+  const key = trimmed.toLowerCase()
+  const accentKey = stripLocationAccents(trimmed).toLowerCase()
+  return STATE_LOOKUP.get(key) ?? STATE_LOOKUP.get(accentKey) ?? null
+}
+
+export function splitVenezuelaLocation(raw: string): {
+  statePart: string
+  municipalityPart: string | null
+} | null {
+  const trimmed = raw.trim()
+  if (!trimmed.toLowerCase().startsWith("venezuela,")) return null
+  const rest = trimmed.slice("venezuela,".length).trim()
+  const commaIdx = rest.indexOf(",")
+  if (commaIdx === -1) {
+    return { statePart: rest, municipalityPart: null }
   }
-  if (locationType === "other" && !customLocation.trim()) {
-    return "Indica país y ciudad"
+  return {
+    statePart: rest.slice(0, commaIdx).trim(),
+    municipalityPart: rest.slice(commaIdx + 1).trim() || null,
+  }
+}
+
+/** Formato enviado a la API: `Venezuela, {estado}[, {municipio}]` u otro texto libre. */
+export function formatCustomerLocation(input: CustomerLocationInput): string {
+  if (input.locationType === "venezuela") {
+    const state = input.selectedState.trim()
+    const municipality = input.requireMunicipality ? (input.selectedMunicipality?.trim() ?? "") : ""
+    if (!state) return ""
+    if (!municipality) return `Venezuela, ${state}`
+    return `Venezuela, ${state}, ${municipality}`
+  }
+  return input.customLocation.trim()
+}
+
+export function customerLocationFieldError(input: CustomerLocationInput): string | undefined {
+  if (input.locationType === "venezuela") {
+    if (!input.selectedState.trim()) return "Selecciona tu estado"
+    if (input.requireMunicipality && !input.selectedMunicipality?.trim()) {
+      return "Selecciona tu municipio"
+    }
+    return undefined
+  }
+  if (!input.customLocation.trim()) return "Indica país y ciudad"
+  return undefined
+}
+
+export function customerLocationApiError(
+  value: string,
+  requireMunicipality = false,
+): string | undefined {
+  const trimmed = value.trim()
+  if (!trimmed) return "Indica tu ubicación"
+  if (!requireMunicipality) return undefined
+
+  const split = splitVenezuelaLocation(trimmed)
+  if (split) {
+    const state = normalizeVenezuelaState(split.statePart)
+    if (!state) return "Selecciona tu estado"
+    if (!split.municipalityPart || !normalizeMunicipality(state, split.municipalityPart)) {
+      return "Selecciona tu municipio"
+    }
+    return undefined
+  }
+
+  if (normalizeVenezuelaState(trimmed)) {
+    return "Selecciona tu municipio"
   }
   return undefined
+}
+
+const customerLocationString = z
+  .string()
+  .trim()
+  .min(1, "Indica tu ubicación")
+  .max(100, "Ubicación demasiado larga")
+
+const adminCustomerLocationString = z
+  .string()
+  .trim()
+  .min(1, "Indica la ubicación")
+  .max(100, "Ubicación demasiado larga")
+
+export function assertCustomerLocationMunicipality(
+  value: string,
+  requireMunicipality: boolean,
+  path: string[] = ["customerLocation"],
+): void {
+  const error = customerLocationApiError(value, requireMunicipality)
+  if (!error) return
+  throw new z.ZodError([
+    {
+      code: "custom",
+      path,
+      message: error,
+    },
+  ])
 }
 
 // ─── Referencias de pago ─────────────────────────────────────
@@ -182,7 +308,7 @@ export const CreatePurchaseInput = z.object({
     .min(1, "Ingresa tu cédula")
     .max(20)
     .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
-  customer_location: z.string().min(1).max(100),
+  customer_location: customerLocationString,
   raffle_payment_method_id: z.number().int().positive(),
   payment_reference: z
     .string()
@@ -214,7 +340,7 @@ export const CreatePurchaseBody = z.object({
     .min(1, "Ingresa tu cédula")
     .max(20)
     .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
-  customerLocation: z.string().trim().min(1, "Indica tu ubicación").max(100, "Ubicación demasiado larga"),
+  customerLocation: customerLocationString,
   rafflePaymentMethodId: z.coerce
     .number({ error: "Selecciona un método de pago" })
     .int("Selecciona un método de pago")
@@ -234,8 +360,13 @@ export const CreatePurchaseBody = z.object({
 
 export type CreatePurchaseBody = z.infer<typeof CreatePurchaseBody>
 
-export function parseCreatePurchaseBody(raw: Record<string, unknown>): CreatePurchaseBody {
-  return CreatePurchaseBody.parse(raw)
+export function parseCreatePurchaseBody(
+  raw: Record<string, unknown>,
+  options?: { requireMunicipality?: boolean },
+): CreatePurchaseBody {
+  const parsed = CreatePurchaseBody.parse(raw)
+  assertCustomerLocationMunicipality(parsed.customerLocation, options?.requireMunicipality ?? false)
+  return parsed
 }
 
 export const VerifyTicketInput = z
@@ -288,7 +419,7 @@ export const UpdatePurchaseCustomerInput = z.object({
     .min(1, "Ingresa la cédula")
     .max(20)
     .refine((v) => isValidCustomerCi(v), "Cédula inválida (ej: V12345678)"),
-  customerLocation: z.string().trim().min(1, "Indica la ubicación").max(100, "Ubicación demasiado larga"),
+  customerLocation: adminCustomerLocationString,
 })
 export type UpdatePurchaseCustomerInput = z.infer<typeof UpdatePurchaseCustomerInput>
 

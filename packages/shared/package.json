@@ -8,6 +8,7 @@
     "./db/money": "./src/db/money.ts",
     "./db/phone": "./src/db/phone.ts",
     "./db/ticket-number": "./src/db/ticket-number.ts",
+    "./geo": "./src/geo/venezuela-municipalities.ts",
     "./validators": "./src/validators/index.ts",
     "./validators/buyer-identity": "./src/validators/buyer-identity.ts",
     "./validators/purchase-success-analytics": "./src/validators/purchase-success-analytics.ts",

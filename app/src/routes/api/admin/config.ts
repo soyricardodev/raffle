@@ -26,7 +26,10 @@ export const Route = createFileRoute("/api/admin/config")({
         await requireAdmin(request)
         return Response.json({
           ...(await getSiteConfigMap()),
-          features: { whatsapp_enabled: getEnv().ENABLE_WHATSAPP },
+          features: {
+            whatsapp_enabled: getEnv().ENABLE_WHATSAPP,
+            venezuela_municipality_enabled: getEnv().ENABLE_VENEZUELA_MUNICIPALITY,
+          },
         })
       },
       PUT: async ({ request }) => {

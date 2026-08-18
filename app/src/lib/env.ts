@@ -35,6 +35,11 @@ const envSchema = z
       .string()
       .optional()
       .transform((value) => value === "true" || value === "1"),
+    /** When true, buyers must pick a Venezuelan municipality. Default: state only. */
+    ENABLE_VENEZUELA_MUNICIPALITY: z
+      .string()
+      .optional()
+      .transform((value) => value === "true" || value === "1"),
   })
   .refine((data) => data.NODE_ENV !== "production" || Boolean(data.DATABASE_URL), {
     message: "DATABASE_URL is required in production",

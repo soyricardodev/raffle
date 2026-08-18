@@ -14,6 +14,7 @@ export const customers = sqliteTable(
     customerLocation: text("customer_location").notNull(),
     locationType: text("location_type").notNull().default("venezuela"),
     venezuelaState: text("venezuela_state"),
+    venezuelaMunicipality: text("venezuela_municipality"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

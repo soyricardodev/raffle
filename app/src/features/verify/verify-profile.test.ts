@@ -14,6 +14,7 @@ const profile: SavedBuyerProfile = {
   ciNumber: "12345678",
   locationType: "venezuela",
   selectedState: "Carabobo",
+  selectedMunicipality: "Valencia",
   customLocation: "",
   savedAt: 1,
 }

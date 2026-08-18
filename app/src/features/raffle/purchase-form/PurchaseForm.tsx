@@ -5,6 +5,7 @@ import {
   customerLocationFieldError,
   formatCustomerCi,
   formatCustomerLocation,
+  singleMunicipalityName,
   isValidCustomerCi,
   isValidCustomerPhone,
   paymentReferenceValidationMessage,
@@ -98,6 +99,7 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
 export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps) {
   const queryClient = useQueryClient()
   const branding = usePublicBranding()
+  const requireMunicipality = branding?.venezuelaMunicipalityEnabled ?? false
   const [supportError, setSupportError] = useState<PurchaseSupportErrorState | null>(null)
   const minPurchase = Number(raffle.min_purchase) || 1
   const maxPurchase = Number(raffle.max_purchase) || 10
@@ -131,6 +133,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
   const [ciNumber, setCiNumber] = useState("")
   const [locationType, setLocationType] = useState<CustomerLocationType>("venezuela")
   const [selectedState, setSelectedState] = useState("")
+  const [selectedMunicipality, setSelectedMunicipality] = useState("")
   const [customLocation, setCustomLocation] = useState("")
   const [paymentReference, setPaymentReference] = useState("")
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
@@ -177,8 +180,13 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
     setCiNumber(profile.ciNumber)
     setLocationType(profile.locationType)
     setSelectedState(profile.selectedState)
+    setSelectedMunicipality(
+      requireMunicipality
+        ? profile.selectedMunicipality || singleMunicipalityName(profile.selectedState) || ""
+        : profile.selectedMunicipality || "",
+    )
     setCustomLocation(profile.customLocation)
-  }, [])
+  }, [requireMunicipality])
 
   useEffect(() => {
     if (!rememberBuyer) return
@@ -226,7 +234,13 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
         : undefined,
       email: emailHint(customerEmail),
       ci: ciHint(ciPrefix, ciNumber),
-      location: customerLocationFieldError(locationType, selectedState, customLocation),
+      location: customerLocationFieldError({
+        locationType,
+        selectedState,
+        selectedMunicipality,
+        customLocation,
+        requireMunicipality,
+      }),
       reference: paymentReferenceValidationMessage(
         paymentReference,
         referenceMinLength,
@@ -247,6 +261,8 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       ciNumber,
       locationType,
       selectedState,
+      selectedMunicipality,
+      requireMunicipality,
       customLocation,
       paymentReference,
       referenceMinLength,
@@ -285,7 +301,13 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       if (!rafflePaymentMethodId) throw new Error("Selecciona un método de pago")
       if (!paymentProof) throw new Error("Sube el comprobante de pago")
 
-      const customerLocation = formatCustomerLocation(locationType, selectedState, customLocation)
+      const customerLocation = formatCustomerLocation({
+        locationType,
+        selectedState,
+        selectedMunicipality,
+        customLocation,
+        requireMunicipality,
+      })
 
       const form = new FormData()
       form.append("raffleId", String(raffle.id))
@@ -311,6 +333,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
           ciNumber,
           locationType,
           selectedState,
+          selectedMunicipality,
           customLocation,
         })
         setSavedProfile({
@@ -321,6 +344,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
           ciNumber,
           locationType,
           selectedState,
+          selectedMunicipality,
           customLocation,
           savedAt: Date.now(),
         })
@@ -394,6 +418,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
     setCiNumber("")
     setLocationType("venezuela")
     setSelectedState("")
+    setSelectedMunicipality("")
     setCustomLocation("")
   }, [])
 
@@ -485,6 +510,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
             ciNumber={ciNumber}
             locationType={locationType}
             selectedState={selectedState}
+            selectedMunicipality={selectedMunicipality}
             customLocation={customLocation}
             savedProfileName={savedProfile?.customerName ?? null}
             savedProfileDismissed={savedProfileDismissed}
@@ -496,9 +522,11 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
             onCiNumberChange={setCiNumber}
             onLocationTypeChange={setLocationType}
             onSelectedStateChange={setSelectedState}
+            onSelectedMunicipalityChange={setSelectedMunicipality}
             onCustomLocationChange={setCustomLocation}
             onUseOtherSavedData={handleUseOtherSavedData}
             onRestoreSavedProfile={handleRestoreSavedProfile}
+            requireMunicipality={requireMunicipality}
           />
 
           <PaymentStep

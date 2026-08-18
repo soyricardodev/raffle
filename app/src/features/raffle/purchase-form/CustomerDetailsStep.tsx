@@ -20,6 +20,7 @@ type CustomerDetailsStepProps = {
   ciNumber: string
   locationType: CustomerLocationType
   selectedState: string
+  selectedMunicipality: string
   customLocation: string
   savedProfileName: string | null
   savedProfileDismissed: boolean
@@ -37,9 +38,11 @@ type CustomerDetailsStepProps = {
   onCiNumberChange: (number: string) => void
   onLocationTypeChange: (type: CustomerLocationType) => void
   onSelectedStateChange: (state: string) => void
+  onSelectedMunicipalityChange: (municipality: string) => void
   onCustomLocationChange: (value: string) => void
   onUseOtherSavedData: () => void
   onRestoreSavedProfile: () => void
+  requireMunicipality?: boolean
 }
 
 export const CustomerDetailsStep = memo(function CustomerDetailsStep({
@@ -51,6 +54,7 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   ciNumber,
   locationType,
   selectedState,
+  selectedMunicipality,
   customLocation,
   savedProfileName,
   savedProfileDismissed,
@@ -62,9 +66,11 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   onCiNumberChange,
   onLocationTypeChange,
   onSelectedStateChange,
+  onSelectedMunicipalityChange,
   onCustomLocationChange,
   onUseOtherSavedData,
   onRestoreSavedProfile,
+  requireMunicipality = false,
 }: CustomerDetailsStepProps) {
   const usingSavedProfile = Boolean(savedProfileName) && !savedProfileDismissed
 
@@ -144,17 +150,21 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
         <LocationFields
           locationType={locationType}
           selectedState={selectedState}
+          selectedMunicipality={selectedMunicipality}
           customLocation={customLocation}
           disabled={disabled}
           locationError={hints.location}
           success={
             usingSavedProfile &&
             (locationType === "venezuela"
-              ? selectedState.trim().length > 0
+              ? selectedState.trim().length > 0 &&
+                (!requireMunicipality || selectedMunicipality.trim().length > 0)
               : customLocation.trim().length > 0)
           }
+          requireMunicipality={requireMunicipality}
           onLocationTypeChange={onLocationTypeChange}
           onSelectedStateChange={onSelectedStateChange}
+          onSelectedMunicipalityChange={onSelectedMunicipalityChange}
           onCustomLocationChange={onCustomLocationChange}
         />
       </FieldGroup>

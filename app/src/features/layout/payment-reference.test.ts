@@ -8,7 +8,7 @@ describe("CreatePurchaseBody paymentReference", () => {
     customerPhone: "04121234567",
     customerEmail: "test@example.com",
     customerCi: "V12345678",
-    customerLocation: "Venezuela, Carabobo",
+    customerLocation: "Venezuela, Carabobo, Valencia",
     rafflePaymentMethodId: 1,
     ticketQuantity: 1,
     paymentProofUrl: "/proof.jpg",

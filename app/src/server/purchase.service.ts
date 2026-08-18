@@ -8,6 +8,7 @@ import {
   RaffleNotFoundError,
   ValidationError,
 } from "@raffle/shared/errors"
+import { parseCustomerLocation } from "@raffle/shared/analytics"
 import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
 import {
   isPaymentMethodMinWaived,
@@ -61,6 +62,7 @@ export interface CreatePurchaseParams {
   customerLocation: string
   locationType?: CustomerLocationType
   venezuelaState?: string | null
+  venezuelaMunicipality?: string | null
   rafflePaymentMethodId: number
   paymentReference: string
   ticketQuantity: number
@@ -148,6 +150,7 @@ export async function createPurchase(params: CreatePurchaseParams) {
       customerLocation: params.customerLocation,
       locationType,
       venezuelaState: params.venezuelaState,
+      venezuelaMunicipality: params.venezuelaMunicipality,
     })
     const isFirstPurchase = !isReturningCustomer
 
@@ -410,16 +413,20 @@ export async function removeTicketsFromPurchase(
 function locationContextFromPurchase(customerLocation: string | null): {
   locationType: CustomerLocationType
   venezuelaState: string | null
+  venezuelaMunicipality: string | null
 } {
-  const loc = customerLocation?.trim() ?? ""
-  if (loc.startsWith("Venezuela,")) {
-    const state = loc.slice("Venezuela,".length).trim()
-    return { locationType: "venezuela", venezuelaState: state || null }
+  const parsed = parseCustomerLocation(customerLocation)
+  if (parsed.kind === "international") {
+    return { locationType: "other", venezuelaState: null, venezuelaMunicipality: null }
   }
-  if (loc) {
-    return { locationType: "other", venezuelaState: null }
+  if (parsed.kind === "venezuela") {
+    return {
+      locationType: "venezuela",
+      venezuelaState: parsed.state,
+      venezuelaMunicipality: parsed.municipality,
+    }
   }
-  return { locationType: "venezuela", venezuelaState: null }
+  return { locationType: "venezuela", venezuelaState: null, venezuelaMunicipality: null }
 }
 
 function formatCiForStorage(ci: string): string {
@@ -459,7 +466,8 @@ export async function updatePurchaseCustomerContact(
       return { noChange: true as const, raffleId: purchase.raffleId }
     }
 
-    const { locationType, venezuelaState } = locationContextFromPurchase(nextLocation)
+    const { locationType, venezuelaState, venezuelaMunicipality } =
+      locationContextFromPurchase(nextLocation)
     const { customerId } = await customersRepo.findOrCreateCustomer(tx, {
       customerName: nextName,
       customerPhone: nextPhone,
@@ -468,6 +476,7 @@ export async function updatePurchaseCustomerContact(
       customerLocation: nextLocation,
       locationType,
       venezuelaState,
+      venezuelaMunicipality,
     })
 
     await purchasesRepo.updatePurchaseCustomerProfile(tx, purchaseId, {

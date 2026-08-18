@@ -12,7 +12,17 @@ describe("parseCustomerLocation", () => {
     expect(parseCustomerLocation("Venezuela, Carabobo")).toEqual({
       kind: "venezuela",
       state: "Carabobo",
+      municipality: null,
       raw: "Venezuela, Carabobo",
+    })
+  })
+
+  it("parses Venezuela state and municipality", () => {
+    expect(parseCustomerLocation("Venezuela, Carabobo, Valencia")).toEqual({
+      kind: "venezuela",
+      state: "Carabobo",
+      municipality: "Valencia",
+      raw: "Venezuela, Carabobo, Valencia",
     })
   })
 
@@ -25,6 +35,7 @@ describe("parseCustomerLocation", () => {
     expect(parseCustomerLocation("Miami, USA")).toEqual({
       kind: "international",
       state: null,
+      municipality: null,
       raw: "Miami, USA",
     })
   })
@@ -46,18 +57,19 @@ describe("aggregateLocationMetrics", () => {
       [
         { location: "Venezuela, Carabobo", count: 2, revenueCents: 2000 },
         { location: "Venezuela, carabobo", count: 1, revenueCents: 1000 },
+        { location: "Venezuela, Carabobo, Valencia", count: 1, revenueCents: 500 },
         { location: "Miami, USA", count: 1, revenueCents: 500 },
       ],
       (c) => c / 100,
     )
 
     expect(result.byState.find((r) => r.label === "Carabobo")).toMatchObject({
-      count: 3,
-      revenue: 30,
+      count: 4,
+      revenue: 35,
     })
     expect(result.mix).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ label: "Venezuela", count: 3 }),
+        expect.objectContaining({ label: "Venezuela", count: 4 }),
         expect.objectContaining({ label: INTERNATIONAL_LABEL, count: 1 }),
       ]),
     )
