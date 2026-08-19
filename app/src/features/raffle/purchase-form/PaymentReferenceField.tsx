@@ -42,8 +42,10 @@ export const PaymentReferenceField = memo(function PaymentReferenceField({
 
   return (
     <Field data-invalid={!!error}>
-      <FieldLabel htmlFor="payment-reference">Referencia del pago</FieldLabel>
-      <FieldDescription>
+      <FieldLabel htmlFor="payment-reference" className="sr-only">
+        Referencia del pago
+      </FieldLabel>
+      <FieldDescription className="text-sm font-medium text-foreground">
         {isNumeric
           ? `Ingresa los últimos ${minLength} dígitos que aparecen en tu pago móvil.`
           : `Ingresa al menos ${minLength} caracteres de la referencia de tu transferencia.`}

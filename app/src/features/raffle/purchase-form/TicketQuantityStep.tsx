@@ -6,7 +6,7 @@ import { Field, FieldLabel } from "@/components/ui/field"
 import { Input } from "@/components/ui/input"
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group"
 import {
-  purchaseSectionCardClassName,
+  purchaseStepClassName,
   quickPickToggleItemClassName,
 } from "@/features/raffle/purchase-form/field-styles"
 import {
@@ -29,7 +29,6 @@ type TicketQuantityStepProps = {
   totalBs?: number
   totalUsd?: number
   currency?: "Bs" | "USD"
-  priceIsEstimate?: boolean
   selloutFlex?: boolean
   disabled: boolean
   onChange: (quantity: number) => void
@@ -48,7 +47,6 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
   totalBs,
   totalUsd,
   currency = "Bs",
-  priceIsEstimate = false,
   selloutFlex = false,
   disabled,
   onChange,
@@ -92,59 +90,37 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
   const savings =
     discountPerTicket != null && discountPerTicket > 0 ? discountPerTicket * quantity : null
   const hasSavings = savings != null && savings > 0
-
   const soldOut = available <= 0 || effectiveMax < quantityMin
 
   return (
-    <section
-      className={cn(purchaseSectionCardClassName, "flex flex-col gap-3")}
-      aria-labelledby="ticket-quantity-heading"
-    >
-      <div className="flex items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="shrink-0 tabular-nums">
-              1
-            </Badge>
-            <h3 id="ticket-quantity-heading" className="text-sm font-semibold">
-              Cantidad de boletos
-            </h3>
-          </div>
-          <p className="text-muted-foreground text-xs leading-snug">
-            {soldOut ? (
-              "No hay boletos disponibles"
-            ) : (
-              <>
-                <span className="text-foreground font-medium tabular-nums">
-                  {available.toLocaleString("es-VE")}
-                </span>{" "}
-                disponibles · elige entre{" "}
-                <span className="tabular-nums">
-                  {quantityMin} y {effectiveMax.toLocaleString("es-VE")}
-                </span>
-              </>
-            )}
+    <section className={purchaseStepClassName} aria-labelledby="ticket-quantity-heading">
+      <div className="flex items-center gap-2">
+        <Badge variant="secondary" className="shrink-0 tabular-nums">
+          1
+        </Badge>
+        <h3 id="ticket-quantity-heading" className="text-sm font-semibold">
+          Cantidad de boletos
+        </h3>
+        {soldOut ? (
+          <p className="text-muted-foreground text-xs">No hay boletos disponibles</p>
+        ) : available > 0 ? (
+          <p className="text-muted-foreground ml-auto text-xs tabular-nums">
+            {available.toLocaleString("es-VE")} disponibles
           </p>
-        </div>
-        {quantityMin > 1 ? (
-          <Badge variant="outline" className="shrink-0 tabular-nums">
-            Mín. {quantityMin}
-          </Badge>
         ) : null}
       </div>
 
       {selloutFlex ? (
-        <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs leading-snug text-emerald-950 dark:text-emerald-100">
-          Quedan pocos boletos: puedes comprar desde{" "}
-          <span className="font-semibold tabular-nums">1</span> hasta{" "}
+        <p className="text-xs leading-snug text-emerald-800 dark:text-emerald-200">
+          Quedan pocos: puedes comprar de 1 a{" "}
           <span className="font-semibold tabular-nums">{effectiveMax.toLocaleString("es-VE")}</span>.
         </p>
       ) : null}
 
       {paymentMinAboveRaffle ? (
-        <p className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs leading-snug text-amber-950 dark:text-amber-100">
-          Algunos métodos de pago piden más boletos. El mínimo para comprar aquí es{" "}
-          <span className="font-semibold tabular-nums">{quantityMin}</span>.
+        <p className="text-xs leading-snug text-amber-800 dark:text-amber-200">
+          El mínimo para comprar aquí es{" "}
+          <span className="font-semibold tabular-nums">{quantityMin}</span> boletos.
         </p>
       ) : null}
 
@@ -155,7 +131,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
           </FieldLabel>
           <div
             className={cn(
-              "flex h-14 min-w-0 items-center gap-0.5 rounded-2xl border-2 border-primary/30 bg-background/80 px-0.5 shadow-inner",
+              "flex h-14 min-w-0 items-center gap-0.5 rounded-2xl border border-border bg-background px-0.5",
               disabled && "opacity-60",
             )}
           >
@@ -163,7 +139,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
               type="button"
               variant="outline"
               size="icon"
-              className="size-11 shrink-0 rounded-full border-primary/30 bg-background"
+              className="size-11 shrink-0 rounded-full"
               disabled={quantity <= quantityMin || disabled || soldOut}
               onClick={() => onChange(Math.max(quantityMin, quantity - 1))}
               aria-label="Un boleto menos"
@@ -192,7 +168,7 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
               type="button"
               variant="default"
               size="icon"
-              className="size-11 shrink-0 rounded-full shadow-md"
+              className="size-11 shrink-0 rounded-full"
               disabled={quantity >= effectiveMax || disabled || soldOut}
               onClick={() => onChange(Math.min(effectiveMax, quantity + 1))}
               aria-label="Un boleto más"
@@ -205,14 +181,14 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
         {subtotal != null ? (
           <div
             className={cn(
-              "flex min-w-0 flex-col justify-center rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/15 via-primary/8 to-card px-2.5 py-1.5 text-right shadow-sm shadow-primary/10",
-              hasSavings && "border-emerald-500/35 from-emerald-500/15 via-primary/10",
+              "flex min-w-0 flex-col justify-center rounded-2xl border border-border bg-muted/40 px-2.5 py-1.5 text-right",
+              hasSavings && "border-emerald-500/35 bg-emerald-500/10",
             )}
           >
             <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
-              Subtotal
+              Total
             </p>
-            <p className="truncate font-serif text-xl font-bold leading-tight tabular-nums text-foreground">
+            <p className="truncate font-serif text-xl font-bold leading-tight tabular-nums">
               {formatCurrency(subtotal, currency)}
             </p>
             {subtotalUsd != null ? (
@@ -221,52 +197,42 @@ export const TicketQuantityStep = memo(function TicketQuantityStepInner({
               </p>
             ) : null}
             {hasSavings ? (
-              <p className="truncate text-[10px] font-medium text-emerald-700">
+              <p className="truncate text-[10px] font-medium text-emerald-700 dark:text-emerald-300">
                 Ahorras {formatCurrency(savings, currency)}
               </p>
             ) : null}
           </div>
         ) : (
-          <div className="bg-muted/40 text-muted-foreground flex min-w-0 items-center justify-center rounded-2xl border px-2 text-center text-xs font-medium">
+          <div className="text-muted-foreground flex min-w-0 items-center justify-center rounded-2xl border border-border bg-muted/40 px-2 text-center text-xs font-medium">
             {quantity} boleto{quantity === 1 ? "" : "s"}
           </div>
         )}
       </div>
 
       {quickPicks.length > 1 ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
-            Accesos rápidos
-          </p>
-          <ToggleGroup
-            type="single"
-            variant="outline"
-            size="sm"
-            spacing={1}
-            value={String(quantity)}
-            onValueChange={handleQuickPick}
-            className="flex w-full"
-            disabled={disabled || soldOut}
-          >
-            {quickPicks.map((pick) => (
-              <ToggleGroupItem
-                key={pick.value}
-                value={String(pick.value)}
-                aria-label={`${pick.value} boletos`}
-                className={quickPickToggleItemClassName}
-              >
-                {pick.label}
-              </ToggleGroupItem>
-            ))}
-          </ToggleGroup>
-        </div>
+        <ToggleGroup
+          type="single"
+          variant="outline"
+          size="sm"
+          spacing={1}
+          value={String(quantity)}
+          onValueChange={handleQuickPick}
+          className="flex w-full"
+          disabled={disabled || soldOut}
+        >
+          {quickPicks.map((pick) => (
+            <ToggleGroupItem
+              key={pick.value}
+              value={String(pick.value)}
+              aria-label={`${pick.value} boletos`}
+              className={quickPickToggleItemClassName}
+            >
+              {pick.label}
+            </ToggleGroupItem>
+          ))}
+        </ToggleGroup>
       ) : null}
 
-      {priceIsEstimate && subtotal != null ? (
-        <p className="text-muted-foreground text-[10px] leading-snug">
-          Estimado hasta elegir el método de pago.
-        </p>
-      ) : null}
     </section>
   )
 })

@@ -315,11 +315,13 @@
   z-index: 2;
 }
 
-.purchase-submit-cta:hover {
+.purchase-submit-cta:hover,
+.purchase-submit-cta:active {
   animation-play-state: paused;
 }
 
-.purchase-submit-cta:hover::after {
+.purchase-submit-cta:hover::after,
+.purchase-submit-cta:active::after {
   animation-play-state: paused;
 }
 

@@ -5,11 +5,10 @@ import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
-import { purchaseSectionCardClassName } from "@/features/raffle/purchase-form/field-styles"
+import { purchaseStepClassName } from "@/features/raffle/purchase-form/field-styles"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
-import { cn } from "@/lib/utils"
 
 type CustomerDetailsStepProps = {
   disabled: boolean
@@ -73,41 +72,33 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   const usingSavedProfile = Boolean(savedProfileName) && !savedProfileDismissed
 
   return (
-    <section className={cn(purchaseSectionCardClassName, "flex flex-col gap-2.5")}>
-      <div className="min-w-0">
-        <div className="flex items-center gap-2">
-          <Badge variant="secondary" className="shrink-0 tabular-nums">
-            2
-          </Badge>
-          <h3 className="text-sm font-semibold">Tus datos para los boletos</h3>
-        </div>
+    <section className={purchaseStepClassName}>
+      <div className="flex min-w-0 items-center gap-2">
+        <Badge variant="secondary" className="shrink-0 tabular-nums">
+          2
+        </Badge>
+        <h3 className="text-sm font-semibold">Tus datos para los boletos</h3>
         {usingSavedProfile ? (
-          <div className="mt-1 flex flex-col items-start gap-0.5">
-            <p className="text-muted-foreground text-xs leading-snug">
-              Autocompletamos tu compra anterior. Solo revisa que nombre, teléfono y correo sigan
-              correctos antes de pagar.
-            </p>
-            <Button
-              type="button"
-              variant="link"
-              size="xs"
-              className="text-muted-foreground hover:text-foreground h-auto px-0 text-xs"
-              disabled={disabled}
-              onClick={onUseOtherSavedData}
-            >
-              Usar otros datos
-            </Button>
-          </div>
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            className="text-muted-foreground hover:text-foreground ml-auto h-auto shrink-0 px-0 text-xs"
+            disabled={disabled}
+            onClick={onUseOtherSavedData}
+          >
+            Usar otros datos
+          </Button>
         ) : savedProfileName && savedProfileDismissed ? (
           <Button
             type="button"
             variant="link"
             size="xs"
-            className="mt-1 h-auto px-0 text-xs"
+            className="ml-auto h-auto shrink-0 px-0 text-xs"
             disabled={disabled}
             onClick={onRestoreSavedProfile}
           >
-            Volver a usar mis datos guardados
+            Usar datos guardados
           </Button>
         ) : null}
       </div>

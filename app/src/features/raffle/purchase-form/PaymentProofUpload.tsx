@@ -2,7 +2,7 @@ import { CheckCircleIcon, FilePdfIcon, ImagesIcon, XIcon } from "@phosphor-icons
 import { type ChangeEvent, memo, useEffect, useId, useRef, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Field, FieldDescription, FieldError, FieldLabel } from "@/components/ui/field"
+import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import {
   PAYMENT_PROOF_ACCEPT_ATTR,
   PAYMENT_PROOF_MAX_MB,
@@ -81,9 +81,6 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
   return (
     <Field data-invalid={!!displayError}>
       <FieldLabel htmlFor={galleryInputId}>Comprobante de pago</FieldLabel>
-      <FieldDescription>
-        Foto clara del pago (JPG, PNG, WEBP, GIF o PDF · máx. {PAYMENT_PROOF_MAX_MB} MB)
-      </FieldDescription>
 
       <input
         id={galleryInputId}
@@ -168,8 +165,8 @@ export const PaymentProofUpload = memo(function PaymentProofUpload({
             <ImagesIcon className="size-6" aria-hidden />
           </span>
           <span className="text-sm font-medium">Elegir de la galería</span>
-          <span className="text-muted-foreground text-center text-xs">
-            Captura de pantalla o foto guardada
+          <span className="text-muted-foreground text-center text-xs leading-snug">
+            Foto clara del pago (JPG, PNG, WEBP, GIF o PDF · máx. {PAYMENT_PROOF_MAX_MB} MB)
           </span>
         </button>
       )}

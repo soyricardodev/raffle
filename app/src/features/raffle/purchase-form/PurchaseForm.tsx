@@ -1,4 +1,4 @@
-import { SpinnerGapIcon } from "@phosphor-icons/react"
+import { SpinnerGapIcon, TicketIcon } from "@phosphor-icons/react"
 import {
   type CedulaPrefix,
   type CustomerLocationType,
@@ -17,7 +17,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card"
 import { homeQueryKeys } from "@/features/home/home-queries"
 import { resolveSupportChannel } from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
@@ -27,7 +27,10 @@ import {
   saveBuyerProfile,
 } from "@/features/raffle/purchase-form/buyer-profile-storage"
 import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
-import { purchaseSubmitButtonClassName } from "@/features/raffle/purchase-form/field-styles"
+import {
+  purchaseStepDividerClassName,
+  purchaseSubmitButtonClassName,
+} from "@/features/raffle/purchase-form/field-styles"
 import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
 import { PurchaseErrorSupportPanel } from "@/features/raffle/purchase-form/PurchaseErrorSupportPanel"
 import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
@@ -151,7 +154,6 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
 
   const {
     priceCurrency,
-    priceIsEstimate,
     methodPromotionBadges,
     methodPromotionHint,
     total,
@@ -462,22 +464,13 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
 
   return (
     <div className="space-y-3">
-      <Card id="purchase-form" className="relative overflow-hidden">
+      <Card id="purchase-form" className="relative overflow-hidden py-4">
         {isSubmitting ? (
           <div className="bg-background/80 absolute inset-0 z-10 flex items-center justify-center backdrop-blur-sm">
             <SpinnerGapIcon className="animate-spin" />
           </div>
         ) : null}
-        <CardHeader className="border-b border-border/60 pb-4">
-          <div className="min-w-0">
-            <CardTitle className="text-lg">Compra tus boletos</CardTitle>
-            <p className="text-muted-foreground mt-1 text-xs leading-snug">
-              <span className="text-foreground font-medium tabular-nums">{quantity}</span> boleto
-              {quantity === 1 ? "" : "s"} · completa los 3 pasos
-            </p>
-          </div>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3.5 pb-2">
+        <CardContent className="flex flex-col gap-4 pb-2">
           <TicketQuantityStep
             quantity={quantity}
             quantityMin={quantityMin}
@@ -491,11 +484,12 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
             totalBs={totalBs}
             totalUsd={totalUsd}
             currency="Bs"
-            priceIsEstimate={priceIsEstimate}
             selloutFlex={quantityRange.selloutFlex}
             disabled={disabled}
             onChange={setQuantity}
           />
+
+          <div className={purchaseStepDividerClassName} />
 
           <CustomerDetailsStep
             disabled={disabled}
@@ -523,6 +517,8 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
             onUseOtherSavedData={handleUseOtherSavedData}
             onRestoreSavedProfile={handleRestoreSavedProfile}
           />
+
+          <div className={purchaseStepDividerClassName} />
 
           <PaymentStep
             methods={methods}
@@ -573,10 +569,15 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
                   Procesando…
                 </>
               ) : (
-                <>
-                  Confirmar compra
-                  <span className="opacity-95">· {formatCurrency(total, priceCurrency)}</span>
-                </>
+                <span className="flex min-w-0 items-center justify-center gap-2.5">
+                  <TicketIcon className="size-6 shrink-0" weight="fill" aria-hidden />
+                  <span className="flex min-w-0 flex-col items-start leading-tight">
+                    <span>Confirmar compra</span>
+                    <span className="text-[13px] font-semibold tracking-normal opacity-95">
+                      Recibe tus boletos · {formatCurrency(total, priceCurrency)}
+                    </span>
+                  </span>
+                </span>
               )}
             </Button>
           </div>

@@ -112,9 +112,6 @@ export const LocationFields = memo(function LocationFields({
             ready={ready}
             onValueChange={onSelectedMunicipalityChange}
           />
-          <p className="text-muted-foreground text-xs leading-snug">
-            Puedes buscar por municipio o por ciudad.
-          </p>
         </div>
       ) : (
         <InputGroup className={cn(formInputHeightClassName, ready && fieldReadyInputClassName)}>

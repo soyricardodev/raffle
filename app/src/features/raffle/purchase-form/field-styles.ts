@@ -18,19 +18,14 @@ export const prefixToggleItemClassName = cn(
   segmentToggleItemClassName,
 )
 
-/** Tarjeta destacada para pasos del formulario de compra (mobile-first). */
-export const purchaseSectionCardClassName = cn(
-  "rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/10 via-card to-card p-3 shadow-sm",
-)
+/** Paso del formulario: sin tarjeta extra, solo el bloque. */
+export const purchaseStepClassName = "flex flex-col gap-2.5"
+
+export const purchaseStepDividerClassName = "border-t border-border/70"
 
 export const quickPickToggleItemClassName = cn(
   "h-10 min-w-0 flex-1 rounded-xl px-1 text-sm font-medium tabular-nums",
   segmentToggleItemClassName,
-)
-
-/** Paso de pago: verde asociado a confianza y acción positiva. */
-export const paymentSectionCardClassName = cn(
-  "rounded-2xl border border-emerald-500/35 bg-gradient-to-br from-emerald-500/14 via-card to-teal-500/8 p-3 shadow-sm shadow-emerald-500/10",
 )
 
 export const paymentMethodCardActiveClassName = cn(
@@ -44,17 +39,14 @@ export const paymentMethodCardInactiveClassName = cn(
 
 export const paymentMethodCardPromoClassName = "border-emerald-500/50 bg-emerald-500/10"
 
-export const paymentCompletionBoxClassName =
-  "flex flex-col gap-4 rounded-xl border border-emerald-500/25 bg-emerald-500/5 p-3"
-
 /** CTA final de compra: contraste fuerte + animación (ver `.purchase-submit-cta`). */
 export const purchaseSubmitButtonClassName = cn(
   "purchase-submit-cta",
-  "h-12 min-h-12 w-full gap-2 text-base font-bold tracking-wide sm:h-11 sm:min-h-11 sm:text-sm",
+  "h-auto min-h-16 w-full whitespace-normal px-4 py-3 text-lg font-extrabold tracking-wide sm:min-h-14 sm:text-base",
   "border-0 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 text-white",
-  "shadow-lg shadow-emerald-600/35 ring-2 ring-emerald-400/55",
+  "shadow-lg shadow-emerald-600/40 ring-2 ring-emerald-400/60",
   "hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 hover:shadow-xl hover:shadow-emerald-500/40",
-  "active:scale-[0.99]",
+  "active:scale-[0.97]",
 )
 
 export {
