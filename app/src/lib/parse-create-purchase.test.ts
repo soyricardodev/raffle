@@ -1,5 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest"
-import { resetEnvCache } from "@/lib/env"
+import { describe, expect, it } from "vitest"
 import { parsePurchaseFromJson } from "./parse-create-purchase"
 
 const base = {
@@ -15,11 +14,6 @@ const base = {
 }
 
 describe("parsePurchaseFromJson location", () => {
-  afterEach(() => {
-    delete process.env.ENABLE_VENEZUELA_MUNICIPALITY
-    resetEnvCache()
-  })
-
   it("maps Venezuela state and municipality", () => {
     const params = parsePurchaseFromJson({
       ...base,
@@ -30,25 +24,22 @@ describe("parsePurchaseFromJson location", () => {
     expect(params.venezuelaMunicipality).toBe("Valencia")
   })
 
-  it("accepts a Venezuela location without municipality when the feature is off", () => {
-    delete process.env.ENABLE_VENEZUELA_MUNICIPALITY
-    resetEnvCache()
-    const params = parsePurchaseFromJson({
-      ...base,
-      customerLocation: "Venezuela, Carabobo",
-    })
-    expect(params.venezuelaState).toBe("Carabobo")
-    expect(params.venezuelaMunicipality).toBeNull()
-  })
-
-  it("rejects a Venezuela location without municipality when the feature is on", () => {
-    process.env.ENABLE_VENEZUELA_MUNICIPALITY = "true"
-    resetEnvCache()
+  it("rejects a Venezuela location without municipality", () => {
     expect(() =>
       parsePurchaseFromJson({
         ...base,
         customerLocation: "Venezuela, Carabobo",
       }),
     ).toThrow(/municipio/)
+  })
+
+  it("still accepts international free text", () => {
+    const params = parsePurchaseFromJson({
+      ...base,
+      customerLocation: "Colombia, Bogotá",
+    })
+    expect(params.locationType).toBe("other")
+    expect(params.venezuelaState).toBeNull()
+    expect(params.venezuelaMunicipality).toBeNull()
   })
 })

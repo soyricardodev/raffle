@@ -73,7 +73,6 @@ export type PublicBranding = {
   seo: SeoConfig
   purchaseSuccessPromo: PurchaseSuccessPromo
   whatsappEnabled: boolean
-  venezuelaMunicipalityEnabled: boolean
 }
 
 export function resolvePublicBranding(
@@ -94,7 +93,6 @@ export function resolvePublicBranding(
       ? normalizePurchaseSuccessPromo(payload.purchase_success_promo)
       : clonePurchaseSuccessPromo(),
     whatsappEnabled: payload.features?.whatsapp_enabled ?? false,
-    venezuelaMunicipalityEnabled: payload.features?.venezuela_municipality_enabled ?? false,
   }
 }
 

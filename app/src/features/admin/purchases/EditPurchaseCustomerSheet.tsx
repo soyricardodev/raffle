@@ -1,13 +1,13 @@
 import { EnvelopeSimpleIcon, UserCircleIcon } from "@phosphor-icons/react"
 import {
+  type CedulaPrefix,
+  type CustomerLocationType,
   customerLocationFieldError,
   formatCustomerCi,
   formatCustomerLocation,
   isValidCustomerCi,
   isValidCustomerPhone,
   parseCustomerCi,
-  type CedulaPrefix,
-  type CustomerLocationType,
 } from "@raffle/shared/validators"
 import { useEffect, useState } from "react"
 import { Button } from "@/components/ui/button"
@@ -24,7 +24,6 @@ import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
-import { usePublicBranding } from "@/features/layout/use-public-branding"
 import { cn } from "@/lib/utils"
 
 const SHEET_WIDTH_CLASS =
@@ -32,7 +31,10 @@ const SHEET_WIDTH_CLASS =
 
 const SHEET_LAYOUT_CLASS = "flex h-dvh max-h-dvh flex-col gap-0 overflow-hidden p-0"
 
-function ciPartsFromStored(ci: string | null | undefined): { prefix: CedulaPrefix; number: string } {
+function ciPartsFromStored(ci: string | null | undefined): {
+  prefix: CedulaPrefix
+  number: string
+} {
   const parsed = parseCustomerCi(ci?.trim() ?? "")
   if (parsed) return parsed
   return { prefix: "V", number: "" }
@@ -61,7 +63,6 @@ export function EditPurchaseCustomerSheet({
   pending = false,
   onSave,
 }: EditPurchaseCustomerSheetProps) {
-  const requireMunicipality = usePublicBranding()?.venezuelaMunicipalityEnabled ?? false
   const [customerName, setCustomerName] = useState(purchase.customer_name)
   const [customerPhone, setCustomerPhone] = useState(purchase.customer_phone)
   const [customerEmail, setCustomerEmail] = useState(purchase.customer_email?.trim() ?? "")
@@ -69,7 +70,9 @@ export function EditPurchaseCustomerSheet({
   const [ciPrefix, setCiPrefix] = useState<CedulaPrefix>(initialCi.prefix)
   const [ciNumber, setCiNumber] = useState(initialCi.number)
   const initialLocation = parsePurchaseLocationFormState(purchase.customer_location)
-  const [locationType, setLocationType] = useState<CustomerLocationType>(initialLocation.locationType)
+  const [locationType, setLocationType] = useState<CustomerLocationType>(
+    initialLocation.locationType,
+  )
   const [selectedState, setSelectedState] = useState(initialLocation.selectedState)
   const [selectedMunicipality, setSelectedMunicipality] = useState(
     initialLocation.selectedMunicipality,
@@ -115,7 +118,6 @@ export function EditPurchaseCustomerSheet({
     selectedState,
     selectedMunicipality,
     customLocation,
-    requireMunicipality,
   })
 
   const nameValid = customerName.trim().length > 0
@@ -127,7 +129,7 @@ export function EditPurchaseCustomerSheet({
     selectedState,
     selectedMunicipality,
     customLocation,
-    requireMunicipality,
+    requireMunicipality: false,
   })
 
   const snapshot: EditPurchaseCustomerPayload = {
@@ -181,7 +183,7 @@ export function EditPurchaseCustomerSheet({
           selectedState,
           selectedMunicipality,
           customLocation,
-          requireMunicipality,
+          requireMunicipality: false,
         }),
       )
       valid = false
@@ -275,7 +277,7 @@ export function EditPurchaseCustomerSheet({
                   customLocation={customLocation}
                   disabled={pending}
                   locationError={locationHint}
-                  requireMunicipality={requireMunicipality}
+                  requireMunicipality={false}
                   onLocationTypeChange={(type) => {
                     setLocationType(type)
                     setLocationHint(undefined)

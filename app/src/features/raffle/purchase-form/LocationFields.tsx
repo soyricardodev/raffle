@@ -1,22 +1,22 @@
 import { MapPinIcon } from "@phosphor-icons/react"
 import {
   type CustomerLocationType,
-  VENEZUELA_STATES,
   municipalitiesForState,
   municipalityPickerLabel,
   municipalitySearchText,
   singleMunicipalityName,
+  VENEZUELA_STATES,
 } from "@raffle/shared/validators"
 import { memo, useMemo } from "react"
 import { Field, FieldError, FieldLabel } from "@/components/ui/field"
 import { InputGroup, InputGroupAddon, InputGroupInput } from "@/components/ui/input-group"
 import { CountryScopeToggle } from "@/features/raffle/purchase-form/CountryScopeToggle"
 import { FieldReadyMark } from "@/features/raffle/purchase-form/FieldReadyMark"
-import { SearchableSelect } from "@/features/raffle/purchase-form/SearchableSelect"
 import {
   fieldReadyInputClassName,
   formInputHeightClassName,
 } from "@/features/raffle/purchase-form/field-styles"
+import { SearchableSelect } from "@/features/raffle/purchase-form/SearchableSelect"
 import { cn } from "@/lib/utils"
 
 type LocationFieldsProps = {
@@ -31,6 +31,7 @@ type LocationFieldsProps = {
   onSelectedStateChange: (state: string) => void
   onSelectedMunicipalityChange: (municipality: string) => void
   onCustomLocationChange: (value: string) => void
+  /** When false, municipality stays optional so older state-only locations can be saved. */
   requireMunicipality?: boolean
 }
 
@@ -48,7 +49,7 @@ export const LocationFields = memo(function LocationFields({
   onSelectedStateChange,
   onSelectedMunicipalityChange,
   onCustomLocationChange,
-  requireMunicipality = false,
+  requireMunicipality = true,
 }: LocationFieldsProps) {
   const ready = Boolean(success) && !locationError
   const municipalityOptions = useMemo(
@@ -92,29 +93,28 @@ export const LocationFields = memo(function LocationFields({
             ready={ready}
             onValueChange={(state) => {
               onSelectedStateChange(state)
-              onSelectedMunicipalityChange(
-                requireMunicipality ? (singleMunicipalityName(state) ?? "") : "",
-              )
+              onSelectedMunicipalityChange(singleMunicipalityName(state) ?? "")
             }}
           />
-          {requireMunicipality ? (
-            <>
-              <SearchableSelect
-                id="customer-municipality"
-                value={selectedMunicipality}
-                options={municipalityOptions}
-                placeholder={selectedState ? "Selecciona tu municipio" : "Primero elige el estado"}
-                searchPlaceholder="Buscar municipio o ciudad..."
-                disabled={disabled || !selectedState}
-                invalid={!!locationError && Boolean(selectedState) && !selectedMunicipality}
-                ready={ready}
-                onValueChange={onSelectedMunicipalityChange}
-              />
-              <p className="text-muted-foreground text-xs leading-snug">
-                Puedes buscar por municipio o por ciudad.
-              </p>
-            </>
-          ) : null}
+          <SearchableSelect
+            id="customer-municipality"
+            value={selectedMunicipality}
+            options={municipalityOptions}
+            placeholder={selectedState ? "Selecciona tu municipio" : "Primero elige el estado"}
+            searchPlaceholder="Buscar municipio o ciudad..."
+            disabled={disabled || !selectedState}
+            invalid={
+              !!locationError &&
+              Boolean(selectedState) &&
+              requireMunicipality &&
+              !selectedMunicipality
+            }
+            ready={ready}
+            onValueChange={onSelectedMunicipalityChange}
+          />
+          <p className="text-muted-foreground text-xs leading-snug">
+            Puedes buscar por municipio o por ciudad.
+          </p>
         </div>
       ) : (
         <InputGroup className={cn(formInputHeightClassName, ready && fieldReadyInputClassName)}>

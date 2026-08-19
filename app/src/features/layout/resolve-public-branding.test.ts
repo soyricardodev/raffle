@@ -31,14 +31,5 @@ describe("resolvePublicBranding", () => {
     expect(branding?.siteInfo.site_name).toBe("Lotería")
     expect(branding?.colors?.primary).toBe("#111111")
     expect(branding?.whatsappEnabled).toBe(false)
-    expect(branding?.venezuelaMunicipalityEnabled).toBe(false)
-  })
-
-  it("maps the municipality feature flag", () => {
-    const branding = resolvePublicBranding({
-      features: { whatsapp_enabled: false, venezuela_municipality_enabled: true },
-    })
-    expect(branding?.venezuelaMunicipalityEnabled).toBe(true)
   })
 })
-

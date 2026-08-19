@@ -70,6 +70,7 @@ export function SearchableSelect({
 
   return (
     <Popover
+      modal
       open={open}
       onOpenChange={(next) => {
         if (disabled) return

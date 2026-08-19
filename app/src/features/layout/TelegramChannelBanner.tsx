@@ -34,7 +34,7 @@ export function TelegramChannelBanner() {
             Ahora nos mudamos a Telegram
           </span>
           <span className="shrink-0 rounded-full bg-white/20 px-2 py-1 text-[11px] font-bold leading-tight">
-            Envia Nombre y Apellido
+            Envía nombre y apellido
           </span>
         </a>
       </div>

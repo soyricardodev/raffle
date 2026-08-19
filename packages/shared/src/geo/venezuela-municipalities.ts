@@ -463,10 +463,35 @@ for (const [state, list] of Object.entries(VENEZUELA_MUNICIPALITIES)) {
   MUNICIPALITY_LOOKUPS.set(state, map)
 }
 
+/** Pinned first in the picker. Remaining municipios stay alphabetical. */
+const MUNICIPALITY_PICKER_PRIORITY: Record<string, readonly string[]> = {
+  Carabobo: [
+    "Valencia",
+    "Guacara",
+    "Puerto Cabello",
+    "San Diego",
+    "Libertador",
+    "Los Guayos",
+    "Naguanagua",
+    "San Joaquín",
+    "Diego Ibarra",
+  ],
+}
+
 export function municipalitiesForState(state: string): readonly VenezuelaMunicipality[] {
   const list = VENEZUELA_MUNICIPALITIES[state]
   if (!list) return []
-  return [...list].sort((a, b) => a.name.localeCompare(b.name, "es"))
+  const priority = MUNICIPALITY_PICKER_PRIORITY[state]
+  if (!priority) {
+    return [...list].sort((a, b) => a.name.localeCompare(b.name, "es"))
+  }
+  const rank = new Map(priority.map((name, index) => [name, index]))
+  return [...list].sort((a, b) => {
+    const aRank = rank.get(a.name) ?? Number.POSITIVE_INFINITY
+    const bRank = rank.get(b.name) ?? Number.POSITIVE_INFINITY
+    if (aRank !== bRank) return aRank - bRank
+    return a.name.localeCompare(b.name, "es")
+  })
 }
 
 export function singleMunicipalityName(state: string): string | null {

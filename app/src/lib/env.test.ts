@@ -63,27 +63,6 @@ describe("getEnv", () => {
     delete process.env.ENABLE_WHATSAPP
   })
 
-  it("defaults ENABLE_VENEZUELA_MUNICIPALITY to false", () => {
-    resetEnvCache()
-    delete process.env.ENABLE_VENEZUELA_MUNICIPALITY
-    process.env.DATABASE_URL = "file:./packages/shared/data/raffle.db"
-    process.env.NODE_ENV = "test"
-    expect(getEnv().ENABLE_VENEZUELA_MUNICIPALITY).toBe(false)
-  })
-
-  it("parses ENABLE_VENEZUELA_MUNICIPALITY true from true/1", () => {
-    resetEnvCache()
-    process.env.DATABASE_URL = "file:./packages/shared/data/raffle.db"
-    process.env.NODE_ENV = "test"
-    process.env.ENABLE_VENEZUELA_MUNICIPALITY = "true"
-    expect(getEnv().ENABLE_VENEZUELA_MUNICIPALITY).toBe(true)
-
-    resetEnvCache()
-    process.env.ENABLE_VENEZUELA_MUNICIPALITY = "1"
-    expect(getEnv().ENABLE_VENEZUELA_MUNICIPALITY).toBe(true)
-    delete process.env.ENABLE_VENEZUELA_MUNICIPALITY
-  })
-
   it("maps legacy mysql DATABASE_URL to libsql file in development", () => {
     process.env.DATABASE_URL = "mysql://root:pass@localhost:3306/legacy"
     process.env.NODE_ENV = "development"

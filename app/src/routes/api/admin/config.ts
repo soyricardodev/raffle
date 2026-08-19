@@ -1,7 +1,7 @@
 import { AdminSiteConfigPatchSchema } from "@raffle/shared/site-config"
-import { apiHandlers } from "@/lib/api-handler"
 import { createFileRoute } from "@tanstack/react-router"
 import { z } from "zod"
+import { apiHandlers } from "@/lib/api-handler"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import { getEnv } from "@/lib/env"
 import {
@@ -28,7 +28,6 @@ export const Route = createFileRoute("/api/admin/config")({
           ...(await getSiteConfigMap()),
           features: {
             whatsapp_enabled: getEnv().ENABLE_WHATSAPP,
-            venezuela_municipality_enabled: getEnv().ENABLE_VENEZUELA_MUNICIPALITY,
           },
         })
       },

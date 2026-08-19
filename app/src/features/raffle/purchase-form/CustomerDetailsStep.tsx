@@ -1,14 +1,14 @@
-import { EnvelopeSimpleIcon, ShieldCheckIcon, UserCircleIcon } from "@phosphor-icons/react"
+import { EnvelopeSimpleIcon, UserCircleIcon } from "@phosphor-icons/react"
 import type { CedulaPrefix, CustomerLocationType } from "@raffle/shared/validators"
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
 import { CiInputField } from "@/features/raffle/purchase-form/CiInputField"
 import { purchaseSectionCardClassName } from "@/features/raffle/purchase-form/field-styles"
 import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { LocationFields } from "@/features/raffle/purchase-form/LocationFields"
 import { PhoneInputField } from "@/features/raffle/purchase-form/PhoneInputField"
-import { SavedBuyerProfileBanner } from "@/features/raffle/purchase-form/SavedBuyerProfileBanner"
 import { cn } from "@/lib/utils"
 
 type CustomerDetailsStepProps = {
@@ -42,7 +42,6 @@ type CustomerDetailsStepProps = {
   onCustomLocationChange: (value: string) => void
   onUseOtherSavedData: () => void
   onRestoreSavedProfile: () => void
-  requireMunicipality?: boolean
 }
 
 export const CustomerDetailsStep = memo(function CustomerDetailsStep({
@@ -70,36 +69,48 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   onCustomLocationChange,
   onUseOtherSavedData,
   onRestoreSavedProfile,
-  requireMunicipality = false,
 }: CustomerDetailsStepProps) {
   const usingSavedProfile = Boolean(savedProfileName) && !savedProfileDismissed
 
   return (
     <section className={cn(purchaseSectionCardClassName, "flex flex-col gap-2.5")}>
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <Badge variant="secondary" className="shrink-0 tabular-nums">
-              2
-            </Badge>
-            <h3 className="text-sm font-semibold">Tus datos para los boletos</h3>
-          </div>
-          <p className="text-muted-foreground mt-1 flex items-start gap-1.5 text-xs leading-snug">
-            <ShieldCheckIcon className="text-primary mt-0.5 size-3.5 shrink-0" aria-hidden />
-            Usamos esta información solo para asignarte los números y enviarte la confirmación.
-          </p>
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          <Badge variant="secondary" className="shrink-0 tabular-nums">
+            2
+          </Badge>
+          <h3 className="text-sm font-semibold">Tus datos para los boletos</h3>
         </div>
+        {usingSavedProfile ? (
+          <div className="mt-1 flex flex-col items-start gap-0.5">
+            <p className="text-muted-foreground text-xs leading-snug">
+              Autocompletamos tu compra anterior. Solo revisa que nombre, teléfono y correo sigan
+              correctos antes de pagar.
+            </p>
+            <Button
+              type="button"
+              variant="link"
+              size="xs"
+              className="text-muted-foreground hover:text-foreground h-auto px-0 text-xs"
+              disabled={disabled}
+              onClick={onUseOtherSavedData}
+            >
+              Usar otros datos
+            </Button>
+          </div>
+        ) : savedProfileName && savedProfileDismissed ? (
+          <Button
+            type="button"
+            variant="link"
+            size="xs"
+            className="mt-1 h-auto px-0 text-xs"
+            disabled={disabled}
+            onClick={onRestoreSavedProfile}
+          >
+            Volver a usar mis datos guardados
+          </Button>
+        ) : null}
       </div>
-
-      {savedProfileName ? (
-        <SavedBuyerProfileBanner
-          customerName={savedProfileName}
-          dismissed={savedProfileDismissed}
-          disabled={disabled}
-          onUseOtherData={onUseOtherSavedData}
-          onRestoreSavedProfile={onRestoreSavedProfile}
-        />
-      ) : null}
 
       <FieldGroup className="gap-2.5">
         <LabeledIconField
@@ -157,11 +168,9 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           success={
             usingSavedProfile &&
             (locationType === "venezuela"
-              ? selectedState.trim().length > 0 &&
-                (!requireMunicipality || selectedMunicipality.trim().length > 0)
+              ? selectedState.trim().length > 0 && selectedMunicipality.trim().length > 0
               : customLocation.trim().length > 0)
           }
-          requireMunicipality={requireMunicipality}
           onLocationTypeChange={onLocationTypeChange}
           onSelectedStateChange={onSelectedStateChange}
           onSelectedMunicipalityChange={onSelectedMunicipalityChange}

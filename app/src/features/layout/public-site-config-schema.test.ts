@@ -108,7 +108,6 @@ describe("parsePublicSiteConfig", () => {
     )
 
     expect(result.features?.whatsapp_enabled).toBe(false)
-    expect(result.features?.venezuela_municipality_enabled).toBe(false)
     expect(result.social_media?.whatsapp).toBe("")
     expect(result.social_media?.telegram).toBe("yoiberifas")
     expect(result.social_media?.support_channel).toBe("telegram")
@@ -135,24 +134,6 @@ describe("parsePublicSiteConfig", () => {
 
     expect(result.social_media?.whatsapp).toBe("584121234567")
     expect(result.social_media?.support_channel).toBe("whatsapp")
-  })
-
-  it("exposes the municipality feature flag", () => {
-    const result = applyPublicWhatsAppVisibility(
-      {
-        social_media: {
-          whatsapp: "",
-          instagram: "",
-          facebook: "",
-          tiktok: "",
-          telegram: "yoiberifas",
-          support_channel: "telegram",
-        },
-      },
-      false,
-      true,
-    )
-    expect(result.features?.venezuela_municipality_enabled).toBe(true)
   })
 })
 

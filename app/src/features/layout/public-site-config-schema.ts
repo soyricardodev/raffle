@@ -42,7 +42,6 @@ export const PublicSiteConfigPayloadSchema = z.object({
   features: z
     .object({
       whatsapp_enabled: z.boolean(),
-      venezuela_municipality_enabled: z.boolean().optional(),
     })
     .optional(),
 })
@@ -86,7 +85,6 @@ export function parsePublicSiteConfig(data: Record<string, unknown>): PublicSite
 export function applyPublicWhatsAppVisibility(
   payload: PublicSiteConfigPayload,
   whatsappEnabled: boolean,
-  venezuelaMunicipalityEnabled = false,
 ): PublicSiteConfigPayload {
   const social = payload.social_media ?? {
     whatsapp: "",
@@ -117,7 +115,6 @@ export function applyPublicWhatsAppVisibility(
       : promo,
     features: {
       whatsapp_enabled: whatsappEnabled,
-      venezuela_municipality_enabled: venezuelaMunicipalityEnabled,
     },
   }
 }

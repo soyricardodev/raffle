@@ -16,7 +16,6 @@ export const Route = createFileRoute("/api/config")({
         const result = applyPublicWhatsAppVisibility(
           parsePublicSiteConfig(await getSiteConfigMap()),
           getEnv().ENABLE_WHATSAPP,
-          getEnv().ENABLE_VENEZUELA_MUNICIPALITY,
         )
         return Response.json(result)
       },

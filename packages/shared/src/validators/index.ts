@@ -162,7 +162,7 @@ export function splitVenezuelaLocation(raw: string): {
 export function formatCustomerLocation(input: CustomerLocationInput): string {
   if (input.locationType === "venezuela") {
     const state = input.selectedState.trim()
-    const municipality = input.requireMunicipality ? (input.selectedMunicipality?.trim() ?? "") : ""
+    const municipality = input.selectedMunicipality?.trim() ?? ""
     if (!state) return ""
     if (!municipality) return `Venezuela, ${state}`
     return `Venezuela, ${state}, ${municipality}`
@@ -365,7 +365,7 @@ export function parseCreatePurchaseBody(
   options?: { requireMunicipality?: boolean },
 ): CreatePurchaseBody {
   const parsed = CreatePurchaseBody.parse(raw)
-  assertCustomerLocationMunicipality(parsed.customerLocation, options?.requireMunicipality ?? false)
+  assertCustomerLocationMunicipality(parsed.customerLocation, options?.requireMunicipality ?? true)
   return parsed
 }
 

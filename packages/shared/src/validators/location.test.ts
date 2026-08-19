@@ -18,7 +18,7 @@ describe("formatCustomerLocation", () => {
     ).toBe("Venezuela, Carabobo, Valencia")
   })
 
-  it("omits municipality when the feature is off", () => {
+  it("keeps municipality in the stored string even when it is optional", () => {
     expect(
       formatCustomerLocation({
         locationType: "venezuela",
@@ -27,7 +27,7 @@ describe("formatCustomerLocation", () => {
         customLocation: "",
         requireMunicipality: false,
       }),
-    ).toBe("Venezuela, Carabobo")
+    ).toBe("Venezuela, Carabobo, Valencia")
   })
 
   it("keeps the legacy two-part string when municipality is missing", () => {

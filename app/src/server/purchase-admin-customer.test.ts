@@ -119,4 +119,47 @@ describe("admin purchase customer contact update", () => {
 
     expect(row?.customerCi).toBe("V22222222")
   })
+
+  it("keeps a legacy Venezuela location without municipality when editing other fields", async () => {
+    const db = getDb()
+    const raffleId = await seedTestRaffle("TEST-AdminLegacyLocation")
+    const rafflePaymentMethodId = await seedPagoMovilPaymentMethodForRaffle(raffleId)
+
+    const purchase = await createPurchase(
+      withTestBuyerDefaults({
+        raffleId,
+        customerName: "Legacy Buyer",
+        customerPhone: "04124444444",
+        customerCi: "V33333333",
+        customerLocation: "Venezuela, Carabobo",
+        rafflePaymentMethodId,
+        paymentReference: "33445566",
+        ticketQuantity: 1,
+      }),
+    )
+
+    await updatePurchaseCustomerContact(
+      purchase.purchaseId,
+      {
+        customerName: "Legacy Buyer Edited",
+        customerPhone: "04124444444",
+        customerEmail: "comprador@test.local",
+        customerCi: "V33333333",
+        customerLocation: "Venezuela, Carabobo",
+      },
+      { adminUserId: "test-admin" },
+    )
+
+    const [row] = await db
+      .select({
+        customerName: purchases.customerName,
+        customerLocation: purchases.customerLocation,
+      })
+      .from(purchases)
+      .where(eq(purchases.id, purchase.purchaseId))
+      .limit(1)
+
+    expect(row?.customerName).toBe("Legacy Buyer Edited")
+    expect(row?.customerLocation).toBe("Venezuela, Carabobo")
+  })
 })

@@ -5,28 +5,37 @@ import {
   customerLocationFieldError,
   formatCustomerCi,
   formatCustomerLocation,
-  singleMunicipalityName,
   isValidCustomerCi,
   isValidCustomerPhone,
   paymentReferenceValidationMessage,
   resolvePaymentReferenceInputMode,
   resolvePaymentReferencePolicy,
   sanitizePaymentReference,
+  singleMunicipalityName,
 } from "@raffle/shared/validators"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { homeQueryKeys } from "@/features/home/home-queries"
+import { resolveSupportChannel } from "@/features/layout/social-links"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
 import {
   loadSavedBuyerProfile,
   type SavedBuyerProfile,
   saveBuyerProfile,
 } from "@/features/raffle/purchase-form/buyer-profile-storage"
 import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
-import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
-import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
 import { purchaseSubmitButtonClassName } from "@/features/raffle/purchase-form/field-styles"
+import { PaymentStep } from "@/features/raffle/purchase-form/PaymentStep"
+import { PurchaseErrorSupportPanel } from "@/features/raffle/purchase-form/PurchaseErrorSupportPanel"
+import { PurchaseSuccessDialog } from "@/features/raffle/purchase-form/PurchaseSuccessDialog"
+import {
+  buildPurchaseSupportHref,
+  type PurchaseSupportErrorState,
+  resolvePurchaseSupportError,
+} from "@/features/raffle/purchase-form/purchase-error-support"
 import { TicketQuantityStep } from "@/features/raffle/purchase-form/TicketQuantityStep"
 import {
   clampQuantity,
@@ -36,7 +45,6 @@ import {
 import { usePaymentMethodSelection } from "@/features/raffle/purchase-form/use-payment-method-selection"
 import { usePurchasePricing } from "@/features/raffle/purchase-form/use-purchase-pricing"
 import { useRaffleLiveDataOrFetch } from "@/features/raffle/raffle-live-context"
-import { homeQueryKeys } from "@/features/home/home-queries"
 import { raffleLiveQueryKeys } from "@/features/raffle/raffle-live-queries"
 import { raffleQueryKeys } from "@/features/raffle/raffle-queries"
 import type {
@@ -44,14 +52,6 @@ import type {
   RaffleForPurchase,
   RafflePaymentMethod,
 } from "@/features/raffle/types"
-import { resolveSupportChannel } from "@/features/layout/social-links"
-import { usePublicBranding } from "@/features/layout/use-public-branding"
-import { PurchaseErrorSupportPanel } from "@/features/raffle/purchase-form/PurchaseErrorSupportPanel"
-import {
-  buildPurchaseSupportHref,
-  type PurchaseSupportErrorState,
-  resolvePurchaseSupportError,
-} from "@/features/raffle/purchase-form/purchase-error-support"
 import { useBuyerPresence } from "@/features/raffle/use-buyer-presence"
 import { publicFetch } from "@/lib/admin-fetch"
 import { getApiErrorMessage } from "@/lib/api-error-message"
@@ -99,7 +99,6 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
 export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps) {
   const queryClient = useQueryClient()
   const branding = usePublicBranding()
-  const requireMunicipality = branding?.venezuelaMunicipalityEnabled ?? false
   const [supportError, setSupportError] = useState<PurchaseSupportErrorState | null>(null)
   const minPurchase = Number(raffle.min_purchase) || 1
   const maxPurchase = Number(raffle.max_purchase) || 10
@@ -181,12 +180,10 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
     setLocationType(profile.locationType)
     setSelectedState(profile.selectedState)
     setSelectedMunicipality(
-      requireMunicipality
-        ? profile.selectedMunicipality || singleMunicipalityName(profile.selectedState) || ""
-        : profile.selectedMunicipality || "",
+      profile.selectedMunicipality || singleMunicipalityName(profile.selectedState) || "",
     )
     setCustomLocation(profile.customLocation)
-  }, [requireMunicipality])
+  }, [])
 
   useEffect(() => {
     if (!rememberBuyer) return
@@ -239,7 +236,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
         selectedState,
         selectedMunicipality,
         customLocation,
-        requireMunicipality,
+        requireMunicipality: true,
       }),
       reference: paymentReferenceValidationMessage(
         paymentReference,
@@ -262,7 +259,6 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       locationType,
       selectedState,
       selectedMunicipality,
-      requireMunicipality,
       customLocation,
       paymentReference,
       referenceMinLength,
@@ -306,7 +302,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
         selectedState,
         selectedMunicipality,
         customLocation,
-        requireMunicipality,
+        requireMunicipality: true,
       })
 
       const form = new FormData()
@@ -526,7 +522,6 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
             onCustomLocationChange={setCustomLocation}
             onUseOtherSavedData={handleUseOtherSavedData}
             onRestoreSavedProfile={handleRestoreSavedProfile}
-            requireMunicipality={requireMunicipality}
           />
 
           <PaymentStep

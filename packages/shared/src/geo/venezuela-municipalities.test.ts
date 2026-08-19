@@ -46,10 +46,22 @@ describe("venezuela municipalities dataset", () => {
   })
 
   it("returns sorted municipalities and auto-selects single-municipality states", () => {
-    const carabobo = municipalitiesForState("Carabobo")
-    expect(carabobo.map((item) => item.name)).toEqual(
-      [...carabobo].sort((a, b) => a.name.localeCompare(b.name, "es")).map((item) => item.name),
-    )
+    expect(municipalitiesForState("Carabobo").map((item) => item.name)).toEqual([
+      "Valencia",
+      "Guacara",
+      "Puerto Cabello",
+      "San Diego",
+      "Libertador",
+      "Los Guayos",
+      "Naguanagua",
+      "San Joaquín",
+      "Diego Ibarra",
+      "Bejuma",
+      "Carlos Arvelo",
+      "Juan José Mora",
+      "Miranda",
+      "Montalbán",
+    ])
     expect(singleMunicipalityName("Distrito Capital")).toBe("Libertador")
     expect(singleMunicipalityName("La Guaira")).toBe("Vargas")
     expect(singleMunicipalityName("Carabobo")).toBeNull()
