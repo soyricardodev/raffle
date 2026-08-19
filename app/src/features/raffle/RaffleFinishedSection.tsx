@@ -1,9 +1,7 @@
 import { Link } from "@tanstack/react-router"
-import { CheckCircle2, Search, Trophy } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { CheckCircle2, Trophy } from "lucide-react"
 import { Card, CardContent } from "@/components/ui/card"
 import { RaffleCoverHero } from "@/features/raffle/RaffleCoverHero"
-import { RaffleInfoPanel } from "@/features/raffle/RaffleInfoPanel"
 import {
   type RaffleLandingRaffle,
   raffleTicketsInput,
@@ -25,13 +23,11 @@ type RaffleFinishedSectionProps = {
     draw_date?: string | null
   }
   edgeBleed?: boolean
-  headingLevel?: 1 | 2
 }
 
 export function RaffleFinishedSection({
   raffle,
   edgeBleed = false,
-  headingLevel = 1,
 }: RaffleFinishedSectionProps) {
   const tickets = raffleTicketsInput(raffle)
   const hasCover = Boolean(raffle.image_url)
@@ -53,28 +49,7 @@ export function RaffleFinishedSection({
 
       <FinishedStatusBanner />
 
-      <RaffleInfoPanel
-        raffleId={raffle.id}
-        name={raffle.name}
-        description={raffle.description}
-        status="finished"
-        tickets={tickets}
-        drawDate={raffle.draw_date}
-        daysRemaining={raffle.days_remaining}
-        priceBs={raffle.price_bs}
-        priceUsd={raffle.price_usd}
-        pricing={raffle.pricing}
-        liveEnabled={false}
-        showProgress={!hasCover}
-        showStatusBadge={!hasCover}
-        showPricing={false}
-        headingLevel={headingLevel}
-        descriptionLineClamp={5}
-      />
-
       {sortedPrizes.length > 0 ? <FinishedPrizesList prizes={sortedPrizes} /> : null}
-
-      <FinishedActions raffleId={raffle.id} />
     </div>
   )
 }
@@ -92,13 +67,9 @@ function FinishedStatusBanner() {
           <CheckCircle2 className="size-5" aria-hidden />
         </span>
         <div className="flex min-w-0 flex-col gap-2">
-          <p className="font-heading text-lg font-bold tracking-tight text-blue-950 dark:text-blue-50">
+          <h1 className="font-heading text-lg font-bold tracking-tight text-blue-950 dark:text-blue-50">
             Rifa finalizada con éxito:
-          </p>
-          <p className="text-muted-foreground text-sm leading-relaxed">
-            Si no lograste registrar tu comprobante a tiempo, mantén la calma, lo puedes
-            registrar en la próxima liberación.
-          </p>
+          </h1>
           <p className="text-muted-foreground text-sm leading-relaxed">
             Las ventas están cerradas. Si compraste verifica tus boletos arriba en{" "}
             <Link
@@ -153,23 +124,5 @@ function FinishedPrizesList({ prizes }: { prizes: FinishedPrize[] }) {
         </ul>
       </CardContent>
     </Card>
-  )
-}
-
-function FinishedActions({ raffleId }: { raffleId: string | number }) {
-  return (
-    <div className="flex flex-col gap-2">
-      <Button className="min-h-11 w-full" asChild>
-        <Link {...buildVerifyHref()}>
-          <Search className="mr-2 size-4" />
-          Buscar mis boletos
-        </Link>
-      </Button>
-      <Button variant="outline" className="min-h-11 w-full" asChild>
-        <Link to="/rifa/$id" params={{ id: String(raffleId) }}>
-          Ver detalles de la rifa
-        </Link>
-      </Button>
-    </div>
   )
 }

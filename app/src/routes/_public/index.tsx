@@ -120,7 +120,7 @@ function HomePage() {
           ) : null}
 
           {!activeRaffle && finishedRaffle && !loading ? (
-            <RaffleFinishedSection raffle={finishedRaffle} edgeBleed headingLevel={1} />
+            <RaffleFinishedSection raffle={finishedRaffle} edgeBleed />
           ) : null}
 
           {!activeRaffle && !finishedRaffle && !loading ? (
