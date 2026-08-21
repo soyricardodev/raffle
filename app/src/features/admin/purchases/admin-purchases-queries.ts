@@ -1,12 +1,14 @@
 import { PaymentMethod } from "@raffle/shared/payment-methods"
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
+import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
 import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import {
   getDefaultAdminRaffleId,
   resolveAdminRaffleScopeFromSearch,
 } from "@/features/admin/shared/admin-raffle-scope"
+import { requirePurchasesModuleAccess } from "@/lib/purchases-access.server"
 import { decodeAdminPurchaseCursor } from "@/server/admin-purchases-cursor"
 import { listAdminPurchases } from "@/server/purchase.service"
 import { getDashboardStats } from "@/server/raffle.service"
@@ -81,6 +83,7 @@ export const fetchAdminPurchases = createServerFn({ method: "POST" })
   .middleware([requireAdminMiddleware])
   .inputValidator(AdminPurchasesFetchInput)
   .handler(async ({ data }) => {
+    await requirePurchasesModuleAccess(getRequest())
     return listAdminPurchases({
       limit: data.limit,
       cursor: decodeAdminPurchaseCursor(data.cursor),

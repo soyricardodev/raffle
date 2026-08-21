@@ -569,12 +569,17 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
                   Procesando…
                 </>
               ) : (
-                <span className="flex min-w-0 items-center justify-center gap-2.5">
-                  <TicketIcon className="size-6 shrink-0" weight="fill" aria-hidden />
-                  <span className="flex min-w-0 flex-col items-start leading-tight">
-                    <span>Confirmar compra</span>
-                    <span className="text-[13px] font-semibold tracking-normal opacity-95">
-                      Recibe tus boletos · {formatCurrency(total, priceCurrency)}
+                <span className="flex w-full min-w-0 items-center gap-2.5">
+                  <TicketIcon className="size-7 shrink-0" weight="fill" aria-hidden />
+                  <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5">
+                    <span className="truncate text-left text-xl font-black tracking-tight">
+                      Confirmar compra
+                    </span>
+                    <span className="whitespace-nowrap text-right text-xl font-black tabular-nums tracking-tight">
+                      {formatCurrency(total, priceCurrency)}
+                    </span>
+                    <span className="col-span-2 text-left text-sm font-semibold tracking-normal opacity-85">
+                      Recibe tus boletos
                     </span>
                   </span>
                 </span>

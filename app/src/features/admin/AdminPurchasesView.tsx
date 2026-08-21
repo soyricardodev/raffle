@@ -1,16 +1,16 @@
 import { ArrowClockwiseIcon, MagnifyingGlassIcon, XIcon } from "@phosphor-icons/react"
 import {
   PAYMENT_METHOD_DEFINITIONS,
-  paymentMethodTypeLabel,
   type PaymentMethod,
+  paymentMethodTypeLabel,
 } from "@raffle/shared/payment-methods"
 import { keepPreviousData, useInfiniteQuery, useQuery } from "@tanstack/react-query"
 import { getRouteApi, useNavigate } from "@tanstack/react-router"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { toast } from "sonner"
-import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import {
   InputGroup,
   InputGroupAddon,
@@ -25,6 +25,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import { adminNavTitle } from "@/features/admin/nav"
+import { adminPurchasesAccessQueryOptions } from "@/features/admin/purchases/admin-purchases-access-queries"
 import {
   adminPurchasesDashboardQueryOptions,
   adminPurchasesInfiniteQueryOptions,
@@ -33,21 +35,21 @@ import {
   getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
-import { useSanitizeAdminRaffleUrlParam } from "@/features/admin/shared/use-admin-raffle-url-scope"
 import { PurchaseDetailDrawer } from "@/features/admin/purchases/PurchaseDetailDrawer"
-import { PurchasesInfiniteLoadFooter } from "@/features/admin/purchases/PurchasesInfiniteLoadFooter"
+import { PurchasesAccessGate } from "@/features/admin/purchases/PurchasesAccessGate"
 import {
   PurchasesDataTable,
   PurchasesMobileList,
 } from "@/features/admin/purchases/PurchasesDataTable"
-import { useInfiniteScrollSentinel } from "@/features/admin/purchases/use-infinite-scroll-sentinel"
-import { DateRangePicker } from "@/components/ui/date-range-picker"
-import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
-import { AdminRaffleScopeSelect } from "@/features/admin/shared/AdminRaffleScopeSelect"
-import { raffleStatusLabel } from "@/features/admin/raffle-labels"
+import { PurchasesInfiniteLoadFooter } from "@/features/admin/purchases/PurchasesInfiniteLoadFooter"
+import type { PurchaseRow } from "@/features/admin/purchases/types"
 import { useAdminPurchaseStatusUpdate } from "@/features/admin/purchases/use-admin-purchase-status-update"
-import { adminNavTitle } from "@/features/admin/nav"
+import { useInfiniteScrollSentinel } from "@/features/admin/purchases/use-infinite-scroll-sentinel"
+import { raffleStatusLabel } from "@/features/admin/raffle-labels"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
+import { AdminRaffleScopeSelect } from "@/features/admin/shared/AdminRaffleScopeSelect"
+import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
+import { useSanitizeAdminRaffleUrlParam } from "@/features/admin/shared/use-admin-raffle-url-scope"
 import { useDebouncedSearchParam } from "@/hooks/useDebouncedSearchParam"
 import { cn } from "@/lib/utils"
 
@@ -61,6 +63,21 @@ const PAYMENT_METHOD_FILTER_OPTIONS = (
 }))
 
 export function AdminPurchasesView() {
+  const accessQuery = useQuery(adminPurchasesAccessQueryOptions())
+
+  return (
+    <PurchasesAccessGate
+      status={accessQuery.data}
+      isPending={accessQuery.isPending}
+      isError={accessQuery.isError}
+      onRetry={() => void accessQuery.refetch()}
+    >
+      <AdminPurchasesContent />
+    </PurchasesAccessGate>
+  )
+}
+
+function AdminPurchasesContent() {
   const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/compras" })
   const purchaseFromUrl =
@@ -251,10 +268,7 @@ export function AdminPurchasesView() {
             </InputGroup>
 
             <div className="flex min-w-0 flex-wrap items-center gap-2">
-              <Select
-                value={filters.status}
-                onValueChange={(status) => updateSearch({ status })}
-              >
+              <Select value={filters.status} onValueChange={(status) => updateSearch({ status })}>
                 <SelectTrigger size="sm" className="w-[136px]">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
@@ -268,10 +282,7 @@ export function AdminPurchasesView() {
                 </SelectContent>
               </Select>
 
-              <Select
-                value={filters.sort}
-                onValueChange={(sort) => updateSearch({ sort })}
-              >
+              <Select value={filters.sort} onValueChange={(sort) => updateSearch({ sort })}>
                 <SelectTrigger size="sm" className="w-[168px] max-w-full">
                   <SelectValue placeholder="Orden por fecha" />
                 </SelectTrigger>

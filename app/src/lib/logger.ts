@@ -21,6 +21,8 @@ export function getLogger(): pino.Logger {
           "password",
           "authorization",
           "cookie",
+          "purchases_access_key_hash",
+          "keyHash",
         ],
         remove: true,
       },

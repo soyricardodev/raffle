@@ -4,6 +4,7 @@ import { z } from "zod"
 import { apiHandlers } from "@/lib/api-handler"
 import { requireAdmin } from "@/lib/auth-utils.server"
 import { getEnv } from "@/lib/env"
+import { sanitizeAdminConfigMap } from "@/server/purchases-access"
 import {
   getSiteConfigMap,
   updateSiteConfigKey,
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/api/admin/config")({
       GET: async ({ request }) => {
         await requireAdmin(request)
         return Response.json({
-          ...(await getSiteConfigMap()),
+          ...sanitizeAdminConfigMap(await getSiteConfigMap()),
           features: {
             whatsapp_enabled: getEnv().ENABLE_WHATSAPP,
           },

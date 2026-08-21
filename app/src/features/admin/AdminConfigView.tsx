@@ -22,10 +22,11 @@ import { EmailConfigTab } from "@/features/admin/config/EmailConfigTab"
 import { OfficialLogosEditor } from "@/features/admin/config/OfficialLogosEditor"
 import { PostPurchasePromoConfigTab } from "@/features/admin/config/PostPurchasePromoConfigTab"
 import { PurchaseRejectReasonsEditor } from "@/features/admin/config/PurchaseRejectReasonsEditor"
+import { PurchasesAccessKeyCard } from "@/features/admin/config/PurchasesAccessKeyCard"
 import { SitePreviewCard } from "@/features/admin/config/SitePreviewCard"
+import { adminNavTitle } from "@/features/admin/nav"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
-import { adminNavTitle } from "@/features/admin/nav"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { publicQueryKeys } from "@/features/layout/public-queries"
 import { adminFetch } from "@/lib/admin-fetch"
@@ -119,7 +120,10 @@ export function AdminConfigView() {
   if (configQuery.isError) {
     return (
       <div className="mx-auto max-w-3xl space-y-4">
-        <AdminPageHeader title={adminNavTitle("/admin/config")} description="Personaliza tu sitio público." />
+        <AdminPageHeader
+          title={adminNavTitle("/admin/config")}
+          description="Personaliza tu sitio público."
+        />
         <Card>
           <CardContent className="flex flex-col gap-3 py-8">
             <p className="text-destructive text-sm">No se pudo cargar la configuración.</p>
@@ -419,9 +423,7 @@ export function AdminConfigView() {
           <Card>
             <CardHeader>
               <CardTitle>Contacto y redes</CardTitle>
-              <CardDescription>
-                Elige el canal de soporte. Por defecto es Telegram.
-              </CardDescription>
+              <CardDescription>Elige el canal de soporte. Por defecto es Telegram.</CardDescription>
             </CardHeader>
             <CardContent>
               <FieldGroup>
@@ -555,11 +557,14 @@ export function AdminConfigView() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="purchases">
+        <TabsContent value="purchases" className="space-y-4">
+          <PurchasesAccessKeyCard />
           <Card>
             <CardHeader>
               <CardTitle>Compras</CardTitle>
-              <CardDescription>Motivos predefinidos al rechazar una compra en el panel.</CardDescription>
+              <CardDescription>
+                Motivos predefinidos al rechazar una compra en el panel.
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <PurchaseRejectReasonsEditor

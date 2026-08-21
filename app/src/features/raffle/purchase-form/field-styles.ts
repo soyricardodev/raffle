@@ -42,10 +42,10 @@ export const paymentMethodCardPromoClassName = "border-emerald-500/50 bg-emerald
 /** CTA final de compra: contraste fuerte + animación (ver `.purchase-submit-cta`). */
 export const purchaseSubmitButtonClassName = cn(
   "purchase-submit-cta",
-  "h-auto min-h-16 w-full whitespace-normal px-4 py-3 text-lg font-extrabold tracking-wide sm:min-h-14 sm:text-base",
+  "h-auto min-h-0 w-full whitespace-normal px-3.5 py-3 text-xl font-black tracking-tight",
   "border-0 bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 text-white",
-  "shadow-lg shadow-emerald-600/40 ring-2 ring-emerald-400/60",
-  "hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 hover:shadow-xl hover:shadow-emerald-500/40",
+  "shadow-lg shadow-emerald-600/50 ring-4 ring-emerald-300/70",
+  "hover:from-emerald-500 hover:via-emerald-400 hover:to-teal-400 hover:shadow-xl hover:shadow-emerald-500/50",
   "active:scale-[0.97]",
 )
 

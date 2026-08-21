@@ -11,7 +11,9 @@ export const Route = createFileRoute("/api/admin/purchases/$id/customer")({
   server: {
     handlers: apiHandlers({
       PUT: async ({ request, params }) => {
-        const { purchaseId, audit } = await adminPurchaseRouteContext(request, params.id)
+        const { purchaseId, audit } = await adminPurchaseRouteContext(request, params.id, {
+          requireModuleAccess: true,
+        })
         const body = UpdatePurchaseCustomerInput.parse(await request.json())
         // New Venezuela locations must include municipality; legacy state-only
         // strings from older raffles stay valid so admin can still edit them.

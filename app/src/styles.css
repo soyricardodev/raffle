@@ -237,14 +237,14 @@
   100% {
     transform: translateY(0) scale(1);
   }
-  35% {
-    transform: translateY(-3px) scale(1.025);
+  28% {
+    transform: translateY(-10px) scale(1.07);
   }
-  55% {
-    transform: translateY(0) scale(0.99);
+  48% {
+    transform: translateY(0) scale(0.98);
   }
-  70% {
-    transform: translateY(-1.5px) scale(1.01);
+  68% {
+    transform: translateY(-5px) scale(1.04);
   }
 }
 
@@ -252,29 +252,30 @@
   0%,
   100% {
     box-shadow:
-      0 10px 22px rgb(16 185 129 / 0.35),
-      0 0 0 2px rgb(52 211 153 / 0.5);
+      0 12px 28px rgb(16 185 129 / 0.5),
+      0 0 0 4px rgb(52 211 153 / 0.7),
+      0 0 24px rgb(52 211 153 / 0.45);
   }
   50% {
     box-shadow:
-      0 16px 34px rgb(16 185 129 / 0.55),
-      0 0 0 3px rgb(52 211 153 / 0.75),
-      0 0 28px rgb(45 212 191 / 0.45);
+      0 22px 48px rgb(16 185 129 / 0.8),
+      0 0 0 8px rgb(167 243 208 / 0.85),
+      0 0 46px rgb(45 212 191 / 0.75);
   }
 }
 
 @keyframes purchase-submit-shine {
   0%,
-  55% {
+  35% {
     transform: translateX(-140%) skewX(-16deg);
     opacity: 0;
   }
-  60% {
+  42% {
     opacity: 1;
   }
-  85% {
+  78% {
     transform: translateX(240%) skewX(-16deg);
-    opacity: 0.85;
+    opacity: 0.95;
   }
   100% {
     transform: translateX(240%) skewX(-16deg);
@@ -288,24 +289,24 @@
   overflow: hidden;
   isolation: isolate;
   animation:
-    purchase-submit-bounce 2.35s ease-in-out infinite,
-    purchase-submit-glow 2.35s ease-in-out infinite;
+    purchase-submit-bounce 1.45s cubic-bezier(0.23, 1, 0.32, 1) infinite,
+    purchase-submit-glow 1.45s ease-in-out infinite;
 }
 
 .purchase-submit-cta::after {
   content: "";
   position: absolute;
-  inset: -10% auto -10% 0;
-  width: 42%;
+  inset: -18% auto -18% 0;
+  width: 55%;
   background: linear-gradient(
     105deg,
     transparent 0%,
-    rgb(255 255 255 / 0.15) 35%,
-    rgb(255 255 255 / 0.55) 50%,
-    rgb(255 255 255 / 0.15) 65%,
+    rgb(255 255 255 / 0.25) 35%,
+    rgb(255 255 255 / 0.85) 50%,
+    rgb(255 255 255 / 0.25) 65%,
     transparent 100%
   );
-  animation: purchase-submit-shine 2.8s ease-in-out infinite;
+  animation: purchase-submit-shine 1.45s ease-in-out infinite;
   pointer-events: none;
   z-index: 1;
 }
@@ -401,5 +402,33 @@
   select:focus-visible,
   textarea:focus-visible {
     @apply outline-none ring-3 ring-ring/40;
+  }
+}
+
+.purchases-access-card {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  transition:
+    opacity 220ms cubic-bezier(0.23, 1, 0.32, 1),
+    transform 220ms cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+@starting-style {
+  .purchases-access-card {
+    opacity: 0;
+    transform: translateY(8px) scale(0.97);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .purchases-access-card {
+    transition: opacity 160ms ease;
+    transform: none;
+  }
+
+  @starting-style {
+    .purchases-access-card {
+      transform: none;
+    }
   }
 }

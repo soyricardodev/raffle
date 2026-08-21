@@ -1,14 +1,19 @@
+import { ValidationError } from "@raffle/shared/errors"
 import {
   type AdminSiteConfigPatch,
   AdminSiteConfigPatchSchema,
   SITE_CONFIG_PUBLIC_KEYS,
 } from "@raffle/shared/site-config"
 import { invalidateEmailSettingsCache } from "./email/email-settings.server"
+import { PURCHASES_ACCESS_SETTINGS_KEY } from "./purchases-access"
 import * as settingsRepo from "./repositories/settings.repository"
 
 export const getSiteConfigMap = settingsRepo.getSiteConfigMap
 
 export async function updateSiteConfigKey(key: string, value: unknown) {
+  if (key === PURCHASES_ACCESS_SETTINGS_KEY) {
+    throw new ValidationError("La clave de acceso a compras se configura en su propio campo")
+  }
   await settingsRepo.updateAppSettingsKey(key, value)
   if (key === "email_settings") {
     invalidateEmailSettingsCache()

@@ -7,7 +7,9 @@ export const Route = createFileRoute("/api/admin/purchases/$id/tickets/reassign"
   server: {
     handlers: apiHandlers({
       PUT: async ({ request, params }) => {
-        const { purchaseId, audit } = await adminPurchaseRouteContext(request, params.id)
+        const { purchaseId, audit } = await adminPurchaseRouteContext(request, params.id, {
+          requireModuleAccess: true,
+        })
         const result = await reassignTicketsToPurchase(purchaseId, audit)
         return Response.json(result)
       },

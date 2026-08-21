@@ -237,6 +237,20 @@ export class ForbiddenError extends AppError {
   }
 }
 
+export class PurchasesAccessRequiredError extends AppError {
+  constructor() {
+    super("Se requiere la clave de acceso al módulo de compras", 403, "PURCHASES_ACCESS_REQUIRED")
+    this.name = "PurchasesAccessRequiredError"
+  }
+}
+
+export class PurchasesAccessDeniedError extends AppError {
+  constructor() {
+    super("Clave incorrecta", 403, "PURCHASES_ACCESS_DENIED")
+    this.name = "PurchasesAccessDeniedError"
+  }
+}
+
 // ─── Config ──────────────────────────────────────────────────
 
 export class ConfigKeyNotFoundError extends AppError {

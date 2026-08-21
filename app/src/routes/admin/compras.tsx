@@ -1,12 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { AdminPurchasesView } from "@/features/admin/AdminPurchasesView"
+import { adminNavRouteHead } from "@/features/admin/admin-page-title"
+import { adminPurchasesAccessQueryOptions } from "@/features/admin/purchases/admin-purchases-access-queries"
 import {
   adminPurchasesDashboardQueryOptions,
   adminPurchasesInfiniteQueryOptions,
   getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
-import { adminNavRouteHead } from "@/features/admin/admin-page-title"
 
 type ComprasSearch = {
   status?: string
@@ -24,8 +25,7 @@ type ComprasSearch = {
 export const Route = createFileRoute("/admin/compras")({
   validateSearch: (search: Record<string, unknown>): ComprasSearch => ({
     status: typeof search.status === "string" ? search.status : undefined,
-    payment_method:
-      typeof search.payment_method === "string" ? search.payment_method : undefined,
+    payment_method: typeof search.payment_method === "string" ? search.payment_method : undefined,
     raffle_id: typeof search.raffle_id === "string" ? search.raffle_id : undefined,
     q: typeof search.q === "string" ? search.q : undefined,
     start: typeof search.start === "string" ? search.start : undefined,
@@ -38,6 +38,11 @@ export const Route = createFileRoute("/admin/compras")({
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
+    const access = await queryClient
+      .ensureQueryData(adminPurchasesAccessQueryOptions())
+      .catch(() => null)
+    if (access?.required && !access.unlocked) return
+
     const dashboard = await queryClient
       .ensureQueryData(adminPurchasesDashboardQueryOptions())
       .catch(() => null)
