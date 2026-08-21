@@ -106,15 +106,26 @@ release_activate() {
   fi
 }
 
+release_user_systemd_env() {
+  export XDG_RUNTIME_DIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+}
+
 release_restart_service() {
   local service_name="${1:?}"
-  sudo systemctl restart "$service_name" 2>/dev/null || sudo systemctl start "$service_name"
+  release_user_systemd_env
+  systemctl --user restart "$service_name" 2>/dev/null || systemctl --user start "$service_name"
 }
 
 release_health_check() {
   local base_url="${1:-http://127.0.0.1:3000}"
-  sleep 2
-  curl -sf "${base_url%/}/api/health/db" | grep -q '"ok":true'
+  local i
+  for i in $(seq 1 20); do
+    if curl -sf "${base_url%/}/api/health/db" | grep -q '"ok":true'; then
+      return 0
+    fi
+    sleep 1
+  done
+  return 1
 }
 
 release_run_migrate() {

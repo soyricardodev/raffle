@@ -107,7 +107,7 @@ release_activate "$RAFFLE_ROOT" "$TARGET_DIR" 1
 if [[ "$NO_RESTART" != "1" ]]; then
   log "Reiniciando $SERVICE_NAME"
   release_restart_service "$SERVICE_NAME"
-  release_health_check || die "Health check falló — journalctl -u $SERVICE_NAME -n 80"
+  release_health_check || die "Health check falló — journalctl --user -u $SERVICE_NAME -n 80"
   log "Health OK"
 fi
 

@@ -176,5 +176,5 @@ if release_health_check "$HEALTH_URL"; then
   release_layout_init "$RAFFLE_ROOT"
   log "   current → $(readlink -f "$CURRENT_LINK")"
 else
-  die "Health check falló — revisa: journalctl -u $SERVICE_NAME -n 50 (o pm2 logs)"
+  die "Health check falló — revisa: journalctl --user -u $SERVICE_NAME -n 50"
 fi

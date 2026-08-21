@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
-# Instala systemd para el usuario actual (ej. admin en /home/admin/raffle).
+# Instala systemd de usuario (sin sudo).
 #
 #   bash deploy/install-systemd.sh
+#
+# Una vez en el VPS (sudo):
+#   sudo loginctl enable-linger "$USER"
+#   sudo systemctl disable --now raffle
 #
 # Variables:
 #   RAFFLE_ROOT=/home/admin/raffle
@@ -15,29 +19,31 @@ source "$SCRIPT_DIR/lib/release-common.sh"
 
 RAFFLE_ROOT="${RAFFLE_ROOT:-$(cd "$SCRIPT_DIR/.." && pwd)}"
 SERVICE_NAME="${SERVICE_NAME:-raffle}"
-RUN_USER="${RUN_USER:-$(whoami)}"
 ENV_FILE="${ENV_FILE:-$RAFFLE_ROOT/.env}"
 BUN_BIN="${BUN_BIN:-$HOME/.bun/bin/bun}"
+# Always the symlink so each release is picked up on restart.
+APP_DIR="${RAFFLE_ROOT}/current/app"
+UNIT_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/systemd/user"
+UNIT="${UNIT_DIR}/${SERVICE_NAME}.service"
 
 [[ -f "$ENV_FILE" ]] || { echo "Falta $ENV_FILE" >&2; exit 1; }
 [[ -x "$BUN_BIN" ]] || { echo "No encontré Bun en $BUN_BIN" >&2; exit 1; }
-
-if ! APP_DIR="$(release_resolve_app_dir "$RAFFLE_ROOT")"; then
-  echo "No hay release activo. Ejecuta deploy/vps-deploy.sh o deploy/vps-fast-deploy.sh primero." >&2
+if [[ ! -f "$APP_DIR/.output/server/index.mjs" ]]; then
+  echo "No hay release activo en $APP_DIR. Ejecuta deploy/vps-fast-deploy.sh primero." >&2
   exit 1
 fi
 
-UNIT="/etc/systemd/system/${SERVICE_NAME}.service"
+release_user_systemd_env
 
-sudo tee "$UNIT" > /dev/null <<EOF
+mkdir -p "$UNIT_DIR"
+cat > "$UNIT" <<EOF
 [Unit]
 Description=Raffle v2 (yoiberifas.com)
-After=network.target
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
-User=${RUN_USER}
-Group=${RUN_USER}
 WorkingDirectory=${APP_DIR}
 EnvironmentFile=${ENV_FILE}
 Environment=NODE_ENV=production
@@ -47,12 +53,12 @@ Restart=on-failure
 RestartSec=5
 
 [Install]
-WantedBy=multi-user.target
+WantedBy=default.target
 EOF
 
-sudo systemctl daemon-reload
-sudo systemctl enable "$SERVICE_NAME"
+systemctl --user daemon-reload
+systemctl --user enable "$SERVICE_NAME"
 echo "Instalado $UNIT"
 echo "  WorkingDirectory=${APP_DIR}"
-echo "  sudo systemctl start $SERVICE_NAME"
-echo "  journalctl -u $SERVICE_NAME -f"
+echo "  systemctl --user restart $SERVICE_NAME"
+echo "  journalctl --user -u $SERVICE_NAME -f"
