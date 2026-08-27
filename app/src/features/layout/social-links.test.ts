@@ -4,7 +4,9 @@ import {
   buildPurchaseFinalizeWhatsAppMessage,
   buildSocialLinks,
   facebookHref,
+  formatWhatsAppDisplayNumber,
   instagramHref,
+  resolveBroadcastChannelLinks,
   resolveSupportChannel,
   telegramHref,
   telegramHrefWithText,
@@ -134,6 +136,40 @@ describe("social-links", () => {
     )
 
     expect(links.map((l) => l.id)).toEqual(["instagram"])
+  })
+
+  it("uses Telegram channel URL when provided for follow links", () => {
+    const links = buildSocialLinks(
+      { telegram: "yoiberifas", instagram: "@rifas" },
+      { telegramChannelUrl: "https://t.me/yoiberrifascanal" },
+    )
+
+    expect(links.find((l) => l.id === "telegram")?.href).toBe("https://t.me/yoiberrifascanal")
+  })
+
+  it("formats Venezuelan WhatsApp numbers for display", () => {
+    expect(formatWhatsAppDisplayNumber("584248781707")).toBe("+58 424 878 1707")
+  })
+
+  it("resolves broadcast channels independently from support", () => {
+    const links = resolveBroadcastChannelLinks({
+      social: {
+        whatsapp: "584248781707",
+        instagram: "@rifas",
+        telegram: "yoiberifas",
+        support_channel: "whatsapp",
+      },
+      promo: {
+        whatsapp_channel_url: "https://whatsapp.com/channel/abc",
+        telegram_channel_url: "https://t.me/yoiberrifascanal",
+        instagram_url: "",
+      },
+    })
+
+    expect(links.map((link) => link.id)).toEqual(["whatsapp", "telegram", "instagram"])
+    expect(links[0]?.href).toBe("https://whatsapp.com/channel/abc")
+    expect(links[1]?.href).toBe("https://t.me/yoiberrifascanal")
+    expect(links[2]?.href).toBe("https://instagram.com/rifas")
   })
 
   it("includes future social links when they are configured as URLs", () => {

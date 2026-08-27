@@ -31,6 +31,9 @@ export function renderPurchaseDetailsSection(
     ...(ctx.paymentReference?.trim()
       ? [renderInfoRow("Referencia", escapeHtml(ctx.paymentReference.trim()))]
       : []),
+    ...(ctx.paymentPayerName?.trim()
+      ? [renderInfoRow("Nombre de quien paga", escapeHtml(ctx.paymentPayerName.trim()))]
+      : []),
     renderInfoRow("Total", escapeHtml(formatPurchaseTotal(ctx)), totalStyle),
     ...extraRows,
   ].join("")

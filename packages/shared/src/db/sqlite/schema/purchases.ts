@@ -27,6 +27,7 @@ export const purchases = sqliteTable(
     ),
     paymentMethod: text("payment_method").notNull(),
     paymentReference: text("payment_reference"),
+    paymentPayerName: text("payment_payer_name"),
     paymentProofUrl: text("payment_proof_url"),
     ticketQuantity: integer("ticket_quantity").notNull(),
     totalAmountCents: integer("total_amount_cents").notNull(),

@@ -99,6 +99,13 @@
       "when": 1779901200000,
       "tag": "0013_customers_venezuela_municipality",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1779901300000,
+      "tag": "0014_purchases_payment_payer_name",
+      "breakpoints": true
     }
   ]
 }

@@ -247,6 +247,10 @@ export {
   resolvePaymentReferencePolicy,
   sanitizePaymentReference,
 } from "./payment-reference.js"
+export {
+  PAYMENT_PAYER_NAME_MAX_LENGTH,
+  paymentPayerNameValidationMessage,
+} from "./payment-payer-name.js"
 
 /** Métodos que se pagan en USD (price_usd) */
 export function isDollarMethod(method: PaymentMethod): boolean {
@@ -350,6 +354,11 @@ export const CreatePurchaseBody = z.object({
     .trim()
     .min(1, "Ingresa la referencia de pago")
     .max(100, "Referencia demasiado larga"),
+  paymentPayerName: z
+    .string()
+    .trim()
+    .max(200, "Nombre de quien paga demasiado largo")
+    .optional(),
   ticketQuantity: z.coerce
     .number({ error: "Indica cuántos boletos quieres comprar" })
     .int("Indica una cantidad válida de boletos")
@@ -439,7 +448,7 @@ export const AddRemoveTicketsInput = z.object({
 })
 export type AddRemoveTicketsInput = z.infer<typeof AddRemoveTicketsInput>
 
-export const CreateRaffleInput = z.object({
+const raffleInputFields = z.object({
   name: z.string().min(1).max(200),
   description: z.string().optional(),
   image_url: z.string().optional().nullable(),
@@ -474,6 +483,18 @@ export const CreateRaffleInput = z.object({
     .optional(),
 })
 
+const RAFFLE_PURCHASE_LIMITS_MESSAGE = "La compra mínima no puede ser mayor que la máxima"
+
+function rafflePurchaseLimitsOk(min?: number, max?: number) {
+  if (min == null || max == null) return true
+  return min <= max
+}
+
+export const CreateRaffleInput = raffleInputFields.refine(
+  (data) => rafflePurchaseLimitsOk(data.min_purchase, data.max_purchase),
+  { message: RAFFLE_PURCHASE_LIMITS_MESSAGE, path: ["max_purchase"] },
+)
+
 export {
   CreatePaymentAccountInput,
   ReorderPaymentAccountsInput,
@@ -490,7 +511,17 @@ export {
 export type CreateRaffleInput = z.infer<typeof CreateRaffleInput>
 
 /** Edit form must not change status; use admin lifecycle transitions instead. */
-export const UpdateRaffleInput = CreateRaffleInput.omit({ status: true }).partial()
+export const UpdateRaffleInput = raffleInputFields
+  .omit({ status: true, min_purchase: true, max_purchase: true })
+  .extend({
+    min_purchase: z.number().int().min(1).optional(),
+    max_purchase: z.number().int().min(1).optional(),
+  })
+  .partial()
+  .refine((data) => rafflePurchaseLimitsOk(data.min_purchase, data.max_purchase), {
+    message: RAFFLE_PURCHASE_LIMITS_MESSAGE,
+    path: ["max_purchase"],
+  })
 export type UpdateRaffleInput = z.infer<typeof UpdateRaffleInput>
 
 export const RaffleLifecycleIntent = z.enum([

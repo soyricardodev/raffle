@@ -30,6 +30,7 @@ export function PaymentReferenceValue({
 
 type PurchaseProofSummaryBannerProps = {
   reference?: string | null
+  payerName?: string | null
   totalAmount: number | string
   paymentMethod: string
   className?: string
@@ -38,11 +39,13 @@ type PurchaseProofSummaryBannerProps = {
 /** Referencia y monto arriba del comprobante para validación rápida. */
 export function PurchaseProofSummaryBanner({
   reference,
+  payerName,
   totalAmount,
   paymentMethod,
   className,
 }: PurchaseProofSummaryBannerProps) {
   const trimmedReference = reference?.trim()
+  const trimmedPayerName = payerName?.trim()
 
   return (
     <div
@@ -70,6 +73,14 @@ export function PurchaseProofSummaryBanner({
             {formatCurrencyForMethod(totalAmount, paymentMethod)}
           </p>
         </div>
+        {trimmedPayerName ? (
+          <div className="col-span-2 min-w-0">
+            <p className="text-muted-foreground text-[10px] font-semibold tracking-wide uppercase">
+              Nombre de quien paga
+            </p>
+            <p className="text-sm font-semibold break-words">{trimmedPayerName}</p>
+          </div>
+        ) : null}
       </div>
     </div>
   )

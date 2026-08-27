@@ -19,6 +19,7 @@ import { normalizePhone } from "@raffle/shared/db"
 import {
   formatCustomerCi,
   parseCustomerCi,
+  paymentPayerNameValidationMessage,
   paymentReferenceValidationMessage,
   resolvePaymentReferenceInputMode,
   resolvePaymentReferenceMinLength,
@@ -65,6 +66,7 @@ export interface CreatePurchaseParams {
   venezuelaMunicipality?: string | null
   rafflePaymentMethodId: number
   paymentReference: string
+  paymentPayerName?: string
   ticketQuantity: number
   paymentProofUrl: string
 }
@@ -118,6 +120,16 @@ export async function createPurchase(params: CreatePurchaseParams) {
       throw new ValidationError(referenceError)
     }
 
+    const payerNameError = paymentPayerNameValidationMessage(
+      paymentMethod,
+      params.paymentPayerName,
+    )
+    if (payerNameError) {
+      throw new ValidationError(payerNameError)
+    }
+    const paymentPayerName =
+      paymentMethod === "zelle" ? params.paymentPayerName?.trim() || null : null
+
     await purchasesRepo.assertUniquePaymentReference(tx, params.raffleId, params.paymentReference)
 
     if (raffle.ticketsAvailable < params.ticketQuantity) {
@@ -165,6 +177,7 @@ export async function createPurchase(params: CreatePurchaseParams) {
       rafflePaymentMethodId: params.rafflePaymentMethodId,
       paymentMethod,
       paymentReference: params.paymentReference,
+      paymentPayerName,
       paymentProofUrl: params.paymentProofUrl,
       ticketQuantity: params.ticketQuantity,
       totalAmountCents,

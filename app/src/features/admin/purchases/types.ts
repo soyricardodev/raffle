@@ -14,6 +14,7 @@ export type PurchaseRow = {
   currency?: string
   payment_method: string
   payment_reference?: string | null
+  payment_payer_name?: string | null
   payment_proof_url?: string | null
   notes?: string | null
   status: string
@@ -27,6 +28,7 @@ export type PurchaseDetail = PurchaseRow & {
   customer_ci?: string | null
   customer_location?: string | null
   payment_reference?: string | null
+  payment_payer_name?: string | null
   payment_proof_url?: string | null
   /** Desde detalle API; preferir sobre `ticket_numbers` CSV */
   ticketNumbers?: Array<string>

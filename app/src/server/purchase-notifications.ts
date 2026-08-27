@@ -23,6 +23,7 @@ async function loadPurchaseEmailContext(purchaseId: number): Promise<PurchaseEma
       totalAmountCents: purchases.totalAmountCents,
       paymentMethod: purchases.paymentMethod,
       paymentReference: purchases.paymentReference,
+      paymentPayerName: purchases.paymentPayerName,
       status: purchases.status,
       notes: purchases.notes,
       raffleName: raffles.name,

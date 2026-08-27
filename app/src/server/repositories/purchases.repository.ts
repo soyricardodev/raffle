@@ -52,6 +52,7 @@ export async function insertPurchase(
     rafflePaymentMethodId?: number | null
     paymentMethod: PaymentMethod
     paymentReference: string
+    paymentPayerName?: string | null
     paymentProofUrl?: string | null
     ticketQuantity: number
     totalAmountCents: number
@@ -79,6 +80,9 @@ export async function insertPurchase(
         rafflePaymentMethodId: data.rafflePaymentMethodId ?? null,
         paymentMethod: data.paymentMethod,
         paymentReference: data.paymentReference.substring(0, 100),
+        paymentPayerName: data.paymentPayerName?.trim()
+          ? data.paymentPayerName.trim().substring(0, 200)
+          : null,
         paymentProofUrl: data.paymentProofUrl ?? null,
         ticketQuantity: data.ticketQuantity,
         totalAmountCents: data.totalAmountCents,
@@ -267,6 +271,7 @@ export function mapPurchaseLegacy(p: PurchaseRow) {
     customer_location: p.customerLocation,
     payment_method: p.paymentMethod,
     payment_reference: p.paymentReference,
+    payment_payer_name: p.paymentPayerName,
     payment_proof_url: p.paymentProofUrl,
     ticket_quantity: p.ticketQuantity,
     total_amount: fromCents(p.totalAmountCents),

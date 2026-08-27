@@ -125,6 +125,16 @@ export function RaffleForm(props: RaffleFormProps) {
     if (!state.priceBs || Number(state.priceBs) <= 0) next.priceBs = "Precio Bs inválido"
     if (!state.priceUsd || Number(state.priceUsd) <= 0) next.priceUsd = "Precio USD inválido"
     if (state.assignments.length === 0) next.methods = "Selecciona al menos un método de pago"
+    const minPurchase = Number(state.minPurchase)
+    const maxPurchase = Number(state.maxPurchase)
+    if (!Number.isInteger(minPurchase) || minPurchase < 1) {
+      next.minPurchase = "Compra mínima inválida"
+    }
+    if (!Number.isInteger(maxPurchase) || maxPurchase < 1) {
+      next.maxPurchase = "Compra máxima inválida"
+    } else if (Number.isInteger(minPurchase) && minPurchase > maxPurchase) {
+      next.maxPurchase = "La compra mínima no puede ser mayor que la máxima"
+    }
     if (state.drawDateEnabled && !state.drawDate) {
       next.drawDate = "Indica la fecha del sorteo o desactívala"
     } else if (state.drawDateEnabled && state.drawDate && isCalendarDayBefore(state.drawDate, drawMinDay)) {
@@ -232,7 +242,7 @@ export function RaffleForm(props: RaffleFormProps) {
                       onChange={(e) => patch("priceUsd", e.target.value)}
                     />
                   </Field>
-                  <Field>
+                  <Field data-invalid={!!errors.minPurchase}>
                     <FieldLabel htmlFor="min-purchase">Compra mínima (boletos)</FieldLabel>
                     <Input
                       id="min-purchase"
@@ -241,9 +251,15 @@ export function RaffleForm(props: RaffleFormProps) {
                       className="min-h-11"
                       value={state.minPurchase}
                       onChange={(e) => patch("minPurchase", e.target.value)}
+                      aria-invalid={!!errors.minPurchase}
                     />
+                    {errors.minPurchase ? (
+                      <FieldDescription className="text-destructive">
+                        {errors.minPurchase}
+                      </FieldDescription>
+                    ) : null}
                   </Field>
-                  <Field>
+                  <Field data-invalid={!!errors.maxPurchase}>
                     <FieldLabel htmlFor="max-purchase">Compra máxima (boletos)</FieldLabel>
                     <Input
                       id="max-purchase"
@@ -252,7 +268,13 @@ export function RaffleForm(props: RaffleFormProps) {
                       className="min-h-11"
                       value={state.maxPurchase}
                       onChange={(e) => patch("maxPurchase", e.target.value)}
+                      aria-invalid={!!errors.maxPurchase}
                     />
+                    {errors.maxPurchase ? (
+                      <FieldDescription className="text-destructive">
+                        {errors.maxPurchase}
+                      </FieldDescription>
+                    ) : null}
                   </Field>
                 </div>
                 {mode === "edit" && onManagePromotions ? (

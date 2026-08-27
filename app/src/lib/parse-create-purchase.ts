@@ -12,6 +12,7 @@ export function formDataToPurchaseRecord(form: FormData): Record<string, unknown
     customerLocation: form.get("customerLocation"),
     rafflePaymentMethodId: form.get("rafflePaymentMethodId"),
     paymentReference: form.get("paymentReference"),
+    paymentPayerName: form.get("paymentPayerName") || undefined,
     ticketQuantity: form.get("ticketQuantity"),
   }
 }
@@ -30,6 +31,7 @@ export function toCreatePurchaseParams(body: CreatePurchaseBody): CreatePurchase
     venezuelaMunicipality: parsed.municipality,
     rafflePaymentMethodId: body.rafflePaymentMethodId,
     paymentReference: body.paymentReference,
+    paymentPayerName: body.paymentPayerName,
     ticketQuantity: body.ticketQuantity,
     paymentProofUrl: body.paymentProofUrl,
   }

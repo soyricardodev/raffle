@@ -5,6 +5,7 @@ export const DEFAULT_TELEGRAM_CHANNEL_URL = "https://t.me/yoiberrifascanal"
 
 export const TELEGRAM_BRAND_COLOR = "#2AABEE"
 export const WHATSAPP_BRAND_COLOR = "#25D366"
+export const INSTAGRAM_BRAND_COLOR = "#E4405F"
 
 export const TELEGRAM_ICON = "/brand/social/telegram.svg"
 export const WHATSAPP_ICON = "/brand/social/whatsapp.svg"
@@ -157,6 +158,8 @@ const SOCIAL_LINK_DEFINITIONS: Record<string, SocialLinkDefinition> = {
 export type BuildSocialLinksOptions = {
   /** WhatsApp channel/community invite URL; overrides wa.me from social.whatsapp. */
   whatsappChannelUrl?: string
+  /** Telegram channel/community invite URL; overrides support handle. */
+  telegramChannelUrl?: string
 }
 
 export function buildSocialLinks(
@@ -167,6 +170,7 @@ export function buildSocialLinks(
   const seen = new Set<string>()
   const socialRecord = social as Record<string, unknown>
   const whatsappChannelHrefResolved = whatsAppChannelHref(options?.whatsappChannelUrl ?? "")
+  const telegramChannelHrefResolved = telegramChannelHref(options?.telegramChannelUrl ?? "")
 
   for (const [id, definition] of Object.entries(SOCIAL_LINK_DEFINITIONS)) {
     const value = String(socialRecord[id] ?? "")
@@ -175,7 +179,11 @@ export function buildSocialLinks(
         ? whatsappChannelHrefResolved
         : id === "whatsapp" && options?.whatsappChannelUrl !== undefined
           ? ""
-          : definition.href(value)
+          : id === "telegram" && telegramChannelHrefResolved
+            ? telegramChannelHrefResolved
+            : id === "telegram" && options?.telegramChannelUrl !== undefined
+              ? ""
+              : definition.href(value)
     seen.add(id)
     if (href) {
       links.push({
@@ -245,4 +253,70 @@ export function resolveSupportChannel(input: {
     supportHrefWithText: (message) => telegramHrefWithText(telegram, message),
     channelHref: telegramChannelHref(channelUrl),
   }
+}
+
+export function formatWhatsAppDisplayNumber(digits: string): string {
+  const normalized = digits.replace(/\D/g, "")
+  if (normalized.startsWith("58") && normalized.length === 12) {
+    return `+58 ${normalized.slice(2, 5)} ${normalized.slice(5, 8)} ${normalized.slice(8)}`
+  }
+  return normalized ? `+${normalized}` : ""
+}
+
+export type BroadcastChannelId = "whatsapp" | "telegram" | "instagram"
+
+export type BroadcastChannelLink = {
+  id: BroadcastChannelId
+  label: string
+  href: string
+  brandColor: string
+  iconSrc: string
+}
+
+export function resolveBroadcastChannelLinks(input: {
+  social?: Partial<SocialMedia> | null
+  promo?: Partial<PurchaseSuccessPromo> | null
+}): BroadcastChannelLink[] {
+  const promo = input.promo
+  const social = input.social
+  const links: BroadcastChannelLink[] = []
+
+  const whatsappHref = whatsAppChannelHref(promo?.whatsapp_channel_url ?? "")
+  if (whatsappHref) {
+    links.push({
+      id: "whatsapp",
+      label: "Únete a nuestro canal de WhatsApp",
+      href: whatsappHref,
+      brandColor: WHATSAPP_BRAND_COLOR,
+      iconSrc: WHATSAPP_ICON,
+    })
+  }
+
+  const telegramHrefResolved = telegramChannelHref(
+    (promo?.telegram_channel_url ?? "").trim() || DEFAULT_TELEGRAM_CHANNEL_URL,
+  )
+  if (telegramHrefResolved) {
+    links.push({
+      id: "telegram",
+      label: "Únete a nuestro canal de Telegram",
+      href: telegramHrefResolved,
+      brandColor: TELEGRAM_BRAND_COLOR,
+      iconSrc: TELEGRAM_ICON,
+    })
+  }
+
+  const instagramHrefResolved = instagramHref(
+    (promo?.instagram_url ?? "").trim() || social?.instagram || "",
+  )
+  if (instagramHrefResolved) {
+    links.push({
+      id: "instagram",
+      label: "Únete a nuestro canal de Instagram",
+      href: instagramHrefResolved,
+      brandColor: INSTAGRAM_BRAND_COLOR,
+      iconSrc: "/brand/social/instagram.svg",
+    })
+  }
+
+  return links
 }

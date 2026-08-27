@@ -96,20 +96,22 @@ export function applyPublicWhatsAppVisibility(
   }
 
   const promo = payload.purchase_success_promo
-  const useWhatsApp = whatsappEnabled && social.support_channel === "whatsapp"
+  const useWhatsAppSupport =
+    whatsappEnabled &&
+    social.support_channel === "whatsapp" &&
+    Boolean(social.whatsapp.replace(/\D/g, ""))
 
   return {
     ...payload,
     social_media: {
       ...social,
-      whatsapp: useWhatsApp ? social.whatsapp : "",
+      whatsapp: useWhatsAppSupport ? social.whatsapp : "",
       telegram: social.telegram.trim() || DEFAULT_TELEGRAM_SUPPORT,
-      support_channel: useWhatsApp ? "whatsapp" : "telegram",
+      support_channel: useWhatsAppSupport ? "whatsapp" : "telegram",
     },
     purchase_success_promo: promo
       ? {
           ...promo,
-          whatsapp_channel_url: useWhatsApp ? promo.whatsapp_channel_url : "",
           telegram_channel_url: promo.telegram_channel_url.trim() || DEFAULT_TELEGRAM_CHANNEL_URL,
         }
       : promo,

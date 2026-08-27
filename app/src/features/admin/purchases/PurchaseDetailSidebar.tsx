@@ -81,6 +81,9 @@ export function PurchaseDetailSidebar({
             "—"
           )}
         </DetailFact>
+        {purchase.payment_payer_name?.trim() ? (
+          <DetailFact label="Quien paga">{purchase.payment_payer_name.trim()}</DetailFact>
+        ) : null}
 
         <DetailFact label="Método" className="capitalize">
           {purchase.payment_method.replace(/_/g, " ")}

@@ -159,6 +159,7 @@ export function PurchaseDetailDrawer({
               <div className="flex min-h-[min(88vh,1000px)] flex-col bg-muted/10 lg:min-h-0 lg:overflow-hidden">
                 <PurchaseProofSummaryBanner
                   reference={purchase.payment_reference}
+                  payerName={purchase.payment_payer_name}
                   totalAmount={purchase.total_amount}
                   paymentMethod={purchase.payment_method}
                 />

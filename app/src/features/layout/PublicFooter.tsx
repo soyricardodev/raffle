@@ -4,7 +4,12 @@ import {
   resolveOfficialFooterLogos,
 } from "@/features/layout/footer-defaults"
 import { SocialLinkIcon } from "@/features/layout/social-icons"
-import { buildSocialLinks, resolveSupportChannel } from "@/features/layout/social-links"
+import {
+  buildSocialLinks,
+  DEFAULT_TELEGRAM_CHANNEL_URL,
+  formatWhatsAppDisplayNumber,
+  resolveSupportChannel,
+} from "@/features/layout/social-links"
 import { PUBLIC_FOOTER_LEGAL_ID } from "@/features/layout/sticky-purchase-cta"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
 
@@ -23,38 +28,48 @@ export function PublicFooter() {
     support_channel: "telegram",
   }
   const images = branding?.images
+  const promo = branding?.purchaseSuccessPromo
 
-  const socialLinks = buildSocialLinks(social)
+  const socialLinks = buildSocialLinks(social, {
+    whatsappChannelUrl: promo?.whatsapp_channel_url ?? "",
+    telegramChannelUrl: promo?.telegram_channel_url.trim() || DEFAULT_TELEGRAM_CHANNEL_URL,
+  })
   const officialLogos = resolveOfficialFooterLogos(images?.official_logos)
   const runlotId = siteInfo.runlot_id?.trim() ?? ""
   const support = resolveSupportChannel({
     whatsappEnabled: branding?.whatsappEnabled ?? false,
     social,
-    promo: branding?.purchaseSuccessPromo,
+    promo,
   })
-  const telegramHref = support.kind === "telegram" ? support.supportHref : ""
+  const supportHref = support.supportHref
+  const supportNumber =
+    support.kind === "whatsapp"
+      ? formatWhatsAppDisplayNumber(social.whatsapp) || "WhatsApp"
+      : TELEGRAM_SUPPORT_NUMBER
+  const supportHeading =
+    support.kind === "whatsapp" ? "Contacto directo a WhatsApp" : "Contacto directo a Telegram"
 
-  const hasMainContent = Boolean(telegramHref) || socialLinks.length > 0
+  const hasMainContent = Boolean(supportHref) || socialLinks.length > 0
 
   return (
     <footer className="public-site-footer border-border/80 bg-muted/40 mt-auto border-t">
       <div className="mx-auto flex w-full max-w-lg flex-col gap-8 px-4 py-10">
         {hasMainContent ? (
           <div className="flex flex-col gap-6">
-            {telegramHref ? (
+            {supportHref ? (
               <div>
                 <h2 className="mb-3 text-xs font-semibold tracking-wide uppercase">
-                  Contacto directo a Telegram
+                  {supportHeading}
                 </h2>
                 <p className="text-muted-foreground mb-2 text-sm">Escríbeme y te ayudo</p>
                 <a
-                  href={telegramHref}
+                  href={supportHref}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm transition-colors"
                 >
-                  <SocialLinkIcon id="telegram" className="size-5" />
-                  {TELEGRAM_SUPPORT_NUMBER}
+                  <SocialLinkIcon id={support.kind} iconSrc={support.iconSrc} className="size-5" />
+                  {supportNumber}
                 </a>
               </div>
             ) : null}

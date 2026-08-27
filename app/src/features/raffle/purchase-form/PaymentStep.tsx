@@ -1,9 +1,11 @@
+import { UserCircleIcon } from "@phosphor-icons/react"
 import type { PaymentReferenceInputMode } from "@raffle/shared/validators"
 import { memo } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Field, FieldError, FieldGroup, FieldLabel } from "@/components/ui/field"
 import type { MethodEligibility } from "@/features/raffle/payment-method-eligibility"
 import { purchaseStepClassName } from "@/features/raffle/purchase-form/field-styles"
+import { LabeledIconField } from "@/features/raffle/purchase-form/LabeledIconField"
 import { PaymentMethodCard } from "@/features/raffle/purchase-form/PaymentMethodCard"
 import { PaymentProofUpload } from "@/features/raffle/purchase-form/PaymentProofUpload"
 import { PaymentReferenceField } from "@/features/raffle/purchase-form/PaymentReferenceField"
@@ -19,15 +21,18 @@ type PaymentStepProps = {
   methodPromotionHint?: string | null
   total: number
   paymentReference: string
+  paymentPayerName: string
   referenceMinLength: number
   referenceInputMode: PaymentReferenceInputMode
   paymentProof: File | null
   methodHint?: string
   referenceHint?: string
+  payerNameHint?: string
   proofHint?: string
   getEligibility: (method: RafflePaymentMethod) => MethodEligibility
   onSelectMethod: (id: number) => void
   onPaymentReferenceChange: (value: string) => void
+  onPaymentPayerNameChange: (value: string) => void
   onPaymentProofChange: (file: File | null) => void
 }
 
@@ -85,25 +90,33 @@ const PaymentMethodPicker = memo(function PaymentMethodPicker({
 
 type PaymentCompletionFieldsProps = {
   disabled: boolean
+  isZelle: boolean
   paymentReference: string
+  paymentPayerName: string
   referenceMinLength: number
   referenceInputMode: PaymentReferenceInputMode
   paymentProof: File | null
   referenceHint?: string
+  payerNameHint?: string
   proofHint?: string
   onPaymentReferenceChange: (value: string) => void
+  onPaymentPayerNameChange: (value: string) => void
   onPaymentProofChange: (file: File | null) => void
 }
 
 const PaymentCompletionFields = memo(function PaymentCompletionFields({
   disabled,
+  isZelle,
   paymentReference,
+  paymentPayerName,
   referenceMinLength,
   referenceInputMode,
   paymentProof,
   referenceHint,
+  payerNameHint,
   proofHint,
   onPaymentReferenceChange,
+  onPaymentPayerNameChange,
   onPaymentProofChange,
 }: PaymentCompletionFieldsProps) {
   return (
@@ -116,6 +129,20 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
         error={referenceHint}
         onChange={onPaymentReferenceChange}
       />
+      {isZelle ? (
+        <LabeledIconField
+          id="payment-payer-name"
+          label="Nombre de quien hace el pago"
+          description="Tal como aparece en el Zelle."
+          icon={<UserCircleIcon aria-hidden />}
+          value={paymentPayerName}
+          onChange={onPaymentPayerNameChange}
+          disabled={disabled}
+          error={payerNameHint}
+          success={!payerNameHint && paymentPayerName.trim().length > 0}
+          autoComplete="name"
+        />
+      ) : null}
       <PaymentProofUpload
         file={paymentProof}
         disabled={disabled}
@@ -136,15 +163,18 @@ export const PaymentStep = memo(function PaymentStep({
   methodPromotionHint,
   total,
   paymentReference,
+  paymentPayerName,
   referenceMinLength,
   referenceInputMode,
   paymentProof,
   methodHint,
   referenceHint,
+  payerNameHint,
   proofHint,
   getEligibility,
   onSelectMethod,
   onPaymentReferenceChange,
+  onPaymentPayerNameChange,
   onPaymentProofChange,
 }: PaymentStepProps) {
   return (
@@ -185,13 +215,17 @@ export const PaymentStep = memo(function PaymentStep({
           {selectedMethod ? (
             <PaymentCompletionFields
               disabled={disabled}
+              isZelle={selectedMethod.method_type === "zelle"}
               paymentReference={paymentReference}
+              paymentPayerName={paymentPayerName}
               referenceMinLength={referenceMinLength}
               referenceInputMode={referenceInputMode}
               paymentProof={paymentProof}
               referenceHint={referenceHint}
+              payerNameHint={payerNameHint}
               proofHint={proofHint}
               onPaymentReferenceChange={onPaymentReferenceChange}
+              onPaymentPayerNameChange={onPaymentPayerNameChange}
               onPaymentProofChange={onPaymentProofChange}
             />
           ) : null}

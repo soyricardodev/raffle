@@ -48,7 +48,7 @@ describeWithDb("purchase flow", () => {
     await purchaseSection.getByRole("button", { name: "Pago móvil" }).click()
     await refInput.fill(uniqueRef("e2e-ui"))
 
-    const submit = purchaseSection.getByRole("button", { name: "Confirmar compra" })
+    const submit = purchaseSection.getByRole("button", { name: /Confirma tu compra/ })
     await expect(submit).toBeEnabled({ timeout: 10_000 })
 
     const purchaseResponse = page.waitForResponse(

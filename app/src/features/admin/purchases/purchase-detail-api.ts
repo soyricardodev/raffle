@@ -10,6 +10,7 @@ export type PurchaseDetailApi = {
   customer_location?: string | null
   payment_method: string
   payment_reference?: string | null
+  payment_payer_name?: string | null
   payment_proof_url?: string | null
   ticket_quantity: number
   total_amount: number | string
@@ -41,6 +42,7 @@ export function mapPurchaseDetailApiToDetail(data: PurchaseDetailApi): PurchaseD
         ? data.created_at
         : new Date(data.created_at).toISOString(),
     payment_reference: data.payment_reference ?? undefined,
+    payment_payer_name: data.payment_payer_name ?? undefined,
     payment_proof_url: data.payment_proof_url,
     ticket_numbers: data.ticketNumbers.join(", "),
     ticketNumbers: data.ticketNumbers,

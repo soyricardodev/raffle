@@ -13,6 +13,7 @@ export type PurchaseEmailContext = {
   paymentMethod: string
   paymentMethodLabel: string
   paymentReference?: string | null
+  paymentPayerName?: string | null
   raffleName: string
   raffleImageUrl?: string | null
   status?: string
@@ -38,6 +39,7 @@ export function buildPurchaseEmailContext(
     totalAmountCents: number
     paymentMethod: string
     paymentReference?: string | null
+    paymentPayerName?: string | null
     raffleName: string
     raffleImageUrl?: string | null
     status?: string
@@ -60,6 +62,7 @@ export function buildPurchaseEmailContext(
     paymentMethod: row.paymentMethod,
     paymentMethodLabel: paymentMethodTypeLabel(method),
     paymentReference: row.paymentReference ?? null,
+    paymentPayerName: row.paymentPayerName ?? null,
     raffleName: row.raffleName,
     raffleImageUrl: row.raffleImageUrl ?? null,
     status: row.status,

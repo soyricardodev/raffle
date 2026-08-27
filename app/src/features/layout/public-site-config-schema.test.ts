@@ -83,7 +83,7 @@ describe("parsePublicSiteConfig", () => {
     })
   })
 
-  it("strips WhatsApp from public payload when disabled and fills Telegram fallbacks", () => {
+  it("hides WhatsApp support when disabled but keeps broadcast channel URLs", () => {
     const result = applyPublicWhatsAppVisibility(
       {
         social_media: {
@@ -111,7 +111,9 @@ describe("parsePublicSiteConfig", () => {
     expect(result.social_media?.whatsapp).toBe("")
     expect(result.social_media?.telegram).toBe("yoiberifas")
     expect(result.social_media?.support_channel).toBe("telegram")
-    expect(result.purchase_success_promo?.whatsapp_channel_url).toBe("")
+    expect(result.purchase_success_promo?.whatsapp_channel_url).toBe(
+      "https://whatsapp.com/channel/x",
+    )
     expect(result.purchase_success_promo?.telegram_channel_url).toBe(
       "https://t.me/yoiberrifascanal",
     )

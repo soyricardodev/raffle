@@ -5,7 +5,6 @@ import { useInAppBrowserRedirect } from "@/hooks/useInAppBrowserRedirect"
 import { PublicFooter } from "./PublicFooter"
 import { PublicHeader } from "./PublicHeader"
 import { SupportFab } from "./SupportFab"
-import { TelegramChannelBanner } from "./TelegramChannelBanner"
 
 type PublicLayoutProps = {
   children: React.ReactNode
@@ -19,7 +18,6 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <div className="bg-background flex min-h-svh flex-col">
       <div className="bg-background sticky top-0 z-40">
-        <TelegramChannelBanner />
         <NextRaffleComingBanner />
         <PublicHeader />
       </div>

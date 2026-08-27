@@ -7,6 +7,7 @@ import {
   formatCustomerLocation,
   isValidCustomerCi,
   isValidCustomerPhone,
+  paymentPayerNameValidationMessage,
   paymentReferenceValidationMessage,
   resolvePaymentReferenceInputMode,
   resolvePaymentReferencePolicy,
@@ -19,13 +20,17 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { homeQueryKeys } from "@/features/home/home-queries"
-import { resolveSupportChannel } from "@/features/layout/social-links"
+import {
+  resolveBroadcastChannelLinks,
+  resolveSupportChannel,
+} from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
 import {
   loadSavedBuyerProfile,
   type SavedBuyerProfile,
   saveBuyerProfile,
 } from "@/features/raffle/purchase-form/buyer-profile-storage"
+import { ChannelJoinLinks } from "@/features/raffle/purchase-form/ChannelJoinLinks"
 import { CustomerDetailsStep } from "@/features/raffle/purchase-form/CustomerDetailsStep"
 import {
   purchaseStepDividerClassName,
@@ -72,6 +77,7 @@ type PurchaseFormHints = {
   ci?: string
   location?: string
   reference?: string
+  payerName?: string
   proof?: string
   method?: string
 }
@@ -138,6 +144,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
   const [selectedMunicipality, setSelectedMunicipality] = useState("")
   const [customLocation, setCustomLocation] = useState("")
   const [paymentReference, setPaymentReference] = useState("")
+  const [paymentPayerName, setPaymentPayerName] = useState("")
   const [paymentProof, setPaymentProof] = useState<File | null>(null)
   const [successResult, setSuccessResult] = useState<PurchaseResult | null>(null)
   const [touched, setTouched] = useState(false)
@@ -245,6 +252,10 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
         referenceMinLength,
         referenceInputMode,
       ),
+      payerName: paymentPayerNameValidationMessage(
+        selectedMethod?.method_type,
+        paymentPayerName,
+      ),
       proof: !paymentProof ? "Sube el comprobante de pago" : undefined,
       method: !rafflePaymentMethodId
         ? "Elige un método de pago"
@@ -263,8 +274,10 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       selectedMunicipality,
       customLocation,
       paymentReference,
+      paymentPayerName,
       referenceMinLength,
       referenceInputMode,
+      selectedMethod?.method_type,
       paymentProof,
       rafflePaymentMethodId,
       selectedBlockedReason,
@@ -292,6 +305,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
 
   const methodHint = touched ? validationMessages.method : EMPTY_HINTS.method
   const referenceHint = touched ? validationMessages.reference : EMPTY_HINTS.reference
+  const payerNameHint = touched ? validationMessages.payerName : EMPTY_HINTS.payerName
   const proofHint = touched ? validationMessages.proof : EMPTY_HINTS.proof
 
   const purchaseMutation = useMutation({
@@ -316,6 +330,9 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       form.append("customerLocation", customerLocation)
       form.append("rafflePaymentMethodId", String(rafflePaymentMethodId))
       form.append("paymentReference", paymentReference.trim())
+      if (selectedMethod?.method_type === "zelle") {
+        form.append("paymentPayerName", paymentPayerName.trim())
+      }
       form.append("ticketQuantity", String(quantity))
       form.append("paymentProof", paymentProof)
 
@@ -350,6 +367,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       }
       setSuccessResult(result)
       setPaymentReference("")
+      setPaymentPayerName("")
       setRafflePaymentMethodId(null)
       setPaymentProof(null)
       setQuantity(quantityMin)
@@ -384,6 +402,15 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
         promo: branding?.purchaseSuccessPromo,
       }),
     [branding?.whatsappEnabled, branding?.social, branding?.purchaseSuccessPromo],
+  )
+
+  const channelLinks = useMemo(
+    () =>
+      resolveBroadcastChannelLinks({
+        social: branding?.social,
+        promo: branding?.purchaseSuccessPromo,
+      }),
+    [branding?.social, branding?.purchaseSuccessPromo],
   )
 
   const supportHref = useMemo(() => {
@@ -452,6 +479,7 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
       validationMessages.ci ||
       validationMessages.location ||
       validationMessages.reference ||
+      validationMessages.payerName ||
       validationMessages.proof ||
       validationMessages.method
     ) {
@@ -530,15 +558,18 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
             methodPromotionHint={methodPromotionHint}
             total={total}
             paymentReference={paymentReference}
+            paymentPayerName={paymentPayerName}
             referenceMinLength={referenceMinLength}
             referenceInputMode={referenceInputMode}
             paymentProof={paymentProof}
             methodHint={methodHint}
             referenceHint={referenceHint}
+            payerNameHint={payerNameHint}
             proofHint={proofHint}
             getEligibility={getEligibility}
             onSelectMethod={handleSelectPaymentMethod}
             onPaymentReferenceChange={handlePaymentReferenceChange}
+            onPaymentPayerNameChange={setPaymentPayerName}
             onPaymentProofChange={setPaymentProof}
           />
 
@@ -573,19 +604,23 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
                   <TicketIcon className="size-7 shrink-0" weight="fill" aria-hidden />
                   <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto] items-baseline gap-x-3 gap-y-0.5">
                     <span className="truncate text-left text-xl font-black tracking-tight">
-                      Confirmar compra
+                      Confirma tu compra
                     </span>
                     <span className="whitespace-nowrap text-right text-xl font-black tabular-nums tracking-tight">
                       {formatCurrency(total, priceCurrency)}
                     </span>
                     <span className="col-span-2 text-left text-sm font-semibold tracking-normal opacity-85">
-                      Recibe tus boletos
+                      para recibir tus boletos
                     </span>
                   </span>
                 </span>
               )}
             </Button>
           </div>
+          <ChannelJoinLinks links={channelLinks} />
+          {channelLinks.length > 0 ? (
+            <div className="h-20 sm:hidden" aria-hidden />
+          ) : null}
         </CardContent>
       </Card>
 
