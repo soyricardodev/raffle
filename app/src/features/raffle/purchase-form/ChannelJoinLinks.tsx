@@ -1,3 +1,4 @@
+import { SocialLinkIcon } from "@/features/layout/social-icons"
 import type { BroadcastChannelLink } from "@/features/layout/social-links"
 import { cn } from "@/lib/utils"
 
@@ -20,19 +21,7 @@ export function ChannelJoinLinks({ links, className }: ChannelJoinLinksProps) {
           className="flex min-h-11 items-center gap-3 rounded-xl px-3 py-2 transition-[transform,background-color] duration-160 ease-out active:scale-[0.97] focus-visible:ring-3"
           style={{ backgroundColor: `${link.brandColor}14` }}
         >
-          <span
-            className="flex size-9 shrink-0 items-center justify-center rounded-full shadow-[inset_0_1px_0_rgba(255,255,255,0.2)]"
-            style={{ backgroundColor: link.brandColor }}
-            aria-hidden
-          >
-            <img
-              src={link.iconSrc}
-              alt=""
-              className="size-5 brightness-0 invert"
-              width={20}
-              height={20}
-            />
-          </span>
+          <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-9 shrink-0" />
           <span className="text-sm font-semibold leading-snug">{link.label}</span>
         </a>
       ))}

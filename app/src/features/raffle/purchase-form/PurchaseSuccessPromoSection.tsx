@@ -1,6 +1,8 @@
 import type { RefObject } from "react"
 import { Button } from "@/components/ui/button"
 import { SocialBrandIcon, SocialLinkIcon } from "@/features/layout/social-icons"
+import { WHATSAPP_BRAND_COLOR, WHATSAPP_ICON } from "@/features/layout/social-links"
+import { ChannelJoinLinks } from "@/features/raffle/purchase-form/ChannelJoinLinks"
 import type { ResolvedPurchaseSuccessPromo } from "@/features/raffle/purchase-form/resolve-purchase-success-promo"
 
 type PurchaseSuccessPromoSectionProps = {
@@ -42,7 +44,12 @@ export function PurchaseSuccessPromoSection({
   const displayRaffleName = raffleName?.trim() || "Tu rifa"
 
   const socialLinks = promo.socialLinks
-    .filter((link) => (hasFinalizeCta ? link.id !== promo.supportKind : true))
+    .filter((link) => {
+      if (link.id === "telegram") return false
+      if (hasFinalizeCta && link.id === promo.supportKind) return false
+      if (promo.supportChannelHref && link.id === "whatsapp") return false
+      return true
+    })
     .map((link) => {
       if (link.id === "instagram" && promo.instagramHref) {
         return { ...link, href: promo.instagramHref }
@@ -125,56 +132,55 @@ export function PurchaseSuccessPromoSection({
 
         {socialLinks.length > 0 || promo.supportChannelHref ? (
           <div className="flex flex-col gap-2 rounded-xl border border-primary/10 bg-gradient-to-br from-background via-muted/35 to-amber-300/10 p-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="text-sm leading-tight font-bold text-foreground">
-                  Sígueme en mis redes sociales
-                </p>
-                <p className="text-muted-foreground text-xs leading-snug">
-                  Nuevas rifas, ganadores, dinámicas y avisos oficiales.
-                </p>
-              </div>
-              {promo.supportChannelHref ? (
-                <a
-                  href={promo.supportChannelHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-xs font-medium text-foreground underline-offset-4 hover:underline"
-                >
-                  Canal de {promo.supportLabel}
-                </a>
-              ) : null}
+            <div className="min-w-0">
+              <p className="text-sm leading-tight font-bold text-foreground">
+                Sígueme en mis redes sociales
+              </p>
+              <p className="text-muted-foreground text-xs leading-snug">
+                Nuevas rifas, ganadores, dinámicas y avisos oficiales.
+              </p>
             </div>
-            <div className="flex flex-wrap gap-1.5">
-              {socialLinks.map((link) => (
-                <Button
-                  key={link.id}
-                  variant="outline"
-                  size="icon-sm"
-                  className="size-9 rounded-full bg-background shadow-xs hover:-translate-y-0.5 hover:shadow-sm"
-                  asChild
-                >
-                  <a
-                    href={link.href}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    aria-label={link.label}
-                    title={link.label}
-                    onClick={() => {
-                      if (link.id === "instagram") onInstagramClick()
-                      if (link.id === "tiktok") onTiktokClick()
-                      onSocialLinkClick(link.id)
-                    }}
+            {promo.supportChannelHref ? (
+              <ChannelJoinLinks
+                links={[
+                  {
+                    id: "whatsapp",
+                    label: "Únete a nuestro canal de WhatsApp",
+                    href: promo.supportChannelHref,
+                    brandColor: WHATSAPP_BRAND_COLOR,
+                    iconSrc: WHATSAPP_ICON,
+                  },
+                ]}
+              />
+            ) : null}
+            {socialLinks.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {socialLinks.map((link) => (
+                  <Button
+                    key={link.id}
+                    variant="outline"
+                    size="icon-sm"
+                    className="size-9 rounded-full bg-background shadow-xs hover:-translate-y-0.5 hover:shadow-sm"
+                    asChild
                   >
-                    {link.iconSrc || link.id === "telegram" || link.id === "tiktok" ? (
-                      <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-4" />
-                    ) : (
-                      <span className="text-xs font-semibold">{link.label.slice(0, 1)}</span>
-                    )}
-                  </a>
-                </Button>
-              ))}
-            </div>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      aria-label={link.label}
+                      title={link.label}
+                      onClick={() => {
+                        if (link.id === "instagram") onInstagramClick()
+                        if (link.id === "tiktok") onTiktokClick()
+                        onSocialLinkClick(link.id)
+                      }}
+                    >
+                      <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-5" />
+                    </a>
+                  </Button>
+                ))}
+              </div>
+            ) : null}
           </div>
         ) : null}
       </div>

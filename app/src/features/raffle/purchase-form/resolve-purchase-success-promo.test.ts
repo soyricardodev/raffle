@@ -43,13 +43,19 @@ describe("resolvePurchaseSuccessPromo", () => {
     })
     expect(result.shouldShow).toBe(true)
     expect(result.supportFinalizeHref).toBe("")
-    expect(result.socialLinks.map((l) => l.id)).toContain("telegram")
+    expect(result.socialLinks.map((l) => l.id)).not.toContain("telegram")
     expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
+    expect(result.supportChannelHref).toBe("https://whatsapp.com/channel/abc")
   })
 
   it("hides when promo is disabled and there are no global socials", () => {
     const result = resolvePurchaseSuccessPromo({
-      promo: emptyPromo,
+      promo: {
+        ...emptyPromo,
+        whatsapp_channel_url: "",
+        instagram_url: "",
+        tiktok_url: "",
+      },
       social: {
         whatsapp: "",
         instagram: "",
@@ -85,7 +91,8 @@ describe("resolvePurchaseSuccessPromo", () => {
     })
     expect(result.shouldShow).toBe(true)
     expect(result.supportFinalizeHref).toBe("")
-    expect(result.socialLinks.map((l) => l.id)).toContain("telegram")
+    expect(result.socialLinks.map((l) => l.id)).not.toContain("telegram")
+    expect(result.socialLinks.map((l) => l.id)).toContain("whatsapp")
   })
 
   it("builds finalize Telegram link on first purchase", () => {
@@ -115,7 +122,8 @@ describe("resolvePurchaseSuccessPromo", () => {
     expect(result.supportFinalizeHref).toContain(encodeURIComponent("María Pérez"))
     expect(result.supportFinalizeHref).toContain(encodeURIComponent("Rifa Oro"))
     expect(result.supportFinalizeHref).toContain(encodeURIComponent("2 boletos"))
-    expect(result.supportChannelHref).toBe("https://t.me/yoiberrifascanal")
+    expect(result.supportChannelHref).toBe("")
+    expect(result.socialLinks.map((l) => l.id)).not.toContain("telegram")
   })
 
   it("builds finalize WhatsApp link when WhatsApp is enabled", () => {
@@ -144,6 +152,35 @@ describe("resolvePurchaseSuccessPromo", () => {
     expect(result.supportFinalizeHref).toContain("https://wa.me/584121234567")
   })
 
+  it("prefers the WhatsApp channel and omits Telegram from the tickets drawer", () => {
+    const result = resolvePurchaseSuccessPromo({
+      promo: {
+        enabled: true,
+        title: "",
+        description: "",
+        whatsapp_channel_url: "https://whatsapp.com/channel/abc",
+        telegram_channel_url: "https://t.me/yoiberrifascanal",
+        instagram_url: "",
+        tiktok_url: "",
+      },
+      social: {
+        whatsapp: "584121234567",
+        instagram: "@rifas",
+        facebook: "",
+        tiktok: "",
+        telegram: "yoiberifas",
+        support_channel: "telegram",
+      },
+      purchase: firstPurchase,
+    })
+
+    expect(result.supportChannelHref).toBe("https://whatsapp.com/channel/abc")
+    expect(result.socialLinks.map((l) => l.id)).toEqual(["whatsapp", "instagram"])
+    expect(result.socialLinks.find((l) => l.id === "whatsapp")?.href).toBe(
+      "https://whatsapp.com/channel/abc",
+    )
+  })
+
   it("includes social links and promo instagram on first purchase", () => {
     const result = resolvePurchaseSuccessPromo({
       promo: {
@@ -168,7 +205,7 @@ describe("resolvePurchaseSuccessPromo", () => {
     expect(result.shouldShow).toBe(true)
     expect(result.instagramHref).toBe("https://instagram.com/promo")
     expect(result.tiktokHref).toBe("https://www.tiktok.com/@promotiktok")
-    expect(result.socialLinks.map((l) => l.id)).toContain("telegram")
+    expect(result.socialLinks.map((l) => l.id)).not.toContain("telegram")
     expect(result.socialLinks.map((l) => l.id)).toContain("instagram")
     expect(result.socialLinks.map((l) => l.id)).toContain("tiktok")
   })

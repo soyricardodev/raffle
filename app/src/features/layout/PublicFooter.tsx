@@ -3,7 +3,7 @@ import {
   DEFAULT_OFFICIAL_FOOTER_HEADING,
   resolveOfficialFooterLogos,
 } from "@/features/layout/footer-defaults"
-import { SocialLinkIcon } from "@/features/layout/social-icons"
+import { hasInlineSocialBrandIcon, SocialLinkIcon } from "@/features/layout/social-icons"
 import {
   buildSocialLinks,
   DEFAULT_TELEGRAM_CHANNEL_URL,
@@ -87,7 +87,7 @@ export function PublicFooter() {
                       aria-label={link.label}
                       className="bg-background/80 border-border/80 hover:bg-background flex size-11 items-center justify-center rounded-full border shadow-sm transition-colors"
                     >
-                      {link.iconSrc || link.id === "telegram" || link.id === "tiktok" ? (
+                      {link.iconSrc || hasInlineSocialBrandIcon(link.id) ? (
                         <SocialLinkIcon id={link.id} iconSrc={link.iconSrc} className="size-5" />
                       ) : (
                         <span className="text-xs font-semibold" aria-hidden>

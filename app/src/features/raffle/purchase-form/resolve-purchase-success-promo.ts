@@ -6,6 +6,7 @@ import {
   type SocialLink,
   type SupportChannelKind,
   tiktokHref,
+  whatsAppChannelHref,
 } from "@/features/layout/social-links"
 import type { PurchaseResult } from "@/features/raffle/types"
 import type { PurchaseSuccessPromo, SocialMedia } from "@/stores/site-config"
@@ -83,10 +84,18 @@ export function resolvePurchaseSuccessPromo(
         )
       : ""
 
-  const supportChannelHref = hasConfiguredPromo ? support.channelHref : ""
-  const socialLinks = buildSocialLinks(social)
+  const whatsappChannelHrefResolved = whatsAppChannelHref(normalized.whatsapp_channel_url)
+  const supportChannelHref = whatsappChannelHrefResolved
+  const socialLinks = buildSocialLinks(social, {
+    whatsappChannelUrl: whatsappChannelHrefResolved || undefined,
+  }).filter((link) => link.id !== "telegram")
 
-  const hasSocialContent = Boolean(socialLinks.length > 0 || instagramHrefResolved || tiktokHrefResolved)
+  const hasSocialContent = Boolean(
+    socialLinks.length > 0 ||
+      instagramHrefResolved ||
+      tiktokHrefResolved ||
+      supportChannelHref,
+  )
   const hasFirstPurchaseContent = Boolean(
     hasConfiguredPromo &&
       (title || description || supportFinalizeHref || supportChannelHref),
