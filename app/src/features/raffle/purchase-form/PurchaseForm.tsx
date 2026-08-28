@@ -68,6 +68,7 @@ import { formatCurrency } from "@/lib/format"
 export type PurchaseFormProps = {
   raffle: RaffleForPurchase
   rememberBuyer?: boolean
+  previewSuccess?: boolean
 }
 
 type PurchaseFormHints = {
@@ -105,7 +106,19 @@ function ciHint(prefix: CedulaPrefix, number: string): string | undefined {
   return undefined
 }
 
-export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps) {
+const SUCCESS_PREVIEW_RESULT = {
+  purchaseId: 1842,
+  ticketNumbers: ["0142", "0891", "1104", "2208", "3341"],
+  isFirstPurchase: true,
+  customerName: "María Pérez",
+  ticketCount: 5,
+} as const
+
+export function PurchaseForm({
+  raffle,
+  rememberBuyer = true,
+  previewSuccess = false,
+}: PurchaseFormProps) {
   const queryClient = useQueryClient()
   const branding = usePublicBranding()
   const [supportError, setSupportError] = useState<PurchaseSupportErrorState | null>(null)
@@ -193,6 +206,14 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
     )
     setCustomLocation(profile.customLocation)
   }, [])
+
+  useEffect(() => {
+    if (!import.meta.env.DEV || !previewSuccess) return
+    setSuccessResult({
+      ...SUCCESS_PREVIEW_RESULT,
+      raffleName: raffle.name,
+    })
+  }, [previewSuccess, raffle.name])
 
   useEffect(() => {
     if (!rememberBuyer) return
@@ -626,7 +647,6 @@ export function PurchaseForm({ raffle, rememberBuyer = true }: PurchaseFormProps
 
       <PurchaseSuccessDialog
         result={successResult}
-        verifyPhone={customerPhone.trim() || undefined}
         raffleImageUrl={raffle.image_url}
         onClose={() => setSuccessResult(null)}
       />

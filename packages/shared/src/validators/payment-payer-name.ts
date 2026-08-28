@@ -6,6 +6,6 @@ export function paymentPayerNameValidationMessage(
   value: string | undefined,
 ): string | undefined {
   if (methodType !== "zelle") return undefined
-  if (!value?.trim()) return "Ingresa el nombre de quien hace el pago"
+  if (!value?.trim()) return "Ingresa el nombre y apellido del propietario de la cuenta Zelle"
   return undefined
 }

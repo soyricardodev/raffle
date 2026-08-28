@@ -14,13 +14,14 @@ import {
   FEATURED_TICKET_ROW_STRIDE_PX,
   featuredTicketBadgeClassName,
   featuredTicketBadgeGridClassName,
-  featuredTicketSectionClassName,
 } from "@/features/tickets/ticket-badge-styles"
 import { cn } from "@/lib/utils"
 
 type PurchaseSuccessTicketsProps = {
   purchaseId: number
   ticketNumbers: string[]
+  raffleName?: string
+  raffleImageUrl?: string | null
   onCopy: () => void
   onExpandedChange?: (expanded: boolean) => void
 }
@@ -30,10 +31,14 @@ const listScrollClassName = featuredTicketBadgeGridClassName
 export function PurchaseSuccessTickets({
   purchaseId,
   ticketNumbers,
+  raffleName,
+  raffleImageUrl,
   onCopy,
   onExpandedChange,
 }: PurchaseSuccessTicketsProps) {
   const ticketCount = ticketNumbers.length
+  const displayRaffleName = raffleName?.trim() || ""
+  const coverSrc = raffleImageUrl?.trim() || ""
   const manyTickets = ticketCount > TICKET_COLLAPSE_THRESHOLD
   const [expanded, setExpanded] = useState(ticketCount <= TICKET_COLLAPSE_THRESHOLD)
 
@@ -55,15 +60,33 @@ export function PurchaseSuccessTickets({
   }
 
   return (
-    <div className={featuredTicketSectionClassName}>
-      <div className="mb-2 flex shrink-0 items-center justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-muted-foreground text-[10px] font-medium tracking-wide uppercase">
-            Compra #{purchaseId}
-          </p>
-          <p className="text-sm font-semibold tabular-nums">
-            {ticketCount} boleto{ticketCount === 1 ? "" : "s"}
-          </p>
+    <div className="flex min-h-0 flex-1 flex-col gap-2 rounded-xl border border-border/70 bg-muted/25 p-3">
+      <div className="flex shrink-0 items-start justify-between gap-2">
+        <div className="flex min-w-0 items-start gap-2.5">
+          {coverSrc ? (
+            <img
+              src={coverSrc}
+              alt=""
+              width={48}
+              height={48}
+              className="size-12 shrink-0 rounded-lg object-cover"
+            />
+          ) : null}
+          <div className="min-w-0">
+            {displayRaffleName ? (
+              <p className="truncate text-sm font-semibold">{displayRaffleName}</p>
+            ) : null}
+            <p className="text-muted-foreground text-[11px]">
+              Compra #{purchaseId}
+              <span className="text-foreground/80">
+                {" "}
+                · {ticketCount} boleto{ticketCount === 1 ? "" : "s"}
+              </span>
+            </p>
+            <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
+              Estos números quedan registrados en esta compra.
+            </p>
+          </div>
         </div>
         <Button
           type="button"
@@ -83,14 +106,18 @@ export function PurchaseSuccessTickets({
           ticketNumbers={ticketNumbers}
           listId={listId}
           ticketCount={ticketCount}
-          className={cn(listScrollClassName, "max-h-[min(34vh,280px)]")}
+          className={cn(listScrollClassName, "max-h-[min(48dvh,420px)]")}
           badgeClassName={featuredTicketBadgeClassName}
           rowStridePx={FEATURED_TICKET_ROW_STRIDE_PX}
         />
       ) : (
         <div
           id={listId}
-          className={cn(listScrollClassName, expanded ? "max-h-[min(34vh,280px)]" : "max-h-[100px]")}
+          className={cn(
+            listScrollClassName,
+            "min-h-0 flex-1",
+            expanded ? "max-h-[min(48dvh,420px)]" : "max-h-[120px]",
+          )}
           role="list"
           aria-label={`Números de boletos asignados, ${ticketCount} en total`}
         >

@@ -14,4 +14,11 @@ describe("parsePurchaseRouteSearchInput", () => {
     expect(parsePurchaseRouteSearchInput({ norecordar: "0" })).toEqual({})
     expect(parsePurchaseRouteSearchInput({ norecordar: "false" })).toEqual({})
   })
+
+  it("accepts previewSuccess for local drawer review", () => {
+    expect(parsePurchaseRouteSearchInput({ previewSuccess: "1" })).toEqual({
+      previewSuccess: true,
+    })
+    expect(parsePurchaseRouteSearchInput({ previewSuccess: "false" })).toEqual({})
+  })
 })

@@ -68,7 +68,7 @@ function resolveHomeTickerVariant(
 
 function HomePage() {
   const { display: loaderDisplay } = Route.useLoaderData()
-  const { norecordar } = Route.useSearch()
+  const { norecordar, previewSuccess } = Route.useSearch()
 
   const displayQuery = useQuery({
     ...homeRaffleDisplayQueryOptions(),
@@ -113,7 +113,11 @@ function HomePage() {
                 descriptionLineClamp={5}
               >
                 <div id="comprar" className="scroll-mt-16">
-                  <PurchaseForm raffle={activeRaffle} rememberBuyer={norecordar !== true} />
+                  <PurchaseForm
+                    raffle={activeRaffle}
+                    rememberBuyer={norecordar !== true}
+                    previewSuccess={previewSuccess === true}
+                  />
                 </div>
               </RaffleActiveSection>
             </div>

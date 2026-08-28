@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react"
 import { toast } from "sonner"
 import { trackPurchaseSuccessEvent } from "@/features/raffle/purchase-form/purchase-success-analytics"
+import { purchaseSuccessFinalizeCopy } from "@/features/raffle/purchase-form/purchase-success-copy"
 import {
   markPromoReminderShown,
   shouldShowPromoReminder,
@@ -106,11 +107,12 @@ export function usePurchaseSuccessSheet({
         })
       ) {
         markPromoReminderShown(result.purchaseId)
-        toast(`¿Finalizaste por ${promo.supportLabel}?`, {
-          description: "Escríbenos para confirmar tu compra y guardar tus datos.",
+        const reminder = purchaseSuccessFinalizeCopy(promo.supportLabel)
+        toast(reminder.reminderTitle, {
+          description: reminder.reminderDescription,
           duration: 10_000,
           action: {
-            label: "Escribir",
+            label: reminder.reminderAction,
             onClick: () => {
               markSupportClicked("reminder_toast")
               window.open(finalizeHref, "_blank", "noopener,noreferrer")

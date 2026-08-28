@@ -1,6 +1,6 @@
 import { z } from "zod"
 
-function parseNorecordarSearch(value: unknown): boolean | undefined {
+function parseFlagSearch(value: unknown): boolean | undefined {
   if (value === true || value === 1) return true
   if (typeof value === "string") {
     const normalized = value.trim().toLowerCase()
@@ -10,11 +10,13 @@ function parseNorecordarSearch(value: unknown): boolean | undefined {
 }
 
 const purchaseRouteSearchSchema = z.object({
-  norecordar: z.unknown().optional().transform(parseNorecordarSearch),
+  norecordar: z.unknown().optional().transform(parseFlagSearch),
+  previewSuccess: z.unknown().optional().transform(parseFlagSearch),
 })
 
 export type PurchaseRouteSearch = {
   norecordar?: boolean
+  previewSuccess?: boolean
 }
 
 export function parsePurchaseRouteSearchInput(
@@ -23,5 +25,6 @@ export function parsePurchaseRouteSearchInput(
   const parsed = purchaseRouteSearchSchema.parse(search)
   const result: PurchaseRouteSearch = {}
   if (parsed.norecordar === true) result.norecordar = true
+  if (parsed.previewSuccess === true) result.previewSuccess = true
   return result
 }

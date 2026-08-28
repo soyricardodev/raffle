@@ -55,7 +55,7 @@ function RaffleDetailSkeleton() {
 function RaffleDetailPage() {
   const { id } = Route.useParams()
   const { raffle: loaderRaffle } = Route.useLoaderData()
-  const { norecordar } = Route.useSearch()
+  const { norecordar, previewSuccess } = Route.useSearch()
 
   const { data: raffle = loaderRaffle, isError } = useQuery({
     ...raffleDetailQueryOptions(id),
@@ -108,7 +108,11 @@ function RaffleDetailPage() {
             ) : null}
 
             <div id="comprar" className="scroll-mt-16">
-              <PurchaseForm raffle={raffle} rememberBuyer={norecordar !== true} />
+              <PurchaseForm
+                raffle={raffle}
+                rememberBuyer={norecordar !== true}
+                previewSuccess={previewSuccess === true}
+              />
             </div>
           </RaffleActiveSection>
         </div>

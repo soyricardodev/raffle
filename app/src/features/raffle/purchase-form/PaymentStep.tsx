@@ -132,8 +132,8 @@ const PaymentCompletionFields = memo(function PaymentCompletionFields({
       {isZelle ? (
         <LabeledIconField
           id="payment-payer-name"
-          label="Nombre de quien hace el pago"
-          description="Tal como aparece en el Zelle."
+          label="Nombre y apellido del propietario de la cuenta Zelle"
+          description="Tal como aparece en tu cuenta Zelle."
           icon={<UserCircleIcon aria-hidden />}
           value={paymentPayerName}
           onChange={onPaymentPayerNameChange}

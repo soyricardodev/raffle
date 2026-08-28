@@ -5,6 +5,7 @@ import {
   resolveSupportChannel,
   type SocialLink,
   type SupportChannelKind,
+  telegramChannelHref,
   tiktokHref,
   whatsAppChannelHref,
 } from "@/features/layout/social-links"
@@ -85,10 +86,14 @@ export function resolvePurchaseSuccessPromo(
       : ""
 
   const whatsappChannelHrefResolved = whatsAppChannelHref(normalized.whatsapp_channel_url)
+  const telegramChannelHrefResolved = telegramChannelHref(normalized.telegram_channel_url)
   const supportChannelHref = whatsappChannelHrefResolved
   const socialLinks = buildSocialLinks(social, {
     whatsappChannelUrl: whatsappChannelHrefResolved || undefined,
-  }).filter((link) => link.id !== "telegram")
+    ...(telegramChannelHrefResolved
+      ? { telegramChannelUrl: telegramChannelHrefResolved }
+      : {}),
+  })
 
   const hasSocialContent = Boolean(
     socialLinks.length > 0 ||
