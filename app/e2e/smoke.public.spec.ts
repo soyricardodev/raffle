@@ -10,6 +10,16 @@ test.describe("public smoke", () => {
     ).toBeVisible()
   })
 
+  test("home shows how-to-play cloud when raffle is active", async ({ page }) => {
+    await page.goto("/", { waitUntil: "domcontentloaded" })
+    const cloud = page.getByTestId("how-to-play-cloud")
+    const hasCloud = await cloud.isVisible().catch(() => false)
+    test.skip(!hasCloud, "No active raffle on home")
+
+    await expect(cloud).toHaveAttribute("href", /instagram\.com\/reel/)
+    await expect(cloud).toContainText("Mira aquí cómo se juega")
+  })
+
   test("purchase form does not show verify tickets CTA under submit", async ({ page }) => {
     await page.goto("/", { waitUntil: "domcontentloaded" })
     const purchaseForm = page.locator("#purchase-form")

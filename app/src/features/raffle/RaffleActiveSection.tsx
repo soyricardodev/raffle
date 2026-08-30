@@ -1,3 +1,5 @@
+import { HowToPlayCloud } from "@/features/raffle/HowToPlayCloud"
+import { shouldShowHowToPlayCloud } from "@/features/raffle/how-to-play"
 import { PromotionBanner } from "@/features/raffle/PromotionBanner"
 import { RaffleCoverHero } from "@/features/raffle/RaffleCoverHero"
 import { RaffleInfoPanel } from "@/features/raffle/RaffleInfoPanel"
@@ -25,6 +27,7 @@ export function RaffleActiveSection({
 }: RaffleActiveSectionProps) {
   const tickets = raffleTicketsInput(raffle)
   const hasCover = Boolean(raffle.image_url)
+  const showHowToPlay = shouldShowHowToPlayCloud(raffle.status)
 
   return (
     <div className="space-y-3 sm:space-y-4">
@@ -39,6 +42,8 @@ export function RaffleActiveSection({
           edgeBleed={edgeBleed}
         />
       ) : null}
+
+      {showHowToPlay ? <HowToPlayCloud /> : null}
 
       {raffle.pricing ? (
         <PromotionBanner pricing={raffle.pricing} paymentMethods={raffle.payment_methods ?? []} />
