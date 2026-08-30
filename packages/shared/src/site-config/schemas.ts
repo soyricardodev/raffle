@@ -42,10 +42,14 @@ export const SocialMediaSchema = z.object({
   support_channel: SupportChannelSchema.default("telegram"),
 })
 
+export const DEFAULT_HOW_TO_PLAY_LABEL = "Aprende a jugar aquí"
+
 export const HeroConfigSchema = z.object({
   title: z.string().trim().max(120),
   subtitle: z.string().trim().max(200),
   show_particles: z.boolean(),
+  /** Public how-to-play CTA. Empty = DEFAULT_HOW_TO_PLAY_LABEL. */
+  how_to_play_label: z.string().trim().max(80).default(""),
 })
 
 export const OfficialFooterLogoSchema = z.object({

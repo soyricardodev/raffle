@@ -27,7 +27,9 @@ function cloneSiteInfo(value?: SiteInfo): SiteInfo {
 }
 
 function cloneHero(value?: HeroConfig): HeroConfig {
-  return value ? { ...value } : { title: "", subtitle: "", show_particles: false }
+  return value
+    ? { ...value }
+    : { title: "", subtitle: "", show_particles: false, how_to_play_label: "" }
 }
 
 function cloneContact(value?: ContactInfo): ContactInfo {

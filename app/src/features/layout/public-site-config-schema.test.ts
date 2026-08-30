@@ -15,6 +15,15 @@ describe("parsePublicSiteConfig", () => {
     expect(result.site_info?.site_name).toBe("Rifa X")
     expect(result.hero_config?.title).toBe("Hola")
     expect(result.hero_config?.subtitle).toBe("Mundo")
+    expect(result.hero_config?.how_to_play_label).toBe("")
+  })
+
+  it("parses how_to_play_label on hero_config", () => {
+    const result = parsePublicSiteConfig({
+      hero_config: { title: "Hola", subtitle: "Mundo", how_to_play_label: "Ver el reel" },
+    })
+
+    expect(result.hero_config?.how_to_play_label).toBe("Ver el reel")
   })
 
   it("normalizes footer images including official logos", () => {

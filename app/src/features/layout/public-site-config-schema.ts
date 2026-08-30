@@ -27,6 +27,7 @@ const HeroConfigRawSchema = z
     main_text: z.string().optional(),
     accent_text: z.string().optional(),
     show_particles: z.boolean().optional(),
+    how_to_play_label: z.string().optional(),
   })
   .passthrough()
 

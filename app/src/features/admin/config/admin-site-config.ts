@@ -33,6 +33,7 @@ export type AdminSiteConfigDraft = {
   support_channel: "telegram" | "whatsapp"
   hero_title: string
   hero_subtitle: string
+  how_to_play_label: string
   show_particles: boolean
   banner: string
   logo: string
@@ -66,6 +67,7 @@ export const defaultAdminSiteConfigDraft = (): AdminSiteConfigDraft => ({
   support_channel: "telegram",
   hero_title: "",
   hero_subtitle: "",
+  how_to_play_label: "",
   show_particles: false,
   banner: "",
   logo: "",
@@ -111,6 +113,7 @@ export function apiToDraft(data: Record<string, unknown> | undefined): AdminSite
     support_channel: social?.support_channel === "whatsapp" ? "whatsapp" : "telegram",
     hero_title: hero.title,
     hero_subtitle: hero.subtitle,
+    how_to_play_label: hero.how_to_play_label,
     show_particles: hero.show_particles,
     banner: images.banner || base.banner,
     logo: images.logo || base.logo,
@@ -168,6 +171,7 @@ export function draftToPatch(draft: AdminSiteConfigDraft): AdminSiteConfigPatch 
       title: draft.hero_title.trim(),
       subtitle: draft.hero_subtitle.trim(),
       show_particles: draft.show_particles,
+      how_to_play_label: draft.how_to_play_label.trim(),
     },
     site_images: {
       banner: draft.banner.trim(),

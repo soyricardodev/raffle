@@ -29,6 +29,7 @@ import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { AdminImageUploadField } from "@/features/admin/shared/AdminImageUploadField"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { publicQueryKeys } from "@/features/layout/public-queries"
+import { DEFAULT_HOW_TO_PLAY_LABEL } from "@/features/raffle/how-to-play"
 import { adminFetch } from "@/lib/admin-fetch"
 import { useSiteConfig } from "@/stores/site-config"
 
@@ -245,6 +246,22 @@ export function AdminConfigView() {
                     onChange={(e) => update("hero_subtitle", e.target.value)}
                     placeholder={draft.tagline || "¡Tu oportunidad de ganar!"}
                   />
+                </Field>
+                <Field data-invalid={!!fieldError("hero_config.how_to_play_label")}>
+                  <FieldLabel htmlFor="how-to-play-label">Texto de cómo se juega</FieldLabel>
+                  <Input
+                    id="how-to-play-label"
+                    className="min-h-11"
+                    value={draft.how_to_play_label}
+                    onChange={(e) => update("how_to_play_label", e.target.value)}
+                    placeholder={DEFAULT_HOW_TO_PLAY_LABEL}
+                    maxLength={80}
+                    aria-invalid={!!fieldError("hero_config.how_to_play_label")}
+                  />
+                  <FieldDescription>
+                    Sale en la rifa activa. Vacío = {DEFAULT_HOW_TO_PLAY_LABEL}.
+                  </FieldDescription>
+                  <FieldError>{fieldError("hero_config.how_to_play_label")}</FieldError>
                 </Field>
                 <AdminImageUploadField
                   id="banner"

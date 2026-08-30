@@ -1,7 +1,8 @@
 import { ChevronRight, Play } from "lucide-react"
+import { usePublicBranding } from "@/features/layout/use-public-branding"
 import {
-  HOW_TO_PLAY_LABEL,
   HOW_TO_PLAY_REEL_HREF,
+  resolveHowToPlayLabel,
 } from "@/features/raffle/how-to-play"
 
 type HowToPlayCloudProps = {
@@ -9,8 +10,11 @@ type HowToPlayCloudProps = {
 }
 
 export function HowToPlayCloud({ href = HOW_TO_PLAY_REEL_HREF }: HowToPlayCloudProps) {
+  const branding = usePublicBranding()
+  const label = resolveHowToPlayLabel(branding?.hero.how_to_play_label)
+
   return (
-    <section aria-label={HOW_TO_PLAY_LABEL}>
+    <section aria-label={label}>
       <a
         href={href}
         target="_blank"
@@ -22,7 +26,7 @@ export function HowToPlayCloud({ href = HOW_TO_PLAY_REEL_HREF }: HowToPlayCloudP
           <Play className="size-4" aria-hidden />
         </span>
         <span className="min-w-0 flex-1 text-center text-lg font-bold leading-none tracking-tight">
-          {HOW_TO_PLAY_LABEL}
+          {label}
         </span>
         <span className="flex size-8 shrink-0 items-center justify-center" aria-hidden>
           <ChevronRight className="size-4" />

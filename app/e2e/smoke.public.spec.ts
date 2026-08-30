@@ -17,7 +17,7 @@ test.describe("public smoke", () => {
     test.skip(!hasCloud, "No active raffle on home")
 
     await expect(cloud).toHaveAttribute("href", /instagram\.com\/reel/)
-    await expect(cloud).toContainText("Mira aquí cómo se juega")
+    await expect(cloud).toContainText(/aprende a jugar|mira aquí|cómo se juega/i)
   })
 
   test("purchase form does not show verify tickets CTA under submit", async ({ page }) => {

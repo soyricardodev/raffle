@@ -9,11 +9,11 @@ describe("resolvePublicBranding", () => {
   it("clones nested objects so mutations do not leak", () => {
     const first = resolvePublicBranding({
       site_info: { site_name: "A", tagline: "B", runlot_id: "" },
-      hero_config: { title: "T", subtitle: "S", show_particles: false },
+      hero_config: { title: "T", subtitle: "S", show_particles: false, how_to_play_label: "" },
     })
     const second = resolvePublicBranding({
       site_info: { site_name: "A", tagline: "B", runlot_id: "" },
-      hero_config: { title: "T", subtitle: "S", show_particles: false },
+      hero_config: { title: "T", subtitle: "S", show_particles: false, how_to_play_label: "" },
     })
 
     expect(first).not.toBeNull()

@@ -56,13 +56,14 @@ export function normalizeSiteImages(raw: unknown): SiteImages {
 /** Legacy hero_config used main_text/accent_text; v2 uses title/subtitle. */
 export function normalizeHeroConfig(raw: unknown): HeroConfig {
   if (!raw || typeof raw !== "object") {
-    return { title: "", subtitle: "", show_particles: false }
+    return { title: "", subtitle: "", show_particles: false, how_to_play_label: "" }
   }
   const hero = raw as Record<string, unknown>
   return {
     title: String(hero.title ?? hero.main_text ?? ""),
     subtitle: String(hero.subtitle ?? hero.accent_text ?? ""),
     show_particles: Boolean(hero.show_particles),
+    how_to_play_label: String(hero.how_to_play_label ?? "").trim(),
   }
 }
 
@@ -164,6 +165,7 @@ const defaults: Pick<
     title: "",
     subtitle: "",
     show_particles: false,
+    how_to_play_label: "",
   },
   images: {
     banner: "",
