@@ -1,5 +1,13 @@
 import { Bell, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import {
+  PWA_INSTALL_CTA,
+  PWA_INSTALL_TITLE,
+  PWA_NOTIFY_BLOCKED_CTA,
+  PWA_NOTIFY_BLOCKED_TITLE,
+  PWA_NOTIFY_CTA,
+  PWA_NOTIFY_TITLE,
+} from "@/features/pwa/pwa-copy"
 import type { usePwaEngage } from "@/features/pwa/use-pwa-engage"
 import { cn } from "@/lib/utils"
 
@@ -15,15 +23,14 @@ export function PwaEngageBanner({ engage }: { engage: ReturnType<typeof usePwaEn
 
   const label = needsNotify
     ? engage.notifyBlocked
-      ? "Enciende los avisos"
-      : "Activa los avisos"
-    : "Instala Yoiber Rifas"
-  const detail = needsNotify
+      ? PWA_NOTIFY_BLOCKED_TITLE
+      : PWA_NOTIFY_TITLE
+    : PWA_INSTALL_TITLE
+  const cta = needsNotify
     ? engage.notifyBlocked
-      ? "Están apagados. Toca para ver cómo encenderlos"
-      : "Dinámicas, promociones y rifas antes que el resto"
-    : "Ábrela en un toque, siempre a la mano"
-  const cta = needsNotify ? (engage.notifyBlocked ? "Cómo" : "Activar") : "Instalar"
+      ? PWA_NOTIFY_BLOCKED_CTA
+      : PWA_NOTIFY_CTA
+    : PWA_INSTALL_CTA
 
   return (
     <div
@@ -48,12 +55,7 @@ export function PwaEngageBanner({ engage }: { engage: ReturnType<typeof usePwaEn
             <Download className="size-5" aria-hidden />
           )}
         </span>
-        <p className="min-w-0 flex-1 text-sm leading-snug font-semibold">
-          {label}
-          <span className="text-muted-foreground mt-0.5 block text-xs font-normal leading-snug">
-            {detail}
-          </span>
-        </p>
+        <p className="min-w-0 flex-1 text-sm leading-snug font-semibold">{label}</p>
         <Button
           size="sm"
           className="h-10 shrink-0 px-3.5 text-xs font-semibold shadow-sm transition-transform duration-160 ease-[cubic-bezier(0.23,1,0.32,1)] active:scale-[0.97]"

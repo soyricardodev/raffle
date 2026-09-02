@@ -1,7 +1,18 @@
 import { Bell, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { IosInstallSteps } from "@/features/pwa/IosInstallSteps"
-import { PWA_ICON_192, PWA_NAME } from "@/features/pwa/pwa-brand"
+import { PWA_ICON_192 } from "@/features/pwa/pwa-brand"
+import {
+  PWA_INSTALL_CTA,
+  PWA_INSTALL_IOS_LINE,
+  PWA_INSTALL_LINE,
+  PWA_INSTALL_TITLE,
+  PWA_NOTIFY_BLOCKED_DONE,
+  PWA_NOTIFY_BLOCKED_TITLE,
+  PWA_NOTIFY_CTA,
+  PWA_NOTIFY_LINE,
+  PWA_NOTIFY_TITLE,
+} from "@/features/pwa/pwa-copy"
 import { usePwaEngageContext } from "@/features/pwa/pwa-engage-context"
 import { resolvePurchasePwaNudge } from "@/features/pwa/purchase-pwa-nudge"
 
@@ -23,7 +34,7 @@ export function PwaPurchaseNudge() {
 
   return (
     <section
-      aria-label={isInstall ? `Instalar ${PWA_NAME}` : "Activar avisos"}
+      aria-label={isInstall ? PWA_INSTALL_TITLE : PWA_NOTIFY_TITLE}
       className="border-primary/35 mx-4 mb-3 overflow-hidden rounded-2xl border bg-gradient-to-br from-primary/15 to-primary/5 p-3.5 shadow-[0_8px_24px_color-mix(in_oklch,var(--primary)_18%,transparent)]"
     >
       <div className="flex items-start gap-3">
@@ -41,30 +52,21 @@ export function PwaPurchaseNudge() {
           </span>
         )}
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold tracking-wide text-primary uppercase">
-            {kind === "ios-install"
-              ? "En tu iPhone"
-              : isInstall
-                ? "Tus boletos, a un toque"
-                : "Antes que el resto"}
-          </p>
-          <p className="mt-0.5 text-sm leading-snug font-semibold">
-            {kind === "ios-install"
-              ? `Pon ${PWA_NAME} en tu inicio`
-              : isInstall
-                ? `Instala ${PWA_NAME}`
-                : blocked
-                  ? "Enciende los avisos"
-                  : "Activa los avisos"}
+          <p className="text-sm leading-snug font-semibold">
+            {isInstall
+              ? PWA_INSTALL_TITLE
+              : blocked
+                ? PWA_NOTIFY_BLOCKED_TITLE
+                : PWA_NOTIFY_TITLE}
           </p>
           <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
             {kind === "ios-install"
-              ? "Toma 10 segundos. Ahí sí te llegan las rifas y las dinámicas."
+              ? PWA_INSTALL_IOS_LINE
               : isInstall
-                ? "Ábrela sin buscar el link. Las rifas te llegan más rápido."
+                ? PWA_INSTALL_LINE
                 : blocked
-                  ? "Están apagados. Toca el candado junto a la dirección, Notificaciones, Permitir."
-                  : "Así te enteras de dinámicas, promociones y rifas más rápido que los demás."}
+                  ? "Toca el candado, Notificaciones, Permitir."
+                  : PWA_NOTIFY_LINE}
           </p>
         </div>
       </div>
@@ -102,10 +104,10 @@ export function PwaPurchaseNudge() {
           {engage.busy
             ? "Espera…"
             : kind === "install"
-              ? `Instalar ${PWA_NAME}`
+              ? PWA_INSTALL_CTA
               : blocked
-                ? "Ya los activé"
-                : "Activar avisos"}
+                ? PWA_NOTIFY_BLOCKED_DONE
+                : PWA_NOTIFY_CTA}
         </Button>
       )}
     </section>

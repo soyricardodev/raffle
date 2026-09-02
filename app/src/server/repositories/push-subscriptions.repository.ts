@@ -1,5 +1,5 @@
 import { pushSubscriptions } from "@raffle/shared/db"
-import { eq } from "drizzle-orm"
+import { desc, eq } from "drizzle-orm"
 import { type DbTransaction, getDb } from "@/lib/db.server"
 
 export type PushSubscriptionRow = typeof pushSubscriptions.$inferSelect
@@ -56,4 +56,23 @@ export async function deletePushSubscriptionById(
 
 export async function listPushSubscriptions(): Promise<PushSubscriptionRow[]> {
   return getDb().select().from(pushSubscriptions)
+}
+
+export async function listPushSubscriptionSummaries(): Promise<
+  Array<{
+    id: number
+    userAgent: string | null
+    createdAt: Date
+    lastSeenAt: Date
+  }>
+> {
+  return getDb()
+    .select({
+      id: pushSubscriptions.id,
+      userAgent: pushSubscriptions.userAgent,
+      createdAt: pushSubscriptions.createdAt,
+      lastSeenAt: pushSubscriptions.lastSeenAt,
+    })
+    .from(pushSubscriptions)
+    .orderBy(desc(pushSubscriptions.lastSeenAt))
 }

@@ -21,7 +21,7 @@ export {
 } from "./change-password.js"
 export { passwordSchema } from "./password.js"
 export { zodIssuesToFieldErrors } from "./zod-utils.js"
-export { PushSubscribeInput, PushUnsubscribeInput } from "./push-subscription.js"
+export { PushSubscribeInput, PushUnsubscribeInput, AdminPushBroadcastInput } from "./push-subscription.js"
 
 // ─── Enums ───────────────────────────────────────────────────
 

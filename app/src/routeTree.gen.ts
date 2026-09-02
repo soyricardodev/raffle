@@ -23,6 +23,7 @@ import { Route as AdminCrearRouteImport } from './routes/admin/crear'
 import { Route as AdminConfigRouteImport } from './routes/admin/config'
 import { Route as AdminComprasRouteImport } from './routes/admin/compras'
 import { Route as AdminBoletosRouteImport } from './routes/admin/boletos'
+import { Route as AdminAvisosRouteImport } from './routes/admin/avisos'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as PublicVerificarRouteImport } from './routes/_public/verificar'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
@@ -41,6 +42,7 @@ import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
 import { Route as ApiCronMaintenanceRouteImport } from './routes/api/cron/maintenance'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAdminUploadRouteImport } from './routes/api/admin/upload'
+import { Route as ApiAdminPushRouteImport } from './routes/api/admin/push'
 import { Route as ApiAdminMaintenanceRouteImport } from './routes/api/admin/maintenance'
 import { Route as ApiAdminEmailsRouteImport } from './routes/api/admin/emails'
 import { Route as ApiAdminDashboardRouteImport } from './routes/api/admin/dashboard'
@@ -148,6 +150,11 @@ const AdminBoletosRoute = AdminBoletosRouteImport.update({
   path: '/boletos',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminAvisosRoute = AdminAvisosRouteImport.update({
+  id: '/avisos',
+  path: '/avisos',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminAnalyticsRoute = AdminAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
@@ -237,6 +244,11 @@ const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
 const ApiAdminUploadRoute = ApiAdminUploadRouteImport.update({
   id: '/api/admin/upload',
   path: '/api/admin/upload',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminPushRoute = ApiAdminPushRouteImport.update({
+  id: '/api/admin/push',
+  path: '/api/admin/push',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminMaintenanceRoute = ApiAdminMaintenanceRouteImport.update({
@@ -449,6 +461,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof PublicLoginRoute
   '/verificar': typeof PublicVerificarRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/avisos': typeof AdminAvisosRoute
   '/admin/boletos': typeof AdminBoletosRoute
   '/admin/compras': typeof AdminComprasRoute
   '/admin/config': typeof AdminConfigRoute
@@ -468,6 +481,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
+  '/api/admin/push': typeof ApiAdminPushRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
@@ -517,6 +531,7 @@ export interface FileRoutesByTo {
   '/login': typeof PublicLoginRoute
   '/verificar': typeof PublicVerificarRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/avisos': typeof AdminAvisosRoute
   '/admin/boletos': typeof AdminBoletosRoute
   '/admin/compras': typeof AdminComprasRoute
   '/admin/config': typeof AdminConfigRoute
@@ -536,6 +551,7 @@ export interface FileRoutesByTo {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
+  '/api/admin/push': typeof ApiAdminPushRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
@@ -588,6 +604,7 @@ export interface FileRoutesById {
   '/_public/login': typeof PublicLoginRoute
   '/_public/verificar': typeof PublicVerificarRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
+  '/admin/avisos': typeof AdminAvisosRoute
   '/admin/boletos': typeof AdminBoletosRoute
   '/admin/compras': typeof AdminComprasRoute
   '/admin/config': typeof AdminConfigRoute
@@ -608,6 +625,7 @@ export interface FileRoutesById {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
+  '/api/admin/push': typeof ApiAdminPushRoute
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
@@ -661,6 +679,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verificar'
     | '/admin/analytics'
+    | '/admin/avisos'
     | '/admin/boletos'
     | '/admin/compras'
     | '/admin/config'
@@ -680,6 +699,7 @@ export interface FileRouteTypes {
     | '/api/admin/dashboard'
     | '/api/admin/emails'
     | '/api/admin/maintenance'
+    | '/api/admin/push'
     | '/api/admin/upload'
     | '/api/auth/$'
     | '/api/cron/maintenance'
@@ -729,6 +749,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/verificar'
     | '/admin/analytics'
+    | '/admin/avisos'
     | '/admin/boletos'
     | '/admin/compras'
     | '/admin/config'
@@ -748,6 +769,7 @@ export interface FileRouteTypes {
     | '/api/admin/dashboard'
     | '/api/admin/emails'
     | '/api/admin/maintenance'
+    | '/api/admin/push'
     | '/api/admin/upload'
     | '/api/auth/$'
     | '/api/cron/maintenance'
@@ -799,6 +821,7 @@ export interface FileRouteTypes {
     | '/_public/login'
     | '/_public/verificar'
     | '/admin/analytics'
+    | '/admin/avisos'
     | '/admin/boletos'
     | '/admin/compras'
     | '/admin/config'
@@ -819,6 +842,7 @@ export interface FileRouteTypes {
     | '/api/admin/dashboard'
     | '/api/admin/emails'
     | '/api/admin/maintenance'
+    | '/api/admin/push'
     | '/api/admin/upload'
     | '/api/auth/$'
     | '/api/cron/maintenance'
@@ -875,6 +899,7 @@ export interface RootRouteChildren {
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
   ApiAdminEmailsRoute: typeof ApiAdminEmailsRouteWithChildren
   ApiAdminMaintenanceRoute: typeof ApiAdminMaintenanceRoute
+  ApiAdminPushRoute: typeof ApiAdminPushRoute
   ApiAdminUploadRoute: typeof ApiAdminUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronMaintenanceRoute: typeof ApiCronMaintenanceRoute
@@ -996,6 +1021,13 @@ declare module '@tanstack/react-router' {
       path: '/boletos'
       fullPath: '/admin/boletos'
       preLoaderRoute: typeof AdminBoletosRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/avisos': {
+      id: '/admin/avisos'
+      path: '/avisos'
+      fullPath: '/admin/avisos'
+      preLoaderRoute: typeof AdminAvisosRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/analytics': {
@@ -1122,6 +1154,13 @@ declare module '@tanstack/react-router' {
       path: '/api/admin/upload'
       fullPath: '/api/admin/upload'
       preLoaderRoute: typeof ApiAdminUploadRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/push': {
+      id: '/api/admin/push'
+      path: '/api/admin/push'
+      fullPath: '/api/admin/push'
+      preLoaderRoute: typeof ApiAdminPushRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/admin/maintenance': {
@@ -1420,6 +1459,7 @@ const AdminRifasRouteWithChildren = AdminRifasRoute._addFileChildren(
 
 interface AdminRouteRouteChildren {
   AdminAnalyticsRoute: typeof AdminAnalyticsRoute
+  AdminAvisosRoute: typeof AdminAvisosRoute
   AdminBoletosRoute: typeof AdminBoletosRoute
   AdminComprasRoute: typeof AdminComprasRoute
   AdminConfigRoute: typeof AdminConfigRoute
@@ -1434,6 +1474,7 @@ interface AdminRouteRouteChildren {
 
 const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminAnalyticsRoute: AdminAnalyticsRoute,
+  AdminAvisosRoute: AdminAvisosRoute,
   AdminBoletosRoute: AdminBoletosRoute,
   AdminComprasRoute: AdminComprasRoute,
   AdminConfigRoute: AdminConfigRoute,
@@ -1599,6 +1640,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
   ApiAdminEmailsRoute: ApiAdminEmailsRouteWithChildren,
   ApiAdminMaintenanceRoute: ApiAdminMaintenanceRoute,
+  ApiAdminPushRoute: ApiAdminPushRoute,
   ApiAdminUploadRoute: ApiAdminUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronMaintenanceRoute: ApiCronMaintenanceRoute,

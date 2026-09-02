@@ -13,6 +13,17 @@ import {
   notificationPermission,
 } from "@/features/pwa/pwa-capability"
 import {
+  PWA_INSTALL_AFTER_NOTIFY_LINE,
+  PWA_INSTALL_CTA,
+  PWA_INSTALL_IOS_LINE,
+  PWA_INSTALL_LINE,
+  PWA_INSTALL_TITLE,
+  PWA_NOTIFY_BLOCKED_DONE,
+  PWA_NOTIFY_CTA,
+  PWA_NOTIFY_LINE,
+  PWA_NOTIFY_TITLE,
+} from "@/features/pwa/pwa-copy"
+import {
   INSTALL_COOLDOWN_MS,
   NOTIFY_COOLDOWN_MS,
   readPwaStorage,
@@ -24,7 +35,6 @@ const SHEET_DELAY_MS = 2800
 const STANDALONE_SHEET_DELAY_MS = 600
 
 export type PwaEngageCopy = {
-  eyebrow: string
   title: string
   description: string
   primaryLabel: string
@@ -74,58 +84,37 @@ export function usePwaEngage() {
 
   const copy: PwaEngageCopy =
     sheetKind === "install"
-      ? installAfterNotify
+      ? {
+          title: PWA_INSTALL_TITLE,
+          description: installAfterNotify
+            ? PWA_INSTALL_AFTER_NOTIFY_LINE
+            : needsIosInstall
+              ? PWA_INSTALL_IOS_LINE
+              : PWA_INSTALL_LINE,
+          primaryLabel: PWA_INSTALL_CTA,
+          primaryKind: "install",
+        }
+      : notifyComplete && standalone
         ? {
-            eyebrow: "Avisos activados",
-            title: "Ahora instala Yoiber Rifas",
-            description:
-              "Último paso. Así la abres en un toque y no se te pierde. Las dinámicas y rifas te llegan más rápido que a los demás.",
-            primaryLabel: "Instalar Yoiber Rifas",
-            primaryKind: "install",
-          }
-        : needsIosInstall
-          ? {
-              eyebrow: "En tu pantalla de inicio",
-              title: "Instala Yoiber Rifas",
-              description:
-                "En iPhone los avisos solo funcionan desde la app. Un toque y te enteras de dinámicas, promociones y rifas más rápido que los demás.",
-              primaryLabel: "Instalar app",
-              primaryKind: "install",
-            }
-          : {
-              eyebrow: "En tu teléfono",
-              title: "Instala Yoiber Rifas",
-              description:
-                "Ábrela en un toque, sin buscar el link. Te enteras de dinámicas, promociones, rifas y novedades más rápido que los demás.",
-              primaryLabel: "Instalar app",
-              primaryKind: "install",
-            }
-        : notifyComplete && standalone
-        ? {
-            eyebrow: "Listo",
-            title: "Ya estás dentro",
-            description:
-              "Te vamos a avisar de dinámicas, promociones, rifas y novedades apenas salgan.",
+            title: "Listo",
+            description: "Ya te llegan las notificaciones.",
             primaryLabel: "Entendido",
             primaryKind: "notify",
           }
         : notifyBlocked
           ? {
-              eyebrow: "Están apagados",
-              title: "Activa los avisos",
+              title: PWA_NOTIFY_TITLE,
               description:
                 platform === "ios"
                   ? "En Ajustes busca Yoiber Rifas y enciende Notificaciones."
                   : "Toca el candado junto a la dirección, luego Notificaciones y Permitir.",
-              primaryLabel: "Ya los activé",
+              primaryLabel: PWA_NOTIFY_BLOCKED_DONE,
               primaryKind: "notify",
             }
           : {
-              eyebrow: "Antes que el resto",
-              title: "Activa los avisos",
-              description:
-                "Así te enteras de dinámicas, promociones, rifas y novedades más rápido que los demás.",
-              primaryLabel: "Activar avisos",
+              title: PWA_NOTIFY_TITLE,
+              description: PWA_NOTIFY_LINE,
+              primaryLabel: PWA_NOTIFY_CTA,
               primaryKind: "notify",
             }
 
@@ -312,7 +301,7 @@ export function usePwaEngage() {
 
   const enableNotifications = useCallback(async () => {
     if (!vapidPublicKey) {
-      setError("Los avisos no están configurados todavía.")
+      setError("Las notificaciones no están configuradas todavía.")
       return false
     }
     setBusy(true)
@@ -363,7 +352,7 @@ export function usePwaEngage() {
             : "Siguen bloqueados. Toca el candado y permite notificaciones.",
         )
       } else {
-        setError("No se pudieron activar los avisos. Intenta de nuevo.")
+        setError("No se pudieron activar las notificaciones. Intenta de nuevo.")
       }
       return false
     } finally {

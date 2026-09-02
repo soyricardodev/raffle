@@ -111,11 +111,11 @@ export function InAppBrowserGate() {
           id="inapp-gate-title"
           className="font-heading text-2xl leading-tight font-semibold tracking-tight"
         >
-          Ábrelo en {gate.phoneType === "ios" ? "Safari" : "Chrome"} para instalar y recibir avisos
+          Ábrelo en {gate.phoneType === "ios" ? "Safari" : "Chrome"} para instalar y recibir notificaciones
         </h1>
         <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-          Desde {source} no se puede instalar {siteName} ni activar avisos. Ábrelo en el navegador
-          para enterarte de dinámicas, promociones, rifas y novedades más rápido que los demás.
+          Desde {source} no se puede instalar {siteName} ni activar notificaciones. Ábrelo en el
+          navegador.
         </p>
 
         {gate.phoneType === "ios" ? (
@@ -140,7 +140,7 @@ export function InAppBrowserGate() {
               <span className="bg-foreground text-background flex size-6 shrink-0 items-center justify-center rounded-full text-xs font-bold">
                 3
               </span>
-              <span>Ahí instala la app y activa los avisos</span>
+              <span>Ahí instala la app y activa las notificaciones</span>
             </li>
           </ol>
         ) : (
@@ -172,13 +172,13 @@ export function InAppBrowserGate() {
             className="text-muted-foreground hover:text-foreground mt-1 min-h-11 text-center text-xs underline-offset-4 hover:underline"
             onClick={skip}
           >
-            Seguir aquí, sin avisos ni app
+            Seguir aquí, sin notificaciones ni app
           </button>
         </div>
 
         <p className="text-muted-foreground mt-4 flex items-center justify-center gap-1.5 text-center text-[11px]">
           <Bell className="size-3.5" aria-hidden />
-          Los avisos solo funcionan en Chrome o Safari
+          Las notificaciones solo funcionan en Chrome o Safari
         </p>
       </div>
     </div>

@@ -1,12 +1,21 @@
-export const PUSH_MILESTONE_IDS = ["new_raffle", "sold_10", "sold_50", "remaining_10"] as const
+export const PUSH_MILESTONE_IDS = [
+  "new_raffle",
+  "sold_10",
+  "remaining_70",
+  "sold_50",
+  "remaining_30",
+  "remaining_10",
+] as const
 
 export type PushMilestoneId = (typeof PUSH_MILESTONE_IDS)[number]
 
 export const SALE_PUSH_MILESTONES = [
   { id: "sold_10", minPercent: 10 },
+  { id: "remaining_70", minPercent: 30 },
   { id: "sold_50", minPercent: 50 },
+  { id: "remaining_30", minPercent: 70 },
   { id: "remaining_10", minPercent: 90 },
-] as const satisfies ReadonlyArray<{ id: PushMilestoneId; minPercent: number }>
+] as const satisfies ReadonlyArray<{ id: Exclude<PushMilestoneId, "new_raffle">; minPercent: number }>
 
 export function parsePushMilestonesSent(raw: string | null | undefined): PushMilestoneId[] {
   if (!raw) return []
@@ -45,9 +54,10 @@ export function newlyReachedSaleMilestones(
 
 /** Prefer the most urgent milestone when several are crossed in one sale. */
 export function highestSaleMilestone(ids: readonly PushMilestoneId[]): PushMilestoneId | null {
-  if (ids.includes("remaining_10")) return "remaining_10"
-  if (ids.includes("sold_50")) return "sold_50"
-  if (ids.includes("sold_10")) return "sold_10"
+  for (let i = SALE_PUSH_MILESTONES.length - 1; i >= 0; i--) {
+    const id = SALE_PUSH_MILESTONES[i]!.id
+    if (ids.includes(id)) return id
+  }
   return null
 }
 

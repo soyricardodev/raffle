@@ -29,25 +29,48 @@ describe("newlyReachedSaleMilestones", () => {
     expect(newlyReachedSaleMilestones(100, 1000, [])).toEqual(["sold_10"])
   })
 
+  it("returns remaining_70 at 30% sold", () => {
+    expect(newlyReachedSaleMilestones(300, 1000, ["sold_10"])).toEqual(["remaining_70"])
+  })
+
+  it("returns remaining_30 at 70% sold", () => {
+    expect(newlyReachedSaleMilestones(700, 1000, ["sold_10", "remaining_70", "sold_50"])).toEqual([
+      "remaining_30",
+    ])
+  })
+
   it("returns all crossed milestones when jumping", () => {
-    expect(newlyReachedSaleMilestones(500, 1000, [])).toEqual(["sold_10", "sold_50"])
+    expect(newlyReachedSaleMilestones(500, 1000, [])).toEqual([
+      "sold_10",
+      "remaining_70",
+      "sold_50",
+    ])
     expect(newlyReachedSaleMilestones(900, 1000, [])).toEqual([
       "sold_10",
+      "remaining_70",
       "sold_50",
+      "remaining_30",
       "remaining_10",
     ])
   })
 
   it("skips milestones already sent", () => {
-    expect(newlyReachedSaleMilestones(900, 1000, ["sold_10", "sold_50"])).toEqual(["remaining_10"])
-    expect(newlyReachedSaleMilestones(500, 1000, ["sold_10", "sold_50"])).toEqual([])
+    expect(newlyReachedSaleMilestones(900, 1000, ["sold_10", "sold_50"])).toEqual([
+      "remaining_70",
+      "remaining_30",
+      "remaining_10",
+    ])
+    expect(
+      newlyReachedSaleMilestones(500, 1000, ["sold_10", "remaining_70", "sold_50"]),
+    ).toEqual([])
   })
 })
 
 describe("highestSaleMilestone", () => {
-  it("picks remaining_10 over earlier ones", () => {
+  it("picks the most urgent crossed milestone", () => {
     expect(highestSaleMilestone(["sold_10", "sold_50", "remaining_10"])).toBe("remaining_10")
-    expect(highestSaleMilestone(["sold_10", "sold_50"])).toBe("sold_50")
+    expect(highestSaleMilestone(["sold_10", "remaining_70", "sold_50"])).toBe("sold_50")
+    expect(highestSaleMilestone(["sold_10", "remaining_70"])).toBe("remaining_70")
     expect(highestSaleMilestone(["sold_10"])).toBe("sold_10")
     expect(highestSaleMilestone([])).toBeNull()
   })

@@ -5,10 +5,12 @@ import { getDb } from "@/lib/db.server"
 import { resetEnvCache } from "@/lib/env"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import {
+  listAdminPushSubscribers,
   notifyNewRaffle,
   notifySaleMilestones,
   resetWebPushClientForTests,
   savePushSubscription,
+  sendManualBroadcast,
   setWebPushClientForTests,
 } from "./push.service"
 
@@ -72,12 +74,13 @@ describe("push.service milestones", () => {
       title: string
       tag: string
     }
-    expect(payload.title).toMatch(/mitad/i)
+    expect(payload.title).toBe("Último 50% disponible.")
     expect(payload.tag).toBe(`raffle-${raffleId}-sold_50`)
 
     const db = getDb()
     const [row] = await db.select().from(raffles).where(eq(raffles.id, raffleId)).limit(1)
     expect(row?.pushMilestonesSent).toContain("sold_10")
+    expect(row?.pushMilestonesSent).toContain("remaining_70")
     expect(row?.pushMilestonesSent).toContain("sold_50")
 
     sendNotification.mockClear()
@@ -90,10 +93,31 @@ describe("push.service milestones", () => {
     await notifyNewRaffle(raffleId)
     expect(sendNotification).toHaveBeenCalledTimes(1)
     const payload = JSON.parse(sendNotification.mock.calls[0]![1] as string) as { title: string }
-    expect(payload.title).toMatch(/nueva rifa/i)
+    expect(payload.title).toBe("Nueva bendición liberada.")
 
     sendNotification.mockClear()
     await notifyNewRaffle(raffleId)
     expect(sendNotification).not.toHaveBeenCalled()
+  })
+
+  it("lists the device without leaking the endpoint and sends a manual aviso", async () => {
+    const listed = await listAdminPushSubscribers()
+    expect(listed.count).toBeGreaterThanOrEqual(1)
+    expect(listed.subscribers[0]?.device).toBe("Navegador")
+    expect(JSON.stringify(listed)).not.toMatch(/push\.example/)
+
+    sendNotification.mockClear()
+    const result = await sendManualBroadcast({
+      title: "Hola",
+      body: "Esto es una prueba",
+    })
+    expect(result.sent).toBeGreaterThanOrEqual(1)
+    expect(sendNotification).toHaveBeenCalled()
+    const payload = JSON.parse(sendNotification.mock.calls[0]![1] as string) as {
+      title: string
+      body: string
+    }
+    expect(payload.title).toBe("Hola")
+    expect(payload.body).toBe("Esto es una prueba")
   })
 })

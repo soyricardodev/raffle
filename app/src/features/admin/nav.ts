@@ -1,6 +1,7 @@
 import type { LucideIcon } from "lucide-react"
 import {
   BarChart3,
+  Bell,
   Calendar,
   CreditCard,
   LayoutDashboard,
@@ -84,6 +85,13 @@ export const adminNavItems: Array<AdminNavItem> = [
     href: "/admin/emails",
     icon: Mail,
     description: "Logs y pruebas",
+  },
+  {
+    name: "Avisos",
+    shortName: "Avisos",
+    href: "/admin/avisos",
+    icon: Bell,
+    description: "Push a teléfonos",
   },
 ]
 

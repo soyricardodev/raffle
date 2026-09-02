@@ -26,7 +26,7 @@ export function IosInstallSteps() {
           3
         </span>
         <span className="text-sm leading-snug">
-          Abre el icono y toca <strong>Activar avisos</strong>
+          Abre el icono y toca <strong>Activar</strong>
         </span>
       </li>
     </ol>

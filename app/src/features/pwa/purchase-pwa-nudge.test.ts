@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest"
 import { resolvePurchasePwaNudge } from "./purchase-pwa-nudge"
 
 describe("resolvePurchasePwaNudge", () => {
-  it("hides when the app is installed and avisos are on", () => {
+  it("hides when the app is installed and notifications are on", () => {
     expect(
       resolvePurchasePwaNudge({
         standalone: true,
@@ -38,7 +38,7 @@ describe("resolvePurchasePwaNudge", () => {
     ).toBe("ios-install")
   })
 
-  it("falls back to avisos when install is not available", () => {
+  it("falls back to notifications when install is not available", () => {
     expect(
       resolvePurchasePwaNudge({
         standalone: false,

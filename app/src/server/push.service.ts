@@ -1,3 +1,4 @@
+import { ValidationError } from "@raffle/shared/errors"
 import { raffles } from "@raffle/shared/db"
 import {
   highestSaleMilestone,
@@ -8,6 +9,7 @@ import {
   serializePushMilestonesSent,
 } from "@raffle/shared/push"
 import { eq } from "drizzle-orm"
+import { describePushDevice } from "@/features/admin/push/describe-push-device"
 import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
@@ -112,17 +114,64 @@ export async function removePushSubscription(endpoint: string): Promise<void> {
   await pushRepo.deletePushSubscriptionByEndpoint(endpoint)
 }
 
+export type AdminPushSubscriber = {
+  id: number
+  device: string
+  createdAt: string
+  lastSeenAt: string
+}
+
+function toIso(value: Date | number | string): string {
+  const date = value instanceof Date ? value : new Date(value)
+  return date.toISOString()
+}
+
+export async function listAdminPushSubscribers(): Promise<{
+  enabled: boolean
+  count: number
+  subscribers: AdminPushSubscriber[]
+}> {
+  const enabled = isWebPushConfigured()
+  const rows = await pushRepo.listPushSubscriptionSummaries()
+  return {
+    enabled,
+    count: rows.length,
+    subscribers: rows.map((row) => ({
+      id: row.id,
+      device: describePushDevice(row.userAgent),
+      createdAt: toIso(row.createdAt),
+      lastSeenAt: toIso(row.lastSeenAt),
+    })),
+  }
+}
+
+export async function sendManualBroadcast(input: {
+  title: string
+  body: string
+  url?: string
+}): Promise<{ sent: number; removed: number; total: number }> {
+  if (!isWebPushConfigured()) {
+    throw new ValidationError("Los avisos no están configurados en el servidor")
+  }
+  return sendPushToAll({
+    title: input.title,
+    body: input.body,
+    url: input.url?.trim() || "/",
+    tag: `manual-${Date.now()}`,
+  })
+}
+
 export async function sendPushToAll(
   payload: PushPayload,
-): Promise<{ sent: number; removed: number }> {
+): Promise<{ sent: number; removed: number; total: number }> {
   const client = await loadWebPush()
   if (!client) {
     logger.warn("push:skip_unconfigured")
-    return { sent: 0, removed: 0 }
+    return { sent: 0, removed: 0, total: 0 }
   }
 
   const rows = await pushRepo.listPushSubscriptions()
-  if (rows.length === 0) return { sent: 0, removed: 0 }
+  if (rows.length === 0) return { sent: 0, removed: 0, total: 0 }
 
   const body = JSON.stringify({
     title: payload.title,
@@ -176,32 +225,24 @@ export async function sendPushToAll(
   }
 
   logger.info({ sent, removed, total: rows.length, tag: payload.tag }, "push:broadcast")
-  return { sent, removed }
+  return { sent, removed, total: rows.length }
 }
 
 function saleCopy(milestone: PushMilestoneId, raffleName: string): { title: string; body: string } {
-  const name = raffleName.trim() || "la rifa"
+  const name = raffleName.trim() || "Yoiber Rifas"
   switch (milestone) {
     case "new_raffle":
-      return {
-        title: "¡Nueva rifa al aire!",
-        body: `${name}. Entra ya por tus boletos.`,
-      }
+      return { title: "Nueva bendición liberada.", body: name }
     case "sold_10":
-      return {
-        title: "Ya va el 10%",
-        body: `${name} se está moviendo. Asegura tus boletos.`,
-      }
+      return { title: "Ya se fue el 10%.", body: name }
+    case "remaining_70":
+      return { title: "Último 70% disponible.", body: name }
     case "sold_50":
-      return {
-        title: "¡Mitad vendida!",
-        body: `${name} ya va por el 50%. No te quedes fuera.`,
-      }
+      return { title: "Último 50% disponible.", body: name }
+    case "remaining_30":
+      return { title: "¡Lo que queda! Último 30% disponible.", body: name }
     case "remaining_10":
-      return {
-        title: "Queda el 10%",
-        body: `Últimos boletos de ${name}. Es ahora o nunca.`,
-      }
+      return { title: "¡Última oportunidad! 10% es lo que queda.", body: name }
   }
 }
 

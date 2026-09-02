@@ -1,4 +1,4 @@
-import { Bell, Check, Download, Smartphone, Sparkles, Ticket, Zap } from "lucide-react"
+import { Bell, Download } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Sheet,
@@ -11,42 +11,6 @@ import { PWA_ICON_192, PWA_NAME } from "@/features/pwa/pwa-brand"
 import type { usePwaEngage } from "@/features/pwa/use-pwa-engage"
 import { cn } from "@/lib/utils"
 
-const NOTIFY_BENEFITS = [
-  {
-    icon: Sparkles,
-    title: "Dinámicas y promociones",
-    detail: "Las ves apenas salen, no cuando ya pasaron.",
-  },
-  {
-    icon: Ticket,
-    title: "Rifas nuevas",
-    detail: "Te enteras más rápido que los demás.",
-  },
-  {
-    icon: Bell,
-    title: "Novedades",
-    detail: "Lo que vamos a lanzar, directo a tu teléfono.",
-  },
-] as const
-
-const INSTALL_BENEFITS = [
-  {
-    icon: Zap,
-    title: "Un toque y estás dentro",
-    detail: "Sin buscar el link ni abrir Instagram.",
-  },
-  {
-    icon: Bell,
-    title: "Los avisos te llegan igual",
-    detail: "Promos, rifas y novedades, al instante.",
-  },
-  {
-    icon: Smartphone,
-    title: "Siempre a la mano",
-    detail: "En tu pantalla de inicio, como cualquier app.",
-  },
-] as const
-
 function blockedNotifySteps(platform: "ios" | "android" | "desktop") {
   if (platform === "ios") {
     return [
@@ -56,7 +20,7 @@ function blockedNotifySteps(platform: "ios" | "android" | "desktop") {
   }
   return [
     { title: "Toca el candado", detail: "Está junto a la dirección, arriba." },
-    { title: "Notificaciones → Permitir", detail: "Luego vuelve y toca Ya los activé." },
+    { title: "Notificaciones → Permitir", detail: "Luego vuelve y toca Ya las activé." },
   ]
 }
 
@@ -64,9 +28,7 @@ type Engage = ReturnType<typeof usePwaEngage>
 
 export function PwaEngageSheet({ engage }: { engage: Engage }) {
   const isInstall = engage.sheetKind === "install"
-  const fromNotify = engage.installAfterNotify
   const blocked = engage.notifyBlocked && !isInstall
-  const benefits = isInstall ? INSTALL_BENEFITS : NOTIFY_BENEFITS
   const steps = blocked ? blockedNotifySteps(engage.platform) : null
 
   return (
@@ -84,26 +46,7 @@ export function PwaEngageSheet({ engage }: { engage: Engage }) {
       >
         <div className="bg-muted-foreground/25 mx-auto mt-2.5 h-1 w-10 shrink-0 rounded-full" />
 
-        {fromNotify && isInstall ? (
-          <div
-            className={cn(
-              "mx-5 mt-4 flex items-center gap-3 rounded-2xl border px-3.5 py-3",
-              "border-emerald-500/35 bg-emerald-500/12",
-            )}
-          >
-            <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-white shadow-[0_6px_16px_rgb(16_185_129_/_45%)]">
-              <Check className="size-5" strokeWidth={2.5} aria-hidden />
-            </span>
-            <span>
-              <span className="block text-sm font-semibold">Avisos activados</span>
-              <span className="text-muted-foreground block text-xs leading-snug">
-                Último paso: instala {PWA_NAME} en tu teléfono
-              </span>
-            </span>
-          </div>
-        ) : null}
-
-        <div className="flex justify-center px-5 pt-4 pb-1">
+        <div className="flex justify-center px-5 pt-5 pb-1">
           {isInstall ? (
             <img
               src={PWA_ICON_192}
@@ -123,9 +66,6 @@ export function PwaEngageSheet({ engage }: { engage: Engage }) {
         </div>
 
         <SheetHeader className="shrink-0 gap-2 px-5 pt-3 pr-12 pb-1 text-left">
-          <p className="text-primary text-[11px] font-semibold tracking-wide uppercase">
-            {engage.copy.eyebrow}
-          </p>
           <SheetTitle className="text-[1.65rem] leading-tight font-semibold tracking-tight">
             {engage.copy.title}
           </SheetTitle>
@@ -134,30 +74,25 @@ export function PwaEngageSheet({ engage }: { engage: Engage }) {
           </SheetDescription>
         </SheetHeader>
 
-        <ul className="flex flex-col gap-2 px-5 py-4">
-          {(steps ?? benefits).map((item, index) => (
-            <li
-              key={item.title}
-              className="bg-muted/60 flex items-start gap-3 rounded-2xl px-3.5 py-3"
-            >
-              <span className="bg-primary/15 text-primary mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl">
-                {steps ? (
-                  <span className="text-sm font-semibold">{index + 1}</span>
-                ) : "icon" in item ? (
-                  <item.icon className="size-5" aria-hidden />
-                ) : (
-                  <Bell className="size-5" aria-hidden />
-                )}
-              </span>
-              <span>
-                <span className="block text-sm font-semibold">{item.title}</span>
-                <span className="text-muted-foreground mt-0.5 block text-xs leading-relaxed">
-                  {item.detail}
+        {steps ? (
+          <ol className="flex flex-col gap-2 px-5 py-4">
+            {steps.map((item, index) => (
+              <li key={item.title} className="bg-muted/60 flex items-start gap-3 rounded-2xl px-3.5 py-3">
+                <span className="bg-primary/15 text-primary mt-0.5 flex size-10 shrink-0 items-center justify-center rounded-xl text-sm font-semibold">
+                  {index + 1}
                 </span>
-              </span>
-            </li>
-          ))}
-        </ul>
+                <span>
+                  <span className="block text-sm font-semibold">{item.title}</span>
+                  <span className="text-muted-foreground mt-0.5 block text-xs leading-relaxed">
+                    {item.detail}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <div className="h-4" />
+        )}
 
         {engage.error ? (
           <p className="text-destructive px-5 pb-2 text-sm" role="alert">
