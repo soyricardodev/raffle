@@ -37,18 +37,25 @@ export function serializePushMilestonesSent(ids: readonly PushMilestoneId[]): st
   return JSON.stringify([...new Set(ids)])
 }
 
-/** Percent of tickets sold (0–100). */
-export function soldPercent(sold: number, total: number): number {
-  if (!Number.isFinite(sold) || !Number.isFinite(total) || total <= 0) return 0
-  return (Math.max(0, sold) / total) * 100
+/** Tickets that already count toward raffle progress (sold + reserved). */
+export function occupiedTickets(sold: number, reserved: number): number {
+  const soldCount = Number.isFinite(sold) ? Math.max(0, sold) : 0
+  const reservedCount = Number.isFinite(reserved) ? Math.max(0, reserved) : 0
+  return soldCount + reservedCount
+}
+
+/** Percent of tickets occupied, sold or reserved (0–100). */
+export function soldPercent(occupied: number, total: number): number {
+  if (!Number.isFinite(occupied) || !Number.isFinite(total) || total <= 0) return 0
+  return (Math.max(0, occupied) / total) * 100
 }
 
 export function newlyReachedSaleMilestones(
-  sold: number,
+  occupied: number,
   total: number,
   alreadySent: readonly string[],
 ): PushMilestoneId[] {
-  const percent = soldPercent(sold, total)
+  const percent = soldPercent(occupied, total)
   const sent = new Set(alreadySent)
   return SALE_PUSH_MILESTONES.filter((m) => percent >= m.minPercent && !sent.has(m.id)).map(
     (m) => m.id,
@@ -106,11 +113,11 @@ export function saleMilestoneTriggerPercent(id: Exclude<PushMilestoneId, "new_ra
   return SALE_PUSH_MILESTONES.find((m) => m.id === id)?.minPercent ?? 0
 }
 
-/** Tickets still needed to reach a sold-percent threshold. */
-export function ticketsToReachPercent(sold: number, total: number, minPercent: number): number {
-  if (!Number.isFinite(sold) || !Number.isFinite(total) || total <= 0) return 0
+/** Tickets still needed to reach an occupied-percent threshold. */
+export function ticketsToReachPercent(occupied: number, total: number, minPercent: number): number {
+  if (!Number.isFinite(occupied) || !Number.isFinite(total) || total <= 0) return 0
   const needed = Math.ceil((minPercent / 100) * total)
-  return Math.max(0, needed - Math.max(0, sold))
+  return Math.max(0, needed - Math.max(0, occupied))
 }
 
 export const PUSH_BROADCAST_KINDS = ["milestone", "promotion", "manual"] as const
@@ -167,10 +174,12 @@ function hasMilestoneLogs(broadcasts: readonly PushPlanBroadcast[]): boolean {
 export function buildRaffleMilestonePlan(input: {
   raffleName: string
   ticketsSold: number
+  ticketsReserved?: number
   totalTickets: number
   milestonesSent: readonly PushMilestoneId[]
   broadcasts: readonly PushPlanBroadcast[]
 }): RafflePushPlanItem[] {
+  const occupied = occupiedTickets(input.ticketsSold, input.ticketsReserved ?? 0)
   const sentIds = new Set(input.milestonesSent)
   const logged = hasMilestoneLogs(input.broadcasts)
   const items: RafflePushPlanItem[] = PUSH_MILESTONE_IDS.map((id) => {
@@ -180,7 +189,7 @@ export function buildRaffleMilestonePlan(input: {
     const ticketsRemaining =
       triggerPercent == null
         ? null
-        : ticketsToReachPercent(input.ticketsSold, input.totalTickets, triggerPercent)
+        : ticketsToReachPercent(occupied, input.totalTickets, triggerPercent)
 
     let status: PushPlanItemStatus = "upcoming"
     let sentAt: string | null = null

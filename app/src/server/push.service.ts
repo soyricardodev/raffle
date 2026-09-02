@@ -6,6 +6,7 @@ import {
   highestSaleMilestone,
   mergePushMilestones,
   newlyReachedSaleMilestones,
+  occupiedTickets,
   type PushBroadcastKind,
   type PushMilestoneId,
   parsePushMilestonesSent,
@@ -299,18 +300,21 @@ async function loadAdminPushPlan(): Promise<AdminPushPlan> {
     createdAt: toIso(row.createdAt),
   }))
 
+  const occupied = occupiedTickets(raffle.ticketsSold, raffle.ticketsReserved)
+
   return {
     raffle: {
       id: raffle.id,
       name: raffle.name,
       status: raffle.status,
-      ticketsSold: raffle.ticketsSold,
+      ticketsSold: occupied,
       totalTickets: raffle.totalTickets,
-      soldPercent: soldPercent(raffle.ticketsSold, raffle.totalTickets),
+      soldPercent: soldPercent(occupied, raffle.totalTickets),
     },
     milestones: buildRaffleMilestonePlan({
       raffleName: raffle.name,
       ticketsSold: raffle.ticketsSold,
+      ticketsReserved: raffle.ticketsReserved,
       totalTickets: raffle.totalTickets,
       milestonesSent: parsePushMilestonesSent(raffle.pushMilestonesSent),
       broadcasts,
@@ -515,6 +519,7 @@ export async function notifySaleMilestones(raffleId: number): Promise<void> {
         name: raffles.name,
         imageUrl: raffles.imageUrl,
         ticketsSold: raffles.ticketsSold,
+        ticketsReserved: raffles.ticketsReserved,
         totalTickets: raffles.totalTickets,
         pushMilestonesSent: raffles.pushMilestonesSent,
       })
@@ -524,7 +529,8 @@ export async function notifySaleMilestones(raffleId: number): Promise<void> {
     if (!row) return null
 
     const already = parsePushMilestonesSent(row.pushMilestonesSent)
-    const newly = newlyReachedSaleMilestones(row.ticketsSold, row.totalTickets, already)
+    const occupied = occupiedTickets(row.ticketsSold, row.ticketsReserved)
+    const newly = newlyReachedSaleMilestones(occupied, row.totalTickets, already)
     const highest = highestSaleMilestone(newly)
     if (!highest) return null
 

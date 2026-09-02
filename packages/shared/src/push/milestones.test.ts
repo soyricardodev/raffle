@@ -5,11 +5,20 @@ import {
   highestSaleMilestone,
   mergePushMilestones,
   newlyReachedSaleMilestones,
+  occupiedTickets,
   parsePushMilestonesSent,
   serializePushMilestonesSent,
   soldPercent,
   ticketsToReachPercent,
 } from "./milestones"
+
+describe("occupiedTickets", () => {
+  it("sums sold and reserved, ignoring invalid values", () => {
+    expect(occupiedTickets(30, 20)).toBe(50)
+    expect(occupiedTickets(-4, 10)).toBe(10)
+    expect(occupiedTickets(Number.NaN, 8)).toBe(8)
+  })
+})
 
 describe("soldPercent", () => {
   it("returns 0 for invalid totals", () => {
@@ -28,15 +37,15 @@ describe("newlyReachedSaleMilestones", () => {
     expect(newlyReachedSaleMilestones(99, 1000, [])).toEqual([])
   })
 
-  it("returns sold_10 at 10%", () => {
+  it("returns sold_10 at 10% occupied", () => {
     expect(newlyReachedSaleMilestones(100, 1000, [])).toEqual(["sold_10"])
   })
 
-  it("returns remaining_70 at 30% sold", () => {
+  it("returns remaining_70 at 30% occupied", () => {
     expect(newlyReachedSaleMilestones(300, 1000, ["sold_10"])).toEqual(["remaining_70"])
   })
 
-  it("returns remaining_30 at 70% sold", () => {
+  it("returns remaining_30 at 70% occupied", () => {
     expect(newlyReachedSaleMilestones(700, 1000, ["sold_10", "remaining_70", "sold_50"])).toEqual([
       "remaining_30",
     ])
@@ -136,6 +145,20 @@ describe("buildRaffleMilestonePlan", () => {
     const nextSale = items.find((row) => row.milestoneId === "remaining_30")
     expect(nextSale?.status).toBe("upcoming")
     expect(nextSale?.ticketsRemaining).toBe(10)
+  })
+
+  it("counts reserved tickets toward occupancy", () => {
+    const items = buildRaffleMilestonePlan({
+      raffleName: "iPhone 16",
+      ticketsSold: 8,
+      ticketsReserved: 22,
+      totalTickets: 100,
+      milestonesSent: ["sold_10"],
+      broadcasts: [],
+    })
+    expect(items.find((row) => row.milestoneId === "remaining_70")?.status).toBe("upcoming")
+    expect(items.find((row) => row.milestoneId === "remaining_70")?.ticketsRemaining).toBe(0)
+    expect(items.find((row) => row.milestoneId === "sold_50")?.ticketsRemaining).toBe(20)
   })
 
   it("treats claimed milestones as sent when there is no log yet", () => {

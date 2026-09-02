@@ -224,6 +224,8 @@ export async function createPurchase(params: CreatePurchaseParams) {
     "purchase:created",
   )
 
+  queueSaleMilestoneCheck(params.raffleId)
+
   return result
 }
 
@@ -292,8 +294,7 @@ export async function updatePurchaseStatus(
   }
 
   if (status === "approved") {
-    const { notifySaleMilestonesInBackground } = await import("./push.service")
-    notifySaleMilestonesInBackground(outcome.raffleId)
+    queueSaleMilestoneCheck(outcome.raffleId)
   }
 
   return outcome
@@ -348,7 +349,6 @@ export async function addTicketsToPurchase(
       newTotalAmount: newTotal / 100,
       additionalAmount: additional / 100,
       raffleId: purchase.raffleId,
-      soldTicketsChanged: ticketStatus === "sold",
     }
   }, purchaseRetryOptions)
 
@@ -361,10 +361,7 @@ export async function addTicketsToPurchase(
   })
   logger.info({ purchaseId, added: result.addedTickets.length }, "purchase:tickets_added")
 
-  if (result.soldTicketsChanged) {
-    const { notifySaleMilestonesInBackground } = await import("./push.service")
-    notifySaleMilestonesInBackground(result.raffleId)
-  }
+  queueSaleMilestoneCheck(result.raffleId)
 
   return result
 }
@@ -593,7 +590,14 @@ export async function reassignTicketsToPurchase(
     ticketNumbers: result.ticketNumbers,
   })
   logger.info({ purchaseId, reassigned: result.ticketNumbers.length }, "purchase:reassigned")
+  queueSaleMilestoneCheck(result.raffleId)
   return result
+}
+
+function queueSaleMilestoneCheck(raffleId: number): void {
+  void import("./push.service").then(({ notifySaleMilestonesInBackground }) => {
+    notifySaleMilestonesInBackground(raffleId)
+  })
 }
 
 export type ListAdminPurchasesParams = Parameters<typeof purchasesRepo.listAdminPurchases>[0]

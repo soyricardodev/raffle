@@ -109,6 +109,44 @@ describe("push.service milestones", () => {
     })
   })
 
+  it("sends the highest milestone from occupied tickets, not only sold", async () => {
+    const db = getDb()
+    const [row] = await db
+      .insert(raffles)
+      .values({
+        name: "Moto 0km",
+        totalTickets: 100,
+        priceBsCents: 500,
+        priceUsdCents: 100,
+        minPurchase: 1,
+        maxPurchase: 5,
+        status: "draft",
+        autoPauseEnabled: false,
+        ticketsAvailable: 40,
+        ticketsReserved: 55,
+        ticketsSold: 5,
+      })
+      .returning({ id: raffles.id })
+    const occupiedRaffleId = row!.id
+
+    sendNotification.mockClear()
+    await notifySaleMilestones(occupiedRaffleId)
+
+    expect(sendNotification).toHaveBeenCalledTimes(1)
+    const payload = JSON.parse(sendNotification.mock.calls[0]![1] as string) as {
+      title: string
+      tag: string
+    }
+    expect(payload.title).toBe("Último 50% disponible.")
+    expect(payload.tag).toBe(`raffle-${occupiedRaffleId}-sold_50`)
+
+    const [updated] = await db.select().from(raffles).where(eq(raffles.id, occupiedRaffleId)).limit(1)
+    expect(updated?.pushMilestonesSent).toContain("sold_10")
+    expect(updated?.pushMilestonesSent).toContain("remaining_70")
+    expect(updated?.pushMilestonesSent).toContain("sold_50")
+    expect(updated?.pushMilestonesSent).not.toContain("remaining_30")
+  })
+
   it("sends new raffle once", async () => {
     sendNotification.mockClear()
     await notifyNewRaffle(raffleId)
