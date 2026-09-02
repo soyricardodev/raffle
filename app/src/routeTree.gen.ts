@@ -35,6 +35,7 @@ import { Route as ApiRafflesFirstActiveRouteImport } from './routes/api/raffles/
 import { Route as ApiRafflesIdRouteImport } from './routes/api/raffles/$id'
 import { Route as ApiPwaManifestRouteImport } from './routes/api/pwa/manifest'
 import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
+import { Route as ApiPushInboxRouteImport } from './routes/api/push/inbox'
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchases.top-clients'
 import { Route as ApiPurchaseSuccessAnalyticsRouteImport } from './routes/api/purchase-success/analytics'
@@ -208,6 +209,11 @@ const ApiPwaManifestRoute = ApiPwaManifestRouteImport.update({
 const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
   id: '/api/push/subscribe',
   path: '/api/push/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushInboxRoute = ApiPushInboxRouteImport.update({
+  id: '/api/push/inbox',
+  path: '/api/push/inbox',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPushConfigRoute = ApiPushConfigRouteImport.update({
@@ -489,6 +495,7 @@ export interface FileRoutesByFullPath {
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/inbox': typeof ApiPushInboxRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/pwa/manifest': typeof ApiPwaManifestRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
@@ -559,6 +566,7 @@ export interface FileRoutesByTo {
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/inbox': typeof ApiPushInboxRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/pwa/manifest': typeof ApiPwaManifestRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
@@ -633,6 +641,7 @@ export interface FileRoutesById {
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/inbox': typeof ApiPushInboxRoute
   '/api/push/subscribe': typeof ApiPushSubscribeRoute
   '/api/pwa/manifest': typeof ApiPwaManifestRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
@@ -707,6 +716,7 @@ export interface FileRouteTypes {
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/push/config'
+    | '/api/push/inbox'
     | '/api/push/subscribe'
     | '/api/pwa/manifest'
     | '/api/raffles/$id'
@@ -777,6 +787,7 @@ export interface FileRouteTypes {
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/push/config'
+    | '/api/push/inbox'
     | '/api/push/subscribe'
     | '/api/pwa/manifest'
     | '/api/raffles/$id'
@@ -850,6 +861,7 @@ export interface FileRouteTypes {
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/push/config'
+    | '/api/push/inbox'
     | '/api/push/subscribe'
     | '/api/pwa/manifest'
     | '/api/raffles/$id'
@@ -907,6 +919,7 @@ export interface RootRouteChildren {
   ApiPurchaseSuccessAnalyticsRoute: typeof ApiPurchaseSuccessAnalyticsRoute
   ApiPurchasesTopClientsRoute: typeof ApiPurchasesTopClientsRoute
   ApiPushConfigRoute: typeof ApiPushConfigRoute
+  ApiPushInboxRoute: typeof ApiPushInboxRoute
   ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
   ApiPwaManifestRoute: typeof ApiPwaManifestRoute
   ApiRafflesIdRoute: typeof ApiRafflesIdRouteWithChildren
@@ -1105,6 +1118,13 @@ declare module '@tanstack/react-router' {
       path: '/api/push/subscribe'
       fullPath: '/api/push/subscribe'
       preLoaderRoute: typeof ApiPushSubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/inbox': {
+      id: '/api/push/inbox'
+      path: '/api/push/inbox'
+      fullPath: '/api/push/inbox'
+      preLoaderRoute: typeof ApiPushInboxRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/push/config': {
@@ -1648,6 +1668,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiPurchaseSuccessAnalyticsRoute: ApiPurchaseSuccessAnalyticsRoute,
   ApiPurchasesTopClientsRoute: ApiPurchasesTopClientsRoute,
   ApiPushConfigRoute: ApiPushConfigRoute,
+  ApiPushInboxRoute: ApiPushInboxRoute,
   ApiPushSubscribeRoute: ApiPushSubscribeRoute,
   ApiPwaManifestRoute: ApiPwaManifestRoute,
   ApiRafflesIdRoute: ApiRafflesIdRouteWithChildren,

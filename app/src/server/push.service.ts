@@ -1,21 +1,34 @@
+import { normalizePhone, raffles } from "@raffle/shared/db"
 import { ValidationError } from "@raffle/shared/errors"
-import { raffles } from "@raffle/shared/db"
 import {
+  buildRaffleMilestonePlan,
+  buildRafflePromotionPlan,
   highestSaleMilestone,
   mergePushMilestones,
   newlyReachedSaleMilestones,
+  type PushBroadcastKind,
   type PushMilestoneId,
   parsePushMilestonesSent,
+  promotionPushCopy,
+  pushMilestoneCopy,
   serializePushMilestonesSent,
+  soldPercent,
 } from "@raffle/shared/push"
+import { isValidCustomerPhone } from "@raffle/shared/validators"
 import { eq } from "drizzle-orm"
 import { describePushDevice } from "@/features/admin/push/describe-push-device"
 import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
+import * as purchasesRepo from "./repositories/purchases.repository"
+import * as pushBroadcastsRepo from "./repositories/push-broadcasts.repository"
+import * as pushInboxReadsRepo from "./repositories/push-inbox-reads.repository"
 import * as pushRepo from "./repositories/push-subscriptions.repository"
+import * as promotionsRepo from "./repositories/raffle-promotions.repository"
+import * as rafflesRepo from "./repositories/raffles.repository"
 
 const logger = getLogger()
+const INBOX_LIMIT = 40
 
 export type PushPayload = {
   title: string
@@ -101,22 +114,125 @@ export async function savePushSubscription(input: {
   p256dh: string
   auth: string
   userAgent: string | null
+  customerName?: string
+  customerPhone?: string
 }): Promise<void> {
   await pushRepo.upsertPushSubscription({
     endpoint: input.endpoint,
     p256dh: input.p256dh,
     auth: input.auth,
     userAgent: input.userAgent?.slice(0, 240) ?? null,
+    identity: await resolvePushIdentityPatch({
+      customerName: input.customerName,
+      customerPhone: input.customerPhone,
+    }),
   })
+}
+
+async function resolvePushIdentityPatch(input: {
+  customerName?: string
+  customerPhone?: string
+}): Promise<pushRepo.PushSubscriptionIdentityPatch | undefined> {
+  const displayName = input.customerName?.trim().slice(0, 200) || undefined
+  const phoneRaw = input.customerPhone?.trim() || ""
+  const phoneNormalized =
+    phoneRaw && isValidCustomerPhone(phoneRaw) ? normalizePhone(phoneRaw) : undefined
+
+  if (!displayName && !phoneNormalized) return undefined
+
+  const fromPurchase = phoneNormalized
+    ? await purchasesRepo.findLatestBuyerIdentityByPhone(phoneNormalized)
+    : null
+
+  const patch: pushRepo.PushSubscriptionIdentityPatch = {}
+  const name = displayName ?? fromPurchase?.customerName
+  if (name) patch.displayName = name
+  if (phoneNormalized) patch.customerPhoneNormalized = phoneNormalized
+  if (fromPurchase?.customerId) patch.customerId = fromPurchase.customerId
+  return patch
 }
 
 export async function removePushSubscription(endpoint: string): Promise<void> {
   await pushRepo.deletePushSubscriptionByEndpoint(endpoint)
 }
 
+export type PushInboxItem = {
+  id: number
+  kind: string
+  title: string
+  body: string
+  url: string
+  tag: string
+  createdAt: string
+  read: boolean
+}
+
+export type PushInbox = {
+  items: PushInboxItem[]
+  unreadCount: number
+}
+
+const EMPTY_INBOX: PushInbox = { items: [], unreadCount: 0 }
+
+export async function listPushInbox(endpoint: string): Promise<PushInbox> {
+  const subscription = await pushRepo.findPushSubscriptionByEndpoint(endpoint)
+  if (!subscription) return EMPTY_INBOX
+
+  await pushRepo.touchPushSubscriptionLastSeen(subscription.id)
+
+  const [rows, readIds] = await Promise.all([
+    pushBroadcastsRepo.listPushBroadcastsForInbox({
+      since: subscription.createdAt,
+      limit: INBOX_LIMIT,
+    }),
+    pushInboxReadsRepo.listReadBroadcastIds(subscription.id),
+  ])
+  const readSet = new Set(readIds)
+  const items = rows.map((row) => ({
+    id: row.id,
+    kind: row.kind,
+    title: row.title,
+    body: row.body,
+    url: row.url || "/",
+    tag: row.tag,
+    createdAt: toIso(row.createdAt),
+    read: readSet.has(row.id),
+  }))
+
+  const allSince = await pushBroadcastsRepo.listPushBroadcastsSince(subscription.createdAt)
+  const unreadCount = allSince.reduce((count, row) => count + (readSet.has(row.id) ? 0 : 1), 0)
+
+  return { items, unreadCount }
+}
+
+export async function markPushInboxRead(input: {
+  endpoint: string
+  ids?: number[]
+  all?: boolean
+}): Promise<PushInbox> {
+  const subscription = await pushRepo.findPushSubscriptionByEndpoint(input.endpoint)
+  if (!subscription) return EMPTY_INBOX
+
+  if (input.all) {
+    const allSince = await pushBroadcastsRepo.listPushBroadcastsSince(subscription.createdAt)
+    await pushInboxReadsRepo.markBroadcastsRead({
+      subscriptionId: subscription.id,
+      broadcastIds: allSince.map((row) => row.id),
+    })
+  } else if (input.ids?.length) {
+    await pushInboxReadsRepo.markBroadcastsRead({
+      subscriptionId: subscription.id,
+      broadcastIds: input.ids,
+    })
+  }
+
+  return listPushInbox(input.endpoint)
+}
+
 export type AdminPushSubscriber = {
   id: number
   device: string
+  displayName: string | null
   createdAt: string
   lastSeenAt: string
 }
@@ -126,10 +242,26 @@ function toIso(value: Date | number | string): string {
   return date.toISOString()
 }
 
+export type AdminPushPlanRaffle = {
+  id: number
+  name: string
+  status: string
+  ticketsSold: number
+  totalTickets: number
+  soldPercent: number
+}
+
+export type AdminPushPlan = {
+  raffle: AdminPushPlanRaffle | null
+  milestones: ReturnType<typeof buildRaffleMilestonePlan>
+  promotions: ReturnType<typeof buildRafflePromotionPlan>
+}
+
 export async function listAdminPushSubscribers(): Promise<{
   enabled: boolean
   count: number
   subscribers: AdminPushSubscriber[]
+  plan: AdminPushPlan
 }> {
   const enabled = isWebPushConfigured()
   const rows = await pushRepo.listPushSubscriptionSummaries()
@@ -139,9 +271,59 @@ export async function listAdminPushSubscribers(): Promise<{
     subscribers: rows.map((row) => ({
       id: row.id,
       device: describePushDevice(row.userAgent),
+      displayName: row.displayName?.trim() || null,
       createdAt: toIso(row.createdAt),
       lastSeenAt: toIso(row.lastSeenAt),
     })),
+    plan: await loadAdminPushPlan(),
+  }
+}
+
+async function loadAdminPushPlan(): Promise<AdminPushPlan> {
+  const raffle = await rafflesRepo.findFirstActiveOrPaused()
+  if (!raffle) {
+    return { raffle: null, milestones: [], promotions: [] }
+  }
+
+  const [broadcastRows, promotions] = await Promise.all([
+    pushBroadcastsRepo.listPushBroadcastsByRaffle(raffle.id),
+    promotionsRepo.listPromotionsByRaffle(raffle.id),
+  ])
+  const broadcasts = broadcastRows.map((row) => ({
+    kind: row.kind,
+    milestoneId: row.milestoneId,
+    promotionId: row.promotionId,
+    title: row.title,
+    body: row.body,
+    sent: row.sent,
+    createdAt: toIso(row.createdAt),
+  }))
+
+  return {
+    raffle: {
+      id: raffle.id,
+      name: raffle.name,
+      status: raffle.status,
+      ticketsSold: raffle.ticketsSold,
+      totalTickets: raffle.totalTickets,
+      soldPercent: soldPercent(raffle.ticketsSold, raffle.totalTickets),
+    },
+    milestones: buildRaffleMilestonePlan({
+      raffleName: raffle.name,
+      ticketsSold: raffle.ticketsSold,
+      totalTickets: raffle.totalTickets,
+      milestonesSent: parsePushMilestonesSent(raffle.pushMilestonesSent),
+      broadcasts,
+    }),
+    promotions: buildRafflePromotionPlan({
+      raffleName: raffle.name,
+      promotions: promotions.map((promo) => ({
+        id: promo.id,
+        name: promo.name,
+        isActive: promo.isActive,
+      })),
+      broadcasts,
+    }),
   }
 }
 
@@ -153,12 +335,16 @@ export async function sendManualBroadcast(input: {
   if (!isWebPushConfigured()) {
     throw new ValidationError("Los avisos no están configurados en el servidor")
   }
-  return sendPushToAll({
-    title: input.title,
-    body: input.body,
-    url: input.url?.trim() || "/",
-    tag: `manual-${Date.now()}`,
-  })
+  const raffle = await rafflesRepo.findFirstActiveOrPaused()
+  return sendAndLog(
+    {
+      title: input.title,
+      body: input.body,
+      url: input.url?.trim() || "/",
+      tag: `manual-${Date.now()}`,
+    },
+    { kind: "manual", raffleId: raffle?.id ?? null },
+  )
 }
 
 export async function sendPushToAll(
@@ -228,22 +414,44 @@ export async function sendPushToAll(
   return { sent, removed, total: rows.length }
 }
 
-function saleCopy(milestone: PushMilestoneId, raffleName: string): { title: string; body: string } {
-  const name = raffleName.trim() || "Yoiber Rifas"
-  switch (milestone) {
-    case "new_raffle":
-      return { title: "Nueva bendición liberada.", body: name }
-    case "sold_10":
-      return { title: "Ya se fue el 10%.", body: name }
-    case "remaining_70":
-      return { title: "Último 70% disponible.", body: name }
-    case "sold_50":
-      return { title: "Último 50% disponible.", body: name }
-    case "remaining_30":
-      return { title: "¡Lo que queda! Último 30% disponible.", body: name }
-    case "remaining_10":
-      return { title: "¡Última oportunidad! 10% es lo que queda.", body: name }
+async function sendAndLog(
+  payload: PushPayload,
+  meta: {
+    kind: PushBroadcastKind
+    raffleId?: number | null
+    milestoneId?: PushMilestoneId | null
+    promotionId?: number | null
+  },
+): Promise<{ sent: number; removed: number; total: number }> {
+  let broadcastId: number | null = null
+  try {
+    const inserted = await pushBroadcastsRepo.insertPushBroadcast({
+      kind: meta.kind,
+      raffleId: meta.raffleId ?? null,
+      milestoneId: meta.milestoneId ?? null,
+      promotionId: meta.promotionId ?? null,
+      title: payload.title,
+      body: payload.body,
+      url: payload.url,
+      tag: payload.tag,
+      sent: 0,
+      removed: 0,
+      total: 0,
+    })
+    broadcastId = inserted.id
+  } catch (err) {
+    logger.error({ err, tag: payload.tag, kind: meta.kind }, "push:broadcast_log_failed")
   }
+
+  const result = await sendPushToAll(payload)
+  if (broadcastId != null) {
+    try {
+      await pushBroadcastsRepo.updatePushBroadcastDelivery(broadcastId, result)
+    } catch (err) {
+      logger.error({ err, tag: payload.tag, kind: meta.kind }, "push:broadcast_delivery_log_failed")
+    }
+  }
+  return result
 }
 
 function raffleHomeUrl(raffleId: number): string {
@@ -285,13 +493,16 @@ export async function notifyNewRaffle(raffleId: number): Promise<void> {
 
   if (!claimed) return
 
-  const copy = saleCopy("new_raffle", claimed.name)
-  await sendPushToAll({
-    ...copy,
-    url: raffleHomeUrl(raffleId),
-    tag: `raffle-${raffleId}-new`,
-    icon: raffleIcon(claimed.imageUrl),
-  })
+  const copy = pushMilestoneCopy("new_raffle", claimed.name)
+  await sendAndLog(
+    {
+      ...copy,
+      url: raffleHomeUrl(raffleId),
+      tag: `raffle-${raffleId}-new`,
+      icon: raffleIcon(claimed.imageUrl),
+    },
+    { kind: "milestone", raffleId, milestoneId: "new_raffle" },
+  )
 }
 
 export async function notifySaleMilestones(raffleId: number): Promise<void> {
@@ -328,13 +539,16 @@ export async function notifySaleMilestones(raffleId: number): Promise<void> {
 
   if (!claimed) return
 
-  const copy = saleCopy(claimed.highest, claimed.name)
-  await sendPushToAll({
-    ...copy,
-    url: raffleHomeUrl(raffleId),
-    tag: `raffle-${raffleId}-${claimed.highest}`,
-    icon: raffleIcon(claimed.imageUrl),
-  })
+  const copy = pushMilestoneCopy(claimed.highest, claimed.name)
+  await sendAndLog(
+    {
+      ...copy,
+      url: raffleHomeUrl(raffleId),
+      tag: `raffle-${raffleId}-${claimed.highest}`,
+      icon: raffleIcon(claimed.imageUrl),
+    },
+    { kind: "milestone", raffleId, milestoneId: claimed.highest },
+  )
 }
 
 export function notifyNewRaffleInBackground(raffleId: number): void {
@@ -346,6 +560,36 @@ export function notifyNewRaffleInBackground(raffleId: number): void {
 export function notifySaleMilestonesInBackground(raffleId: number): void {
   void notifySaleMilestones(raffleId).catch((err) => {
     logger.error({ err, raffleId }, "push:sale_milestones_failed")
+  })
+}
+
+export async function notifyPromotion(raffleId: number, promotionId: number): Promise<void> {
+  if (!isWebPushConfigured()) return
+
+  const existing = await pushBroadcastsRepo.findPushBroadcastByPromotionId(promotionId)
+  if (existing) return
+
+  const promo = await promotionsRepo.findPromotionById(raffleId, promotionId)
+  if (!promo?.isActive) return
+
+  const raffle = await rafflesRepo.findRaffleById(raffleId)
+  if (!raffle) return
+
+  const copy = promotionPushCopy(promo.name, raffle.name)
+  await sendAndLog(
+    {
+      ...copy,
+      url: raffleHomeUrl(raffleId),
+      tag: `raffle-${raffleId}-promo-${promotionId}`,
+      icon: raffleIcon(raffle.imageUrl),
+    },
+    { kind: "promotion", raffleId, promotionId },
+  )
+}
+
+export function notifyPromotionInBackground(raffleId: number, promotionId: number): void {
+  void notifyPromotion(raffleId, promotionId).catch((err) => {
+    logger.error({ err, raffleId, promotionId }, "push:promotion_failed")
   })
 }
 

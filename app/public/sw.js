@@ -27,15 +27,21 @@ self.addEventListener("push", (event) => {
   }
 
   event.waitUntil(
-    self.registration.showNotification(data.title || "Yoiber Rifas", {
-      body: data.body || "",
-      icon: data.icon || "/pwa/icon-192.png",
-      badge: "/pwa/icon-192.png",
-      data: { url: data.url || "/" },
-      tag: data.tag || "raffle",
-      renotify: true,
-      lang: "es",
-    }),
+    (async () => {
+      await self.registration.showNotification(data.title || "Yoiber Rifas", {
+        body: data.body || "",
+        icon: data.icon || "/pwa/icon-192.png",
+        badge: "/pwa/icon-192.png",
+        data: { url: data.url || "/" },
+        tag: data.tag || "raffle",
+        renotify: true,
+        lang: "es",
+      })
+      const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true })
+      for (const client of clients) {
+        client.postMessage({ type: "pwa:push-received" })
+      }
+    })(),
   )
 })
 

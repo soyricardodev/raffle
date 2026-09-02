@@ -12,11 +12,13 @@ function parseFlagSearch(value: unknown): boolean | undefined {
 const purchaseRouteSearchSchema = z.object({
   norecordar: z.unknown().optional().transform(parseFlagSearch),
   previewSuccess: z.unknown().optional().transform(parseFlagSearch),
+  previewAvisos: z.unknown().optional().transform(parseFlagSearch),
 })
 
 export type PurchaseRouteSearch = {
   norecordar?: boolean
   previewSuccess?: boolean
+  previewAvisos?: boolean
 }
 
 export function parsePurchaseRouteSearchInput(
@@ -26,5 +28,6 @@ export function parsePurchaseRouteSearchInput(
   const result: PurchaseRouteSearch = {}
   if (parsed.norecordar === true) result.norecordar = true
   if (parsed.previewSuccess === true) result.previewSuccess = true
+  if (parsed.previewAvisos === true) result.previewAvisos = true
   return result
 }

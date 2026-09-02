@@ -1,6 +1,13 @@
-import { notificationPermission } from "@/features/pwa/pwa-capability"
+import {
+  loadPushIdentityHint,
+  type PushIdentityHint,
+  pickPushIdentityHint,
+  savePushIdentityHint,
+} from "@/features/pwa/push-identity"
 import { planPushSync } from "@/features/pwa/push-sync"
+import { notificationPermission } from "@/features/pwa/pwa-capability"
 import { readPwaStorage, writePwaStorage } from "@/features/pwa/pwa-storage"
+import { loadSavedBuyerProfile } from "@/features/raffle/purchase-form/buyer-profile-storage"
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4)
@@ -39,22 +46,44 @@ export async function subscribeToPush(
   })
 }
 
-export async function persistPushSubscription(subscription: PushSubscription): Promise<void> {
+export async function persistPushSubscription(
+  subscription: PushSubscription,
+  identity?: PushIdentityHint,
+): Promise<void> {
   const json = subscription.toJSON()
   if (!json.endpoint || !json.keys?.p256dh || !json.keys.auth) {
     throw new Error("Suscripción incompleta")
   }
+  const hint = pickPushIdentityHint(identity, loadPushIdentityHint(), loadSavedBuyerProfile())
   const res = await fetch("/api/push/subscribe", {
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify({
       endpoint: json.endpoint,
       keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
+      ...(hint?.customerName ? { customerName: hint.customerName } : {}),
+      ...(hint?.customerPhone ? { customerPhone: hint.customerPhone } : {}),
     }),
   })
   if (!res.ok) {
     throw new Error("No se pudo guardar la suscripción")
   }
+}
+
+export async function attachPushIdentity(identity: PushIdentityHint): Promise<void> {
+  if (typeof window === "undefined" || !("serviceWorker" in navigator)) return
+  const registration = await navigator.serviceWorker.ready.catch(() => null)
+  const live = registration ? await registration.pushManager.getSubscription() : null
+  if (!live) return
+  await persistPushSubscription(live, identity)
+}
+
+export function rememberPushIdentity(identity: {
+  customerName: string
+  customerPhone: string
+}): void {
+  savePushIdentityHint(identity)
+  void attachPushIdentity(identity).catch(() => {})
 }
 
 export async function deleteStoredPushEndpoint(endpoint: string): Promise<void> {

@@ -6,25 +6,131 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
+import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
-import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { adminNavTitle } from "@/features/admin/nav"
+import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { AdminPushPlanCard } from "@/features/admin/push/AdminPushPlan"
 import {
+  type AdminPushSendResult,
+  type AdminPushSubscriber,
   adminPushQueryKeys,
   adminPushQueryOptions,
-  type AdminPushSendResult,
 } from "@/features/admin/push/admin-push-queries"
+import {
+  formatPushLastSeen,
+  subscriberInitials,
+} from "@/features/admin/push/push-subscriber-format"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { PWA_ICON_192, PWA_NAME } from "@/features/pwa/pwa-brand"
 import { adminFetch } from "@/lib/admin-fetch"
 import { formatDateTime } from "@/lib/format"
+import { cn } from "@/lib/utils"
 
 const TITLE_MAX = 80
 const BODY_MAX = 180
+const SKELETON_ROWS = ["one", "two", "three", "four"] as const
 
 function remainingLabel(used: number, max: number) {
   const left = Math.max(0, max - used)
   return `${left} caracter${left === 1 ? "" : "es"}`
+}
+
+function PushSubscriberList({
+  loading,
+  subscribers,
+}: {
+  loading: boolean
+  subscribers: AdminPushSubscriber[]
+}) {
+  const namedCount = subscribers.filter((row) => row.displayName).length
+
+  return (
+    <div className="overflow-hidden rounded-2xl border">
+      <div className="flex items-baseline justify-between gap-3 px-4 py-2.5">
+        <p className="text-sm font-medium">
+          {loading
+            ? "Cargando…"
+            : subscribers.length === 1
+              ? "1 aviso"
+              : `${subscribers.length.toLocaleString("es-VE")} avisos`}
+        </p>
+        {!loading && namedCount > 0 ? (
+          <p className="text-muted-foreground text-xs tabular-nums">
+            {namedCount === 1 ? "1 con nombre" : `${namedCount.toLocaleString("es-VE")} con nombre`}
+          </p>
+        ) : null}
+      </div>
+      {loading ? (
+        <ul className="divide-border divide-y border-t">
+          {SKELETON_ROWS.map((id) => (
+            <li key={id} className="flex items-center gap-3 px-4 py-3">
+              <Skeleton className="size-9 shrink-0 rounded-full" />
+              <span className="min-w-0 flex-1">
+                <span className="flex items-center justify-between gap-3">
+                  <Skeleton className="h-3.5 w-28" />
+                  <Skeleton className="h-3 w-12" />
+                </span>
+                <Skeleton className="mt-2 h-3 w-20" />
+              </span>
+            </li>
+          ))}
+        </ul>
+      ) : subscribers.length ? (
+        <ul className="divide-border divide-y border-t">
+          {subscribers.map((row) => (
+            <PushSubscriberRow key={row.id} row={row} />
+          ))}
+        </ul>
+      ) : (
+        <p className="text-muted-foreground border-t px-4 py-8 text-center text-sm">
+          Cuando alguien active avisos, aparece aquí.
+        </p>
+      )}
+    </div>
+  )
+}
+
+function PushSubscriberRow({ row }: { row: AdminPushSubscriber }) {
+  const named = Boolean(row.displayName)
+  const title = row.displayName || row.device
+  const initials = named ? subscriberInitials(title) : ""
+
+  return (
+    <li className="flex items-center gap-3 px-4 py-3">
+      <span
+        className={cn(
+          "flex size-9 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold",
+          named ? "bg-primary/15 text-primary" : "bg-muted text-muted-foreground",
+        )}
+        aria-hidden
+      >
+        {named && initials ? initials : <BellIcon className="size-4" />}
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="flex items-baseline justify-between gap-3">
+          <span
+            className={cn(
+              "truncate text-sm",
+              named ? "font-medium" : "text-muted-foreground font-medium",
+            )}
+          >
+            {title}
+          </span>
+          <time
+            className="text-muted-foreground shrink-0 text-[11px] tabular-nums"
+            dateTime={row.lastSeenAt}
+            title={formatDateTime(row.lastSeenAt)}
+          >
+            {formatPushLastSeen(row.lastSeenAt)}
+          </time>
+        </span>
+        {named ? (
+          <span className="text-muted-foreground mt-0.5 block truncate text-xs">{row.device}</span>
+        ) : null}
+      </span>
+    </li>
+  )
 }
 
 export function AdminPushPanel() {
@@ -74,7 +180,7 @@ export function AdminPushPanel() {
     <div className="flex flex-col gap-4">
       <AdminPageHeader
         title={adminNavTitle("/admin/avisos")}
-        description="Teléfonos que activaron avisos. Aquí no hay nombre ni cédula: el permiso queda en el navegador."
+        description="Qué avisos de la rifa ya salieron, cuáles faltan, y uno tuyo cuando haga falta."
         actions={
           <Button
             variant="outline"
@@ -82,7 +188,10 @@ export function AdminPushPanel() {
             disabled={listQuery.isFetching}
             onClick={() => void listQuery.refetch()}
           >
-            <ArrowClockwiseIcon data-icon="inline-start" />
+            <ArrowClockwiseIcon
+              data-icon="inline-start"
+              className={listQuery.isFetching ? "animate-spin" : undefined}
+            />
             Actualizar
           </Button>
         }
@@ -93,6 +202,10 @@ export function AdminPushPanel() {
           Faltan las claves VAPID en el servidor. La lista se ve, pero no se puede enviar.
         </p>
       ) : null}
+
+      {listQuery.isError ? null : (
+        <AdminPushPlanCard loading={listQuery.isLoading} plan={listQuery.data?.plan} />
+      )}
 
       <Card size="sm">
         <CardContent className="flex flex-col gap-3 p-4">
@@ -130,7 +243,7 @@ export function AdminPushPanel() {
           </div>
 
           {showPreview ? (
-            <div className="bg-muted/50 flex items-start gap-3 rounded-2xl px-3 py-3">
+            <div className="bg-muted/50 flex items-start gap-3 rounded-2xl px-3 py-3 transition-[opacity,transform] duration-[180ms] ease-[cubic-bezier(0.23,1,0.32,1)] @starting-style:scale-[0.97] @starting-style:opacity-0">
               <img
                 src={PWA_ICON_192}
                 alt=""
@@ -161,14 +274,6 @@ export function AdminPushPanel() {
         </CardContent>
       </Card>
 
-      <p className="text-sm font-medium">
-        {listQuery.isLoading
-          ? "Cargando…"
-          : count === 1
-            ? "1 teléfono con avisos"
-            : `${count.toLocaleString("es-VE")} teléfonos con avisos`}
-      </p>
-
       {listQuery.isError ? (
         <div className="flex flex-col items-start gap-2 rounded-2xl border px-4 py-4">
           <p className="text-muted-foreground text-sm">No se pudo cargar la lista.</p>
@@ -176,26 +281,11 @@ export function AdminPushPanel() {
             Reintentar
           </Button>
         </div>
-      ) : listQuery.data?.subscribers.length ? (
-        <ul className="divide-border divide-y overflow-hidden rounded-2xl border">
-          {listQuery.data.subscribers.map((row) => (
-            <li key={row.id} className="flex items-start gap-3 px-4 py-3">
-              <span className="bg-primary/15 text-primary mt-0.5 flex size-9 shrink-0 items-center justify-center rounded-xl">
-                <BellIcon className="size-4" aria-hidden />
-              </span>
-              <span className="min-w-0 flex-1">
-                <span className="block text-sm font-medium">{row.device}</span>
-                <span className="text-muted-foreground mt-0.5 block text-xs">
-                  Activo {formatDateTime(row.lastSeenAt)}
-                </span>
-              </span>
-            </li>
-          ))}
-        </ul>
-      ) : listQuery.isLoading ? null : (
-        <p className="text-muted-foreground text-sm">
-          Cuando alguien toque Activar en el celular, aparece aquí.
-        </p>
+      ) : (
+        <PushSubscriberList
+          loading={listQuery.isLoading}
+          subscribers={listQuery.data?.subscribers ?? []}
+        />
       )}
 
       <ConfirmAction

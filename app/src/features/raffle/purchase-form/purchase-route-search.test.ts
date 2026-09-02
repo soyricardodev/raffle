@@ -21,4 +21,11 @@ describe("parsePurchaseRouteSearchInput", () => {
     })
     expect(parsePurchaseRouteSearchInput({ previewSuccess: "false" })).toEqual({})
   })
+
+  it("accepts previewAvisos for local inbox review", () => {
+    expect(parsePurchaseRouteSearchInput({ previewAvisos: "1" })).toEqual({
+      previewAvisos: true,
+    })
+    expect(parsePurchaseRouteSearchInput({ previewAvisos: "false" })).toEqual({})
+  })
 })

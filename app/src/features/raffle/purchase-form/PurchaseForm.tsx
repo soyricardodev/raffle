@@ -25,6 +25,7 @@ import {
   resolveSupportChannel,
 } from "@/features/layout/social-links"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
+import { rememberPushIdentity } from "@/features/pwa/push-client"
 import {
   loadSavedBuyerProfile,
   type SavedBuyerProfile,
@@ -386,6 +387,10 @@ export function PurchaseForm({
         })
         setSavedProfileDismissed(false)
       }
+      rememberPushIdentity({
+        customerName: customerName.trim(),
+        customerPhone: customerPhone.trim(),
+      })
       setSuccessResult(result)
       setPaymentReference("")
       setPaymentPayerName("")

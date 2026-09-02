@@ -29,6 +29,9 @@ const migrationSql = [
   readMigration("0013_customers_venezuela_municipality.sql"),
   readMigration("0014_purchases_payment_payer_name.sql"),
   readMigration("0015_push_notifications.sql"),
+  readMigration("0016_push_subscription_identity.sql"),
+  readMigration("0017_push_broadcasts.sql"),
+  readMigration("0018_push_inbox.sql"),
 ].join("\n--> statement-breakpoint\n")
 
 /** Base SQLite en archivo temporal aislado por suite de tests. */

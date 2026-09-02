@@ -2,8 +2,9 @@ import { Link } from "@tanstack/react-router"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
-import { PWA_NAME } from "@/features/pwa/pwa-brand"
+import { PushInboxBell } from "@/features/pwa/PushInboxBell"
 import { PwaInstallHeaderButton } from "@/features/pwa/PwaInstallHeaderButton"
+import { PWA_NAME } from "@/features/pwa/pwa-brand"
 import { ThemeToggle } from "@/features/theme/ThemeToggle"
 import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
@@ -33,6 +34,7 @@ export function PublicHeader() {
         </Link>
         <nav className="flex shrink-0 items-center gap-1">
           <PwaInstallHeaderButton />
+          <PushInboxBell />
           <Button
             size="sm"
             variant="outline"

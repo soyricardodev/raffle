@@ -29,6 +29,8 @@ export const Route = createFileRoute("/api/push/subscribe")({
           p256dh: parsed.data.keys.p256dh,
           auth: parsed.data.keys.auth,
           userAgent: request.headers.get("user-agent"),
+          customerName: parsed.data.customerName,
+          customerPhone: parsed.data.customerPhone,
         })
         return Response.json({ ok: true })
       },

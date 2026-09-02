@@ -6,8 +6,9 @@ import type {
 import { withImmediateTransaction } from "@/lib/db.server"
 import { mergePromotionInput } from "./promotion-input"
 import { assertPromotionAgainstBasePrices } from "./promotion-pricing.service"
-import * as promotionsRepo from "./repositories/raffle-promotions.repository"
+import { notifyPromotionInBackground } from "./push.service"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
+import * as promotionsRepo from "./repositories/raffle-promotions.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 
 async function assertPromotionPaymentMethod(
@@ -47,6 +48,7 @@ export async function createRafflePromotion(raffleId: number, input: CreateRaffl
 
   const created = await promotionsRepo.findPromotionLegacyById(raffleId, id)
   if (!created) throw new ValidationError("No se pudo crear la promoción")
+  if (created.is_active) notifyPromotionInBackground(raffleId, created.id)
   return created
 }
 
@@ -74,6 +76,7 @@ export async function updateRafflePromotion(
 
   const updated = await promotionsRepo.findPromotionLegacyById(raffleId, promotionId)
   if (!updated) throw new ValidationError("Promoción no encontrada")
+  if (updated.is_active) notifyPromotionInBackground(raffleId, promotionId)
   return updated
 }
 

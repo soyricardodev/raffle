@@ -1,4 +1,4 @@
-import { raffles } from "@raffle/shared/db"
+import { rafflePromotions, raffles } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { getDb } from "@/lib/db.server"
@@ -6,7 +6,10 @@ import { resetEnvCache } from "@/lib/env"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import {
   listAdminPushSubscribers,
+  listPushInbox,
+  markPushInboxRead,
   notifyNewRaffle,
+  notifyPromotion,
   notifySaleMilestones,
   resetWebPushClientForTests,
   savePushSubscription,
@@ -86,6 +89,24 @@ describe("push.service milestones", () => {
     sendNotification.mockClear()
     await notifySaleMilestones(raffleId)
     expect(sendNotification).not.toHaveBeenCalled()
+
+    const listed = await listAdminPushSubscribers()
+    expect(listed.plan.raffle?.id).toBe(raffleId)
+    expect(listed.plan.milestones.find((row) => row.milestoneId === "sold_50")).toMatchObject({
+      status: "sent",
+      recipientCount: 1,
+    })
+    expect(listed.plan.milestones.find((row) => row.milestoneId === "sold_10")?.status).toBe(
+      "skipped",
+    )
+    expect(listed.plan.milestones.find((row) => row.milestoneId === "new_raffle")).toMatchObject({
+      status: "upcoming",
+      isNext: true,
+    })
+    expect(listed.plan.milestones.find((row) => row.milestoneId === "remaining_30")).toMatchObject({
+      status: "upcoming",
+      ticketsRemaining: 10,
+    })
   })
 
   it("sends new raffle once", async () => {
@@ -104,6 +125,7 @@ describe("push.service milestones", () => {
     const listed = await listAdminPushSubscribers()
     expect(listed.count).toBeGreaterThanOrEqual(1)
     expect(listed.subscribers[0]?.device).toBe("Navegador")
+    expect(listed.subscribers[0]?.displayName).toBeNull()
     expect(JSON.stringify(listed)).not.toMatch(/push\.example/)
 
     sendNotification.mockClear()
@@ -119,5 +141,76 @@ describe("push.service milestones", () => {
     }
     expect(payload.title).toBe("Hola")
     expect(payload.body).toBe("Esto es una prueba")
+  })
+
+  it("sends a promotion aviso once and lists it in the plan", async () => {
+    const db = getDb()
+    const [promo] = await db
+      .insert(rafflePromotions)
+      .values({
+        raffleId,
+        name: "20% de descuento",
+        kind: "percentage",
+        scope: "all_methods",
+        isActive: true,
+        discountPercentBps: 2000,
+      })
+      .returning({ id: rafflePromotions.id })
+
+    const promotionId = promo?.id
+    if (!promotionId) throw new Error("failed to create promotion")
+
+    sendNotification.mockClear()
+    await notifyPromotion(raffleId, promotionId)
+    expect(sendNotification).toHaveBeenCalledTimes(1)
+    const payload = JSON.parse(String(sendNotification.mock.calls[0]?.[1])) as { title: string }
+    expect(payload.title).toBe("Hay una promo.")
+
+    sendNotification.mockClear()
+    await notifyPromotion(raffleId, promotionId)
+    expect(sendNotification).not.toHaveBeenCalled()
+
+    const listed = await listAdminPushSubscribers()
+    expect(listed.plan.promotions).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          promotionId,
+          status: "sent",
+          recipientCount: 1,
+        }),
+      ]),
+    )
+  })
+
+  it("lists inbox items for a subscriber and marks them read", async () => {
+    sendNotification.mockClear()
+    await sendManualBroadcast({
+      title: "Aviso de prueba",
+      body: "Revisa tus boletos",
+    })
+
+    const inbox = await listPushInbox("https://push.example.com/sub-1")
+    expect(inbox.items.length).toBeGreaterThan(0)
+    expect(inbox.unreadCount).toBeGreaterThan(0)
+    expect(inbox.items[0]?.title).toBe("Aviso de prueba")
+    expect(inbox.items[0]?.read).toBe(false)
+
+    const afterOne = await markPushInboxRead({
+      endpoint: "https://push.example.com/sub-1",
+      ids: [inbox.items[0]!.id],
+    })
+    expect(afterOne.items.find((row) => row.id === inbox.items[0]?.id)?.read).toBe(true)
+
+    const afterAll = await markPushInboxRead({
+      endpoint: "https://push.example.com/sub-1",
+      all: true,
+    })
+    expect(afterAll.unreadCount).toBe(0)
+    expect(afterAll.items.every((row) => row.read)).toBe(true)
+  })
+
+  it("hides the inbox from an unknown endpoint", async () => {
+    const inbox = await listPushInbox("https://push.example.com/unknown")
+    expect(inbox).toEqual({ items: [], unreadCount: 0 })
   })
 })

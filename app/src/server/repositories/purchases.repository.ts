@@ -230,6 +230,23 @@ export function purchaseCurrency(paymentMethod: PaymentMethod): string {
   return isDollarMethod(paymentMethod) ? "USD" : "VES"
 }
 
+export async function findLatestBuyerIdentityByPhone(phoneNormalized: string): Promise<{
+  customerId: number | null
+  customerName: string
+} | null> {
+  if (!phoneNormalized) return null
+  const [row] = await getDb()
+    .select({
+      customerId: purchases.customerId,
+      customerName: purchases.customerName,
+    })
+    .from(purchases)
+    .where(eq(purchases.customerPhoneNormalized, phoneNormalized))
+    .orderBy(desc(purchases.createdAt), desc(purchases.id))
+    .limit(1)
+  return row ?? null
+}
+
 export async function getPurchaseById(purchaseId: number) {
   const db = getDb()
   const [row] = await db
