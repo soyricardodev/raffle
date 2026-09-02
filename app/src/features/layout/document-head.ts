@@ -1,6 +1,7 @@
 import type { AnyRouteMatch } from "@tanstack/react-router"
 import type { PublicSiteConfigPayload } from "@/features/layout/public-queries"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
+import { PWA_NAME } from "@/features/pwa/pwa-brand"
 
 export type SiteLayoutLoaderData = {
   siteConfig: PublicSiteConfigPayload | null
@@ -19,7 +20,7 @@ export type DocumentHeadResult = {
 export function composeDocumentTitle(pageTitle: string, siteName?: string): string {
   const page = pageTitle.trim()
   const site = siteName?.trim() ?? ""
-  if (!page) return site || "Rifas"
+  if (!page) return site || PWA_NAME
   if (!site || page === site) return page
   return `${page} · ${site}`
 }
@@ -30,6 +31,7 @@ export function siteNameFromMatches(
 ): string {
   const data = layoutLoaderDataFromMatches(matches, layoutRouteId)
   if (data?.siteName.trim()) return data.siteName.trim()
+  if (layoutRouteId === "/_public") return PWA_NAME
   if (data?.siteConfig) return resolvePublicSeo(data.siteConfig).title
   return ""
 }
@@ -121,7 +123,13 @@ export function buildAdminLayoutHead(): DocumentHeadResult {
   return { meta: [{ name: "robots", content: "noindex, nofollow" }] }
 }
 
+export function publicLayoutLoaderData(
+  siteConfig: PublicSiteConfigPayload | null,
+): SiteLayoutLoaderData {
+  return { siteConfig, siteName: PWA_NAME }
+}
+
 export function adminLayoutLoaderData(siteConfig: PublicSiteConfigPayload | null): SiteLayoutLoaderData {
-  const siteName = resolvePublicSeo(siteConfig).title
+  const siteName = siteConfig?.site_info?.site_name?.trim() || PWA_NAME
   return { siteConfig, siteName }
 }

@@ -35,6 +35,10 @@ const envSchema = z
       .string()
       .optional()
       .transform((value) => value === "true" || value === "1"),
+    VAPID_PUBLIC_KEY: z.string().min(20).optional(),
+    VAPID_PRIVATE_KEY: z.string().min(20).optional(),
+    /** mailto: or https: URL required by Web Push. */
+    VAPID_SUBJECT: z.string().min(3).optional(),
   })
   .refine((data) => data.NODE_ENV !== "production" || Boolean(data.DATABASE_URL), {
     message: "DATABASE_URL is required in production",

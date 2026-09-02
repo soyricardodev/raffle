@@ -50,6 +50,15 @@ describe("getEnv", () => {
     expect(getEnv().ENABLE_WHATSAPP).toBe(false)
   })
 
+  it("treats VAPID keys as optional", () => {
+    resetEnvCache()
+    delete process.env.VAPID_PUBLIC_KEY
+    delete process.env.VAPID_PRIVATE_KEY
+    process.env.DATABASE_URL = "file:./packages/shared/data/raffle.db"
+    process.env.NODE_ENV = "test"
+    expect(getEnv().VAPID_PUBLIC_KEY).toBeUndefined()
+  })
+
   it("parses ENABLE_WHATSAPP true from true/1", () => {
     resetEnvCache()
     process.env.DATABASE_URL = "file:./packages/shared/data/raffle.db"

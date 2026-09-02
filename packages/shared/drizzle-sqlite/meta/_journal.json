@@ -106,6 +106,13 @@
       "when": 1779901300000,
       "tag": "0014_purchases_payment_payer_name",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1779901400000,
+      "tag": "0015_push_notifications",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@
     "./validators": "./src/validators/index.ts",
     "./validators/buyer-identity": "./src/validators/buyer-identity.ts",
     "./validators/purchase-success-analytics": "./src/validators/purchase-success-analytics.ts",
+    "./push": "./src/push/milestones.ts",
     "./payment-methods": "./src/payment-methods/index.ts",
     "./errors": "./src/errors/index.ts",
     "./constants": "./src/constants/index.ts",

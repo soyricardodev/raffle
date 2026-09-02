@@ -1,0 +1,7 @@
+export const PWA_NAME = "Yoiber Rifas"
+export const PWA_SHORT_NAME = "Yoiber Rifas"
+export const PWA_ICON_192 = "/pwa/icon-192.png"
+export const PWA_ICON_512 = "/pwa/icon-512.png"
+export const PWA_APPLE_TOUCH = "/pwa/apple-touch.png"
+export const PWA_THEME = "#F5C400"
+export const PWA_BACKGROUND = "#F5C400"

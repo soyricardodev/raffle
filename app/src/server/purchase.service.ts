@@ -291,6 +291,11 @@ export async function updatePurchaseStatus(
     void sendPurchaseStatusEmail(purchaseId, status)
   }
 
+  if (status === "approved") {
+    const { notifySaleMilestonesInBackground } = await import("./push.service")
+    notifySaleMilestonesInBackground(outcome.raffleId)
+  }
+
   return outcome
 }
 
@@ -343,6 +348,7 @@ export async function addTicketsToPurchase(
       newTotalAmount: newTotal / 100,
       additionalAmount: additional / 100,
       raffleId: purchase.raffleId,
+      soldTicketsChanged: ticketStatus === "sold",
     }
   }, purchaseRetryOptions)
 
@@ -354,6 +360,11 @@ export async function addTicketsToPurchase(
     ticketNumbers: result.addedTickets,
   })
   logger.info({ purchaseId, added: result.addedTickets.length }, "purchase:tickets_added")
+
+  if (result.soldTicketsChanged) {
+    const { notifySaleMilestonesInBackground } = await import("./push.service")
+    notifySaleMilestonesInBackground(result.raffleId)
+  }
 
   return result
 }

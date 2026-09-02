@@ -32,6 +32,9 @@ import { Route as AdminRifasIndexRouteImport } from './routes/admin/rifas/index'
 import { Route as ApiTicketsVerifyRouteImport } from './routes/api/tickets.verify'
 import { Route as ApiRafflesFirstActiveRouteImport } from './routes/api/raffles/first-active'
 import { Route as ApiRafflesIdRouteImport } from './routes/api/raffles/$id'
+import { Route as ApiPwaManifestRouteImport } from './routes/api/pwa/manifest'
+import { Route as ApiPushSubscribeRouteImport } from './routes/api/push/subscribe'
+import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchases.top-clients'
 import { Route as ApiPurchaseSuccessAnalyticsRouteImport } from './routes/api/purchase-success/analytics'
 import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
@@ -188,6 +191,21 @@ const ApiRafflesFirstActiveRoute = ApiRafflesFirstActiveRouteImport.update({
 const ApiRafflesIdRoute = ApiRafflesIdRouteImport.update({
   id: '/api/raffles/$id',
   path: '/api/raffles/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPwaManifestRoute = ApiPwaManifestRouteImport.update({
+  id: '/api/pwa/manifest',
+  path: '/api/pwa/manifest',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushSubscribeRoute = ApiPushSubscribeRouteImport.update({
+  id: '/api/push/subscribe',
+  path: '/api/push/subscribe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiPushConfigRoute = ApiPushConfigRouteImport.update({
+  id: '/api/push/config',
+  path: '/api/push/config',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ApiPurchasesTopClientsRoute = ApiPurchasesTopClientsRouteImport.update({
@@ -456,6 +474,9 @@ export interface FileRoutesByFullPath {
   '/api/health/db': typeof ApiHealthDbRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
+  '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/pwa/manifest': typeof ApiPwaManifestRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
   '/api/tickets/verify': typeof ApiTicketsVerifyRoute
@@ -521,6 +542,9 @@ export interface FileRoutesByTo {
   '/api/health/db': typeof ApiHealthDbRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
+  '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/pwa/manifest': typeof ApiPwaManifestRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
   '/api/tickets/verify': typeof ApiTicketsVerifyRoute
@@ -590,6 +614,9 @@ export interface FileRoutesById {
   '/api/health/db': typeof ApiHealthDbRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
+  '/api/push/config': typeof ApiPushConfigRoute
+  '/api/push/subscribe': typeof ApiPushSubscribeRoute
+  '/api/pwa/manifest': typeof ApiPwaManifestRoute
   '/api/raffles/$id': typeof ApiRafflesIdRouteWithChildren
   '/api/raffles/first-active': typeof ApiRafflesFirstActiveRoute
   '/api/tickets/verify': typeof ApiTicketsVerifyRoute
@@ -659,6 +686,9 @@ export interface FileRouteTypes {
     | '/api/health/db'
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
+    | '/api/push/config'
+    | '/api/push/subscribe'
+    | '/api/pwa/manifest'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
     | '/api/tickets/verify'
@@ -724,6 +754,9 @@ export interface FileRouteTypes {
     | '/api/health/db'
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
+    | '/api/push/config'
+    | '/api/push/subscribe'
+    | '/api/pwa/manifest'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
     | '/api/tickets/verify'
@@ -792,6 +825,9 @@ export interface FileRouteTypes {
     | '/api/health/db'
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
+    | '/api/push/config'
+    | '/api/push/subscribe'
+    | '/api/pwa/manifest'
     | '/api/raffles/$id'
     | '/api/raffles/first-active'
     | '/api/tickets/verify'
@@ -845,6 +881,9 @@ export interface RootRouteChildren {
   ApiHealthDbRoute: typeof ApiHealthDbRoute
   ApiPurchaseSuccessAnalyticsRoute: typeof ApiPurchaseSuccessAnalyticsRoute
   ApiPurchasesTopClientsRoute: typeof ApiPurchasesTopClientsRoute
+  ApiPushConfigRoute: typeof ApiPushConfigRoute
+  ApiPushSubscribeRoute: typeof ApiPushSubscribeRoute
+  ApiPwaManifestRoute: typeof ApiPwaManifestRoute
   ApiRafflesIdRoute: typeof ApiRafflesIdRouteWithChildren
   ApiRafflesFirstActiveRoute: typeof ApiRafflesFirstActiveRoute
   ApiTicketsVerifyRoute: typeof ApiTicketsVerifyRoute
@@ -1020,6 +1059,27 @@ declare module '@tanstack/react-router' {
       path: '/api/raffles/$id'
       fullPath: '/api/raffles/$id'
       preLoaderRoute: typeof ApiRafflesIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/pwa/manifest': {
+      id: '/api/pwa/manifest'
+      path: '/api/pwa/manifest'
+      fullPath: '/api/pwa/manifest'
+      preLoaderRoute: typeof ApiPwaManifestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/subscribe': {
+      id: '/api/push/subscribe'
+      path: '/api/push/subscribe'
+      fullPath: '/api/push/subscribe'
+      preLoaderRoute: typeof ApiPushSubscribeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/push/config': {
+      id: '/api/push/config'
+      path: '/api/push/config'
+      fullPath: '/api/push/config'
+      preLoaderRoute: typeof ApiPushConfigRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/purchases/top-clients': {
@@ -1545,6 +1605,9 @@ const rootRouteChildren: RootRouteChildren = {
   ApiHealthDbRoute: ApiHealthDbRoute,
   ApiPurchaseSuccessAnalyticsRoute: ApiPurchaseSuccessAnalyticsRoute,
   ApiPurchasesTopClientsRoute: ApiPurchasesTopClientsRoute,
+  ApiPushConfigRoute: ApiPushConfigRoute,
+  ApiPushSubscribeRoute: ApiPushSubscribeRoute,
+  ApiPwaManifestRoute: ApiPwaManifestRoute,
   ApiRafflesIdRoute: ApiRafflesIdRouteWithChildren,
   ApiRafflesFirstActiveRoute: ApiRafflesFirstActiveRoute,
   ApiTicketsVerifyRoute: ApiTicketsVerifyRoute,

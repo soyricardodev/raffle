@@ -1,3 +1,4 @@
+import { useEffect } from "react"
 import {
   Sheet,
   SheetContent,
@@ -6,6 +7,8 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
+import { PwaPurchaseNudge } from "@/features/pwa/PwaPurchaseNudge"
+import { usePwaEngageContext } from "@/features/pwa/pwa-engage-context"
 import { PurchaseSuccessPromoSection } from "@/features/raffle/purchase-form/PurchaseSuccessPromoSection"
 import { PurchaseSuccessTickets } from "@/features/raffle/purchase-form/PurchaseSuccessTickets"
 import {
@@ -27,6 +30,7 @@ export function PurchaseSuccessDialog({
   onClose,
 }: PurchaseSuccessDialogProps) {
   const branding = usePublicBranding()
+  const engage = usePwaEngageContext()
   const {
     promo,
     supportLinkRef,
@@ -45,6 +49,13 @@ export function PurchaseSuccessDialog({
     onClose,
   })
 
+  useEffect(() => {
+    if (!engage) return
+    if (result) engage.holdEngageUi()
+    else engage.releaseEngageUi()
+    return () => engage.releaseEngageUi()
+  }, [engage?.holdEngageUi, engage?.releaseEngageUi, result])
+
   const hasFinalizeCta = Boolean(result && promo.supportFinalizeHref)
   const finalizeCopy = hasFinalizeCta
     ? purchaseSuccessFinalizeCopy(promo.supportLabel)
@@ -59,9 +70,9 @@ export function PurchaseSuccessDialog({
         aria-describedby={result ? "purchase-success-description" : undefined}
       >
         <SheetHeader className="shrink-0 gap-2 px-4 pt-5 pr-12 pb-3 text-left">
-          {hasFinalizeCta && "eyebrow" in finalizeCopy ? (
+          {hasFinalizeCta ? (
             <p className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
-              {finalizeCopy.eyebrow}
+              {purchaseSuccessFinalizeCopy(promo.supportLabel).eyebrow}
             </p>
           ) : null}
           <SheetTitle className="text-xl leading-snug font-semibold tracking-tight">
@@ -86,6 +97,8 @@ export function PurchaseSuccessDialog({
               onSocialLinkClick={trackSocialLinkClick}
               showSocials={false}
             />
+
+            <PwaPurchaseNudge />
 
             <div className="flex min-h-0 flex-1 flex-col px-4 pt-4 pb-2">
               <PurchaseSuccessTickets

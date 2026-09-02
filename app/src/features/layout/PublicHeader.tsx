@@ -1,13 +1,15 @@
 import { Link } from "@tanstack/react-router"
 import { Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
-import { buildVerifyHref } from "@/features/verify/build-verify-href"
 import { usePublicBranding } from "@/features/layout/use-public-branding"
+import { PWA_NAME } from "@/features/pwa/pwa-brand"
+import { PwaInstallHeaderButton } from "@/features/pwa/PwaInstallHeaderButton"
 import { ThemeToggle } from "@/features/theme/ThemeToggle"
+import { buildVerifyHref } from "@/features/verify/build-verify-href"
 
 export function PublicHeader() {
   const branding = usePublicBranding()
-  const siteName = branding?.siteInfo.site_name ?? ""
+  const siteName = PWA_NAME
   const logoUrl = branding?.images.logo ?? ""
 
   return (
@@ -30,14 +32,16 @@ export function PublicHeader() {
           {siteName ? <span className="truncate">{siteName}</span> : null}
         </Link>
         <nav className="flex shrink-0 items-center gap-1">
+          <PwaInstallHeaderButton />
           <Button
             size="sm"
-            className="h-9 gap-1.5 px-2.5 text-xs font-semibold shadow-sm ring-2 ring-primary/35 sm:h-10 sm:px-3 sm:text-sm"
+            variant="outline"
+            className="h-9 gap-1.5 px-2.5 text-xs font-semibold sm:h-10 sm:px-3 sm:text-sm"
             asChild
           >
             <Link {...buildVerifyHref()}>
               <Search className="size-3.5 shrink-0 sm:size-4" aria-hidden />
-              <span className="max-w-[7.5rem] truncate sm:max-w-none">Buscar mis boletos</span>
+              <span className="max-w-[6.5rem] truncate sm:max-w-none">Buscar mis boletos</span>
             </Link>
           </Button>
           <ThemeToggle />

@@ -1,21 +1,22 @@
 import { createFileRoute, Outlet } from "@tanstack/react-router"
+import { publicLayoutLoaderData } from "@/features/layout/document-head"
 import { brandCssVariables } from "@/features/layout/public-brand-css"
 import { resolveSiteFaviconUrl } from "@/features/layout/public-favicon"
 import { ensurePublicSiteConfig } from "@/features/layout/public-page-loader"
-import { adminLayoutLoaderData } from "@/features/layout/document-head"
 import { resolvePublicSeo } from "@/features/layout/public-seo"
 import { PublicSiteConfigProvider } from "@/features/layout/public-site-config-context"
+import { PWA_NAME } from "@/features/pwa/pwa-brand"
 
 export const Route = createFileRoute("/_public")({
   loader: async ({ context: { queryClient } }) => {
     const siteConfig = await ensurePublicSiteConfig(queryClient)
-    return adminLayoutLoaderData(siteConfig)
+    return publicLayoutLoaderData(siteConfig)
   },
   head: ({ loaderData }) => {
     const seo = resolvePublicSeo(loaderData?.siteConfig)
     const meta: Array<
       { title?: string } | { name: string; content: string } | { property: string; content: string }
-    > = []
+    > = [{ title: loaderData?.siteName || PWA_NAME }]
 
     if (!seo.indexable) meta.push({ name: "robots", content: "noindex, nofollow" })
     if (seo.ogImage) {
@@ -27,12 +28,19 @@ export const Route = createFileRoute("/_public")({
       meta.push({ name: "canonical", content: seo.canonicalUrl })
     }
 
-    const favicon = resolveSiteFaviconUrl(loaderData?.siteConfig)
-    const links: Array<{ rel: string; href: string }> = []
-    if (favicon) {
-      links.push({ rel: "icon", href: favicon })
-      links.push({ rel: "apple-touch-icon", href: favicon })
-    }
+    const favicon = resolveSiteFaviconUrl(loaderData?.siteConfig) || "/pwa/icon-192.png"
+    const theme = loaderData?.siteConfig?.site_colors?.primary?.trim() || "#F5C400"
+    const links: Array<{ rel: string; href: string }> = [
+      { rel: "manifest", href: "/api/pwa/manifest" },
+      { rel: "icon", href: favicon },
+      { rel: "apple-touch-icon", href: "/pwa/apple-touch.png" },
+    ]
+
+    meta.push({ name: "theme-color", content: theme })
+    meta.push({ name: "mobile-web-app-capable", content: "yes" })
+    meta.push({ name: "apple-mobile-web-app-capable", content: "yes" })
+    meta.push({ name: "apple-mobile-web-app-status-bar-style", content: "default" })
+    meta.push({ name: "apple-mobile-web-app-title", content: PWA_NAME })
 
     return {
       meta,

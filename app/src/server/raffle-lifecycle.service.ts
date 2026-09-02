@@ -13,6 +13,14 @@ import * as rafflesRepo from "./repositories/raffles.repository"
 const logger = getLogger()
 const MANUAL_PAUSE_MINUTES = 15
 
+function maybeNotifyNewRaffle(raffleId: number, previousStatus: RaffleStatus, nextStatus: RaffleStatus, noChange?: boolean) {
+  if (noChange || nextStatus !== "active") return
+  if (previousStatus === "paused" || previousStatus === "active") return
+  void import("./push.service").then(({ notifyNewRaffleInBackground }) => {
+    notifyNewRaffleInBackground(raffleId)
+  })
+}
+
 const STATUS_LABELS: Record<RaffleStatus, string> = {
   draft: "borrador",
   active: "activa",
@@ -188,6 +196,7 @@ export async function transitionRaffle(raffleId: number, input: TransitionRaffle
         )
       }
       const change = await applyStatus(raffleId, "active")
+      maybeNotifyNewRaffle(raffleId, change.previousStatus, change.status, change.noChange)
       return {
         raffleId,
         intent: input.intent,
@@ -215,6 +224,7 @@ export async function transitionRaffle(raffleId: number, input: TransitionRaffle
     case "set_status": {
       assertSetStatusAllowed(from, input.status)
       const change = await applyStatus(raffleId, input.status)
+      maybeNotifyNewRaffle(raffleId, change.previousStatus, change.status, change.noChange)
       return {
         raffleId,
         intent: input.intent,

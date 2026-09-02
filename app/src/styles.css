@@ -525,3 +525,16 @@
     }
   }
 }
+
+body:has([data-testid="pwa-engage-banner"]) .support-fab {
+  bottom: calc(4.85rem + env(safe-area-inset-bottom));
+}
+
+body:has([data-testid="pwa-engage-banner"]) .public-shell {
+  padding-bottom: 5.25rem;
+}
+
+body:has([data-slot="sheet-overlay"][data-open]) [data-testid="pwa-engage-banner"] {
+  visibility: hidden;
+  pointer-events: none;
+}

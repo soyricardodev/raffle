@@ -149,11 +149,11 @@ describe("parsePublicSiteConfig", () => {
 })
 
 describe("resolvePublicSeo", () => {
-  it("falls back to site_info when seo fields are empty", () => {
+  it("falls back to Yoiber Rifas and site tagline when seo fields are empty", () => {
     const seo = resolvePublicSeo({
       site_info: { site_name: "Mi Rifa", tagline: "Gana hoy", runlot_id: "" },
     })
-    expect(seo.title).toBe("Mi Rifa")
+    expect(seo.title).toBe("Yoiber Rifas")
     expect(seo.description).toBe("Gana hoy")
   })
 

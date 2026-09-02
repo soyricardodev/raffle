@@ -43,7 +43,7 @@ export const Route = createFileRoute("/_public/")({
     const seo = resolvePublicSeo(siteConfigFromMatches(matches, "/_public"))
     const siteName = siteNameFromMatches(matches, "/_public")
     return buildPublicPageHead({
-      pageTitle: seo.title || "Rifas",
+      pageTitle: siteName || seo.title,
       siteName,
       matches,
     })

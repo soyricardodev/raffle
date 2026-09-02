@@ -22,6 +22,8 @@ export const raffles = sqliteTable(
     ticketsAvailable: integer("tickets_available").notNull().default(0),
     ticketsReserved: integer("tickets_reserved").notNull().default(0),
     ticketsSold: integer("tickets_sold").notNull().default(0),
+    /** JSON string array of sent push milestone ids (new_raffle, sold_10, …). */
+    pushMilestonesSent: text("push_milestones_sent").notNull().default("[]"),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

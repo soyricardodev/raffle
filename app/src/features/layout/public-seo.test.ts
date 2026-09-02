@@ -13,4 +13,8 @@ describe("resolvePublicSeo og image fallback", () => {
     })
     expect(seo.ogImage).toBe("/uploads/site/banner.jpg")
   })
+
+  it("uses Yoiber Rifas when SEO title and site name are empty", () => {
+    expect(resolvePublicSeo({}).title).toBe("Yoiber Rifas")
+  })
 })

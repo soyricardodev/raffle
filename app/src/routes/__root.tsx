@@ -25,11 +25,28 @@ const themeScript = `
 })()
 `
 
+const pwaInstallScript = `
+(function() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js', { scope: '/' });
+  }
+  window.addEventListener('beforeinstallprompt', function(e) {
+    e.preventDefault();
+    window.__deferredPwaInstall = e;
+    window.dispatchEvent(new Event('pwa:installable'));
+  });
+  window.addEventListener('appinstalled', function() {
+    window.__deferredPwaInstall = null;
+    window.dispatchEvent(new Event('pwa:installed'));
+  });
+})()
+`
+
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
-      { name: "viewport", content: "width=device-width, initial-scale=1" },
+      { name: "viewport", content: "width=device-width, initial-scale=1, viewport-fit=cover" },
     ],
     links: [{ rel: "stylesheet", href: appCss }],
   }),
@@ -65,6 +82,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
       </head>
       <body className="min-h-screen bg-background text-foreground antialiased">
         <ScriptOnce>{themeScript}</ScriptOnce>
+        <ScriptOnce>{pwaInstallScript}</ScriptOnce>
         <QueryClientProvider client={queryClient}>
           {children}
           <Toaster richColors closeButton position="top-center" />
