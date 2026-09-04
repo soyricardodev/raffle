@@ -4,6 +4,7 @@ import {
   alertMilestoneKey,
   buildRaffleMilestonePlan,
   buildRafflePromotionPlan,
+  crossedSaleAlertKeys,
   highestSaleAlert,
   isAlertAlreadySent,
   keepLatestSaleProgressPerRaffle,
@@ -591,6 +592,54 @@ export function notifySaleMilestonesInBackground(raffleId: number): void {
     logger.error({ err, raffleId }, "push:sale_milestones_failed")
   })
 }
+
+/**
+ * Marks every sale alert already crossed by the raffle's current progress as
+ * sent, WITHOUT sending any push. Used when a raffle enters circulation with
+ * pre-existing progress (import/migration or re-activation) so stale
+ * milestones never fire as old pushes on the next purchase.
+ */
+export async function seedPushMilestonesForExistingProgress(raffleId: number): Promise<boolean> {
+  const saleAlerts = (await pushAutoAlertsRepo.listPushAutoAlerts()).filter(
+    (alert) => alert.kind === "percent",
+  )
+
+  const seeded = await withImmediateTransaction(async (tx) => {
+    const [row] = await tx
+      .select({
+        ticketsSold: raffles.ticketsSold,
+        ticketsReserved: raffles.ticketsReserved,
+        totalTickets: raffles.totalTickets,
+        pushMilestonesSent: raffles.pushMilestonesSent,
+      })
+      .from(raffles)
+      .where(eq(raffles.id, raffleId))
+      .limit(1)
+    if (!row) return false
+
+    const already = parsePushMilestonesSent(row.pushMilestonesSent)
+    const crossed = crossedSaleAlertKeys(
+      occupiedTickets(row.ticketsSold, row.ticketsReserved),
+      row.totalTickets,
+      already,
+      saleAlerts,
+    )
+    if (crossed.length === 0) return false
+
+    const merged = mergePushMilestones(already, crossed)
+    await tx
+      .update(raffles)
+      .set({ pushMilestonesSent: serializePushMilestonesSent(merged), updatedAt: new Date() })
+      .where(eq(raffles.id, raffleId))
+    return true
+  })
+
+  if (seeded) {
+    logger.info({ raffleId }, "push:milestones_seeded")
+  }
+  return seeded
+}
+
 
 export async function notifyPromotion(raffleId: number, promotionId: number): Promise<void> {
   if (!isWebPushConfigured()) return

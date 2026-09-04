@@ -3,6 +3,7 @@ import {
   alertMilestoneKey,
   buildRaffleMilestonePlan,
   buildRafflePromotionPlan,
+  crossedSaleAlertKeys,
   DEFAULT_PUSH_AUTO_ALERTS,
   highestSaleAlert,
   highestSaleMilestone,
@@ -52,6 +53,35 @@ describe("newlyReachedSaleAlerts", () => {
     expect(newlyReachedSaleAlerts(100, 1000, [], TEST_ALERTS)).toEqual([
       expect.objectContaining({ legacyMilestoneId: "sold_10" }),
     ])
+  })
+})
+
+describe("crossedSaleAlertKeys", () => {
+  it("returns alert keys for every crossed threshold", () => {
+    expect(crossedSaleAlertKeys(950, 1000, [], TEST_ALERTS)).toEqual([
+      "alert:2",
+      "alert:3",
+      "alert:4",
+      "alert:5",
+      "alert:6",
+    ])
+    expect(crossedSaleAlertKeys(600, 1000, [], TEST_ALERTS)).toEqual([
+      "alert:2",
+      "alert:3",
+      "alert:4",
+    ])
+  })
+
+  it("skips already claimed and disabled alerts, and nothing below 10%", () => {
+    const partiallyClaimed = crossedSaleAlertKeys(600, 1000, ["alert:2", "alert:3"], TEST_ALERTS)
+    expect(partiallyClaimed).toEqual(["alert:4"])
+    const disabled = TEST_ALERTS.map((alert) =>
+      alert.kind === "percent" && alert.triggerPercent === 50
+        ? { ...alert, enabled: false }
+        : alert,
+    )
+    expect(crossedSaleAlertKeys(600, 1000, ["alert:2", "alert:3"], disabled)).toEqual([])
+    expect(crossedSaleAlertKeys(99, 1000, [], TEST_ALERTS)).toEqual([])
   })
 })
 

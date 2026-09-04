@@ -21,6 +21,18 @@ function maybeNotifyNewRaffle(raffleId: number, previousStatus: RaffleStatus, ne
   })
 }
 
+/** Pre-marks crossed sale milestones so pre-existing progress never fires stale pushes. */
+function maybeSeedPushMilestones(raffleId: number, nextStatus: RaffleStatus, noChange?: boolean) {
+  if (noChange || nextStatus !== "active") return
+  void import("./push.service")
+    .then(({ seedPushMilestonesForExistingProgress }) =>
+      seedPushMilestonesForExistingProgress(raffleId),
+    )
+    .catch((err) => {
+      logger.error({ err, raffleId }, "push:milestones_seed_failed")
+    })
+}
+
 const STATUS_LABELS: Record<RaffleStatus, string> = {
   draft: "borrador",
   active: "activa",
@@ -196,6 +208,7 @@ export async function transitionRaffle(raffleId: number, input: TransitionRaffle
         )
       }
       const change = await applyStatus(raffleId, "active")
+      maybeSeedPushMilestones(raffleId, change.status, change.noChange)
       maybeNotifyNewRaffle(raffleId, change.previousStatus, change.status, change.noChange)
       return {
         raffleId,
@@ -224,6 +237,7 @@ export async function transitionRaffle(raffleId: number, input: TransitionRaffle
     case "set_status": {
       assertSetStatusAllowed(from, input.status)
       const change = await applyStatus(raffleId, input.status)
+      maybeSeedPushMilestones(raffleId, change.status, change.noChange)
       maybeNotifyNewRaffle(raffleId, change.previousStatus, change.status, change.noChange)
       return {
         raffleId,

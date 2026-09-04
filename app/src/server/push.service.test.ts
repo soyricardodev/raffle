@@ -1,4 +1,5 @@
 import { rafflePromotions, raffles } from "@raffle/shared/db"
+import { parsePushMilestonesSent } from "@raffle/shared/push"
 import { eq } from "drizzle-orm"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { getDb } from "@/lib/db.server"
@@ -13,6 +14,7 @@ import {
   notifySaleMilestones,
   resetWebPushClientForTests,
   savePushSubscription,
+  seedPushMilestonesForExistingProgress,
   sendManualBroadcast,
   setWebPushClientForTests,
 } from "./push.service"
@@ -143,6 +145,45 @@ describe("push.service milestones", () => {
     expect(updated?.pushMilestonesSent).toContain("alert:3")
     expect(updated?.pushMilestonesSent).toContain("alert:4")
     expect(updated?.pushMilestonesSent).not.toContain("alert:5")
+  })
+
+  it("seeds already crossed milestones without sending any push", async () => {
+    const db = getDb()
+    const [row] = await db
+      .insert(raffles)
+      .values({
+        name: "Importada al 95%",
+        totalTickets: 100,
+        priceBsCents: 500,
+        priceUsdCents: 100,
+        minPurchase: 1,
+        maxPurchase: 5,
+        status: "finished",
+        autoPauseEnabled: false,
+        ticketsAvailable: 5,
+        ticketsReserved: 0,
+        ticketsSold: 95,
+      })
+      .returning({ id: raffles.id })
+    const importedRaffleId = row!.id
+
+    sendNotification.mockClear()
+    const seeded = await seedPushMilestonesForExistingProgress(importedRaffleId)
+
+    expect(seeded).toBe(true)
+    expect(sendNotification).not.toHaveBeenCalled()
+
+    const [updated] = await db.select().from(raffles).where(eq(raffles.id, importedRaffleId)).limit(1)
+    expect(parsePushMilestonesSent(updated?.pushMilestonesSent)).toEqual(
+      expect.arrayContaining(["alert:2", "alert:3", "alert:4", "alert:5", "alert:6"]),
+    )
+
+    sendNotification.mockClear()
+    await notifySaleMilestones(importedRaffleId)
+    expect(sendNotification).not.toHaveBeenCalled()
+
+    const seededAgain = await seedPushMilestonesForExistingProgress(importedRaffleId)
+    expect(seededAgain).toBe(false)
   })
 
   it("sends new raffle once", async () => {

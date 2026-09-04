@@ -19,6 +19,12 @@ import {
   resolveOrCreatePaymentAccount,
   resolveOrCreateRafflePaymentMethod,
 } from "@raffle/shared/payment-methods"
+import {
+  crossedSaleAlertKeys,
+  serializePushMilestonesSent,
+  type PushAutoAlert,
+  type PushAutoAlertKind,
+} from "@raffle/shared/push"
 import { hashPassword } from "better-auth/crypto"
 import { eq } from "drizzle-orm"
 import { drizzle } from "drizzle-orm/libsql"
@@ -319,7 +325,12 @@ async function main() {
     }
   }
 
-  // Recalcular contadores por rifa
+  // Recalcular contadores por rifa + seed de hitos ya cruzados (sin pushes)
+  const alertRows = (await db.select().from(schema.pushAutoAlerts))
+    .filter((a) => a.kind === "percent")
+    .map((a) => ({ ...a, kind: a.kind as PushAutoAlertKind }))
+  let seededRaffles = 0
+
   for (const r of raffleRows as MysqlRow[]) {
     const id = Number(r.id)
     const total = Number(r.total_tickets)
@@ -327,12 +338,22 @@ async function main() {
     const reserved = c.reserved
     const sold = c.sold
     const available = Math.max(0, total - reserved - sold)
+    // Marcar como enviados los hitos ya cruzados por el progreso importado:
+    // evita pushes viejos ("¡Última oportunidad!") en la primera compra post-migración.
+    const crossedKeys = crossedSaleAlertKeys(sold + reserved, total, [], alertRows)
+    if (crossedKeys.length > 0) seededRaffles++
     await db
       .update(schema.raffles)
-      .set({ ticketsAvailable: available, ticketsReserved: reserved, ticketsSold: sold })
+      .set({
+        ticketsAvailable: available,
+        ticketsReserved: reserved,
+        ticketsSold: sold,
+        pushMilestonesSent: serializePushMilestonesSent(crossedKeys),
+      })
       .where(eq(schema.raffles.id, id))
   }
 
+  console.log(`   🔕 Hitos pre-marcados como enviados en ${seededRaffles} rifas con progreso importado`)
   console.log(`   importados=${imported} omitidos(available/sin compra)=${skipped}`)
 
   // ─── email_logs ────────────────────────────────────────────

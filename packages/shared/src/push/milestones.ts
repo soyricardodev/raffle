@@ -168,6 +168,18 @@ export function newlyReachedSaleAlerts(
     )
 }
 
+/** Milestone keys for sale alerts already crossed by current progress (to seed as sent, no push). */
+export function crossedSaleAlertKeys(
+  occupied: number,
+  total: number,
+  alreadySent: readonly string[],
+  alerts: readonly PushAutoAlert[],
+): string[] {
+  return newlyReachedSaleAlerts(occupied, total, alreadySent, alerts).map((alert) =>
+    alertMilestoneKey(alert.id),
+  )
+}
+
 /** Prefer the most urgent alert when several are crossed in one sale. */
 export function highestSaleAlert(alerts: readonly PushAutoAlert[]): PushAutoAlert | null {
   return alerts.reduce<PushAutoAlert | null>((best, current) => {
