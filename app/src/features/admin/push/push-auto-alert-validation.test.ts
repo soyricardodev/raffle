@@ -87,6 +87,6 @@ describe("orderedAlertIds", () => {
       baseAlert({ id: 1, kind: "new_raffle", triggerPercent: null, sortOrder: 0 }),
       baseAlert({ id: 2, kind: "percent", sortOrder: 10 }),
     ]
-    expect(orderedAlertIds(alerts)).toEqual([1, 2, 4])
+    expect(orderedAlertIds(alerts)).toEqual([1, 4, 2])
   })
 })

@@ -45,14 +45,6 @@ function triggerLabel(alert: PushAutoAlert, draft: PushAutoAlertDraft): string {
   return percent != null ? `Al ${percent}%` : "Por porcentaje"
 }
 
-function orderedAlertIds(alerts: readonly PushAutoAlert[]): number[] {
-  const pinned = alerts.filter((alert) => alert.kind === "new_raffle")
-  const percent = alerts
-    .filter((alert) => alert.kind === "percent")
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-  return [...pinned, ...percent].map((alert) => alert.id)
-}
-
 type PercentFieldProps = {
   id: string
   label?: string
@@ -271,8 +263,7 @@ export function AdminPushAutoAlerts({
   function movePercentAlert(index: number, delta: -1 | 1) {
     const nextPercent = moveItemInList(percentAlerts, index, delta)
     if (nextPercent === percentAlerts) return
-    const orderedIds = orderedAlertIds([...pinnedAlerts, ...nextPercent])
-    reorderMutation.mutate(orderedIds)
+    reorderMutation.mutate(orderedAlertIds([...pinnedAlerts, ...nextPercent]))
   }
 
   function renderAlertCard(

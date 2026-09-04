@@ -45,8 +45,6 @@ export function duplicatePercentMessage(percent: number): string {
 
 export function orderedAlertIds(alerts: readonly PushAutoAlert[]): number[] {
   const pinned = alerts.filter((alert) => alert.kind === "new_raffle")
-  const percent = alerts
-    .filter((alert) => alert.kind === "percent")
-    .sort((a, b) => a.sortOrder - b.sortOrder)
+  const percent = alerts.filter((alert) => alert.kind === "percent")
   return [...pinned, ...percent].map((alert) => alert.id)
 }
