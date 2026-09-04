@@ -19,11 +19,12 @@ export function formatSoldPercent(value: number): string {
 
 export function formatPlanItemDetail(item: {
   kind: "milestone" | "promotion"
-  status: "sent" | "skipped" | "upcoming"
+  status: "sent" | "skipped" | "upcoming" | "disabled"
   triggerPercent: number | null
   ticketsRemaining: number | null
   recipientCount: number | null
 }): string {
+  if (item.status === "disabled") return "Desactivado"
   if (item.status === "sent") {
     return formatPushRecipients(item.recipientCount) ?? "Enviada"
   }

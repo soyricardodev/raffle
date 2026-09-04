@@ -26,6 +26,7 @@ export type AdminTicketLookupRow = {
   customer_phone: string
   customer_email: string | null
   customer_ci: string | null
+  customer_location: string | null
   purchased_at: Date
 }
 
@@ -56,6 +57,7 @@ export async function lookupAdminTicketByNumber(
       customer_phone: purchases.customerPhone,
       customer_email: purchases.customerEmail,
       customer_ci: purchases.customerCi,
+      customer_location: purchases.customerLocation,
       purchased_at: purchases.createdAt,
     })
     .from(purchaseTickets)
@@ -93,6 +95,7 @@ export async function lookupAdminTicketByNumber(
       customer_phone: row.customer_phone,
       customer_email: row.customer_email,
       customer_ci: row.customer_ci,
+      customer_location: row.customer_location,
       purchased_at: row.purchased_at,
     }))
     .sort(

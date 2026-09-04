@@ -1,12 +1,12 @@
 import { pushBroadcasts } from "@raffle/shared/db"
-import type { PushBroadcastKind, PushMilestoneId } from "@raffle/shared/push"
+import type { PushBroadcastKind } from "@raffle/shared/push"
 import { asc, desc, eq, gte } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export type PushBroadcastInsert = {
   kind: PushBroadcastKind
   raffleId?: number | null
-  milestoneId?: PushMilestoneId | null
+  milestoneId?: string | null
   promotionId?: number | null
   title: string
   body: string
@@ -96,6 +96,8 @@ export async function findPushBroadcastByPromotionId(
 export type PushInboxBroadcastRow = {
   id: number
   kind: string
+  raffleId: number | null
+  milestoneId: string | null
   title: string
   body: string
   url: string
@@ -103,14 +105,13 @@ export type PushInboxBroadcastRow = {
   createdAt: Date
 }
 
-export async function listPushBroadcastsForInbox(input: {
-  since: Date
-  limit: number
-}): Promise<PushInboxBroadcastRow[]> {
+export async function listPushBroadcastsSince(since: Date): Promise<PushInboxBroadcastRow[]> {
   return getDb()
     .select({
       id: pushBroadcasts.id,
       kind: pushBroadcasts.kind,
+      raffleId: pushBroadcasts.raffleId,
+      milestoneId: pushBroadcasts.milestoneId,
       title: pushBroadcasts.title,
       body: pushBroadcasts.body,
       url: pushBroadcasts.url,
@@ -118,14 +119,6 @@ export async function listPushBroadcastsForInbox(input: {
       createdAt: pushBroadcasts.createdAt,
     })
     .from(pushBroadcasts)
-    .where(gte(pushBroadcasts.createdAt, input.since))
-    .orderBy(desc(pushBroadcasts.createdAt))
-    .limit(input.limit)
-}
-
-export async function listPushBroadcastsSince(since: Date): Promise<Array<{ id: number }>> {
-  return getDb()
-    .select({ id: pushBroadcasts.id })
-    .from(pushBroadcasts)
     .where(gte(pushBroadcasts.createdAt, since))
+    .orderBy(desc(pushBroadcasts.createdAt))
 }

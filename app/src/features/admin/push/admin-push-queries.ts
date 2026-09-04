@@ -1,4 +1,4 @@
-import type { RafflePushPlanItem } from "@raffle/shared/push"
+import type { PushAutoAlert, RafflePushPlanItem } from "@raffle/shared/push"
 import { queryOptions } from "@tanstack/react-query"
 import { adminFetch } from "@/lib/admin-fetch"
 
@@ -27,11 +27,14 @@ export type AdminPushPlan = {
   promotions: AdminPushPlanItem[]
 }
 
+export type AdminPushAutoAlert = PushAutoAlert
+
 export type AdminPushListResponse = {
   enabled: boolean
   count: number
   subscribers: AdminPushSubscriber[]
   plan: AdminPushPlan
+  autoAlerts: AdminPushAutoAlert[]
 }
 
 export type AdminPushSendResult = {

@@ -1,17 +1,21 @@
 import { normalizePhone, raffles } from "@raffle/shared/db"
 import { ValidationError } from "@raffle/shared/errors"
 import {
+  alertMilestoneKey,
   buildRaffleMilestonePlan,
   buildRafflePromotionPlan,
-  highestSaleMilestone,
+  highestSaleAlert,
+  isAlertAlreadySent,
+  keepLatestSaleProgressPerRaffle,
   mergePushMilestones,
-  newlyReachedSaleMilestones,
+  newlyReachedSaleAlerts,
   occupiedTickets,
+  type PushAutoAlert,
   type PushBroadcastKind,
-  type PushMilestoneId,
   parsePushMilestonesSent,
   promotionPushCopy,
-  pushMilestoneCopy,
+  pushAlertCopy,
+  saleProgressPushTag,
   serializePushMilestonesSent,
   soldPercent,
 } from "@raffle/shared/push"
@@ -22,6 +26,7 @@ import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
 import * as purchasesRepo from "./repositories/purchases.repository"
+import * as pushAutoAlertsRepo from "./repositories/push-auto-alerts.repository"
 import * as pushBroadcastsRepo from "./repositories/push-broadcasts.repository"
 import * as pushInboxReadsRepo from "./repositories/push-inbox-reads.repository"
 import * as pushRepo from "./repositories/push-subscriptions.repository"
@@ -181,15 +186,14 @@ export async function listPushInbox(endpoint: string): Promise<PushInbox> {
 
   await pushRepo.touchPushSubscriptionLastSeen(subscription.id)
 
-  const [rows, readIds] = await Promise.all([
-    pushBroadcastsRepo.listPushBroadcastsForInbox({
-      since: subscription.createdAt,
-      limit: INBOX_LIMIT,
-    }),
+  const [rows, readIds, currentRaffle] = await Promise.all([
+    pushBroadcastsRepo.listPushBroadcastsSince(subscription.createdAt),
     pushInboxReadsRepo.listReadBroadcastIds(subscription.id),
+    rafflesRepo.findFirstActiveOrPaused(),
   ])
   const readSet = new Set(readIds)
-  const items = rows.map((row) => ({
+  const visible = keepLatestSaleProgressPerRaffle(rows, currentRaffle?.id ?? null)
+  const items = visible.slice(0, INBOX_LIMIT).map((row) => ({
     id: row.id,
     kind: row.kind,
     title: row.title,
@@ -199,9 +203,7 @@ export async function listPushInbox(endpoint: string): Promise<PushInbox> {
     createdAt: toIso(row.createdAt),
     read: readSet.has(row.id),
   }))
-
-  const allSince = await pushBroadcastsRepo.listPushBroadcastsSince(subscription.createdAt)
-  const unreadCount = allSince.reduce((count, row) => count + (readSet.has(row.id) ? 0 : 1), 0)
+  const unreadCount = visible.reduce((count, row) => count + (readSet.has(row.id) ? 0 : 1), 0)
 
   return { items, unreadCount }
 }
@@ -258,14 +260,20 @@ export type AdminPushPlan = {
   promotions: ReturnType<typeof buildRafflePromotionPlan>
 }
 
+export type AdminPushAutoAlert = PushAutoAlert
+
 export async function listAdminPushSubscribers(): Promise<{
   enabled: boolean
   count: number
   subscribers: AdminPushSubscriber[]
   plan: AdminPushPlan
+  autoAlerts: AdminPushAutoAlert[]
 }> {
   const enabled = isWebPushConfigured()
-  const rows = await pushRepo.listPushSubscriptionSummaries()
+  const [rows, autoAlerts] = await Promise.all([
+    pushRepo.listPushSubscriptionSummaries(),
+    pushAutoAlertsRepo.listPushAutoAlerts(),
+  ])
   return {
     enabled,
     count: rows.length,
@@ -276,11 +284,12 @@ export async function listAdminPushSubscribers(): Promise<{
       createdAt: toIso(row.createdAt),
       lastSeenAt: toIso(row.lastSeenAt),
     })),
-    plan: await loadAdminPushPlan(),
+    plan: await loadAdminPushPlan(autoAlerts),
+    autoAlerts,
   }
 }
 
-async function loadAdminPushPlan(): Promise<AdminPushPlan> {
+async function loadAdminPushPlan(autoAlerts: PushAutoAlert[]): Promise<AdminPushPlan> {
   const raffle = await rafflesRepo.findFirstActiveOrPaused()
   if (!raffle) {
     return { raffle: null, milestones: [], promotions: [] }
@@ -318,6 +327,7 @@ async function loadAdminPushPlan(): Promise<AdminPushPlan> {
       totalTickets: raffle.totalTickets,
       milestonesSent: parsePushMilestonesSent(raffle.pushMilestonesSent),
       broadcasts,
+      alerts: autoAlerts,
     }),
     promotions: buildRafflePromotionPlan({
       raffleName: raffle.name,
@@ -423,7 +433,7 @@ async function sendAndLog(
   meta: {
     kind: PushBroadcastKind
     raffleId?: number | null
-    milestoneId?: PushMilestoneId | null
+    milestoneId?: string | null
     promotionId?: number | null
   },
 ): Promise<{ sent: number; removed: number; total: number }> {
@@ -470,6 +480,11 @@ function raffleIcon(imageUrl: string | null | undefined): string {
 export async function notifyNewRaffle(raffleId: number): Promise<void> {
   if (!isWebPushConfigured()) return
 
+  const newRaffleAlert = await pushAutoAlertsRepo.findEnabledNewRaffleAlert()
+  if (!newRaffleAlert) return
+
+  const milestoneKey = alertMilestoneKey(newRaffleAlert.id)
+
   const claimed = await withImmediateTransaction(async (tx) => {
     const [row] = await tx
       .select({
@@ -484,9 +499,9 @@ export async function notifyNewRaffle(raffleId: number): Promise<void> {
     if (!row) return null
 
     const already = parsePushMilestonesSent(row.pushMilestonesSent)
-    if (already.includes("new_raffle")) return null
+    if (isAlertAlreadySent(newRaffleAlert, already)) return null
 
-    const merged = mergePushMilestones(already, ["new_raffle"])
+    const merged = mergePushMilestones(already, [milestoneKey])
     await tx
       .update(raffles)
       .set({ pushMilestonesSent: serializePushMilestonesSent(merged), updatedAt: new Date() })
@@ -497,7 +512,7 @@ export async function notifyNewRaffle(raffleId: number): Promise<void> {
 
   if (!claimed) return
 
-  const copy = pushMilestoneCopy("new_raffle", claimed.name)
+  const copy = pushAlertCopy(newRaffleAlert, claimed.name)
   await sendAndLog(
     {
       ...copy,
@@ -505,12 +520,16 @@ export async function notifyNewRaffle(raffleId: number): Promise<void> {
       tag: `raffle-${raffleId}-new`,
       icon: raffleIcon(claimed.imageUrl),
     },
-    { kind: "milestone", raffleId, milestoneId: "new_raffle" },
+    { kind: "milestone", raffleId, milestoneId: milestoneKey },
   )
 }
 
 export async function notifySaleMilestones(raffleId: number): Promise<void> {
   if (!isWebPushConfigured()) return
+
+  const saleAlerts = (await pushAutoAlertsRepo.listPushAutoAlerts()).filter(
+    (alert) => alert.kind === "percent",
+  )
 
   const claimed = await withImmediateTransaction(async (tx) => {
     const [row] = await tx
@@ -530,11 +549,14 @@ export async function notifySaleMilestones(raffleId: number): Promise<void> {
 
     const already = parsePushMilestonesSent(row.pushMilestonesSent)
     const occupied = occupiedTickets(row.ticketsSold, row.ticketsReserved)
-    const newly = newlyReachedSaleMilestones(occupied, row.totalTickets, already)
-    const highest = highestSaleMilestone(newly)
+    const newly = newlyReachedSaleAlerts(occupied, row.totalTickets, already, saleAlerts)
+    const highest = highestSaleAlert(newly)
     if (!highest) return null
 
-    const merged = mergePushMilestones(already, newly)
+    const merged = mergePushMilestones(
+      already,
+      newly.map((alert) => alertMilestoneKey(alert.id)),
+    )
     await tx
       .update(raffles)
       .set({ pushMilestonesSent: serializePushMilestonesSent(merged), updatedAt: new Date() })
@@ -545,15 +567,16 @@ export async function notifySaleMilestones(raffleId: number): Promise<void> {
 
   if (!claimed) return
 
-  const copy = pushMilestoneCopy(claimed.highest, claimed.name)
+  const copy = pushAlertCopy(claimed.highest, claimed.name)
+  const milestoneKey = alertMilestoneKey(claimed.highest.id)
   await sendAndLog(
     {
       ...copy,
       url: raffleHomeUrl(raffleId),
-      tag: `raffle-${raffleId}-${claimed.highest}`,
+      tag: saleProgressPushTag(raffleId, milestoneKey),
       icon: raffleIcon(claimed.imageUrl),
     },
-    { kind: "milestone", raffleId, milestoneId: claimed.highest },
+    { kind: "milestone", raffleId, milestoneId: milestoneKey },
   )
 }
 

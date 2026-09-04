@@ -25,6 +25,9 @@ export {
   PushSubscribeInput,
   PushUnsubscribeInput,
   AdminPushBroadcastInput,
+  AdminPushAutoAlertCreateInput,
+  AdminPushAutoAlertUpdateInput,
+  AdminPushAutoAlertsReorderInput,
   PushInboxLookupInput,
   PushInboxReadInput,
 } from "./push-subscription.js"

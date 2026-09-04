@@ -268,6 +268,8 @@ function TicketLookupResultCard({ match }: TicketLookupResultCardProps) {
               "—"
             )}
           </span>
+          <span className="text-muted-foreground text-xs">Ubicación</span>
+          <span className="min-w-0 break-words">{match.customer_location?.trim() || "—"}</span>
           <span className="text-muted-foreground text-xs">Compra</span>
           <span className="flex flex-wrap items-center gap-2">
             #{match.purchase_id}

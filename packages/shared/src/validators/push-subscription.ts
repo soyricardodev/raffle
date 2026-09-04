@@ -52,3 +52,45 @@ export const PushInboxReadInput = z
     message: "Indica qué avisos marcar",
   })
 export type PushInboxReadInput = z.infer<typeof PushInboxReadInput>
+
+const pushAutoAlertTitle = z
+  .string()
+  .trim()
+  .min(1, "Escribe un título")
+  .max(80, "El título es demasiado largo")
+
+const pushAutoAlertBody = z
+  .string()
+  .trim()
+  .max(180, "El mensaje es demasiado largo")
+  .optional()
+  .transform((value) => value ?? "")
+
+export const AdminPushAutoAlertCreateInput = z.object({
+  triggerPercent: z
+    .number()
+    .int("El porcentaje debe ser entero")
+    .min(1, "Mínimo 1%")
+    .max(100, "Máximo 100%"),
+  title: pushAutoAlertTitle,
+  body: pushAutoAlertBody,
+  enabled: z.boolean().optional(),
+})
+export type AdminPushAutoAlertCreateInput = z.infer<typeof AdminPushAutoAlertCreateInput>
+
+export const AdminPushAutoAlertUpdateInput = z
+  .object({
+    triggerPercent: z.number().int().min(1).max(100).optional(),
+    title: pushAutoAlertTitle.optional(),
+    body: pushAutoAlertBody.optional(),
+    enabled: z.boolean().optional(),
+  })
+  .refine((value) => Object.keys(value).length > 0, {
+    message: "No hay cambios",
+  })
+export type AdminPushAutoAlertUpdateInput = z.infer<typeof AdminPushAutoAlertUpdateInput>
+
+export const AdminPushAutoAlertsReorderInput = z.object({
+  ordered_ids: z.array(z.number().int().positive()).min(1, "Indica el orden"),
+})
+export type AdminPushAutoAlertsReorderInput = z.infer<typeof AdminPushAutoAlertsReorderInput>

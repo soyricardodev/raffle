@@ -9,6 +9,7 @@ import { desc, eq, inArray, sql } from "drizzle-orm"
 import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
 import { buildPublicRafflePricing, type PublicRafflePricing } from "./promotion-pricing.service"
+import { notifyNewRaffleInBackground } from "./push.service"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
 import * as analyticsRepo from "./repositories/analytics.repository"
@@ -173,6 +174,9 @@ export async function getFirstActiveRaffle(): Promise<EnrichedRaffle> {
 export async function createRaffle(input: CreateRaffleInput) {
   const raffleId = await withImmediateTransaction((tx) => rafflesRepo.insertRaffle(tx, input))
   logger.info({ raffleId, name: input.name }, "raffle:created")
+  if ((input.status ?? "draft") === "active") {
+    notifyNewRaffleInBackground(raffleId)
+  }
   return { raffleId }
 }
 

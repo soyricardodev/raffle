@@ -1,4 +1,3 @@
-import { SALE_PUSH_MILESTONES } from "@raffle/shared/push"
 import { Skeleton } from "@/components/ui/skeleton"
 import type { AdminPushPlan, AdminPushPlanItem } from "@/features/admin/push/admin-push-queries"
 import { formatPlanItemDetail, formatSoldPercent } from "@/features/admin/push/push-plan-format"
@@ -31,7 +30,9 @@ export function AdminPushPlanCard({
     plan.milestones.find((item) => item.status === "upcoming")?.key ??
     plan.promotions.find((item) => item.status === "upcoming")?.key ??
     null
-  const milestoneRows = plan.milestones.filter((item) => item.status !== "skipped")
+  const milestoneRows = plan.milestones.filter(
+    (item) => item.status !== "skipped" && item.status !== "disabled",
+  )
 
   return (
     <div className="overflow-hidden rounded-2xl border">
@@ -127,6 +128,9 @@ function SaleTrack({
 }) {
   const width = Math.min(100, Math.max(0, soldPercent))
   const byId = new Map(milestones.map((item) => [item.milestoneId, item]))
+  const marks = milestones
+    .filter((item) => item.triggerPercent != null)
+    .sort((a, b) => (a.triggerPercent ?? 0) - (b.triggerPercent ?? 0))
 
   return (
     <div
@@ -142,14 +146,15 @@ function SaleTrack({
         className="bg-primary absolute top-1/2 left-0 h-1.5 -translate-y-1/2 rounded-full transition-[width] duration-200 ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none"
         style={{ width: `${width}%` }}
       />
-      {SALE_PUSH_MILESTONES.map((mark) => {
-        const item = byId.get(mark.id)
+      {marks.map((mark) => {
+        const item = byId.get(mark.milestoneId)
+        const percent = mark.triggerPercent ?? 0
         const isNext = item?.milestoneId === nextMilestoneId
         const sent = item?.status === "sent"
         const skipped = item?.status === "skipped"
         return (
           <span
-            key={mark.id}
+            key={mark.key}
             className={cn(
               "absolute top-1/2 -translate-x-1/2 -translate-y-1/2 rounded-full",
               isNext
@@ -160,13 +165,13 @@ function SaleTrack({
                     ? "bg-muted-foreground/45 size-1.5 ring-2 ring-background"
                     : "border-muted-foreground/40 size-1.5 border bg-background ring-2 ring-background",
             )}
-            style={{ left: `${mark.minPercent}%` }}
+            style={{ left: `${percent}%` }}
             title={
               sent
-                ? `Enviada al ${mark.minPercent}%`
+                ? `Enviada al ${percent}%`
                 : skipped
-                  ? `Omitida al ${mark.minPercent}%`
-                  : `Aviso al ${mark.minPercent}%`
+                  ? `Omitida al ${percent}%`
+                  : `Aviso al ${percent}%`
             }
           />
         )
@@ -251,6 +256,9 @@ function PlanDot({ status, isNext }: { status: AdminPushPlanItem["status"]; isNe
         isNext && "bg-primary size-2.5",
         !isNext && status === "sent" && "bg-primary size-2",
         !isNext && status === "skipped" && "bg-muted-foreground/35 mt-2 size-1.5",
+        !isNext &&
+          status === "disabled" &&
+          "bg-muted-foreground/25 mt-2 size-1.5 ring-1 ring-muted-foreground/30",
         !isNext &&
           status === "upcoming" &&
           "border-muted-foreground/40 size-2 border-2 bg-background",

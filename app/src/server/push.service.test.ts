@@ -78,13 +78,13 @@ describe("push.service milestones", () => {
       tag: string
     }
     expect(payload.title).toBe("Último 50% disponible.")
-    expect(payload.tag).toBe(`raffle-${raffleId}-sold_50`)
+    expect(payload.tag).toBe(`raffle-${raffleId}-alert:4`)
 
     const db = getDb()
     const [row] = await db.select().from(raffles).where(eq(raffles.id, raffleId)).limit(1)
-    expect(row?.pushMilestonesSent).toContain("sold_10")
-    expect(row?.pushMilestonesSent).toContain("remaining_70")
-    expect(row?.pushMilestonesSent).toContain("sold_50")
+    expect(row?.pushMilestonesSent).toContain("alert:2")
+    expect(row?.pushMilestonesSent).toContain("alert:3")
+    expect(row?.pushMilestonesSent).toContain("alert:4")
 
     sendNotification.mockClear()
     await notifySaleMilestones(raffleId)
@@ -92,18 +92,16 @@ describe("push.service milestones", () => {
 
     const listed = await listAdminPushSubscribers()
     expect(listed.plan.raffle?.id).toBe(raffleId)
-    expect(listed.plan.milestones.find((row) => row.milestoneId === "sold_50")).toMatchObject({
+    expect(listed.plan.milestones.find((row) => row.alertId === 4)).toMatchObject({
       status: "sent",
       recipientCount: 1,
     })
-    expect(listed.plan.milestones.find((row) => row.milestoneId === "sold_10")?.status).toBe(
-      "skipped",
-    )
-    expect(listed.plan.milestones.find((row) => row.milestoneId === "new_raffle")).toMatchObject({
+    expect(listed.plan.milestones.find((row) => row.alertId === 2)?.status).toBe("skipped")
+    expect(listed.plan.milestones.find((row) => row.alertId === 1)).toMatchObject({
       status: "upcoming",
       isNext: true,
     })
-    expect(listed.plan.milestones.find((row) => row.milestoneId === "remaining_30")).toMatchObject({
+    expect(listed.plan.milestones.find((row) => row.alertId === 5)).toMatchObject({
       status: "upcoming",
       ticketsRemaining: 10,
     })
@@ -138,13 +136,13 @@ describe("push.service milestones", () => {
       tag: string
     }
     expect(payload.title).toBe("Último 50% disponible.")
-    expect(payload.tag).toBe(`raffle-${occupiedRaffleId}-sold_50`)
+    expect(payload.tag).toBe(`raffle-${occupiedRaffleId}-alert:4`)
 
     const [updated] = await db.select().from(raffles).where(eq(raffles.id, occupiedRaffleId)).limit(1)
-    expect(updated?.pushMilestonesSent).toContain("sold_10")
-    expect(updated?.pushMilestonesSent).toContain("remaining_70")
-    expect(updated?.pushMilestonesSent).toContain("sold_50")
-    expect(updated?.pushMilestonesSent).not.toContain("remaining_30")
+    expect(updated?.pushMilestonesSent).toContain("alert:2")
+    expect(updated?.pushMilestonesSent).toContain("alert:3")
+    expect(updated?.pushMilestonesSent).toContain("alert:4")
+    expect(updated?.pushMilestonesSent).not.toContain("alert:5")
   })
 
   it("sends new raffle once", async () => {
@@ -218,6 +216,64 @@ describe("push.service milestones", () => {
         }),
       ]),
     )
+  })
+
+  it("replaces older sale-progress avisos in the inbox but sends every webpush", async () => {
+    const db = getDb()
+    const [row] = await db
+      .insert(raffles)
+      .values({
+        name: "Baratica recargada 1.0",
+        totalTickets: 100,
+        priceBsCents: 500,
+        priceUsdCents: 100,
+        minPurchase: 1,
+        maxPurchase: 5,
+        status: "active",
+        autoPauseEnabled: false,
+        ticketsAvailable: 70,
+        ticketsReserved: 0,
+        ticketsSold: 30,
+      })
+      .returning({ id: raffles.id })
+    const progressRaffleId = row!.id
+
+    sendNotification.mockClear()
+    await notifySaleMilestones(progressRaffleId)
+    expect(sendNotification).toHaveBeenCalledTimes(1)
+    const first = JSON.parse(String(sendNotification.mock.calls[0]?.[1])) as {
+      title: string
+      tag: string
+    }
+    expect(first.title).toBe("Último 70% disponible.")
+    expect(first.tag).toBe(`raffle-${progressRaffleId}-alert:3`)
+
+    await db
+      .update(raffles)
+      .set({ ticketsSold: 50, ticketsAvailable: 50, updatedAt: new Date() })
+      .where(eq(raffles.id, progressRaffleId))
+
+    sendNotification.mockClear()
+    await notifySaleMilestones(progressRaffleId)
+    expect(sendNotification).toHaveBeenCalledTimes(1)
+    const second = JSON.parse(String(sendNotification.mock.calls[0]?.[1])) as {
+      title: string
+      tag: string
+    }
+    expect(second.title).toBe("Último 50% disponible.")
+    expect(second.tag).toBe(`raffle-${progressRaffleId}-alert:4`)
+    expect(second.tag).not.toBe(first.tag)
+
+    const inbox = await listPushInbox("https://push.example.com/sub-1")
+    const progressTitles = inbox.items
+      .filter((item) => item.body === "Baratica recargada 1.0")
+      .map((item) => item.title)
+    expect(progressTitles).toEqual(["Último 50% disponible."])
+    expect(
+      inbox.items.some(
+        (item) => item.body === "iPhone 16" && item.title === "Último 50% disponible.",
+      ),
+    ).toBe(false)
   })
 
   it("lists inbox items for a subscriber and marks them read", async () => {

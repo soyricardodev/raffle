@@ -1,16 +1,27 @@
 import { describe, expect, it } from "vitest"
 import {
+  alertMilestoneKey,
   buildRaffleMilestonePlan,
   buildRafflePromotionPlan,
+  DEFAULT_PUSH_AUTO_ALERTS,
+  highestSaleAlert,
   highestSaleMilestone,
+  keepLatestSaleProgressPerRaffle,
   mergePushMilestones,
+  newlyReachedSaleAlerts,
   newlyReachedSaleMilestones,
   occupiedTickets,
   parsePushMilestonesSent,
+  saleProgressPushTag,
   serializePushMilestonesSent,
   soldPercent,
   ticketsToReachPercent,
 } from "./milestones"
+
+const TEST_ALERTS = DEFAULT_PUSH_AUTO_ALERTS.map((alert, index) => ({
+  ...alert,
+  id: index + 1,
+}))
 
 describe("occupiedTickets", () => {
   it("sums sold and reserved, ignoring invalid values", () => {
@@ -29,6 +40,27 @@ describe("soldPercent", () => {
   it("computes exact percent", () => {
     expect(soldPercent(100, 1000)).toBe(10)
     expect(soldPercent(900, 1000)).toBe(90)
+  })
+})
+
+describe("newlyReachedSaleAlerts", () => {
+  it("returns nothing below 10%", () => {
+    expect(newlyReachedSaleAlerts(99, 1000, [], TEST_ALERTS)).toEqual([])
+  })
+
+  it("returns sold_10 at 10% occupied", () => {
+    expect(newlyReachedSaleAlerts(100, 1000, [], TEST_ALERTS)).toEqual([
+      expect.objectContaining({ legacyMilestoneId: "sold_10" }),
+    ])
+  })
+})
+
+describe("highestSaleAlert", () => {
+  it("picks the most urgent crossed alert", () => {
+    const sold10 = TEST_ALERTS.find((alert) => alert.legacyMilestoneId === "sold_10")!
+    const sold50 = TEST_ALERTS.find((alert) => alert.legacyMilestoneId === "sold_50")!
+    const remaining10 = TEST_ALERTS.find((alert) => alert.legacyMilestoneId === "remaining_10")!
+    expect(highestSaleAlert([sold10, sold50, remaining10])).toEqual(remaining10)
   })
 })
 
@@ -94,14 +126,104 @@ describe("parse/serialize push milestones", () => {
     expect(parsePushMilestonesSent(serializePushMilestonesSent(ids))).toEqual([...ids])
   })
 
-  it("drops unknown values and invalid JSON", () => {
-    expect(parsePushMilestonesSent('["sold_10","nope"]')).toEqual(["sold_10"])
+  it("drops invalid JSON and keeps milestone keys", () => {
+    expect(parsePushMilestonesSent('["sold_10","alert:9"]')).toEqual(["sold_10", "alert:9"])
     expect(parsePushMilestonesSent("not-json")).toEqual([])
     expect(parsePushMilestonesSent(null)).toEqual([])
   })
 
   it("merges without duplicates", () => {
     expect(mergePushMilestones(["sold_10"], ["sold_10", "sold_50"])).toEqual(["sold_10", "sold_50"])
+  })
+})
+
+describe("saleProgressPushTag", () => {
+  it("is unique per raffle and milestone so webpush does not replace", () => {
+    expect(saleProgressPushTag(9, "alert:3")).toBe("raffle-9-alert:3")
+    expect(saleProgressPushTag(9, "alert:4")).not.toBe(saleProgressPushTag(9, "alert:3"))
+  })
+})
+
+describe("keepLatestSaleProgressPerRaffle", () => {
+  const row = (
+    patch: Partial<{
+      kind: string
+      raffleId: number | null
+      milestoneId: string | null
+      tag: string
+      title: string
+    }>,
+  ) => ({
+    kind: "milestone",
+    raffleId: 1,
+    milestoneId: "alert:3",
+    tag: "raffle-1-alert:3",
+    title: "Último 70% disponible.",
+    ...patch,
+  })
+
+  it("keeps only the newest sale-progress aviso of the live raffle", () => {
+    const visible = keepLatestSaleProgressPerRaffle(
+      [
+        row({ milestoneId: "alert:5", tag: "raffle-1-alert:5", title: "Último 30% disponible." }),
+        row({ milestoneId: "alert:3", tag: "raffle-1-alert:3", title: "Último 70% disponible." }),
+        row({
+          kind: "promotion",
+          milestoneId: null,
+          tag: "raffle-1-promo-2",
+          title: "Hay una promo.",
+        }),
+        row({
+          kind: "milestone",
+          raffleId: 1,
+          milestoneId: "alert:1",
+          tag: "raffle-1-new",
+          title: "Nueva bendición liberada.",
+        }),
+      ],
+      1,
+    )
+    expect(visible.map((item) => item.title)).toEqual([
+      "Último 30% disponible.",
+      "Hay una promo.",
+      "Nueva bendición liberada.",
+    ])
+  })
+
+  it("hides sale-progress avisos from raffles that are no longer current", () => {
+    const rows = [
+      row({
+        raffleId: 2,
+        milestoneId: "remaining_10",
+        tag: "raffle-2-remaining_10",
+        title: "10% Equipa",
+      }),
+      row({
+        raffleId: 2,
+        milestoneId: "remaining_30",
+        tag: "raffle-2-remaining_30",
+        title: "30% Equipa",
+      }),
+      row({
+        raffleId: 1,
+        milestoneId: "remaining_70",
+        tag: "raffle-1-remaining_70",
+        title: "70% Baratica",
+      }),
+      row({
+        raffleId: 1,
+        milestoneId: "sold_10",
+        tag: "raffle-1-sold_10",
+        title: "10% Baratica",
+      }),
+    ]
+    expect(keepLatestSaleProgressPerRaffle(rows, 1).map((item) => item.title)).toEqual([
+      "70% Baratica",
+    ])
+    expect(keepLatestSaleProgressPerRaffle(rows, 2).map((item) => item.title)).toEqual([
+      "10% Equipa",
+    ])
+    expect(keepLatestSaleProgressPerRaffle(rows, null)).toEqual([])
   })
 })
 
@@ -115,6 +237,7 @@ describe("ticketsToReachPercent", () => {
 
 describe("buildRaffleMilestonePlan", () => {
   it("marks skipped intermediates when a higher send was logged", () => {
+    const sold50 = TEST_ALERTS.find((alert) => alert.legacyMilestoneId === "sold_50")!
     const items = buildRaffleMilestonePlan({
       raffleName: "iPhone 16",
       ticketsSold: 60,
@@ -123,7 +246,7 @@ describe("buildRaffleMilestonePlan", () => {
       broadcasts: [
         {
           kind: "milestone",
-          milestoneId: "sold_50",
+          milestoneId: alertMilestoneKey(sold50.id),
           promotionId: null,
           title: "Último 50% disponible.",
           body: "iPhone 16",
@@ -131,18 +254,19 @@ describe("buildRaffleMilestonePlan", () => {
           createdAt: "2026-09-01T12:00:00.000Z",
         },
       ],
+      alerts: TEST_ALERTS,
     })
 
-    expect(items.find((row) => row.milestoneId === "sold_10")?.status).toBe("skipped")
-    expect(items.find((row) => row.milestoneId === "remaining_70")?.status).toBe("skipped")
-    const sold50 = items.find((row) => row.milestoneId === "sold_50")
-    expect(sold50?.status).toBe("sent")
-    expect(sold50?.recipientCount).toBe(24)
-    expect(items.find((row) => row.milestoneId === "new_raffle")).toMatchObject({
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(2))?.status).toBe("skipped")
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(3))?.status).toBe("skipped")
+    const sold50Item = items.find((row) => row.milestoneId === alertMilestoneKey(sold50.id))
+    expect(sold50Item?.status).toBe("sent")
+    expect(sold50Item?.recipientCount).toBe(24)
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(1))).toMatchObject({
       status: "upcoming",
       isNext: true,
     })
-    const nextSale = items.find((row) => row.milestoneId === "remaining_30")
+    const nextSale = items.find((row) => row.milestoneId === alertMilestoneKey(5))
     expect(nextSale?.status).toBe("upcoming")
     expect(nextSale?.ticketsRemaining).toBe(10)
   })
@@ -155,10 +279,11 @@ describe("buildRaffleMilestonePlan", () => {
       totalTickets: 100,
       milestonesSent: ["sold_10"],
       broadcasts: [],
+      alerts: TEST_ALERTS,
     })
-    expect(items.find((row) => row.milestoneId === "remaining_70")?.status).toBe("upcoming")
-    expect(items.find((row) => row.milestoneId === "remaining_70")?.ticketsRemaining).toBe(0)
-    expect(items.find((row) => row.milestoneId === "sold_50")?.ticketsRemaining).toBe(20)
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(3))?.status).toBe("upcoming")
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(3))?.ticketsRemaining).toBe(0)
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(4))?.ticketsRemaining).toBe(20)
   })
 
   it("treats claimed milestones as sent when there is no log yet", () => {
@@ -168,10 +293,11 @@ describe("buildRaffleMilestonePlan", () => {
       totalTickets: 100,
       milestonesSent: ["new_raffle", "sold_10"],
       broadcasts: [],
+      alerts: TEST_ALERTS,
     })
-    expect(items.find((row) => row.milestoneId === "new_raffle")?.status).toBe("sent")
-    expect(items.find((row) => row.milestoneId === "sold_10")?.status).toBe("sent")
-    expect(items.find((row) => row.milestoneId === "sold_10")?.recipientCount).toBeNull()
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(1))?.status).toBe("sent")
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(2))?.status).toBe("sent")
+    expect(items.find((row) => row.milestoneId === alertMilestoneKey(2))?.recipientCount).toBeNull()
   })
 })
 

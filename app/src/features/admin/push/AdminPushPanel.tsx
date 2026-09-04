@@ -10,6 +10,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
 import { adminNavTitle } from "@/features/admin/nav"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
+import { AdminPushAutoAlerts } from "@/features/admin/push/AdminPushAutoAlerts"
 import { AdminPushPlanCard } from "@/features/admin/push/AdminPushPlan"
 import {
   type AdminPushSendResult,
@@ -204,7 +205,13 @@ export function AdminPushPanel() {
       ) : null}
 
       {listQuery.isError ? null : (
-        <AdminPushPlanCard loading={listQuery.isLoading} plan={listQuery.data?.plan} />
+        <>
+          <AdminPushAutoAlerts
+            loading={listQuery.isLoading}
+            alerts={listQuery.data?.autoAlerts}
+          />
+          <AdminPushPlanCard loading={listQuery.isLoading} plan={listQuery.data?.plan} />
+        </>
       )}
 
       <Card size="sm">

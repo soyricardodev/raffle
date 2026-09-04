@@ -98,6 +98,7 @@ describe("admin ticket lookup raffle scope", () => {
     expect(scoped).toHaveLength(1)
     expect(scoped[0]?.raffle_id).toBe(raffleA!.id)
     expect(scoped[0]?.customer_name).toBe("Cliente A")
+    expect(scoped[0]?.customer_location).toBe("Caracas")
     expect(all).toHaveLength(2)
   })
 })

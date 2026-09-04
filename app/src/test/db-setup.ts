@@ -32,6 +32,7 @@ const migrationSql = [
   readMigration("0016_push_subscription_identity.sql"),
   readMigration("0017_push_broadcasts.sql"),
   readMigration("0018_push_inbox.sql"),
+  readMigration("0019_push_auto_alerts.sql"),
 ].join("\n--> statement-breakpoint\n")
 
 /** Base SQLite en archivo temporal aislado por suite de tests. */

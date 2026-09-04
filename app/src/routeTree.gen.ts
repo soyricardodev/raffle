@@ -57,6 +57,7 @@ import { Route as ApiAdminPurchasesIndexRouteImport } from './routes/api/admin/p
 import { Route as ApiAdminPaymentAccountsIndexRouteImport } from './routes/api/admin/payment-accounts/index'
 import { Route as ApiRafflesIdPauseInfoRouteImport } from './routes/api/raffles/$id.pause-info'
 import { Route as ApiAdminRafflesIdRouteImport } from './routes/api/admin/raffles/$id'
+import { Route as ApiAdminPushAlertsRouteImport } from './routes/api/admin/push/alerts'
 import { Route as ApiAdminPurchasesIdRouteImport } from './routes/api/admin/purchases/$id'
 import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admin/payment-accounts/$id'
 import { Route as ApiAdminMePreferencesRouteImport } from './routes/api/admin/me/preferences'
@@ -71,6 +72,7 @@ import { Route as ApiAdminRafflesIdPromotionsRouteImport } from './routes/api/ad
 import { Route as ApiAdminRafflesIdPauseRouteImport } from './routes/api/admin/raffles/$id.pause'
 import { Route as ApiAdminRafflesIdLifecycleRouteImport } from './routes/api/admin/raffles/$id.lifecycle'
 import { Route as ApiAdminRafflesIdAutoPauseRouteImport } from './routes/api/admin/raffles/$id.auto-pause'
+import { Route as ApiAdminPushAlertsIdRouteImport } from './routes/api/admin/push/alerts.$id'
 import { Route as ApiAdminPurchasesIdStatusRouteImport } from './routes/api/admin/purchases/$id.status'
 import { Route as ApiAdminPurchasesIdEmailsRouteImport } from './routes/api/admin/purchases.$id.emails'
 import { Route as ApiAdminPurchasesIdCustomerRouteImport } from './routes/api/admin/purchases/$id.customer'
@@ -323,6 +325,11 @@ const ApiAdminRafflesIdRoute = ApiAdminRafflesIdRouteImport.update({
   path: '/api/admin/raffles/$id',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiAdminPushAlertsRoute = ApiAdminPushAlertsRouteImport.update({
+  id: '/alerts',
+  path: '/alerts',
+  getParentRoute: () => ApiAdminPushRoute,
+} as any)
 const ApiAdminPurchasesIdRoute = ApiAdminPurchasesIdRouteImport.update({
   id: '/api/admin/purchases/$id',
   path: '/api/admin/purchases/$id',
@@ -400,6 +407,11 @@ const ApiAdminRafflesIdAutoPauseRoute =
     path: '/auto-pause',
     getParentRoute: () => ApiAdminRafflesIdRoute,
   } as any)
+const ApiAdminPushAlertsIdRoute = ApiAdminPushAlertsIdRouteImport.update({
+  id: '/$id',
+  path: '/$id',
+  getParentRoute: () => ApiAdminPushAlertsRoute,
+} as any)
 const ApiAdminPurchasesIdStatusRoute =
   ApiAdminPurchasesIdStatusRouteImport.update({
     id: '/status',
@@ -487,7 +499,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
-  '/api/admin/push': typeof ApiAdminPushRoute
+  '/api/admin/push': typeof ApiAdminPushRouteWithChildren
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
@@ -511,6 +523,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
+  '/api/admin/push/alerts': typeof ApiAdminPushAlertsRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts/': typeof ApiAdminPaymentAccountsIndexRoute
@@ -521,6 +534,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/purchases/$id/customer': typeof ApiAdminPurchasesIdCustomerRoute
   '/api/admin/purchases/$id/emails': typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
+  '/api/admin/push/alerts/$id': typeof ApiAdminPushAlertsIdRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
@@ -558,7 +572,7 @@ export interface FileRoutesByTo {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
-  '/api/admin/push': typeof ApiAdminPushRoute
+  '/api/admin/push': typeof ApiAdminPushRouteWithChildren
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
@@ -582,6 +596,7 @@ export interface FileRoutesByTo {
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
+  '/api/admin/push/alerts': typeof ApiAdminPushAlertsRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts': typeof ApiAdminPaymentAccountsIndexRoute
@@ -592,6 +607,7 @@ export interface FileRoutesByTo {
   '/api/admin/purchases/$id/customer': typeof ApiAdminPurchasesIdCustomerRoute
   '/api/admin/purchases/$id/emails': typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
+  '/api/admin/push/alerts/$id': typeof ApiAdminPushAlertsIdRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
@@ -633,7 +649,7 @@ export interface FileRoutesById {
   '/api/admin/dashboard': typeof ApiAdminDashboardRoute
   '/api/admin/emails': typeof ApiAdminEmailsRouteWithChildren
   '/api/admin/maintenance': typeof ApiAdminMaintenanceRoute
-  '/api/admin/push': typeof ApiAdminPushRoute
+  '/api/admin/push': typeof ApiAdminPushRouteWithChildren
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
@@ -657,6 +673,7 @@ export interface FileRoutesById {
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
   '/api/admin/payment-accounts/$id': typeof ApiAdminPaymentAccountsIdRouteWithChildren
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
+  '/api/admin/push/alerts': typeof ApiAdminPushAlertsRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts/': typeof ApiAdminPaymentAccountsIndexRoute
@@ -667,6 +684,7 @@ export interface FileRoutesById {
   '/api/admin/purchases/$id/customer': typeof ApiAdminPurchasesIdCustomerRoute
   '/api/admin/purchases/$id/emails': typeof ApiAdminPurchasesIdEmailsRouteWithChildren
   '/api/admin/purchases/$id/status': typeof ApiAdminPurchasesIdStatusRoute
+  '/api/admin/push/alerts/$id': typeof ApiAdminPushAlertsIdRoute
   '/api/admin/raffles/$id/auto-pause': typeof ApiAdminRafflesIdAutoPauseRoute
   '/api/admin/raffles/$id/lifecycle': typeof ApiAdminRafflesIdLifecycleRoute
   '/api/admin/raffles/$id/pause': typeof ApiAdminRafflesIdPauseRoute
@@ -732,6 +750,7 @@ export interface FileRouteTypes {
     | '/api/admin/me/preferences'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
+    | '/api/admin/push/alerts'
     | '/api/admin/raffles/$id'
     | '/api/raffles/$id/pause-info'
     | '/api/admin/payment-accounts/'
@@ -742,6 +761,7 @@ export interface FileRouteTypes {
     | '/api/admin/purchases/$id/customer'
     | '/api/admin/purchases/$id/emails'
     | '/api/admin/purchases/$id/status'
+    | '/api/admin/push/alerts/$id'
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
@@ -803,6 +823,7 @@ export interface FileRouteTypes {
     | '/api/admin/me/preferences'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
+    | '/api/admin/push/alerts'
     | '/api/admin/raffles/$id'
     | '/api/raffles/$id/pause-info'
     | '/api/admin/payment-accounts'
@@ -813,6 +834,7 @@ export interface FileRouteTypes {
     | '/api/admin/purchases/$id/customer'
     | '/api/admin/purchases/$id/emails'
     | '/api/admin/purchases/$id/status'
+    | '/api/admin/push/alerts/$id'
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
@@ -877,6 +899,7 @@ export interface FileRouteTypes {
     | '/api/admin/me/preferences'
     | '/api/admin/payment-accounts/$id'
     | '/api/admin/purchases/$id'
+    | '/api/admin/push/alerts'
     | '/api/admin/raffles/$id'
     | '/api/raffles/$id/pause-info'
     | '/api/admin/payment-accounts/'
@@ -887,6 +910,7 @@ export interface FileRouteTypes {
     | '/api/admin/purchases/$id/customer'
     | '/api/admin/purchases/$id/emails'
     | '/api/admin/purchases/$id/status'
+    | '/api/admin/push/alerts/$id'
     | '/api/admin/raffles/$id/auto-pause'
     | '/api/admin/raffles/$id/lifecycle'
     | '/api/admin/raffles/$id/pause'
@@ -911,7 +935,7 @@ export interface RootRouteChildren {
   ApiAdminDashboardRoute: typeof ApiAdminDashboardRoute
   ApiAdminEmailsRoute: typeof ApiAdminEmailsRouteWithChildren
   ApiAdminMaintenanceRoute: typeof ApiAdminMaintenanceRoute
-  ApiAdminPushRoute: typeof ApiAdminPushRoute
+  ApiAdminPushRoute: typeof ApiAdminPushRouteWithChildren
   ApiAdminUploadRoute: typeof ApiAdminUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
   ApiCronMaintenanceRoute: typeof ApiCronMaintenanceRoute
@@ -1274,6 +1298,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminRafflesIdRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/admin/push/alerts': {
+      id: '/api/admin/push/alerts'
+      path: '/alerts'
+      fullPath: '/api/admin/push/alerts'
+      preLoaderRoute: typeof ApiAdminPushAlertsRouteImport
+      parentRoute: typeof ApiAdminPushRoute
+    }
     '/api/admin/purchases/$id': {
       id: '/api/admin/purchases/$id'
       path: '/api/admin/purchases/$id'
@@ -1371,6 +1402,13 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/raffles/$id/auto-pause'
       preLoaderRoute: typeof ApiAdminRafflesIdAutoPauseRouteImport
       parentRoute: typeof ApiAdminRafflesIdRoute
+    }
+    '/api/admin/push/alerts/$id': {
+      id: '/api/admin/push/alerts/$id'
+      path: '/$id'
+      fullPath: '/api/admin/push/alerts/$id'
+      preLoaderRoute: typeof ApiAdminPushAlertsIdRouteImport
+      parentRoute: typeof ApiAdminPushAlertsRoute
     }
     '/api/admin/purchases/$id/status': {
       id: '/api/admin/purchases/$id/status'
@@ -1549,6 +1587,29 @@ const ApiAdminEmailsRouteWithChildren = ApiAdminEmailsRoute._addFileChildren(
   ApiAdminEmailsRouteChildren,
 )
 
+interface ApiAdminPushAlertsRouteChildren {
+  ApiAdminPushAlertsIdRoute: typeof ApiAdminPushAlertsIdRoute
+}
+
+const ApiAdminPushAlertsRouteChildren: ApiAdminPushAlertsRouteChildren = {
+  ApiAdminPushAlertsIdRoute: ApiAdminPushAlertsIdRoute,
+}
+
+const ApiAdminPushAlertsRouteWithChildren =
+  ApiAdminPushAlertsRoute._addFileChildren(ApiAdminPushAlertsRouteChildren)
+
+interface ApiAdminPushRouteChildren {
+  ApiAdminPushAlertsRoute: typeof ApiAdminPushAlertsRouteWithChildren
+}
+
+const ApiAdminPushRouteChildren: ApiAdminPushRouteChildren = {
+  ApiAdminPushAlertsRoute: ApiAdminPushAlertsRouteWithChildren,
+}
+
+const ApiAdminPushRouteWithChildren = ApiAdminPushRoute._addFileChildren(
+  ApiAdminPushRouteChildren,
+)
+
 interface ApiRafflesIdRouteChildren {
   ApiRafflesIdPauseInfoRoute: typeof ApiRafflesIdPauseInfoRoute
 }
@@ -1660,7 +1721,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminDashboardRoute: ApiAdminDashboardRoute,
   ApiAdminEmailsRoute: ApiAdminEmailsRouteWithChildren,
   ApiAdminMaintenanceRoute: ApiAdminMaintenanceRoute,
-  ApiAdminPushRoute: ApiAdminPushRoute,
+  ApiAdminPushRoute: ApiAdminPushRouteWithChildren,
   ApiAdminUploadRoute: ApiAdminUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
   ApiCronMaintenanceRoute: ApiCronMaintenanceRoute,

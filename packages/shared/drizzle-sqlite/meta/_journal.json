@@ -134,6 +134,13 @@
       "when": 1779901700000,
       "tag": "0018_push_inbox",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "6",
+      "when": 1779901800000,
+      "tag": "0019_push_auto_alerts",
+      "breakpoints": true
     }
   ]
 }
