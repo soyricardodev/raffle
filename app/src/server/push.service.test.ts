@@ -80,7 +80,7 @@ describe("push.service milestones", () => {
       tag: string
     }
     expect(payload.title).toBe("Último 50% disponible.")
-    expect(payload.tag).toBe(`raffle-${raffleId}-alert:4`)
+    expect(payload.tag).toBe(`raffle-${raffleId}-progress`)
 
     const db = getDb()
     const [row] = await db.select().from(raffles).where(eq(raffles.id, raffleId)).limit(1)
@@ -138,7 +138,7 @@ describe("push.service milestones", () => {
       tag: string
     }
     expect(payload.title).toBe("Último 50% disponible.")
-    expect(payload.tag).toBe(`raffle-${occupiedRaffleId}-alert:4`)
+    expect(payload.tag).toBe(`raffle-${occupiedRaffleId}-progress`)
 
     const [updated] = await db.select().from(raffles).where(eq(raffles.id, occupiedRaffleId)).limit(1)
     expect(updated?.pushMilestonesSent).toContain("alert:2")
@@ -259,7 +259,7 @@ describe("push.service milestones", () => {
     )
   })
 
-  it("replaces older sale-progress avisos in the inbox but sends every webpush", async () => {
+  it("sends every webpush with a shared tag so the device replaces the older percent aviso", async () => {
     const db = getDb()
     const [row] = await db
       .insert(raffles)
@@ -287,7 +287,7 @@ describe("push.service milestones", () => {
       tag: string
     }
     expect(first.title).toBe("Último 70% disponible.")
-    expect(first.tag).toBe(`raffle-${progressRaffleId}-alert:3`)
+    expect(first.tag).toBe(`raffle-${progressRaffleId}-progress`)
 
     await db
       .update(raffles)
@@ -302,8 +302,8 @@ describe("push.service milestones", () => {
       tag: string
     }
     expect(second.title).toBe("Último 50% disponible.")
-    expect(second.tag).toBe(`raffle-${progressRaffleId}-alert:4`)
-    expect(second.tag).not.toBe(first.tag)
+    expect(second.tag).toBe(`raffle-${progressRaffleId}-progress`)
+    expect(second.tag).toBe(first.tag)
 
     const inbox = await listPushInbox("https://push.example.com/sub-1")
     const progressTitles = inbox.items

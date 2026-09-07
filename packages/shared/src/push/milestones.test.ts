@@ -168,9 +168,13 @@ describe("parse/serialize push milestones", () => {
 })
 
 describe("saleProgressPushTag", () => {
-  it("is unique per raffle and milestone so webpush does not replace", () => {
-    expect(saleProgressPushTag(9, "alert:3")).toBe("raffle-9-alert:3")
-    expect(saleProgressPushTag(9, "alert:4")).not.toBe(saleProgressPushTag(9, "alert:3"))
+  it("is shared per raffle so webpush replaces the older percent aviso", () => {
+    expect(saleProgressPushTag(9)).toBe("raffle-9-progress")
+    expect(saleProgressPushTag(9)).toBe(saleProgressPushTag(9))
+  })
+
+  it("stays unique per raffle", () => {
+    expect(saleProgressPushTag(9)).not.toBe(saleProgressPushTag(10))
   })
 })
 
@@ -218,6 +222,17 @@ describe("keepLatestSaleProgressPerRaffle", () => {
       "Hay una promo.",
       "Nueva bendición liberada.",
     ])
+  })
+
+  it("treats shared progress tags as sale-progress avisos", () => {
+    const visible = keepLatestSaleProgressPerRaffle(
+      [
+        row({ milestoneId: "alert:4", tag: "raffle-1-progress", title: "Último 50% disponible." }),
+        row({ milestoneId: "alert:3", tag: "raffle-1-progress", title: "Último 70% disponible." }),
+      ],
+      1,
+    )
+    expect(visible.map((item) => item.title)).toEqual(["Último 50% disponible."])
   })
 
   it("hides sale-progress avisos from raffles that are no longer current", () => {

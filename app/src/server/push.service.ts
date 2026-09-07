@@ -574,7 +574,7 @@ export async function notifySaleMilestones(raffleId: number): Promise<void> {
     {
       ...copy,
       url: raffleHomeUrl(raffleId),
-      tag: saleProgressPushTag(raffleId, milestoneKey),
+      tag: saleProgressPushTag(raffleId),
       icon: raffleIcon(claimed.imageUrl),
     },
     { kind: "milestone", raffleId, milestoneId: milestoneKey },

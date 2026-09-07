@@ -237,9 +237,13 @@ export function saleMilestoneTriggerPercent(id: Exclude<PushMilestoneId, "new_ra
   return SALE_PUSH_MILESTONES.find((m) => m.id === id)?.minPercent ?? 0
 }
 
-/** Unique Web Push tag so each % aviso still arrives on the phone. */
-export function saleProgressPushTag(raffleId: number, milestoneKey: string): string {
-  return `raffle-${raffleId}-${milestoneKey}`
+/**
+ * Shared Web Push tag for every % aviso of a raffle: the browser replaces the
+ * previous notification on the device, so only the latest percent is visible
+ * (renotify keeps alerting on each milestone).
+ */
+export function saleProgressPushTag(raffleId: number): string {
+  return `raffle-${raffleId}-progress`
 }
 
 export function isSaleProgressBroadcast(row: {
