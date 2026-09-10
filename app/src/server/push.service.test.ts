@@ -1,6 +1,6 @@
 import { rafflePromotions, raffles } from "@raffle/shared/db"
 import { parsePushMilestonesSent } from "@raffle/shared/push"
-import { eq } from "drizzle-orm"
+import { eq, inArray } from "drizzle-orm"
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest"
 import { getDb } from "@/lib/db.server"
 import { resetEnvCache } from "@/lib/env"
@@ -347,5 +347,48 @@ describe("push.service milestones", () => {
   it("hides the inbox from an unknown endpoint", async () => {
     const inbox = await listPushInbox("https://push.example.com/unknown")
     expect(inbox).toEqual({ items: [], unreadCount: 0 })
+  })
+
+  it("muestra manuales globales con la rifa activa y nada sin rifa", async () => {
+    const db = getDb()
+    const actives = await db
+      .select({ id: raffles.id, status: raffles.status })
+      .from(raffles)
+      .where(inArray(raffles.status, ["active", "paused"]))
+    expect(actives.length).toBeGreaterThan(0)
+
+    await db
+      .update(raffles)
+      .set({ status: "finished", updatedAt: new Date() })
+      .where(inArray(raffles.status, ["active", "paused"]))
+
+    sendNotification.mockClear()
+    await sendManualBroadcast({
+      title: "Aviso global",
+      body: "Mantenimiento esta noche",
+    })
+
+    // Sin rifa activa no se ve nada, ni siquiera el manual global.
+    const empty = await listPushInbox("https://push.example.com/sub-1")
+    expect(empty).toEqual({ items: [], unreadCount: 0 })
+
+    const markedEmpty = await markPushInboxRead({
+      endpoint: "https://push.example.com/sub-1",
+      all: true,
+    })
+    expect(markedEmpty).toEqual({ items: [], unreadCount: 0 })
+
+    for (const row of actives) {
+      await db
+        .update(raffles)
+        .set({ status: row.status, updatedAt: new Date() })
+        .where(eq(raffles.id, row.id))
+    }
+
+    const inbox = await listPushInbox("https://push.example.com/sub-1")
+    expect(inbox.items.some((item) => item.title === "Aviso global")).toBe(true)
+    // La primera rifa (iPhone 16) dejó de ser la activa al crearse Baratica:
+    // sus avisos ya no salen aunque sigan guardados.
+    expect(inbox.items.every((item) => item.body !== "iPhone 16")).toBe(true)
   })
 })

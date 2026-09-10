@@ -270,6 +270,52 @@ describe("keepLatestSaleProgressPerRaffle", () => {
     ])
     expect(keepLatestSaleProgressPerRaffle(rows, null)).toEqual([])
   })
+
+  it("shows the active raffle plus global manuals, hiding old raffles", () => {
+    const rows = [
+      row({
+        kind: "promotion",
+        raffleId: 1,
+        milestoneId: null,
+        tag: "raffle-1-promo-9",
+        title: "Promo vieja",
+      }),
+      row({
+        kind: "manual",
+        raffleId: 1,
+        milestoneId: null,
+        tag: "manual-1",
+        title: "Manual viejo",
+      }),
+      row({
+        kind: "manual",
+        raffleId: null,
+        milestoneId: null,
+        tag: "manual-2",
+        title: "Manual global",
+      }),
+      row({
+        kind: "milestone",
+        raffleId: 2,
+        milestoneId: "alert:1",
+        tag: "raffle-2-new",
+        title: "Nueva bendición liberada.",
+      }),
+      row({
+        kind: "promotion",
+        raffleId: 2,
+        milestoneId: null,
+        tag: "raffle-2-promo-1",
+        title: "Promo activa",
+      }),
+    ]
+    expect(keepLatestSaleProgressPerRaffle(rows, 2).map((item) => item.title)).toEqual([
+      "Manual global",
+      "Nueva bendición liberada.",
+      "Promo activa",
+    ])
+    expect(keepLatestSaleProgressPerRaffle(rows, null)).toEqual([])
+  })
 })
 
 describe("ticketsToReachPercent", () => {
