@@ -258,8 +258,11 @@ export function isSaleProgressBroadcast(row: {
 }
 
 /**
- * Inbox-only: keep the latest sale-progress aviso for the live raffle.
- * Older raffles drop out; 50% replaces 30% on the current one.
+ * Inbox-only: avisos de la rifa activa + manuales globales.
+ * - Sin rifa activa (null) no se muestra nada.
+ * - Con rifa activa se muestra lo de esa rifa (del progreso de venta solo el
+ *   último aviso: 50% reemplaza a 30%) más los manuales sin rifa, que son
+ *   comunicados globales del admin y no pertenecen a ninguna rifa.
  */
 export function keepLatestSaleProgressPerRaffle<
   T extends {
@@ -269,11 +272,17 @@ export function keepLatestSaleProgressPerRaffle<
     tag: string
   },
 >(rows: readonly T[], currentRaffleId: number | null): T[] {
+  if (currentRaffleId == null) return []
   let keptCurrent = false
   const visible: T[] = []
   for (const row of rows) {
+    if (row.raffleId == null) {
+      // Global sin progreso de venta que deduplicar: siempre visible.
+      if (!isSaleProgressBroadcast(row)) visible.push(row)
+      continue
+    }
+    if (row.raffleId !== currentRaffleId) continue
     if (isSaleProgressBroadcast(row)) {
-      if (currentRaffleId == null || row.raffleId !== currentRaffleId) continue
       if (keptCurrent) continue
       keptCurrent = true
     }

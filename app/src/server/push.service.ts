@@ -192,8 +192,10 @@ export async function listPushInbox(endpoint: string): Promise<PushInbox> {
     pushInboxReadsRepo.listReadBroadcastIds(subscription.id),
     rafflesRepo.findFirstActiveOrPaused(),
   ])
+  // Sin rifa activa no se muestra nada: evita agobiar con avisos viejos.
+  if (!currentRaffle) return EMPTY_INBOX
   const readSet = new Set(readIds)
-  const visible = keepLatestSaleProgressPerRaffle(rows, currentRaffle?.id ?? null)
+  const visible = keepLatestSaleProgressPerRaffle(rows, currentRaffle.id)
   const items = visible.slice(0, INBOX_LIMIT).map((row) => ({
     id: row.id,
     kind: row.kind,
@@ -218,10 +220,16 @@ export async function markPushInboxRead(input: {
   if (!subscription) return EMPTY_INBOX
 
   if (input.all) {
-    const allSince = await pushBroadcastsRepo.listPushBroadcastsSince(subscription.createdAt)
+    const [allSince, currentRaffle] = await Promise.all([
+      pushBroadcastsRepo.listPushBroadcastsSince(subscription.createdAt),
+      rafflesRepo.findFirstActiveOrPaused(),
+    ])
+    // Solo se marca lo visible (rifa activa + manuales globales):
+    // sin rifa activa no hay nada que marcar.
+    const visible = currentRaffle ? keepLatestSaleProgressPerRaffle(allSince, currentRaffle.id) : []
     await pushInboxReadsRepo.markBroadcastsRead({
       subscriptionId: subscription.id,
-      broadcastIds: allSince.map((row) => row.id),
+      broadcastIds: visible.map((row) => row.id),
     })
   } else if (input.ids?.length) {
     await pushInboxReadsRepo.markBroadcastsRead({

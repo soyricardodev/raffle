@@ -30,11 +30,16 @@ export function PushInboxBell() {
   const subscribed = Boolean(engage?.ready && engage.notifyComplete)
   const visible = preview || subscribed
   const [open, setOpen] = useState(false)
-  const { inbox, loading, markRead } = usePushInbox({ enabled: visible, preview })
+  const { inbox, markRead } = usePushInbox({ enabled: visible, preview })
   const navigate = useNavigate()
   const badge = formatUnreadBadge(inbox.unreadCount)
 
   if (!visible) return null
+  // Sin avisos de la rifa activa no se muestra nada (sin rifa => inbox vacío).
+  // Se oculta también durante la carga para evitar el flash de una campana
+  // que desaparece. La query sigue habilitada para que la campana aparezca
+  // sola cuando lleguen avisos.
+  if (!preview && inbox.items.length === 0) return null
 
   const hasUnread = inbox.unreadCount > 0
   const shouldRing = hasUnread && !open
@@ -137,31 +142,21 @@ export function PushInboxBell() {
           </SheetHeader>
 
           <div className="min-h-0 flex-1 overflow-y-auto px-3 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
-            {loading && inbox.items.length === 0 ? (
-              <div className="flex flex-col gap-2 px-1 py-2">
-                <InboxSkeleton />
-                <InboxSkeleton />
-                <InboxSkeleton />
-              </div>
-            ) : inbox.items.length === 0 ? (
-              <EmptyInbox />
-            ) : (
-              <ul className="flex flex-col gap-1.5 pt-1">
-                {inbox.items.map((item, index) => (
-                  <li
-                    key={item.id}
-                    className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:fill-mode-both motion-reduce:animate-none"
-                    style={{
-                      animationDuration: "200ms",
-                      animationDelay: `${Math.min(index, 7) * 40}ms`,
-                      animationTimingFunction: EASE_OUT,
-                    }}
-                  >
-                    <InboxRow item={item} onSelect={() => selectItem(item)} />
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ul className="flex flex-col gap-1.5 pt-1">
+              {inbox.items.map((item, index) => (
+                <li
+                  key={item.id}
+                  className="motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-2 motion-safe:fill-mode-both motion-reduce:animate-none"
+                  style={{
+                    animationDuration: "200ms",
+                    animationDelay: `${Math.min(index, 7) * 40}ms`,
+                    animationTimingFunction: EASE_OUT,
+                  }}
+                >
+                  <InboxRow item={item} onSelect={() => selectItem(item)} />
+                </li>
+              ))}
+            </ul>
           </div>
         </SheetContent>
       </Sheet>
@@ -227,24 +222,6 @@ function InboxRow({ item, onSelect }: { item: PushInboxItem; onSelect: () => voi
       </span>
     </button>
   )
-}
-
-function EmptyInbox() {
-  return (
-    <div className="flex flex-col items-center px-6 py-12 text-center">
-      <span className="bg-muted text-muted-foreground flex size-14 items-center justify-center rounded-2xl">
-        <Bell className="size-6" aria-hidden />
-      </span>
-      <p className="mt-4 text-sm font-semibold">Todavía no hay avisos</p>
-      <p className="text-muted-foreground mt-1 max-w-[16rem] text-xs leading-relaxed">
-        Cuando salga una rifa o una promo, te llega aquí.
-      </p>
-    </div>
-  )
-}
-
-function InboxSkeleton() {
-  return <div className="bg-muted/70 h-[4.25rem] animate-pulse rounded-2xl" />
 }
 
 function inboxKindIcon(kind: string) {
