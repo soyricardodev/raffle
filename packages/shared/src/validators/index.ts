@@ -2,7 +2,15 @@ import { z } from "zod"
 import { normalizeMunicipality } from "../geo/venezuela-municipalities.js"
 import { isBolivarMethodType, isDollarMethodType } from "../payment-methods/definitions.js"
 import { CountryScope, isValidCustomerCi, isValidCustomerPhone } from "./buyer-identity.js"
+import { normalizeEmail } from "./email-domain.js"
 import { passwordSchema } from "./password.js"
+
+export {
+  correctEmailDomain,
+  KNOWN_EMAIL_DOMAINS,
+  normalizeEmail,
+  type EmailDomainResult,
+} from "./email-domain.js"
 
 export {
   isValidVenezuelaMunicipality,
@@ -315,7 +323,13 @@ export const CreatePurchaseInput = z.object({
   raffle_id: z.number().int().positive(),
   customer_name: z.string().min(1).max(200),
   customer_phone: z.string().min(7).max(20),
-  customer_email: z.string().trim().min(1, "Ingresa tu email").email("Email inválido").max(100),
+  customer_email: z
+    .string()
+    .trim()
+    .min(1, "Ingresa tu email")
+    .email("Email inválido")
+    .max(100)
+    .transform(normalizeEmail),
   customer_ci: z
     .string()
     .trim()
@@ -347,7 +361,13 @@ export const CreatePurchaseBody = z.object({
     .min(1, "Ingresa tu teléfono")
     .max(20, "Teléfono demasiado largo")
     .refine((v) => isValidCustomerPhone(v), "Teléfono inválido (ej: +58 412… o 0412…)"),
-  customerEmail: z.string().trim().min(1, "Ingresa tu email").email("Email inválido").max(100),
+  customerEmail: z
+    .string()
+    .trim()
+    .min(1, "Ingresa tu email")
+    .email("Email inválido")
+    .max(100)
+    .transform(normalizeEmail),
   customerCi: z
     .string()
     .trim()
