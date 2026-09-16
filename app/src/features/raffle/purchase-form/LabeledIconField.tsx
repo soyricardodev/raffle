@@ -16,8 +16,11 @@ type LabeledIconFieldProps = {
   icon: ReactNode
   value: string
   onChange: (value: string) => void
+  onBlur?: () => void
   disabled?: boolean
   error?: string
+  /** Aviso amable bajo el campo, nunca de error. */
+  note?: string
   success?: boolean
   type?: string
   placeholder?: string
@@ -31,14 +34,17 @@ export const LabeledIconField = memo(function LabeledIconField({
   icon,
   value,
   onChange,
+  onBlur,
   disabled,
   error,
+  note,
   success,
   type = "text",
   placeholder,
   autoComplete,
 }: LabeledIconFieldProps) {
   const ready = Boolean(success) && !error
+  const isEmail = type === "email"
 
   return (
     <Field data-invalid={!!error} className="gap-1.5">
@@ -54,12 +60,20 @@ export const LabeledIconField = memo(function LabeledIconField({
           type={type}
           value={value}
           onChange={(event) => onChange(event.target.value)}
+          onBlur={onBlur}
           disabled={disabled}
           aria-invalid={!!error}
           autoComplete={autoComplete}
           placeholder={placeholder}
+          // En móvil el teclado capitaliza y autocorrige por su cuenta: eso es
+          // la mitad de los dedazos de correo.
+          inputMode={isEmail ? "email" : undefined}
+          autoCapitalize={isEmail ? "none" : undefined}
+          autoCorrect={isEmail ? "off" : undefined}
+          spellCheck={isEmail ? false : undefined}
         />
       </InputGroup>
+      {note && !error ? <FieldDescription>{note}</FieldDescription> : null}
       <FieldError>{error}</FieldError>
     </Field>
   )

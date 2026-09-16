@@ -1,6 +1,10 @@
 import { EnvelopeSimpleIcon, UserCircleIcon } from "@phosphor-icons/react"
-import type { CedulaPrefix, CustomerLocationType } from "@raffle/shared/validators"
-import { memo } from "react"
+import {
+  type CedulaPrefix,
+  correctEmailDomain,
+  type CustomerLocationType,
+} from "@raffle/shared/validators"
+import { memo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { FieldGroup } from "@/components/ui/field"
@@ -70,6 +74,7 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
   onRestoreSavedProfile,
 }: CustomerDetailsStepProps) {
   const usingSavedProfile = Boolean(savedProfileName) && !savedProfileDismissed
+  const [emailNote, setEmailNote] = useState<string | null>(null)
 
   return (
     <section className={purchaseStepClassName}>
@@ -140,7 +145,19 @@ export const CustomerDetailsStep = memo(function CustomerDetailsStep({
           label="Correo electrónico"
           icon={<EnvelopeSimpleIcon className="size-4" aria-hidden />}
           value={customerEmail}
-          onChange={onCustomerEmailChange}
+          onChange={(value) => {
+            if (emailNote) setEmailNote(null)
+            onCustomerEmailChange(value)
+          }}
+          onBlur={() => {
+            // Se corrige al salir del campo, sin avisos raros: si el cliente
+            // escribió "gamil.com" ve "gmail.com" y sigue. Solo cuando hubo
+            // corrección se le confirma a dónde le van a llegar los boletos.
+            const result = correctEmailDomain(customerEmail)
+            if (result.email !== customerEmail) onCustomerEmailChange(result.email)
+            setEmailNote(result.fix ? `Te enviaremos los boletos a ${result.email}` : null)
+          }}
+          note={emailNote ?? undefined}
           disabled={disabled}
           error={hints.email}
           success={usingSavedProfile && customerEmail.trim().length > 0}
