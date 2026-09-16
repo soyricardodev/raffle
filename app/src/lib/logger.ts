@@ -17,6 +17,8 @@ export function getLogger(): pino.Logger {
           "customer_name",
           "customer_phone",
           "customer_email",
+          "to",
+          "recipient_email",
           "customer_ci",
           "payment_payer_name",
           "paymentPayerName",
