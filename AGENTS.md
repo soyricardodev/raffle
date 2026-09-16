@@ -11,27 +11,44 @@ El **99.9% de los usuarios usa teléfono**. Diseñar y optimizar siempre para m�
 - Desktop es secundario: no agregar complejidad de UI solo por pantallas grandes
 - Probar mentalmente (y en E2E cuando aplique) en viewport móvil antes que desktop
 
-### TypeScript: ignorar errores de createFileRoute
+### Rutas nuevas: regenerar `routeTree.gen.ts`, nunca usar `as never`
 
-Cuando TanStack Start no reconoce los tipos de rutas anidadas en `createFileRoute("/api/admin/purchases/$id"...)`, se debe usar cast `as never`:
+`app/src/routeTree.gen.ts` está **commiteado** y el plugin de TanStack lo regenera en
+cada build. Si agregas una ruta y el typecheck dice que no existe en
+`FileRoutesByPath`, el problema es que el árbol está viejo, no los tipos.
+
+El generador lee el id de la ruta del AST y **exige un string literal**. Un cast
+`as never` satisface al type checker y rompe el build, tumbando el release:
 
 ```typescript
-export const PurchaseById = createFileRoute("/api/admin/purchases/$id" as never)({
+// ✅ correcto
+export const Route = createFileRoute("/api/admin/emails/bulk-resend")({
   server: { handlers: { ... } },
 })
 ```
 
-No pierdas tiempo tratando de hacer que `FileRoutesByPath` reconozca rutas anidadas dentro de un mismo archivo. El cast `as never` es aceptado. Las rutas funcionan en runtime correctamente.
-
-### TypeScript: usar tsgo en vez de tsc
-
-`tsgo` es el nuevo type checker de TypeScript (más rápido, drop-in replacement). Se usa exactamente igual que `tsc`:
-
-```bash
-tsgo --noEmit
+```typescript
+// ❌ el build falla con:
+// "expected route id to be a string literal or plain template literal"
+export const Route = createFileRoute("/api/admin/emails/bulk-resend" as never)({
 ```
 
-Si no está instalado globalmente, usar `npx tsgo --noEmit` o agregarlo como devDependency.
+La solución es correr `pnpm build` (o `vite dev`) para regenerar el árbol y
+commitear `routeTree.gen.ts` junto al archivo de la ruta. Verifícalo con un build
+local antes de pushear: el CI usa `pnpm build` y ahí revienta.
+
+### TypeScript: cómo correr el typecheck
+
+`tsgo` **no existe en npm** (`npx tsgo` devuelve 404). El binario vive en el
+paquete `@typescript/native-preview`, así que mientras no se agregue como
+devDependency el typecheck real es:
+
+```bash
+pnpm --filter app exec tsc --noEmit
+```
+
+Hay un error preexistente en `app/src/features/raffle/purchase-form/PurchaseForm.tsx`
+(`ticketNumbers` readonly vs `string[]`), ajeno a los cambios nuevos.
 
 ### Estructura
 
