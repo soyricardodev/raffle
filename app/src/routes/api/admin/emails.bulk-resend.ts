@@ -17,7 +17,7 @@ const BulkResendInput = z.object({
   confirm: z.boolean().optional(),
 })
 
-export const Route = createFileRoute("/api/admin/emails/bulk-resend" as never)({
+export const Route = createFileRoute("/api/admin/emails/bulk-resend")({
   server: {
     handlers: apiHandlers({
       POST: async ({ request }) => {

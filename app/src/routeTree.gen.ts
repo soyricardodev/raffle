@@ -63,6 +63,7 @@ import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admi
 import { Route as ApiAdminMePreferencesRouteImport } from './routes/api/admin/me/preferences'
 import { Route as ApiAdminEmailsStatsRouteImport } from './routes/api/admin/emails.stats'
 import { Route as ApiAdminEmailsHealthRouteImport } from './routes/api/admin/emails.health'
+import { Route as ApiAdminEmailsBulkResendRouteImport } from './routes/api/admin/emails.bulk-resend'
 import { Route as ApiAdminEmailsLogIdRouteImport } from './routes/api/admin/emails.$logId'
 import { Route as ApiAdminAnalyticsSummaryRouteImport } from './routes/api/admin/analytics.summary'
 import { Route as ApiAdminRafflesIdUnpauseRouteImport } from './routes/api/admin/raffles/$id.unpause'
@@ -356,6 +357,12 @@ const ApiAdminEmailsHealthRoute = ApiAdminEmailsHealthRouteImport.update({
   path: '/health',
   getParentRoute: () => ApiAdminEmailsRoute,
 } as any)
+const ApiAdminEmailsBulkResendRoute =
+  ApiAdminEmailsBulkResendRouteImport.update({
+    id: '/bulk-resend',
+    path: '/bulk-resend',
+    getParentRoute: () => ApiAdminEmailsRoute,
+  } as any)
 const ApiAdminEmailsLogIdRoute = ApiAdminEmailsLogIdRouteImport.update({
   id: '/$logId',
   path: '/$logId',
@@ -518,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/api/raffles/': typeof ApiRafflesIndexRoute
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
+  '/api/admin/emails/bulk-resend': typeof ApiAdminEmailsBulkResendRoute
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
@@ -591,6 +599,7 @@ export interface FileRoutesByTo {
   '/api/raffles': typeof ApiRafflesIndexRoute
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
+  '/api/admin/emails/bulk-resend': typeof ApiAdminEmailsBulkResendRoute
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
@@ -668,6 +677,7 @@ export interface FileRoutesById {
   '/api/raffles/': typeof ApiRafflesIndexRoute
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
+  '/api/admin/emails/bulk-resend': typeof ApiAdminEmailsBulkResendRoute
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
@@ -745,6 +755,7 @@ export interface FileRouteTypes {
     | '/api/raffles/'
     | '/api/admin/analytics/summary'
     | '/api/admin/emails/$logId'
+    | '/api/admin/emails/bulk-resend'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
     | '/api/admin/me/preferences'
@@ -818,6 +829,7 @@ export interface FileRouteTypes {
     | '/api/raffles'
     | '/api/admin/analytics/summary'
     | '/api/admin/emails/$logId'
+    | '/api/admin/emails/bulk-resend'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
     | '/api/admin/me/preferences'
@@ -894,6 +906,7 @@ export interface FileRouteTypes {
     | '/api/raffles/'
     | '/api/admin/analytics/summary'
     | '/api/admin/emails/$logId'
+    | '/api/admin/emails/bulk-resend'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
     | '/api/admin/me/preferences'
@@ -1340,6 +1353,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiAdminEmailsHealthRouteImport
       parentRoute: typeof ApiAdminEmailsRoute
     }
+    '/api/admin/emails/bulk-resend': {
+      id: '/api/admin/emails/bulk-resend'
+      path: '/bulk-resend'
+      fullPath: '/api/admin/emails/bulk-resend'
+      preLoaderRoute: typeof ApiAdminEmailsBulkResendRouteImport
+      parentRoute: typeof ApiAdminEmailsRoute
+    }
     '/api/admin/emails/$logId': {
       id: '/api/admin/emails/$logId'
       path: '/$logId'
@@ -1573,12 +1593,14 @@ const ApiAdminEmailsLogIdRouteWithChildren =
 
 interface ApiAdminEmailsRouteChildren {
   ApiAdminEmailsLogIdRoute: typeof ApiAdminEmailsLogIdRouteWithChildren
+  ApiAdminEmailsBulkResendRoute: typeof ApiAdminEmailsBulkResendRoute
   ApiAdminEmailsHealthRoute: typeof ApiAdminEmailsHealthRoute
   ApiAdminEmailsStatsRoute: typeof ApiAdminEmailsStatsRoute
 }
 
 const ApiAdminEmailsRouteChildren: ApiAdminEmailsRouteChildren = {
   ApiAdminEmailsLogIdRoute: ApiAdminEmailsLogIdRouteWithChildren,
+  ApiAdminEmailsBulkResendRoute: ApiAdminEmailsBulkResendRoute,
   ApiAdminEmailsHealthRoute: ApiAdminEmailsHealthRoute,
   ApiAdminEmailsStatsRoute: ApiAdminEmailsStatsRoute,
 }
