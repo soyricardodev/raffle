@@ -3,6 +3,7 @@ import { getLogger } from "@/lib/logger"
 import { BrevoEmailAdapter } from "./brevo.adapter"
 import { NoopEmailAdapter } from "./noop.adapter"
 import { ResendEmailAdapter } from "./resend.adapter"
+import { SmtpEmailAdapter } from "./smtp.adapter"
 import type { EmailAdapter } from "./types"
 
 const logger = getLogger()
@@ -19,6 +20,9 @@ export function getEmailAdapter(): EmailAdapter {
         break
       case "brevo":
         _adapter = new BrevoEmailAdapter()
+        break
+      case "smtp":
+        _adapter = new SmtpEmailAdapter()
         break
       case "noop":
       default:

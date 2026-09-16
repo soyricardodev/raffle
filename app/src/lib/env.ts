@@ -1,6 +1,10 @@
 import { resolveLibsqlDatabaseUrl } from "@raffle/shared/db"
 import { z } from "zod"
 
+/** .env values arrive as strings; treat blank as "not configured" so defaults apply. */
+const blankToUndefined = (value: unknown) =>
+  typeof value === "string" && value.trim() === "" ? undefined : value
+
 function normalizeDatabaseEnv(
   input: Record<string, string | undefined>,
 ): Record<string, string | undefined> {
@@ -20,12 +24,43 @@ const envSchema = z
     BETTER_AUTH_URL: z.string().url().default("http://localhost:3000"),
     APP_URL: z.string().url().default("http://localhost:3000"),
     UPLOAD_DIR: z.string().default("./uploads"),
-    EMAIL_PROVIDER: z.enum(["brevo", "resend", "noop"]).default("noop"),
+    EMAIL_PROVIDER: z.enum(["brevo", "resend", "smtp", "noop"]).default("noop"),
     EMAIL_FROM: z.string().email().optional(),
     EMAIL_FROM_NAME: z.string().min(1).max(100).optional(),
     EMAIL_REPLY_TO: z.string().email().optional(),
     BREVO_API_KEY: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
+    /**
+     * SMTP relay (MailBaby). MailBaby does not sign DKIM for the sending domain,
+     * so signing must happen here or DMARC p=reject gets the message rejected.
+     */
+    SMTP_HOST: z.string().optional(),
+    SMTP_PORT: z.preprocess(blankToUndefined, z.coerce.number().int().positive().default(587)),
+    /** true for implicit TLS (port 465). MailBaby recommends 587 + STARTTLS. */
+    SMTP_SECURE: z
+      .string()
+      .optional()
+      .transform((value) => value === "true" || value === "1"),
+    SMTP_USER: z.string().optional(),
+    SMTP_PASS: z.string().optional(),
+    SMTP_MAX_CONNECTIONS: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().positive().default(3),
+    ),
+    SMTP_MAX_MESSAGES: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().positive().default(100),
+    ),
+    /** Max messages per second across the pool — avoids burst flags on the relay. */
+    SMTP_RATE_LIMIT: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().positive().default(5),
+    ),
+    SMTP_DKIM_DOMAIN: z.string().optional(),
+    SMTP_DKIM_SELECTOR: z.string().optional(),
+    /** PEM key with literal \n escapes. Prefer SMTP_DKIM_PRIVATE_KEY_PATH when possible. */
+    SMTP_DKIM_PRIVATE_KEY: z.string().optional(),
+    SMTP_DKIM_PRIVATE_KEY_PATH: z.string().optional(),
     CRON_SECRET: z.string().optional(),
     INNGEST_EVENT_KEY: z.string().optional(),
     INNGEST_SIGNING_KEY: z.string().optional(),
