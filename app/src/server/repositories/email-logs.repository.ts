@@ -1,7 +1,7 @@
 import { EMAIL_LOG_EXPORT_MAX } from "@raffle/shared/admin/email-list-filters"
 import { emailLogs, purchases } from "@raffle/shared/db"
 import type { EmailType } from "@raffle/shared/validators"
-import { and, asc, desc, eq, like, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, inArray, isNotNull, like, not, or, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export type EmailLogStatus = "pending" | "sent" | "failed" | "error"
@@ -192,6 +192,117 @@ export async function listEmailLogsForPurchase(purchaseId: number, limit = 10) {
     sortBy: "created_at",
     sortDir: "desc",
   })
+}
+
+export type ResendCandidateRow = {
+  id: number
+  purchase_id: number | null
+  recipient_email: string
+  email_type: string
+  subject: string
+  error_message: string | null
+}
+
+export const RESEND_BATCH_MAX = 200
+
+const RESENDABLE_EMAIL_TYPES = [
+  "purchase_confirmation",
+  "status_update",
+  "ticket_modification",
+  "purchase_reassign",
+] as const
+
+/**
+ * A failed log is only worth repairing while no resend for the same
+ * (customer, purchase) pair has already succeeded. Resends insert a new row, so
+ * the original failure never changes — without this check a batch would re-pick
+ * the same rows forever.
+ */
+const pairAlreadyRepaired = sql`exists (
+  select 1 from email_logs repaired
+  where repaired.purchase_id = ${emailLogs.purchaseId}
+    and repaired.recipient_email = ${emailLogs.recipientEmail}
+    and repaired.status = 'sent'
+    and repaired.idempotency_key like 'resend:%'
+)`
+
+/**
+ * One email per (customer, purchase). status_update wins because it carries the
+ * ticket numbers, the purchase details and the final state, so it supersedes the
+ * purchase confirmation.
+ */
+const pairWinner = sql`${emailLogs.id} = (
+  select winner.id from email_logs winner
+  where winner.recipient_email = ${emailLogs.recipientEmail}
+    and winner.purchase_id = ${emailLogs.purchaseId}
+    and winner.status in ('failed', 'error')
+    and winner.email_type in ('purchase_confirmation', 'status_update', 'ticket_modification', 'purchase_reassign')
+  order by
+    case winner.email_type when 'status_update' then 0 else 1 end,
+    winner.created_at desc,
+    winner.id desc
+  limit 1
+)`
+
+function resendCandidateWhere(raffleId: number) {
+  return and(
+    inArray(emailLogs.status, ["failed", "error"]),
+    inArray(emailLogs.emailType, [...RESENDABLE_EMAIL_TYPES]),
+    isNotNull(emailLogs.purchaseId),
+    eq(purchases.raffleId, raffleId),
+    pairWinner,
+    not(pairAlreadyRepaired),
+  )
+}
+
+/** Repairs still pending for a raffle, already deduplicated per customer. */
+export async function countResendCandidatesForRaffle(raffleId: number): Promise<number> {
+  const [row] = await getDb()
+    .select({ total: sql<number>`count(*)` })
+    .from(emailLogs)
+    .innerJoin(purchases, eq(emailLogs.purchaseId, purchases.id))
+    .where(resendCandidateWhere(raffleId))
+
+  return Number(row?.total ?? 0)
+}
+
+/** Every failed row for a raffle, before dedupe — used only for previews. */
+export async function countFailedEmailLogsForRaffle(raffleId: number): Promise<number> {
+  const [row] = await getDb()
+    .select({ total: sql<number>`count(*)` })
+    .from(emailLogs)
+    .innerJoin(purchases, eq(emailLogs.purchaseId, purchases.id))
+    .where(
+      and(
+        inArray(emailLogs.status, ["failed", "error"]),
+        isNotNull(emailLogs.purchaseId),
+        eq(purchases.raffleId, raffleId),
+      ),
+    )
+
+  return Number(row?.total ?? 0)
+}
+
+export async function listResendCandidatesForRaffle(params: {
+  raffleId: number
+  limit: number
+}): Promise<ResendCandidateRow[]> {
+  const limit = Math.min(Math.max(params.limit, 1), RESEND_BATCH_MAX)
+
+  return getDb()
+    .select({
+      id: emailLogs.id,
+      purchase_id: emailLogs.purchaseId,
+      recipient_email: emailLogs.recipientEmail,
+      email_type: emailLogs.emailType,
+      subject: emailLogs.subject,
+      error_message: emailLogs.errorMessage,
+    })
+    .from(emailLogs)
+    .innerJoin(purchases, eq(emailLogs.purchaseId, purchases.id))
+    .where(resendCandidateWhere(params.raffleId))
+    .orderBy(asc(emailLogs.id))
+    .limit(limit)
 }
 
 export async function listEmailLogsForExport(

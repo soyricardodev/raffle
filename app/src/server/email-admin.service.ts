@@ -108,6 +108,82 @@ export async function resendEmailFromLog(logId: number) {
   }
 }
 
+export type ResendFailedSummary = {
+  dryRun: boolean
+  batch: number
+  sent: number
+  failed: number
+  remaining: number
+  errors: string[]
+}
+
+export async function previewFailedEmailsForRaffle(raffleId: number) {
+  const [failed, candidates] = await Promise.all([
+    emailLogsRepo.countFailedEmailLogsForRaffle(raffleId),
+    emailLogsRepo.countResendCandidatesForRaffle(raffleId),
+  ])
+
+  return {
+    raffleId,
+    failed,
+    candidates,
+    deduplicated: failed - candidates,
+  }
+}
+
+/**
+ * Repairs failed emails for one raffle, in batches, one email per
+ * (customer, purchase). Sends sequentially so the SMTP pool's rate limit paces
+ * the relay instead of bursting it.
+ */
+export async function resendFailedEmailsForRaffle(input: {
+  raffleId: number
+  batchSize?: number
+  dryRun?: boolean
+}): Promise<ResendFailedSummary> {
+  const candidates = await emailLogsRepo.listResendCandidatesForRaffle({
+    raffleId: input.raffleId,
+    limit: input.batchSize ?? 50,
+  })
+
+  if (input.dryRun) {
+    return {
+      dryRun: true,
+      batch: candidates.length,
+      sent: 0,
+      failed: 0,
+      remaining: await emailLogsRepo.countResendCandidatesForRaffle(input.raffleId),
+      errors: [],
+    }
+  }
+
+  let sent = 0
+  let failed = 0
+  const errors: string[] = []
+
+  for (const candidate of candidates) {
+    const result = await resendEmailFromLog(candidate.id)
+    if (result.success) {
+      sent += 1
+      continue
+    }
+
+    failed += 1
+    if (errors.length < 10) {
+      errors.push(`log ${candidate.id}: ${result.error ?? "error desconocido"}`)
+    }
+  }
+
+  return {
+    dryRun: false,
+    batch: candidates.length,
+    sent,
+    failed,
+    remaining: await emailLogsRepo.countResendCandidatesForRaffle(input.raffleId),
+    errors,
+  }
+}
+
 export function emailLogsToCsv(
   rows: emailLogsRepo.EmailLogListRow[],
   stats?: emailLogsRepo.EmailLogStats,
