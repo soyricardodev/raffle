@@ -52,7 +52,7 @@ const envSchema = z
     SMTP_PASS: z.string().optional(),
     SMTP_MAX_CONNECTIONS: z.preprocess(
       blankToUndefined,
-      z.coerce.number().int().positive().default(3),
+      z.coerce.number().int().positive().default(1),
     ),
     SMTP_MAX_MESSAGES: z.preprocess(
       blankToUndefined,

@@ -35,6 +35,15 @@ describe("getEnv", () => {
     expect(parsed.EMAIL_PROVIDER).toBe("noop")
   })
 
+  it("defaults SMTP delivery to one connection", () => {
+    const parsed = parseEnv({
+      NODE_ENV: "test",
+      DATABASE_URL: "file:/tmp/raffle.db",
+    })
+
+    expect(parsed.SMTP_MAX_CONNECTIONS).toBe(1)
+  })
+
   it("requires recipient validation before production email can be enabled", () => {
     expect(() =>
       parseEnv({

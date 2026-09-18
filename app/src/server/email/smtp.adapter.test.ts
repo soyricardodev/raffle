@@ -2,11 +2,13 @@ import { afterEach, describe, expect, it, vi } from "vitest"
 import { resetEnvCache } from "@/lib/env"
 import { SmtpEmailAdapter } from "./smtp.adapter"
 
-const { createTransportMock, sendMailMock } = vi.hoisted(() => {
+const { closeMock, createTransportMock, sendMailMock } = vi.hoisted(() => {
   const sendMailMock = vi.fn()
+  const closeMock = vi.fn()
   return {
+    closeMock,
     sendMailMock,
-    createTransportMock: vi.fn(() => ({ sendMail: sendMailMock })),
+    createTransportMock: vi.fn(() => ({ close: closeMock, sendMail: sendMailMock })),
   }
 })
 
@@ -52,6 +54,7 @@ function setEnv(extra: Record<string, string> = {}) {
 describe("SmtpEmailAdapter", () => {
   afterEach(async () => {
     resetEnvCache()
+    closeMock.mockReset()
     sendMailMock.mockReset()
     createTransportMock.mockClear()
     for (const key of [...Object.keys(BASE_ENV), ...EXTRA_KEYS]) {
@@ -103,7 +106,8 @@ describe("SmtpEmailAdapter", () => {
       SMTP_SECURE: "true",
       SMTP_DKIM_DOMAIN: "yoiberifas.com",
       SMTP_DKIM_SELECTOR: "mailbaby",
-      SMTP_DKIM_PRIVATE_KEY: "-----BEGIN RSA PRIVATE KEY-----\\nkey\\n-----END RSA PRIVATE KEY-----",
+      SMTP_DKIM_PRIVATE_KEY:
+        "-----BEGIN RSA PRIVATE KEY-----\\nkey\\n-----END RSA PRIVATE KEY-----",
     })
 
     const adapter = new SmtpEmailAdapter()
@@ -174,5 +178,53 @@ describe("SmtpEmailAdapter", () => {
         type: "purchase_confirmation",
       }),
     ).rejects.toThrow(/rechazó el destinatario/)
+  })
+
+  it("reopens the transport and retries once when the SMTP greeting times out", async () => {
+    const greetingTimeout = Object.assign(new Error("Greeting never received"), {
+      code: "ETIMEDOUT",
+      command: "CONN",
+    })
+    sendMailMock
+      .mockRejectedValueOnce(greetingTimeout)
+      .mockResolvedValueOnce({ messageId: "<relay-retry@yoiberifas.com>", rejected: [] })
+    setEnv()
+
+    const result = await new SmtpEmailAdapter().send({
+      to: "cliente@test.com",
+      subject: "Prueba",
+      html: "<p>Hola</p>",
+      type: "purchase_confirmation",
+    })
+
+    expect(closeMock).toHaveBeenCalledOnce()
+    expect(createTransportMock).toHaveBeenCalledTimes(2)
+    expect(sendMailMock).toHaveBeenCalledTimes(2)
+    expect(result).toEqual({
+      success: true,
+      providerMessageId: "<relay-retry@yoiberifas.com>",
+    })
+  })
+
+  it("does not retry a relay rejection after the message transaction starts", async () => {
+    const relayRejection = Object.assign(new Error("Message failed: 550 rSPAM"), {
+      code: "EENVELOPE",
+      command: "DATA",
+    })
+    sendMailMock.mockRejectedValue(relayRejection)
+    setEnv()
+
+    await expect(
+      new SmtpEmailAdapter().send({
+        to: "cliente@test.com",
+        subject: "Prueba",
+        html: "<p>Hola</p>",
+        type: "purchase_confirmation",
+      }),
+    ).rejects.toThrow(/550 rSPAM/)
+
+    expect(closeMock).not.toHaveBeenCalled()
+    expect(createTransportMock).toHaveBeenCalledOnce()
+    expect(sendMailMock).toHaveBeenCalledOnce()
   })
 })

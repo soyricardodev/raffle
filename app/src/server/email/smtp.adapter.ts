@@ -7,6 +7,29 @@ import { formatEmailFrom, resolveEmailSenderConfig } from "./email-from"
 import type { EmailAdapter, SendEmailParams, SendEmailResult } from "./types"
 
 const logger = getLogger()
+const SMTP_RETRY_DELAY_MS = 500
+
+type SmtpTransportError = Error & {
+  code?: string
+  command?: string
+}
+
+function isRetryableHandshakeError(error: unknown): boolean {
+  if (!(error instanceof Error) || error instanceof EmailSendError) return false
+
+  const smtpError = error as SmtpTransportError
+  const message = smtpError.message.toLowerCase()
+  if (message.includes("greeting never received")) return true
+
+  return (
+    smtpError.command === "CONN" &&
+    ["ECONNECTION", "ECONNRESET", "ESOCKET", "ETIMEDOUT"].includes(smtpError.code ?? "")
+  )
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
 
 /**
  * .env files cannot hold real newlines, so a pasted PEM arrives with literal "\n".
@@ -34,7 +57,9 @@ function readDkimPrivateKey(env: ServerEnv): string {
 function resolveDkimOptions(env: ServerEnv): DKIMOptions | undefined {
   const domainName = env.SMTP_DKIM_DOMAIN?.trim()
   const keySelector = env.SMTP_DKIM_SELECTOR?.trim()
-  const hasKey = Boolean(env.SMTP_DKIM_PRIVATE_KEY?.trim() || env.SMTP_DKIM_PRIVATE_KEY_PATH?.trim())
+  const hasKey = Boolean(
+    env.SMTP_DKIM_PRIVATE_KEY?.trim() || env.SMTP_DKIM_PRIVATE_KEY_PATH?.trim(),
+  )
 
   if (!domainName && !keySelector && !hasKey) return undefined
 
@@ -50,6 +75,11 @@ function resolveDkimOptions(env: ServerEnv): DKIMOptions | undefined {
 export class SmtpEmailAdapter implements EmailAdapter {
   readonly provider = "smtp"
   private transporter: Transporter | undefined
+
+  private resetTransporter(): void {
+    this.transporter?.close()
+    this.transporter = undefined
+  }
 
   private getTransporter(): Transporter {
     if (this.transporter) return this.transporter
@@ -96,36 +126,49 @@ export class SmtpEmailAdapter implements EmailAdapter {
 
   async send(params: SendEmailParams): Promise<SendEmailResult> {
     const sender = await resolveEmailSenderConfig()
-
-    try {
-      const info = await this.getTransporter().sendMail({
-        from: formatEmailFrom(sender.fromName, sender.fromEmail),
-        to: params.to,
-        subject: params.subject,
-        html: params.html,
-        ...(sender.replyTo ? { replyTo: sender.replyTo } : {}),
-      })
-
-      const rejected = Array.isArray(info.rejected) ? info.rejected.map(String) : []
-      if (rejected.length > 0) {
-        throw new EmailSendError(
-          params.to,
-          `El relay rechazó el destinatario: ${rejected.join(", ")}`,
-        )
-      }
-
-      logger.info(
-        { subject: params.subject, messageId: info.messageId },
-        "email:smtp:sent",
-      )
-
-      return {
-        success: true,
-        providerMessageId: info.messageId,
-      }
-    } catch (error) {
-      if (error instanceof EmailSendError) throw error
-      throw new EmailSendError(params.to, String(error))
+    const message = {
+      from: formatEmailFrom(sender.fromName, sender.fromEmail),
+      to: params.to,
+      subject: params.subject,
+      html: params.html,
+      ...(sender.replyTo ? { replyTo: sender.replyTo } : {}),
     }
+
+    for (let attempt = 1; attempt <= 2; attempt += 1) {
+      try {
+        const info = await this.getTransporter().sendMail(message)
+
+        const rejected = Array.isArray(info.rejected) ? info.rejected.map(String) : []
+        if (rejected.length > 0) {
+          throw new EmailSendError(
+            params.to,
+            `El relay rechazó el destinatario: ${rejected.join(", ")}`,
+          )
+        }
+
+        logger.info({ subject: params.subject, messageId: info.messageId }, "email:smtp:sent")
+
+        return {
+          success: true,
+          providerMessageId: info.messageId,
+        }
+      } catch (error) {
+        if (attempt === 1 && isRetryableHandshakeError(error)) {
+          const smtpError = error as SmtpTransportError
+          logger.warn(
+            { code: smtpError.code ?? null, command: smtpError.command ?? null },
+            "email:smtp:retry_handshake",
+          )
+          this.resetTransporter()
+          await wait(SMTP_RETRY_DELAY_MS)
+          continue
+        }
+
+        if (error instanceof EmailSendError) throw error
+        throw new EmailSendError(params.to, String(error))
+      }
+    }
+
+    throw new EmailSendError(params.to, "SMTP delivery failed after retry")
   }
 }
