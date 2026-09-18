@@ -25,6 +25,12 @@ const envSchema = z
     APP_URL: z.string().url().default("http://localhost:3000"),
     UPLOAD_DIR: z.string().default("./uploads"),
     EMAIL_PROVIDER: z.enum(["brevo", "resend", "smtp", "noop"]).default("noop"),
+    EMAIL_VALIDATION_PROVIDER: z.enum(["none", "emailable"]).default("none"),
+    EMAIL_VALIDATION_API_KEY: z.string().optional(),
+    EMAIL_VALIDATION_TIMEOUT_MS: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(2_000).max(10_000).default(5_000),
+    ),
     EMAIL_FROM: z.string().email().optional(),
     EMAIL_FROM_NAME: z.string().min(1).max(100).optional(),
     EMAIL_REPLY_TO: z.string().email().optional(),
@@ -52,10 +58,7 @@ const envSchema = z
       z.coerce.number().int().positive().default(100),
     ),
     /** Max messages per second across the pool — avoids burst flags on the relay. */
-    SMTP_RATE_LIMIT: z.preprocess(
-      blankToUndefined,
-      z.coerce.number().int().positive().default(5),
-    ),
+    SMTP_RATE_LIMIT: z.preprocess(blankToUndefined, z.coerce.number().int().positive().default(5)),
     SMTP_DKIM_DOMAIN: z.string().optional(),
     SMTP_DKIM_SELECTOR: z.string().optional(),
     /** PEM key with literal \n escapes. Prefer SMTP_DKIM_PRIVATE_KEY_PATH when possible. */
@@ -79,6 +82,24 @@ const envSchema = z
     message: "DATABASE_URL is required in production",
     path: ["DATABASE_URL"],
   })
+  .refine(
+    (data) =>
+      data.EMAIL_VALIDATION_PROVIDER !== "emailable" || Boolean(data.EMAIL_VALIDATION_API_KEY),
+    {
+      message: "EMAIL_VALIDATION_API_KEY is required when EMAIL_VALIDATION_PROVIDER=emailable",
+      path: ["EMAIL_VALIDATION_API_KEY"],
+    },
+  )
+  .refine(
+    (data) =>
+      data.NODE_ENV !== "production" ||
+      data.EMAIL_PROVIDER === "noop" ||
+      data.EMAIL_VALIDATION_PROVIDER !== "none",
+    {
+      message: "Recipient validation is required before enabling production email delivery",
+      path: ["EMAIL_VALIDATION_PROVIDER"],
+    },
+  )
 
 export type ServerEnv = z.infer<typeof envSchema>
 

@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it } from "vitest"
-import { getEnv, resetEnvCache } from "./env"
+import { getEnv, parseEnv, resetEnvCache } from "./env"
 
 describe("getEnv", () => {
   afterEach(() => {
@@ -33,6 +33,27 @@ describe("getEnv", () => {
     const parsed = getEnv()
     expect(parsed.DATABASE_URL).toContain("file:")
     expect(parsed.EMAIL_PROVIDER).toBe("noop")
+  })
+
+  it("requires recipient validation before production email can be enabled", () => {
+    expect(() =>
+      parseEnv({
+        NODE_ENV: "production",
+        DATABASE_URL: "file:/tmp/raffle.db",
+        EMAIL_PROVIDER: "smtp",
+        EMAIL_VALIDATION_PROVIDER: "none",
+      }),
+    ).toThrow(/Recipient validation/)
+
+    expect(
+      parseEnv({
+        NODE_ENV: "production",
+        DATABASE_URL: "file:/tmp/raffle.db",
+        EMAIL_PROVIDER: "smtp",
+        EMAIL_VALIDATION_PROVIDER: "emailable",
+        EMAIL_VALIDATION_API_KEY: "live_test",
+      }).EMAIL_VALIDATION_PROVIDER,
+    ).toBe("emailable")
   })
 
   it("parses libsql remote URL", () => {

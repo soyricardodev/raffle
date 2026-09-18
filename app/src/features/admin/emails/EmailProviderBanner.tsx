@@ -1,8 +1,8 @@
 import { WarningIcon } from "@phosphor-icons/react"
 import { Link } from "@tanstack/react-router"
 import { Button } from "@/components/ui/button"
-import type { EmailLogStats, EmailProviderHealth } from "@/features/admin/emails/types"
 import { PROVIDER_LABELS } from "@/features/admin/emails/email-labels"
+import type { EmailLogStats, EmailProviderHealth } from "@/features/admin/emails/types"
 import { cn } from "@/lib/utils"
 
 type EmailProviderBannerProps = {
@@ -42,26 +42,38 @@ export function EmailProviderBanner({ health, stats, onFilterFailed }: EmailProv
   if (!health && !stats?.failed_last_24h) return null
 
   const noopWarning = health?.is_noop
-  const failedAlert = (stats?.failed_last_24h ?? 0) > 0
+  const validationWarning = health?.delivers_real_email && !health.validation_enabled
+  const failedLast24h = stats?.failed_last_24h ?? 0
+  const failedAlert = failedLast24h > 0
+  const provider = health?.provider ?? "unknown"
 
-  if (!noopWarning && !failedAlert) return null
+  if (!noopWarning && !validationWarning && !failedAlert) return null
 
   return (
     <div className="flex flex-col gap-2">
       {noopWarning ? (
         <BannerBox variant="destructive" title="Correos en modo simulación">
-          El proveedor activo es{" "}
-          <strong>{PROVIDER_LABELS[health!.provider] ?? health!.provider}</strong>. Los registros
-          pueden marcarse como enviados sin llegar al destinatario. Configura{" "}
+          El proveedor activo es <strong>{PROVIDER_LABELS[provider] ?? provider}</strong>. Los
+          registros pueden marcarse como enviados sin llegar al destinatario. Configura{" "}
           <code className="rounded bg-black/10 px-1 text-xs dark:bg-white/10">EMAIL_PROVIDER</code>{" "}
           (resend o brevo) en el servidor.
+        </BannerBox>
+      ) : null}
+      {validationWarning ? (
+        <BannerBox variant="destructive" title="Validación de destinatarios desactivada">
+          El proveedor puede enviar correos reales, pero no está configurado el filtro que evita
+          rebotes. No habilites envíos hasta configurar{" "}
+          <code className="rounded bg-black/10 px-1 text-xs dark:bg-white/10">
+            EMAIL_VALIDATION_PROVIDER
+          </code>
+          .
         </BannerBox>
       ) : null}
       {failedAlert ? (
         <BannerBox variant="warning" title="Envíos fallidos recientes">
           <span className="flex flex-wrap items-center gap-2">
-            {stats!.failed_last_24h} correo{stats!.failed_last_24h === 1 ? "" : "s"} fallido
-            {stats!.failed_last_24h === 1 ? "" : "s"} en las últimas 24 horas.
+            {failedLast24h} correo{failedLast24h === 1 ? "" : "s"} fallido
+            {failedLast24h === 1 ? "" : "s"} en las últimas 24 horas.
             {onFilterFailed ? (
               <Button type="button" variant="outline" size="sm" onClick={onFilterFailed}>
                 Ver fallidos

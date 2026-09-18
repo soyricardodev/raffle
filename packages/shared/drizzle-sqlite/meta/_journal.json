@@ -141,6 +141,13 @@
       "when": 1779901800000,
       "tag": "0019_push_auto_alerts",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "6",
+      "when": 1789750800000,
+      "tag": "0020_email_recipient_safety",
+      "breakpoints": true
     }
   ]
 }

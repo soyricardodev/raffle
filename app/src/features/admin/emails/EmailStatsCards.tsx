@@ -2,6 +2,7 @@ import {
   CheckCircleIcon,
   ClockIcon,
   EnvelopeSimpleIcon,
+  ShieldCheckIcon,
   WarningCircleIcon,
 } from "@phosphor-icons/react"
 import { Card, CardContent } from "@/components/ui/card"
@@ -25,16 +26,26 @@ const cards = [
     includeError: true,
   },
   { key: "pending" as const, label: "Pendientes", icon: ClockIcon, className: "text-amber-600" },
+  {
+    key: "blocked" as const,
+    label: "Protegidos",
+    icon: ShieldCheckIcon,
+    className: "text-violet-600",
+  },
 ]
 
-function statValue(stats: EmailLogStats, key: (typeof cards)[number]["key"], includeError?: boolean) {
+function statValue(
+  stats: EmailLogStats,
+  key: (typeof cards)[number]["key"],
+  includeError?: boolean,
+) {
   if (key === "failed" && includeError) return (stats.failed + stats.error).toLocaleString("es-VE")
   return stats[key].toLocaleString("es-VE")
 }
 
 export function EmailStatsCards({ stats, loading }: EmailStatsCardsProps) {
   return (
-    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-5">
+    <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
       {cards.map(({ key, label, icon: Icon, className, includeError }) => (
         <Card key={key} size="sm">
           <CardContent className="flex items-center justify-between gap-2 p-3">

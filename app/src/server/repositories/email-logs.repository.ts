@@ -4,7 +4,7 @@ import type { EmailType } from "@raffle/shared/validators"
 import { and, asc, desc, eq, inArray, isNotNull, like, not, or, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
-export type EmailLogStatus = "pending" | "sent" | "failed" | "error"
+export type EmailLogStatus = "pending" | "sent" | "failed" | "error" | "blocked"
 
 export type EmailLogListParams = {
   limit?: number
@@ -53,10 +53,12 @@ const listSelect = {
   customer_phone: purchases.customerPhone,
 }
 
-function buildWhereClause(params: Pick<
-  EmailLogListParams,
-  "status" | "emailType" | "search" | "start" | "end" | "purchaseId"
->) {
+function buildWhereClause(
+  params: Pick<
+    EmailLogListParams,
+    "status" | "emailType" | "search" | "start" | "end" | "purchaseId"
+  >,
+) {
   const { status = "all", emailType, search, start, end, purchaseId } = params
   const conditions = [sql`1=1`]
 
@@ -71,14 +73,13 @@ function buildWhereClause(params: Pick<
   }
   if (search?.trim()) {
     const term = `%${search.trim()}%`
-    conditions.push(
-      or(
-        like(emailLogs.subject, term),
-        like(emailLogs.recipientEmail, term),
-        like(purchases.customerName, term),
-        like(purchases.customerPhone, term),
-      )!,
+    const searchCondition = or(
+      like(emailLogs.subject, term),
+      like(emailLogs.recipientEmail, term),
+      like(purchases.customerName, term),
+      like(purchases.customerPhone, term),
     )
+    if (searchCondition) conditions.push(searchCondition)
   }
   if (start) {
     conditions.push(sql`date(${emailLogs.createdAt} / 1000, 'unixepoch') >= ${start}`)
@@ -97,7 +98,6 @@ function orderClause(sortBy: EmailLogListParams["sortBy"], sortDir: EmailLogList
       return dir(emailLogs.sentAt)
     case "status":
       return dir(emailLogs.status)
-    case "created_at":
     default:
       return dir(emailLogs.createdAt)
   }
@@ -147,12 +147,7 @@ export async function getEmailLogById(id: number): Promise<EmailLogListRow | nul
 
 export async function listEmailLogs(params: EmailLogListParams) {
   const db = getDb()
-  const {
-    limit = 50,
-    page = 1,
-    sortBy = "created_at",
-    sortDir = "desc",
-  } = params
+  const { limit = 50, page = 1, sortBy = "created_at", sortDir = "desc" } = params
   const safeLimit = Math.min(Math.max(limit, 1), 100)
   const offset = (Math.max(page, 1) - 1) * safeLimit
   const whereClause = buildWhereClause(params)
@@ -342,6 +337,7 @@ export type EmailLogStats = {
   failed: number
   pending: number
   error: number
+  blocked: number
   success_rate: number
   failed_last_24h: number
 }
@@ -359,6 +355,7 @@ export async function getEmailLogStats(
       failed: sql<number>`sum(case when ${emailLogs.status} = 'failed' then 1 else 0 end)`,
       pending: sql<number>`sum(case when ${emailLogs.status} = 'pending' then 1 else 0 end)`,
       error: sql<number>`sum(case when ${emailLogs.status} = 'error' then 1 else 0 end)`,
+      blocked: sql<number>`sum(case when ${emailLogs.status} = 'blocked' then 1 else 0 end)`,
       failed_last_24h: sql<number>`sum(case when ${emailLogs.status} in ('failed', 'error') and ${emailLogs.createdAt} >= ${Date.now() - 86_400_000} then 1 else 0 end)`,
     })
     .from(emailLogs)
@@ -367,14 +364,18 @@ export async function getEmailLogStats(
 
   const total = Number(row?.total ?? 0)
   const sent = Number(row?.sent ?? 0)
+  const failed = Number(row?.failed ?? 0)
+  const error = Number(row?.error ?? 0)
+  const attempted = sent + failed + error
 
   return {
     total,
     sent,
-    failed: Number(row?.failed ?? 0),
+    failed,
     pending: Number(row?.pending ?? 0),
-    error: Number(row?.error ?? 0),
-    success_rate: total > 0 ? Math.round((sent / total) * 1000) / 10 : 0,
+    error,
+    blocked: Number(row?.blocked ?? 0),
+    success_rate: attempted > 0 ? Math.round((sent / attempted) * 1000) / 10 : 0,
     failed_last_24h: Number(row?.failed_last_24h ?? 0),
   }
 }

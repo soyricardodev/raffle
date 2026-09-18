@@ -8,8 +8,10 @@
 | `BETTER_AUTH_SECRET` | 32+ random chars (session signing) |
 | `BETTER_AUTH_URL` / `APP_URL` | Public app URL (must match browser origin) |
 | `CRON_SECRET` | Bearer token for `/api/cron/maintenance` |
-| `EMAIL_PROVIDER` | `noop` \| `resend` \| `brevo` |
+| `EMAIL_PROVIDER` | `noop` \| `resend` \| `brevo` \| `smtp` |
 | `RESEND_API_KEY` / `BREVO_API_KEY` | When email provider is not noop |
+| `EMAIL_VALIDATION_PROVIDER` | `none` (dev only) or `emailable`; required for real production delivery |
+| `EMAIL_VALIDATION_API_KEY` | Server-side Emailable key; never expose it to the browser |
 | `UPLOAD_DIR` | Local proof uploads (default `./uploads`) |
 
 ## Database
@@ -40,7 +42,7 @@ Runs: expire pauses, finalize overdue raffles. Configure external cron (VPS, Inn
 
 ## Email
 
-Set `EMAIL_PROVIDER` and API keys. Use `noop` in dev/E2E. Purchase and status emails go through `app/src/server/purchase-notifications.ts`.
+Set `EMAIL_PROVIDER`, `EMAIL_VALIDATION_PROVIDER`, and their API keys. Production refuses to boot with a real email provider unless recipient validation is configured. Use `noop` and `none` in dev/E2E. Every send path passes through cached verification and the permanent suppression list before contacting the delivery provider.
 
 ## E2E smoke
 

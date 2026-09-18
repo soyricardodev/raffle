@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { CardHeader, CardTitle } from "@/components/ui/card"
+import { DateRangePicker } from "@/components/ui/date-range-picker"
 import {
   InputGroup,
   InputGroupAddon,
@@ -22,7 +23,6 @@ import type {
   AdminEmailsSearchParams,
 } from "@/features/admin/emails/admin-emails-queries"
 import { EMAIL_TYPE_OPTIONS, emailTypeLabel } from "@/features/admin/emails/email-labels"
-import { DateRangePicker } from "@/components/ui/date-range-picker"
 import { adminDateRangePresets } from "@/features/admin/shared/admin-date-range-presets"
 import { useDebouncedValue } from "@/hooks/useDebouncedValue"
 
@@ -169,6 +169,7 @@ export function AdminEmailsFilters({ filters, total, onPatchSearch }: AdminEmail
                 <SelectItem value="failed">Fallidos</SelectItem>
                 <SelectItem value="pending">Pendientes</SelectItem>
                 <SelectItem value="error">Error</SelectItem>
+                <SelectItem value="blocked">Bloqueados</SelectItem>
               </SelectGroup>
             </SelectContent>
           </Select>

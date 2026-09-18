@@ -1,6 +1,6 @@
 import type { EmailType } from "@raffle/shared/validators"
 
-export type EmailLogStatus = "pending" | "sent" | "failed" | "error"
+export type EmailLogStatus = "pending" | "sent" | "failed" | "error" | "blocked"
 
 export type EmailLogRow = {
   id: number
@@ -29,6 +29,7 @@ export type EmailLogStats = {
   failed: number
   pending: number
   error: number
+  blocked: number
   success_rate: number
   failed_last_24h: number
 }
@@ -38,6 +39,8 @@ export type EmailProviderHealth = {
   adapter: string
   is_noop: boolean
   delivers_real_email: boolean
+  validation_provider: string
+  validation_enabled: boolean
   from_email: string | null
   from_name: string | null
 }

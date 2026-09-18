@@ -1,14 +1,11 @@
-import { z } from "zod"
-import { EmailType } from "@raffle/shared/validators"
 import type { AdminEmailListInput } from "@raffle/shared/admin/email-list-filters"
+import { EmailType } from "@raffle/shared/validators"
+import { z } from "zod"
 import { getEnv } from "@/lib/env"
 import { getEmailAdapter } from "./email/email.service"
-import { buildSampleTestEmail } from "./email/email-templates"
-import {
-  deliverAndLogEmail,
-  resendIdempotencyKey,
-} from "./email/email-delivery"
+import { deliverAndLogEmail, resendIdempotencyKey } from "./email/email-delivery"
 import { buildResendEmail, parseEmailLogType } from "./email/email-resend"
+import { buildSampleTestEmail } from "./email/email-templates"
 import { loadPurchaseEmailContext } from "./purchase-notifications"
 import * as emailLogsRepo from "./repositories/email-logs.repository"
 
@@ -44,6 +41,8 @@ export async function getEmailProviderHealth() {
     adapter: adapter.provider,
     is_noop: env.EMAIL_PROVIDER === "noop",
     delivers_real_email: env.EMAIL_PROVIDER !== "noop",
+    validation_provider: env.EMAIL_VALIDATION_PROVIDER,
+    validation_enabled: env.EMAIL_VALIDATION_PROVIDER !== "none",
     from_email: fromEmail,
     from_name: fromName,
   }

@@ -10,6 +10,8 @@ function statusClass(status: string) {
       return "bg-red-100 text-red-800 dark:bg-red-950 dark:text-red-200"
     case "pending":
       return "bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-200"
+    case "blocked":
+      return "bg-violet-100 text-violet-800 dark:bg-violet-950 dark:text-violet-200"
     default:
       return "bg-muted text-muted-foreground"
   }
@@ -20,6 +22,7 @@ const STATUS_LABELS: Record<string, string> = {
   failed: "Fallido",
   error: "Error",
   pending: "Pendiente",
+  blocked: "Bloqueado",
 }
 
 type EmailStatusBadgeProps = {
