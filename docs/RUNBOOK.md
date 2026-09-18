@@ -10,8 +10,8 @@
 | `CRON_SECRET` | Bearer token for `/api/cron/maintenance` |
 | `EMAIL_PROVIDER` | `noop` \| `resend` \| `brevo` \| `smtp` |
 | `RESEND_API_KEY` / `BREVO_API_KEY` | When email provider is not noop |
-| `EMAIL_VALIDATION_PROVIDER` | `none` (dev only) or `emailable`; required for real production delivery |
-| `EMAIL_VALIDATION_API_KEY` | Server-side Emailable key; never expose it to the browser |
+| `EMAIL_VALIDATION_PROVIDER` | `none` (dev only), `reoon`, or `emailable`; required for real production delivery |
+| `EMAIL_VALIDATION_API_KEY` | Server-side verification key; never expose it to the browser |
 | `UPLOAD_DIR` | Local proof uploads (default `./uploads`) |
 
 ## Database

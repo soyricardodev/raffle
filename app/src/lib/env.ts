@@ -25,7 +25,7 @@ const envSchema = z
     APP_URL: z.string().url().default("http://localhost:3000"),
     UPLOAD_DIR: z.string().default("./uploads"),
     EMAIL_PROVIDER: z.enum(["brevo", "resend", "smtp", "noop"]).default("noop"),
-    EMAIL_VALIDATION_PROVIDER: z.enum(["none", "emailable"]).default("none"),
+    EMAIL_VALIDATION_PROVIDER: z.enum(["none", "emailable", "reoon"]).default("none"),
     EMAIL_VALIDATION_API_KEY: z.string().optional(),
     EMAIL_VALIDATION_TIMEOUT_MS: z.preprocess(
       blankToUndefined,
@@ -83,10 +83,9 @@ const envSchema = z
     path: ["DATABASE_URL"],
   })
   .refine(
-    (data) =>
-      data.EMAIL_VALIDATION_PROVIDER !== "emailable" || Boolean(data.EMAIL_VALIDATION_API_KEY),
+    (data) => data.EMAIL_VALIDATION_PROVIDER === "none" || Boolean(data.EMAIL_VALIDATION_API_KEY),
     {
-      message: "EMAIL_VALIDATION_API_KEY is required when EMAIL_VALIDATION_PROVIDER=emailable",
+      message: "EMAIL_VALIDATION_API_KEY is required when recipient validation is enabled",
       path: ["EMAIL_VALIDATION_API_KEY"],
     },
   )

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest"
 import { resetEnvCache } from "@/lib/env"
-import { EmailableRecipientVerifier } from "./recipient-verifier"
+import { EmailableRecipientVerifier, ReoonRecipientVerifier } from "./recipient-verifier"
 
 describe("EmailableRecipientVerifier", () => {
   afterEach(() => {
@@ -49,5 +49,28 @@ describe("EmailableRecipientVerifier", () => {
     await expect(new EmailableRecipientVerifier().verify("client@example.com")).rejects.toThrow(
       /unsupported state/,
     )
+  })
+
+  it.each([
+    ["safe", "deliverable"],
+    ["invalid", "undeliverable"],
+    ["catch_all", "risky"],
+    ["unknown", "unknown"],
+  ] as const)("maps Reoon %s to %s", async (status, state) => {
+    process.env.EMAIL_VALIDATION_PROVIDER = "reoon"
+    process.env.EMAIL_VALIDATION_API_KEY = "reoon_secret"
+    resetEnvCache()
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ status, overall_score: 90 }), {
+        status: 200,
+      }),
+    )
+    vi.stubGlobal("fetch", fetchMock)
+
+    const result = await new ReoonRecipientVerifier().verify("client@example.com")
+
+    expect(result).toMatchObject({ provider: "reoon", state, reason: status, score: 90 })
+    const [url] = fetchMock.mock.calls[0] as [URL]
+    expect(url.searchParams.get("mode")).toBe("power")
   })
 })
