@@ -25,7 +25,7 @@ EMAIL_VALIDATION_URL=http://127.0.0.1:8081/v1/check_email
 EMAIL_VALIDATION_SECRET=<contenido de /home/admin/reacher/reacher.secret>
 ```
 
-La opción `direct` continúa siendo la validación gratuita predeterminada. Antes de cambiar a `reacher`, comparar sus resultados con los rebotes definitivos de MailBaby. Los estados `risky` y `unknown` nunca deben convertirse automáticamente en supresión permanente.
+La opción `direct` continúa disponible como verificación secundaria. Cuando Reacher devuelve `invalid` o `unknown`, Yoiber consulta también el verificador SMTP conservador: solamente una dirección `invalid` confirmada por ambos mecanismos puede entrar en supresión permanente. Los estados `risky`, `unknown` y los conflictos nunca se suprimen automáticamente.
 
 ## Prueba local en el VPS
 
@@ -39,3 +39,13 @@ curl -sS -X POST http://127.0.0.1:8081/v1/check_email \
 ```
 
 No exponer el puerto 8081 mediante Nginx o firewall. El endpoint debe ser consumido solamente por el proceso de Yoiber.
+
+## Piloto de destinatarios existentes
+
+El runner de auditoría selecciona primero todos los destinatarios distintos de la rifa activa y completa el límite con compras históricas recientes. Es deliberadamente de solo lectura: guarda un reporte JSONL privado, pero no modifica verificaciones ni supresiones.
+
+```bash
+/home/admin/reacher/reacher-pilot.py --limit 200 --delay 1.0
+```
+
+Los reportes contienen correos de clientes y deben conservar permisos `0600` en `/home/admin/reacher/audits`. Revisar el resumen agregado antes de importar cualquier resultado al sistema de seguridad.

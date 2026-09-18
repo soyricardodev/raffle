@@ -125,6 +125,8 @@ export class DirectSmtpRecipientVerifier implements RecipientVerifier {
 export class ReacherRecipientVerifier implements RecipientVerifier {
   readonly provider = "reacher"
 
+  constructor(private readonly fallback: RecipientVerifier = new DirectSmtpRecipientVerifier()) {}
+
   async verify(email: string): Promise<RecipientVerificationResult> {
     const env = getEnv()
     if (!env.EMAIL_VALIDATION_SECRET) {
@@ -150,19 +152,37 @@ export class ReacherRecipientVerifier implements RecipientVerifier {
     }
 
     const state = REACHER_STATE_MAP[body.is_reachable]
-    return {
-      provider: this.provider,
-      state,
-      reason: `reacher_${body.is_reachable}`,
-      score:
-        state === "deliverable"
-          ? 100
-          : state === "risky"
-            ? 50
-            : state === "undeliverable"
-              ? 0
-              : null,
+    if (state === "deliverable" || state === "risky") {
+      return toVerificationResult(this.provider, state, `reacher_${body.is_reachable}`)
     }
+
+    const fallback = await this.fallback.verify(email)
+    const provider = `${this.provider}+${fallback.provider}`
+    if (state === "unknown") {
+      return { ...fallback, provider, reason: `reacher_unknown:${fallback.reason}` }
+    }
+
+    if (fallback.state === "undeliverable") {
+      return toVerificationResult(provider, "undeliverable", `confirmed:${fallback.reason}`)
+    }
+    if (fallback.state === "deliverable") {
+      return toVerificationResult(provider, "risky", "verification_conflict")
+    }
+    return { ...fallback, provider, reason: `reacher_invalid_unconfirmed:${fallback.reason}` }
+  }
+}
+
+function toVerificationResult(
+  provider: string,
+  state: RecipientVerificationState,
+  reason: string,
+): RecipientVerificationResult {
+  return {
+    provider,
+    state,
+    reason,
+    score:
+      state === "deliverable" ? 100 : state === "risky" ? 50 : state === "undeliverable" ? 0 : null,
   }
 }
 
