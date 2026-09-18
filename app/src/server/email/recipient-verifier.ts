@@ -1,4 +1,10 @@
 import { getEnv } from "@/lib/env"
+import {
+  createCatchAllAddress,
+  probeSmtpRecipient,
+  resolveMailHosts,
+  type SmtpProbeResult,
+} from "./direct-smtp-verifier"
 
 export type RecipientVerificationState = "deliverable" | "risky" | "undeliverable" | "unknown"
 
@@ -14,116 +20,108 @@ export interface RecipientVerifier {
   verify(email: string): Promise<RecipientVerificationResult>
 }
 
-type EmailableResponse = {
-  state?: unknown
-  reason?: unknown
-  score?: unknown
+type DirectVerifierDependencies = {
+  probe: typeof probeSmtpRecipient
+  resolveHosts: typeof resolveMailHosts
 }
 
-type ReoonResponse = {
-  status?: unknown
-  overall_score?: unknown
+const defaultDependencies: DirectVerifierDependencies = {
+  probe: probeSmtpRecipient,
+  resolveHosts: resolveMailHosts,
 }
 
-const VERIFICATION_STATES: ReadonlySet<string> = new Set([
-  "deliverable",
-  "risky",
-  "undeliverable",
-  "unknown",
-])
+class ConcurrencyGate {
+  private active = 0
+  private readonly waiting: Array<() => void> = []
 
-export class EmailableRecipientVerifier implements RecipientVerifier {
-  readonly provider = "emailable"
+  constructor(private readonly limit: number) {}
 
-  async verify(email: string): Promise<RecipientVerificationResult> {
-    const env = getEnv()
-    const apiKey = env.EMAIL_VALIDATION_API_KEY?.trim()
-    if (!apiKey) {
-      throw new Error("EMAIL_VALIDATION_API_KEY is required for Emailable verification")
-    }
-
-    const url = new URL("https://api.emailable.com/v1/verify")
-    url.searchParams.set("email", email)
-    url.searchParams.set("timeout", String(Math.ceil(env.EMAIL_VALIDATION_TIMEOUT_MS / 1_000)))
-
-    const response = await fetch(url, {
-      headers: { authorization: `Bearer ${apiKey}` },
-      signal: AbortSignal.timeout(env.EMAIL_VALIDATION_TIMEOUT_MS),
-    })
-
-    if (!response.ok) {
-      throw new Error(`Emailable verification failed with HTTP ${response.status}`)
-    }
-
-    const body = (await response.json()) as EmailableResponse
-    if (typeof body.state !== "string" || !VERIFICATION_STATES.has(body.state)) {
-      throw new Error("Emailable verification returned an unsupported state")
-    }
-
-    return {
-      provider: this.provider,
-      state: body.state as RecipientVerificationState,
-      reason: typeof body.reason === "string" ? body.reason : null,
-      score: typeof body.score === "number" && Number.isFinite(body.score) ? body.score : null,
+  async run<T>(operation: () => Promise<T>): Promise<T> {
+    if (this.active >= this.limit) await new Promise<void>((resolve) => this.waiting.push(resolve))
+    this.active += 1
+    try {
+      return await operation()
+    } finally {
+      this.active -= 1
+      this.waiting.shift()?.()
     }
   }
 }
 
-const REOON_UNDELIVERABLE = new Set(["invalid", "disabled", "spamtrap"])
-const REOON_RISKY = new Set(["disposable", "inbox_full", "catch_all", "role_account"])
+export class DirectSmtpRecipientVerifier implements RecipientVerifier {
+  readonly provider = "direct-smtp"
+  private readonly gate = new ConcurrencyGate(2)
 
-export class ReoonRecipientVerifier implements RecipientVerifier {
-  readonly provider = "reoon"
+  constructor(private readonly dependencies: DirectVerifierDependencies = defaultDependencies) {}
 
-  async verify(email: string): Promise<RecipientVerificationResult> {
+  verify(email: string): Promise<RecipientVerificationResult> {
+    return this.gate.run(() => this.verifyWithoutThrottle(email))
+  }
+
+  private async verifyWithoutThrottle(email: string): Promise<RecipientVerificationResult> {
     const env = getEnv()
-    const apiKey = env.EMAIL_VALIDATION_API_KEY?.trim()
-    if (!apiKey) {
-      throw new Error("EMAIL_VALIDATION_API_KEY is required for Reoon verification")
+    const domain = email.slice(email.lastIndexOf("@") + 1)
+    const sender = env.EMAIL_FROM ?? `noreply@${new URL(env.APP_URL).hostname}`
+    const helloName = sender.slice(sender.lastIndexOf("@") + 1)
+    const hosts = await this.dependencies.resolveHosts(domain)
+
+    if (hosts.length === 0) {
+      return this.toResult({
+        state: "undeliverable",
+        reason: "domain_has_no_mail_server",
+      })
     }
 
-    const url = new URL("https://emailverifier.reoon.com/api/v1/verify")
-    url.searchParams.set("email", email)
-    url.searchParams.set("key", apiKey)
-    url.searchParams.set("mode", "power")
-
-    const response = await fetch(url, {
-      signal: AbortSignal.timeout(env.EMAIL_VALIDATION_TIMEOUT_MS),
-    })
-    if (!response.ok) {
-      throw new Error(`Reoon verification failed with HTTP ${response.status}`)
+    const deadline = Date.now() + env.EMAIL_VALIDATION_TIMEOUT_MS
+    let lastResult: SmtpProbeResult = {
+      state: "unknown",
+      reason: "connection_failed",
     }
 
-    const body = (await response.json()) as ReoonResponse
-    if (typeof body.status !== "string") {
-      throw new Error("Reoon verification returned an unsupported status")
+    for (const host of hosts) {
+      const remaining = deadline - Date.now()
+      if (remaining <= 0) break
+
+      try {
+        lastResult = await this.dependencies.probe({
+          catchAllEmail: createCatchAllAddress(domain),
+          helloName,
+          host,
+          recipient: email,
+          sender,
+          timeoutMs: remaining,
+        })
+      } catch {
+        lastResult = { state: "unknown", reason: "connection_failed" }
+      }
+
+      if (lastResult.state !== "unknown") return this.toResult(lastResult)
     }
 
-    let state: RecipientVerificationState
-    if (body.status === "safe") state = "deliverable"
-    else if (REOON_UNDELIVERABLE.has(body.status)) state = "undeliverable"
-    else if (REOON_RISKY.has(body.status)) state = "risky"
-    else if (body.status === "unknown") state = "unknown"
-    else throw new Error("Reoon verification returned an unsupported status")
+    return this.toResult(lastResult)
+  }
 
+  private toResult(result: SmtpProbeResult): RecipientVerificationResult {
     return {
       provider: this.provider,
-      state,
-      reason: body.status,
+      state: result.state,
+      reason: result.reason,
       score:
-        typeof body.overall_score === "number" && Number.isFinite(body.overall_score)
-          ? body.overall_score
-          : null,
+        result.state === "deliverable"
+          ? 100
+          : result.state === "risky"
+            ? 50
+            : result.state === "undeliverable"
+              ? 0
+              : null,
     }
   }
 }
 
 export function createRecipientVerifier(): RecipientVerifier | null {
   switch (getEnv().EMAIL_VALIDATION_PROVIDER) {
-    case "emailable":
-      return new EmailableRecipientVerifier()
-    case "reoon":
-      return new ReoonRecipientVerifier()
+    case "direct":
+      return new DirectSmtpRecipientVerifier()
     default:
       return null
   }

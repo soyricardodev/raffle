@@ -32,7 +32,7 @@ describe("email recipient safety repository", () => {
     const expiresAt = new Date("2026-09-19T12:00:00.000Z")
     await upsertVerification({
       email: "valid@example.com",
-      provider: "emailable",
+      provider: "direct-smtp",
       state: "deliverable",
       reason: "accepted_email",
       score: 100,

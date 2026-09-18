@@ -50,10 +50,9 @@ describe("getEnv", () => {
         NODE_ENV: "production",
         DATABASE_URL: "file:/tmp/raffle.db",
         EMAIL_PROVIDER: "smtp",
-        EMAIL_VALIDATION_PROVIDER: "emailable",
-        EMAIL_VALIDATION_API_KEY: "live_test",
+        EMAIL_VALIDATION_PROVIDER: "direct",
       }).EMAIL_VALIDATION_PROVIDER,
-    ).toBe("emailable")
+    ).toBe("direct")
   })
 
   it("parses libsql remote URL", () => {
