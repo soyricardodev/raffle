@@ -53,6 +53,23 @@ describe("getEnv", () => {
         EMAIL_VALIDATION_PROVIDER: "direct",
       }).EMAIL_VALIDATION_PROVIDER,
     ).toBe("direct")
+
+    expect(() =>
+      parseEnv({
+        NODE_ENV: "test",
+        DATABASE_URL: "file:/tmp/raffle.db",
+        EMAIL_VALIDATION_PROVIDER: "reacher",
+      }),
+    ).toThrow(/EMAIL_VALIDATION_SECRET/)
+
+    expect(
+      parseEnv({
+        NODE_ENV: "test",
+        DATABASE_URL: "file:/tmp/raffle.db",
+        EMAIL_VALIDATION_PROVIDER: "reacher",
+        EMAIL_VALIDATION_SECRET: "0123456789abcdef",
+      }).EMAIL_VALIDATION_PROVIDER,
+    ).toBe("reacher")
   })
 
   it("parses libsql remote URL", () => {

@@ -25,6 +25,10 @@ type DirectVerifierDependencies = {
   resolveHosts: typeof resolveMailHosts
 }
 
+type ReacherResponse = {
+  is_reachable?: unknown
+}
+
 const defaultDependencies: DirectVerifierDependencies = {
   probe: probeSmtpRecipient,
   resolveHosts: resolveMailHosts,
@@ -118,10 +122,67 @@ export class DirectSmtpRecipientVerifier implements RecipientVerifier {
   }
 }
 
+export class ReacherRecipientVerifier implements RecipientVerifier {
+  readonly provider = "reacher"
+
+  async verify(email: string): Promise<RecipientVerificationResult> {
+    const env = getEnv()
+    if (!env.EMAIL_VALIDATION_SECRET) {
+      throw new Error("EMAIL_VALIDATION_SECRET is required for Reacher verification")
+    }
+
+    const response = await fetch(env.EMAIL_VALIDATION_URL, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        "x-reacher-secret": env.EMAIL_VALIDATION_SECRET,
+      },
+      body: JSON.stringify({ to_email: email }),
+      signal: AbortSignal.timeout(env.EMAIL_VALIDATION_TIMEOUT_MS),
+    })
+    if (!response.ok) {
+      throw new Error(`Reacher verification failed with HTTP ${response.status}`)
+    }
+
+    const body = (await response.json()) as ReacherResponse
+    if (!isReacherState(body.is_reachable)) {
+      throw new Error("Reacher verification returned an unsupported state")
+    }
+
+    const state = REACHER_STATE_MAP[body.is_reachable]
+    return {
+      provider: this.provider,
+      state,
+      reason: `reacher_${body.is_reachable}`,
+      score:
+        state === "deliverable"
+          ? 100
+          : state === "risky"
+            ? 50
+            : state === "undeliverable"
+              ? 0
+              : null,
+    }
+  }
+}
+
+const REACHER_STATE_MAP = {
+  safe: "deliverable",
+  invalid: "undeliverable",
+  risky: "risky",
+  unknown: "unknown",
+} as const
+
+function isReacherState(value: unknown): value is keyof typeof REACHER_STATE_MAP {
+  return typeof value === "string" && value in REACHER_STATE_MAP
+}
+
 export function createRecipientVerifier(): RecipientVerifier | null {
   switch (getEnv().EMAIL_VALIDATION_PROVIDER) {
     case "direct":
       return new DirectSmtpRecipientVerifier()
+    case "reacher":
+      return new ReacherRecipientVerifier()
     default:
       return null
   }

@@ -1,0 +1,25 @@
+[Unit]
+Description=Reacher email verification API wrapper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+WorkingDirectory=/home/admin/reacher
+Environment=PORT=8081
+Environment=REACHER_BINARY=/home/admin/reacher/bin/check_if_email_exists
+Environment=REACHER_SECRET_FILE=/home/admin/reacher/reacher.secret
+Environment=REACHER_FROM_EMAIL=noreply@yoiberifas.com
+Environment=REACHER_HELLO_NAME=yoiberifas.com
+Environment=REACHER_TIMEOUT_MS=60000
+ExecStart=/usr/bin/node /home/admin/reacher/reacher-api.js
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/home/admin/reacher
+
+[Install]
+WantedBy=default.target

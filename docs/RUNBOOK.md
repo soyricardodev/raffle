@@ -10,7 +10,8 @@
 | `CRON_SECRET` | Bearer token for `/api/cron/maintenance` |
 | `EMAIL_PROVIDER` | `noop` \| `resend` \| `brevo` \| `smtp` |
 | `RESEND_API_KEY` / `BREVO_API_KEY` | When email provider is not noop |
-| `EMAIL_VALIDATION_PROVIDER` | `none` (dev only) or `direct`; required for real production delivery |
+| `EMAIL_VALIDATION_PROVIDER` | `none` (dev only), `direct`, or `reacher` (self-hosted experiment); required for real production delivery |
+| `EMAIL_VALIDATION_URL` / `EMAIL_VALIDATION_SECRET` | Reacher wrapper URL and local shared secret when using `reacher` |
 | `EMAIL_VALIDATION_TIMEOUT_MS` | SMTP verification budget per uncached recipient |
 | `UPLOAD_DIR` | Local proof uploads (default `./uploads`) |
 
@@ -45,6 +46,8 @@ Runs: expire pauses, finalize overdue raffles. Configure external cron (VPS, Inn
 Set `EMAIL_PROVIDER` and `EMAIL_VALIDATION_PROVIDER=direct`. Production refuses to boot with a real email provider unless recipient validation is configured. Direct validation uses DNS and SMTP from the VPS without sending message content or paying a per-address API. Use `noop` and `none` in dev/E2E. Every send path passes through cached verification and the permanent suppression list before contacting the delivery provider.
 
 The host must allow outbound TCP/25. Only definitive mailbox failures are permanently suppressed; policy blocks, temporary failures, disabled mailboxes, and catch-all domains are held and rechecked instead of being treated as nonexistent recipients.
+
+Reacher can be used experimentally with `EMAIL_VALIDATION_PROVIDER=reacher`; the self-hosted wrapper is bound to `127.0.0.1:8081` and is not exposed publicly. Keep `direct` as the default until Reacher has been compared against the provider's bounce data.
 
 ## E2E smoke
 

@@ -25,7 +25,9 @@ const envSchema = z
     APP_URL: z.string().url().default("http://localhost:3000"),
     UPLOAD_DIR: z.string().default("./uploads"),
     EMAIL_PROVIDER: z.enum(["brevo", "resend", "smtp", "noop"]).default("noop"),
-    EMAIL_VALIDATION_PROVIDER: z.enum(["none", "direct"]).default("none"),
+    EMAIL_VALIDATION_PROVIDER: z.enum(["none", "direct", "reacher"]).default("none"),
+    EMAIL_VALIDATION_URL: z.string().url().default("http://127.0.0.1:8081/v1/check_email"),
+    EMAIL_VALIDATION_SECRET: z.string().min(16).optional(),
     EMAIL_VALIDATION_TIMEOUT_MS: z.preprocess(
       blankToUndefined,
       z.coerce.number().int().min(2_000).max(10_000).default(5_000),
@@ -89,6 +91,13 @@ const envSchema = z
     {
       message: "Recipient validation is required before enabling production email delivery",
       path: ["EMAIL_VALIDATION_PROVIDER"],
+    },
+  )
+  .refine(
+    (data) => data.EMAIL_VALIDATION_PROVIDER !== "reacher" || Boolean(data.EMAIL_VALIDATION_SECRET),
+    {
+      message: "EMAIL_VALIDATION_SECRET is required when Reacher validation is enabled",
+      path: ["EMAIL_VALIDATION_SECRET"],
     },
   )
 
