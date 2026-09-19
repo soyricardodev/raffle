@@ -1,13 +1,13 @@
-import { purchaseTickets, purchases, raffles } from "@raffle/shared/db"
+import { purchases, purchaseTickets, raffles } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
+import { deliverAndLogEmail } from "./email/email-delivery"
 import {
   buildEmailForType,
   buildPurchaseEmailContext,
   type PurchaseEmailContext,
 } from "./email/email-templates"
-import { deliverAndLogEmail } from "./email/email-delivery"
 
 const logger = getLogger()
 
@@ -75,6 +75,15 @@ export async function sendPurchaseStatusEmail(
 ): Promise<void> {
   const { shouldSendAutomatedEmail } = await import("./email/email-settings.server")
   if (!(await shouldSendAutomatedEmail("status_update"))) return
+
+  // Burst guard: a bulk approval must not become a blast. When the shared budget is
+  // spent the message is deferred, and the paced dispatcher delivers it later.
+  const { shouldDeferAutomatedSend } = await import("./email/notification-dispatch")
+  const deferredBy = await shouldDeferAutomatedSend()
+  if (deferredBy) {
+    logger.info({ purchaseId, reason: deferredBy }, "email:status_update_deferred")
+    return
+  }
 
   const ctx = await loadPurchaseEmailContext(purchaseId)
   if (!ctx) return

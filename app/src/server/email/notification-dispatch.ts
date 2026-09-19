@@ -169,7 +169,8 @@ export type DispatchSkipCounts = {
   suppressed: number
   undeliverable: number
   risky: number
-  unverified: number
+  /** Sent anyway: the safety service verifies these inline before delivering. */
+  pendingVerification: number
 }
 
 export type GroupedPendingNotifications = {
@@ -217,7 +218,7 @@ export function groupPendingNotificationPurchases(
     suppressed: 0,
     undeliverable: 0,
     risky: 0,
-    unverified: 0,
+    pendingVerification: 0,
   }
 
   for (const recipient of byEmail.values()) {
@@ -237,7 +238,11 @@ export function groupPendingNotificationPurchases(
         skipped.risky += 1
         break
       default:
-        skipped.unverified += 1
+        // No cached verdict, or an expired one. deliverAndLogEmail runs the safety
+        // service BEFORE sending and blocks anything not deliverable, so passing these
+        // through is safe — and it is the only way a fresh backlog can ever drain.
+        skipped.pendingVerification += 1
+        sendable.push(recipient)
         break
     }
   }
@@ -254,6 +259,26 @@ export function groupPendingNotificationPurchases(
 export type DispatchPlan = GroupedPendingNotifications & {
   raffleId: number
   gate: DispatchGate
+}
+
+/**
+ * Organic notifications go out the moment a purchase is approved, but a bulk approval
+ * action turns them into exactly the burst that got this account rejected. When the
+ * shared budget is spent, the gap has not elapsed or the breaker tripped, the caller
+ * must defer: the purchase keeps no delivered status_update log, so the paced
+ * dispatcher picks it up on a later tick.
+ */
+export async function shouldDeferAutomatedSend(): Promise<DispatchGateReason | null> {
+  const gate = await evaluateDispatchGate()
+  switch (gate.reason) {
+    case "hourly_budget":
+    case "daily_budget":
+    case "provider_rejections":
+    case "min_gap":
+      return gate.reason
+    default:
+      return null
+  }
 }
 
 /** Read-only view of what a dispatch run would do, including why it would stop. */

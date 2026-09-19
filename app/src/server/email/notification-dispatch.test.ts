@@ -66,6 +66,7 @@ import {
   groupPendingNotificationPurchases,
   planNotificationDispatch,
   runNotificationDispatch,
+  shouldDeferAutomatedSend,
 } from "./notification-dispatch"
 
 const NOW = new Date("2026-09-19T12:00:00.000Z")
@@ -227,7 +228,7 @@ describe("groupPendingNotificationPurchases", () => {
     expect(grouped.sendable.map((recipient) => recipient.email)).toEqual(["ok@example.com"])
   })
 
-  it("holds risky, unknown and unverified recipients instead of guessing", () => {
+  it("skips what can never be delivered and hands the rest to the safety service", () => {
     const grouped = groupPendingNotificationPurchases([
       pending(1, "risky@example.com", { verificationState: "risky" }),
       pending(2, "unknown@example.com", { verificationState: "unknown" }),
@@ -235,13 +236,49 @@ describe("groupPendingNotificationPurchases", () => {
       pending(4, "undeliverable@example.com", { verificationState: "undeliverable" }),
     ])
 
-    expect(grouped.sendable).toHaveLength(0)
+    expect(grouped.sendable.map((recipient) => recipient.email).sort()).toEqual([
+      "fresh@example.com",
+      "unknown@example.com",
+    ])
     expect(grouped.skipped).toEqual({
       suppressed: 0,
       undeliverable: 1,
       risky: 1,
-      unverified: 2,
+      pendingVerification: 2,
     })
+  })
+})
+
+describe("shouldDeferAutomatedSend", () => {
+  beforeEach(() => {
+    envState.enabled = true
+    envState.provider = "smtp"
+    countSentSince.mockResolvedValue(0)
+    countProviderRejectionsSince.mockResolvedValue(0)
+    getLastSentAt.mockResolvedValue(null)
+    getOldestSentAtSince.mockResolvedValue(null)
+  })
+
+  it("defers once the hourly budget is spent", async () => {
+    countSentSince.mockResolvedValue(20)
+    await expect(shouldDeferAutomatedSend()).resolves.toBe("hourly_budget")
+  })
+
+  it("defers while the breaker holds after a provider rejection", async () => {
+    countSentSince.mockResolvedValue(1)
+    countProviderRejectionsSince.mockResolvedValue(1)
+    await expect(shouldDeferAutomatedSend()).resolves.toBe("provider_rejections")
+  })
+
+  it("defers inside the minimum gap so a bulk approval cannot burst", async () => {
+    countSentSince.mockResolvedValue(1)
+    getLastSentAt.mockResolvedValue(new Date(Date.now() - 5_000))
+    await expect(shouldDeferAutomatedSend()).resolves.toBe("min_gap")
+  })
+
+  it("does not defer when dispatch pacing is switched off", async () => {
+    envState.enabled = false
+    await expect(shouldDeferAutomatedSend()).resolves.toBeNull()
   })
 })
 
