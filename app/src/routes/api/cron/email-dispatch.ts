@@ -1,14 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { apiHandlers } from "@/lib/api-handler"
-import { getEnv } from "@/lib/env"
+import { isAuthorizedCronRequest } from "@/lib/cron-auth.server"
 import { runNotificationDispatch } from "@/server/email/notification-dispatch"
 import { listActiveRaffleIds } from "@/server/repositories/notification-dispatch.repository"
-
-function isAuthorized(request: Request): boolean {
-  const env = getEnv()
-  const expected = env.CRON_SECRET ?? env.INNGEST_EVENT_KEY
-  return Boolean(expected) && request.headers.get("x-cron-secret") === expected
-}
 
 /**
  * Drains the pending-notification queue for every active raffle, at most one message
@@ -39,11 +33,11 @@ export const Route = createFileRoute("/api/cron/email-dispatch")({
   server: {
     handlers: apiHandlers({
       GET: async ({ request }) => {
-        if (!isAuthorized(request)) return new Response("Unauthorized", { status: 401 })
+        if (!isAuthorizedCronRequest(request)) return new Response("Unauthorized", { status: 401 })
         return drainPendingNotifications()
       },
       POST: async ({ request }) => {
-        if (!isAuthorized(request)) return new Response("Unauthorized", { status: 401 })
+        if (!isAuthorizedCronRequest(request)) return new Response("Unauthorized", { status: 401 })
         return drainPendingNotifications()
       },
     }),

@@ -6,5 +6,10 @@
 SHELL=/bin/bash
 */5 * * * * curl -sf -X POST -H "Authorization: Bearer TU_CRON_SECRET" https://tudominio.com/api/cron/maintenance >/dev/null 2>&1
 
+# Avisos pendientes de compra — cada minuto, un solo correo por tick.
+# El ritmo real lo decide EMAIL_DISPATCH_* en el .env; con EMAIL_DISPATCH_ENABLED=false
+# este cron no envía nada, así que es seguro dejarlo programado desde el principio.
+* * * * * curl -sf -X POST -H "Authorization: Bearer TU_CRON_SECRET" https://tudominio.com/api/cron/email-dispatch >/dev/null 2>&1
+
 # Backup SQLite diario (ajusta rutas):
 # 0 3 * * * cp /opt/raffle/data/raffle.db /opt/raffle/backups/raffle_$(date +\%Y\%m\%d).db
