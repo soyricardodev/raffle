@@ -1,6 +1,18 @@
 import { fromCents } from "@raffle/shared/db"
 import { paymentMethodTypeLabel } from "@raffle/shared/payment-methods"
-import { isDollarMethod, type EmailType, type PaymentMethod } from "@raffle/shared/validators"
+import { type EmailType, isDollarMethod, type PaymentMethod } from "@raffle/shared/validators"
+
+/**
+ * Set when one email consolidates every approved purchase of the same customer in a
+ * raffle. Without it, customers who bought several times would receive several nearly
+ * identical messages, which is the pattern outbound spam filters punish.
+ */
+export type AggregatedPurchasesSummary = {
+  purchaseCount: number
+  ticketCount: number
+  totalAmountCents: number
+  references: Array<string>
+}
 
 export type PurchaseEmailContext = {
   purchaseId: number
@@ -19,6 +31,7 @@ export type PurchaseEmailContext = {
   status?: string
   notes?: string | null
   ticketNumbers?: Array<string>
+  aggregatedPurchases?: AggregatedPurchasesSummary
 }
 
 export type BuiltEmail = {

@@ -1,5 +1,5 @@
-import type { EmailBrandingContext } from "../email-branding.server"
 import { DEFAULT_TELEGRAM_SUPPORT } from "@/features/layout/social-links"
+import type { EmailBrandingContext } from "../email-branding.server"
 import {
   buildRejectionSupportMessage,
   escapeHtml,
@@ -24,6 +24,8 @@ export function buildStatusUpdateEmail(
 ): BuiltEmail {
   const approved = status === "approved"
   const label = approved ? "aprobada" : "rechazada"
+  const consolidatedPurchaseCount = ctx.aggregatedPurchases?.purchaseCount ?? 0
+  const consolidated = consolidatedPurchaseCount > 1
 
   const reasonNote =
     !approved && ctx.notes?.trim()
@@ -57,10 +59,19 @@ export function buildStatusUpdateEmail(
 
   const bodyHtml = [
     renderGreeting(ctx.customerName),
-    renderHeading(approved ? "¡Tu compra fue aprobada!" : "Tu compra fue rechazada", branding.colors),
+    renderHeading(
+      approved
+        ? consolidated
+          ? "¡Tus compras fueron aprobadas!"
+          : "¡Tu compra fue aprobada!"
+        : "Tu compra fue rechazada",
+      branding.colors,
+    ),
     renderSubtext(
       approved
-        ? "Tus boletos quedaron oficialmente registrados."
+        ? consolidated
+          ? `Tus boletos de ${consolidatedPurchaseCount} compras quedaron oficialmente registrados.`
+          : "Tus boletos quedaron oficialmente registrados."
         : `No pudimos validar tu pago. Revisa el motivo indicado abajo y contáctanos por ${supportLabel} para resolverlo.`,
     ),
     badge,
@@ -74,13 +85,17 @@ export function buildStatusUpdateEmail(
     branding,
     heroImageUrl: ctx.raffleImageUrl,
     title: `Compra ${label} — ${ctx.raffleName}`,
-    preheader: `Compra #${ctx.purchaseId} ${label}`,
+    preheader: consolidated
+      ? `${consolidatedPurchaseCount} compras aprobadas`
+      : `Compra #${ctx.purchaseId} ${label}`,
     bodyHtml,
   })
 
   return {
     type: "status_update",
-    subject: `Compra ${label} — ${ctx.raffleName}`,
+    subject: consolidated
+      ? `Compras aprobadas — ${ctx.raffleName}`
+      : `Compra ${label} — ${ctx.raffleName}`,
     html,
     metadata: { new_status: status },
   }

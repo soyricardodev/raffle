@@ -18,27 +18,41 @@ export function renderPurchaseDetailsSection(
   const { colors } = branding
   const totalStyle = `color:${colors.primary};font-size:17px;`
 
-  const rows = [
-    renderInfoRow("Compra", `#${ctx.purchaseId}`),
-    renderInfoRow(
-      "Boletos",
-      ctx.ticketNumbers?.length
-        ? String(ctx.ticketNumbers.length)
-        : String(ctx.ticketQuantity),
-    ),
-    renderInfoRow("Rifa", escapeHtml(ctx.raffleName)),
-    renderInfoRow("Método de pago", escapeHtml(ctx.paymentMethodLabel)),
-    ...(ctx.paymentReference?.trim()
-      ? [renderInfoRow("Referencia", escapeHtml(ctx.paymentReference.trim()))]
-      : []),
-    ...(ctx.paymentPayerName?.trim()
-      ? [renderInfoRow("Nombre de quien paga", escapeHtml(ctx.paymentPayerName.trim()))]
-      : []),
-    renderInfoRow("Total", escapeHtml(formatPurchaseTotal(ctx)), totalStyle),
-    ...extraRows,
-  ].join("")
+  const aggregated = ctx.aggregatedPurchases
+  const rows = aggregated
+    ? [
+        renderInfoRow("Compras aprobadas", String(aggregated.purchaseCount)),
+        renderInfoRow("Boletos", String(aggregated.ticketCount)),
+        renderInfoRow("Rifa", escapeHtml(ctx.raffleName)),
+        ...(aggregated.references.length > 0
+          ? [renderInfoRow("Referencias", escapeHtml(aggregated.references.join(" · ")))]
+          : []),
+        renderInfoRow("Total", escapeHtml(formatPurchaseTotal(ctx)), totalStyle),
+        ...extraRows,
+      ].join("")
+    : [
+        renderInfoRow("Compra", `#${ctx.purchaseId}`),
+        renderInfoRow(
+          "Boletos",
+          ctx.ticketNumbers?.length ? String(ctx.ticketNumbers.length) : String(ctx.ticketQuantity),
+        ),
+        renderInfoRow("Rifa", escapeHtml(ctx.raffleName)),
+        renderInfoRow("Método de pago", escapeHtml(ctx.paymentMethodLabel)),
+        ...(ctx.paymentReference?.trim()
+          ? [renderInfoRow("Referencia", escapeHtml(ctx.paymentReference.trim()))]
+          : []),
+        ...(ctx.paymentPayerName?.trim()
+          ? [renderInfoRow("Nombre de quien paga", escapeHtml(ctx.paymentPayerName.trim()))]
+          : []),
+        renderInfoRow("Total", escapeHtml(formatPurchaseTotal(ctx)), totalStyle),
+        ...extraRows,
+      ].join("")
 
-  return renderInfoSection("Detalles de la compra", rows, colors)
+  return renderInfoSection(
+    aggregated ? "Detalles de tus compras" : "Detalles de la compra",
+    rows,
+    colors,
+  )
 }
 
 export function renderCustomerSection(
@@ -49,9 +63,7 @@ export function renderCustomerSection(
     renderInfoRow("Nombre", escapeHtml(ctx.customerName)),
     renderInfoRow("Teléfono", escapeHtml(ctx.customerPhone)),
     renderInfoRow("Correo", escapeHtml(ctx.customerEmail)),
-    ...(ctx.customerCi?.trim()
-      ? [renderInfoRow("Cédula", escapeHtml(ctx.customerCi.trim()))]
-      : []),
+    ...(ctx.customerCi?.trim() ? [renderInfoRow("Cédula", escapeHtml(ctx.customerCi.trim()))] : []),
   ].join("")
   return renderInfoSection("Información personal", rows, branding.colors)
 }
