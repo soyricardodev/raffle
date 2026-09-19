@@ -41,6 +41,7 @@ import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchas
 import { Route as ApiPurchaseSuccessAnalyticsRouteImport } from './routes/api/purchase-success/analytics'
 import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
 import { Route as ApiCronMaintenanceRouteImport } from './routes/api/cron/maintenance'
+import { Route as ApiCronEmailDispatchRouteImport } from './routes/api/cron/email-dispatch'
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as ApiAdminUploadRouteImport } from './routes/api/admin/upload'
 import { Route as ApiAdminPushRouteImport } from './routes/api/admin/push'
@@ -63,6 +64,7 @@ import { Route as ApiAdminPaymentAccountsIdRouteImport } from './routes/api/admi
 import { Route as ApiAdminMePreferencesRouteImport } from './routes/api/admin/me/preferences'
 import { Route as ApiAdminEmailsStatsRouteImport } from './routes/api/admin/emails.stats'
 import { Route as ApiAdminEmailsHealthRouteImport } from './routes/api/admin/emails.health'
+import { Route as ApiAdminEmailsDispatchRouteImport } from './routes/api/admin/emails.dispatch'
 import { Route as ApiAdminEmailsBulkResendRouteImport } from './routes/api/admin/emails.bulk-resend'
 import { Route as ApiAdminEmailsLogIdRouteImport } from './routes/api/admin/emails.$logId'
 import { Route as ApiAdminAnalyticsSummaryRouteImport } from './routes/api/admin/analytics.summary'
@@ -245,6 +247,11 @@ const ApiCronMaintenanceRoute = ApiCronMaintenanceRouteImport.update({
   path: '/api/cron/maintenance',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCronEmailDispatchRoute = ApiCronEmailDispatchRouteImport.update({
+  id: '/api/cron/email-dispatch',
+  path: '/api/cron/email-dispatch',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAuthSplatRoute = ApiAuthSplatRouteImport.update({
   id: '/api/auth/$',
   path: '/api/auth/$',
@@ -355,6 +362,11 @@ const ApiAdminEmailsStatsRoute = ApiAdminEmailsStatsRouteImport.update({
 const ApiAdminEmailsHealthRoute = ApiAdminEmailsHealthRouteImport.update({
   id: '/health',
   path: '/health',
+  getParentRoute: () => ApiAdminEmailsRoute,
+} as any)
+const ApiAdminEmailsDispatchRoute = ApiAdminEmailsDispatchRouteImport.update({
+  id: '/dispatch',
+  path: '/dispatch',
   getParentRoute: () => ApiAdminEmailsRoute,
 } as any)
 const ApiAdminEmailsBulkResendRoute =
@@ -509,6 +521,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/push': typeof ApiAdminPushRouteWithChildren
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/email-dispatch': typeof ApiCronEmailDispatchRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
@@ -526,6 +539,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
   '/api/admin/emails/bulk-resend': typeof ApiAdminEmailsBulkResendRoute
+  '/api/admin/emails/dispatch': typeof ApiAdminEmailsDispatchRoute
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
@@ -583,6 +597,7 @@ export interface FileRoutesByTo {
   '/api/admin/push': typeof ApiAdminPushRouteWithChildren
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/email-dispatch': typeof ApiCronEmailDispatchRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
@@ -600,6 +615,7 @@ export interface FileRoutesByTo {
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
   '/api/admin/emails/bulk-resend': typeof ApiAdminEmailsBulkResendRoute
+  '/api/admin/emails/dispatch': typeof ApiAdminEmailsDispatchRoute
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
@@ -661,6 +677,7 @@ export interface FileRoutesById {
   '/api/admin/push': typeof ApiAdminPushRouteWithChildren
   '/api/admin/upload': typeof ApiAdminUploadRoute
   '/api/auth/$': typeof ApiAuthSplatRoute
+  '/api/cron/email-dispatch': typeof ApiCronEmailDispatchRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
@@ -678,6 +695,7 @@ export interface FileRoutesById {
   '/api/admin/analytics/summary': typeof ApiAdminAnalyticsSummaryRoute
   '/api/admin/emails/$logId': typeof ApiAdminEmailsLogIdRouteWithChildren
   '/api/admin/emails/bulk-resend': typeof ApiAdminEmailsBulkResendRoute
+  '/api/admin/emails/dispatch': typeof ApiAdminEmailsDispatchRoute
   '/api/admin/emails/health': typeof ApiAdminEmailsHealthRoute
   '/api/admin/emails/stats': typeof ApiAdminEmailsStatsRoute
   '/api/admin/me/preferences': typeof ApiAdminMePreferencesRoute
@@ -739,6 +757,7 @@ export interface FileRouteTypes {
     | '/api/admin/push'
     | '/api/admin/upload'
     | '/api/auth/$'
+    | '/api/cron/email-dispatch'
     | '/api/cron/maintenance'
     | '/api/health/db'
     | '/api/purchase-success/analytics'
@@ -756,6 +775,7 @@ export interface FileRouteTypes {
     | '/api/admin/analytics/summary'
     | '/api/admin/emails/$logId'
     | '/api/admin/emails/bulk-resend'
+    | '/api/admin/emails/dispatch'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
     | '/api/admin/me/preferences'
@@ -813,6 +833,7 @@ export interface FileRouteTypes {
     | '/api/admin/push'
     | '/api/admin/upload'
     | '/api/auth/$'
+    | '/api/cron/email-dispatch'
     | '/api/cron/maintenance'
     | '/api/health/db'
     | '/api/purchase-success/analytics'
@@ -830,6 +851,7 @@ export interface FileRouteTypes {
     | '/api/admin/analytics/summary'
     | '/api/admin/emails/$logId'
     | '/api/admin/emails/bulk-resend'
+    | '/api/admin/emails/dispatch'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
     | '/api/admin/me/preferences'
@@ -890,6 +912,7 @@ export interface FileRouteTypes {
     | '/api/admin/push'
     | '/api/admin/upload'
     | '/api/auth/$'
+    | '/api/cron/email-dispatch'
     | '/api/cron/maintenance'
     | '/api/health/db'
     | '/api/purchase-success/analytics'
@@ -907,6 +930,7 @@ export interface FileRouteTypes {
     | '/api/admin/analytics/summary'
     | '/api/admin/emails/$logId'
     | '/api/admin/emails/bulk-resend'
+    | '/api/admin/emails/dispatch'
     | '/api/admin/emails/health'
     | '/api/admin/emails/stats'
     | '/api/admin/me/preferences'
@@ -951,6 +975,7 @@ export interface RootRouteChildren {
   ApiAdminPushRoute: typeof ApiAdminPushRouteWithChildren
   ApiAdminUploadRoute: typeof ApiAdminUploadRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
+  ApiCronEmailDispatchRoute: typeof ApiCronEmailDispatchRoute
   ApiCronMaintenanceRoute: typeof ApiCronMaintenanceRoute
   ApiHealthDbRoute: typeof ApiHealthDbRoute
   ApiPurchaseSuccessAnalyticsRoute: typeof ApiPurchaseSuccessAnalyticsRoute
@@ -1199,6 +1224,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCronMaintenanceRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cron/email-dispatch': {
+      id: '/api/cron/email-dispatch'
+      path: '/api/cron/email-dispatch'
+      fullPath: '/api/cron/email-dispatch'
+      preLoaderRoute: typeof ApiCronEmailDispatchRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/auth/$': {
       id: '/api/auth/$'
       path: '/api/auth/$'
@@ -1351,6 +1383,13 @@ declare module '@tanstack/react-router' {
       path: '/health'
       fullPath: '/api/admin/emails/health'
       preLoaderRoute: typeof ApiAdminEmailsHealthRouteImport
+      parentRoute: typeof ApiAdminEmailsRoute
+    }
+    '/api/admin/emails/dispatch': {
+      id: '/api/admin/emails/dispatch'
+      path: '/dispatch'
+      fullPath: '/api/admin/emails/dispatch'
+      preLoaderRoute: typeof ApiAdminEmailsDispatchRouteImport
       parentRoute: typeof ApiAdminEmailsRoute
     }
     '/api/admin/emails/bulk-resend': {
@@ -1594,6 +1633,7 @@ const ApiAdminEmailsLogIdRouteWithChildren =
 interface ApiAdminEmailsRouteChildren {
   ApiAdminEmailsLogIdRoute: typeof ApiAdminEmailsLogIdRouteWithChildren
   ApiAdminEmailsBulkResendRoute: typeof ApiAdminEmailsBulkResendRoute
+  ApiAdminEmailsDispatchRoute: typeof ApiAdminEmailsDispatchRoute
   ApiAdminEmailsHealthRoute: typeof ApiAdminEmailsHealthRoute
   ApiAdminEmailsStatsRoute: typeof ApiAdminEmailsStatsRoute
 }
@@ -1601,6 +1641,7 @@ interface ApiAdminEmailsRouteChildren {
 const ApiAdminEmailsRouteChildren: ApiAdminEmailsRouteChildren = {
   ApiAdminEmailsLogIdRoute: ApiAdminEmailsLogIdRouteWithChildren,
   ApiAdminEmailsBulkResendRoute: ApiAdminEmailsBulkResendRoute,
+  ApiAdminEmailsDispatchRoute: ApiAdminEmailsDispatchRoute,
   ApiAdminEmailsHealthRoute: ApiAdminEmailsHealthRoute,
   ApiAdminEmailsStatsRoute: ApiAdminEmailsStatsRoute,
 }
@@ -1746,6 +1787,7 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminPushRoute: ApiAdminPushRouteWithChildren,
   ApiAdminUploadRoute: ApiAdminUploadRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,
+  ApiCronEmailDispatchRoute: ApiCronEmailDispatchRoute,
   ApiCronMaintenanceRoute: ApiCronMaintenanceRoute,
   ApiHealthDbRoute: ApiHealthDbRoute,
   ApiPurchaseSuccessAnalyticsRoute: ApiPurchaseSuccessAnalyticsRoute,

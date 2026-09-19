@@ -3,6 +3,7 @@ import {
   emailSuppressions,
   purchases,
   purchaseTickets,
+  raffles,
 } from "@raffle/shared/db"
 import { and, asc, eq, inArray, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
@@ -73,6 +74,17 @@ export async function listPendingNotificationPurchases(
       verificationState: row.verificationState ?? null,
       suppressionReason: row.suppressionReason ?? null,
     }))
+}
+
+/** Raffles a dispatch tick may drain: only the ones currently active. */
+export async function listActiveRaffleIds(): Promise<Array<number>> {
+  const rows = await getDb()
+    .select({ id: raffles.id })
+    .from(raffles)
+    .where(eq(raffles.status, "active"))
+    .orderBy(asc(raffles.id))
+
+  return rows.map((row) => row.id)
 }
 
 /** Ticket numbers keyed by purchase id, used to build the consolidated email. */

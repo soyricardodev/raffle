@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest"
+import { beforeEach, describe, expect, it, vi } from "vitest"
 
 const {
   listPendingNotificationPurchases,
@@ -10,6 +10,7 @@ const {
   deliverAndLogEmail,
   buildEmailForType,
   loadPurchaseEmailContext,
+  envState,
 } = vi.hoisted(() => ({
   listPendingNotificationPurchases: vi.fn(),
   listTicketNumbersByPurchase: vi.fn(),
@@ -20,10 +21,28 @@ const {
   deliverAndLogEmail: vi.fn(),
   buildEmailForType: vi.fn(),
   loadPurchaseEmailContext: vi.fn(),
+  envState: {
+    enabled: false,
+    provider: "smtp",
+    hourlyLimit: 20,
+    dailyLimit: 150,
+    minGapSeconds: 30,
+    breakerWindowMinutes: 60,
+  },
 }))
 
 vi.mock("@/lib/logger", () => ({
   getLogger: () => ({ info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() }),
+}))
+vi.mock("@/lib/env", () => ({
+  getEnv: () => ({
+    EMAIL_DISPATCH_ENABLED: envState.enabled,
+    EMAIL_PROVIDER: envState.provider,
+    EMAIL_DISPATCH_HOURLY_LIMIT: envState.hourlyLimit,
+    EMAIL_DISPATCH_DAILY_LIMIT: envState.dailyLimit,
+    EMAIL_DISPATCH_MIN_GAP_SECONDS: envState.minGapSeconds,
+    EMAIL_DISPATCH_BREAKER_WINDOW_MINUTES: envState.breakerWindowMinutes,
+  }),
 }))
 vi.mock("@/server/repositories/notification-dispatch.repository", () => ({
   listPendingNotificationPurchases,
@@ -45,6 +64,8 @@ import {
   type DispatchSettings,
   evaluateDispatchGate,
   groupPendingNotificationPurchases,
+  planNotificationDispatch,
+  runNotificationDispatch,
 } from "./notification-dispatch"
 
 const NOW = new Date("2026-09-19T12:00:00.000Z")
@@ -220,6 +241,94 @@ describe("groupPendingNotificationPurchases", () => {
       undeliverable: 1,
       risky: 1,
       unverified: 2,
+    })
+  })
+})
+
+describe("dispatch fail-safe wiring", () => {
+  const referenceContext = {
+    purchaseId: 2,
+    customerName: "Cliente",
+    customerEmail: "ana@example.com",
+    customerPhone: "04140000000",
+    ticketQuantity: 2,
+    totalAmountCents: 1000,
+    paymentMethod: "pago_movil",
+    paymentMethodLabel: "Pago móvil",
+    paymentReference: "REF-2",
+    raffleName: "Rifa",
+    status: "approved",
+  }
+
+  beforeEach(() => {
+    envState.enabled = false
+    envState.provider = "smtp"
+    listPendingNotificationPurchases.mockResolvedValue([
+      pending(1, "ana@example.com"),
+      pending(2, "ana@example.com"),
+    ])
+    listTicketNumbersByPurchase.mockResolvedValue(
+      new Map([
+        [1, ["001", "002"]],
+        [2, ["003", "004"]],
+      ]),
+    )
+    loadPurchaseEmailContext.mockResolvedValue(referenceContext)
+    buildEmailForType.mockResolvedValue({
+      type: "status_update",
+      subject: "Compra aprobada",
+      html: "<p>ok</p>",
+    })
+    deliverAndLogEmail.mockResolvedValue({ success: true, logId: 99 })
+    countSentSince.mockResolvedValue(0)
+    countProviderRejectionsSince.mockResolvedValue(0)
+    getLastSentAt.mockResolvedValue(null)
+    getOldestSentAtSince.mockResolvedValue(null)
+  })
+
+  it("reports the queue and the reason it cannot send yet", async () => {
+    const plan = await planNotificationDispatch({ raffleId: 67 })
+
+    expect(plan.purchases).toBe(2)
+    expect(plan.recipients).toBe(1)
+    expect(plan.duplicateEmailsAvoided).toBe(1)
+    expect(plan.sendable).toHaveLength(1)
+    expect(plan.gate.reason).toBe("disabled")
+  })
+
+  it("sends nothing while dispatch is disabled, even with confirm:true", async () => {
+    const summary = await runNotificationDispatch({ raffleId: 67, confirm: true })
+
+    expect(summary.sent).toBe(0)
+    expect(summary.stoppedBy).toBe("disabled")
+    expect(deliverAndLogEmail).not.toHaveBeenCalled()
+  })
+
+  it("refuses to send without confirm", async () => {
+    envState.enabled = true
+    const summary = await runNotificationDispatch({ raffleId: 67 })
+
+    expect(summary.confirmRequired).toBe(true)
+    expect(deliverAndLogEmail).not.toHaveBeenCalled()
+  })
+
+  it("sends one consolidated email with every ticket once enabled", async () => {
+    envState.enabled = true
+    const summary = await runNotificationDispatch({ raffleId: 67, confirm: true })
+
+    expect(summary.sent).toBe(1)
+    expect(deliverAndLogEmail).toHaveBeenCalledTimes(1)
+    expect(deliverAndLogEmail.mock.calls[0]?.[0]).toMatchObject({ to: "ana@example.com" })
+
+    const emailContext = buildEmailForType.mock.calls[0]?.[1] as {
+      ticketNumbers: Array<string>
+      aggregatedPurchases: { purchaseCount: number; ticketCount: number; totalAmountCents: number }
+    }
+    expect(emailContext.ticketNumbers).toEqual(["001", "002", "003", "004"])
+    expect(emailContext.aggregatedPurchases).toMatchObject({
+      purchaseCount: 2,
+      ticketCount: 4,
+      totalAmountCents: 2000,
     })
   })
 })
