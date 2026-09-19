@@ -21,9 +21,10 @@ export type PendingNotificationPurchase = {
 }
 
 /**
- * Purchases of a raffle that never produced a delivered status_update. The queue is
- * per purchase on purpose: collapsing duplicates per recipient belongs to the
- * dispatch service, so the raw ledger stays auditable.
+ * Purchases of a raffle that still owe a notification. A single consolidated email
+ * covers every purchase of one recipient, so the moment any status_update reaches that
+ * recipient in the raffle, all of their purchases leave the queue. Without this rule
+ * the leftovers of a consolidated group would be sent again on the next run.
  */
 export async function listPendingNotificationPurchases(
   raffleId: number,
@@ -54,9 +55,11 @@ export async function listPendingNotificationPurchases(
         eq(purchases.status, "approved"),
         sql`not exists (
           select 1 from email_logs delivered
-          where delivered.purchase_id = ${purchases.id}
-            and delivered.email_type = 'status_update'
+          join purchases notified on notified.id = delivered.purchase_id
+          where delivered.email_type = 'status_update'
             and delivered.status = 'sent'
+            and notified.raffle_id = ${purchases.raffleId}
+            and lower(trim(delivered.recipient_email)) = lower(trim(${purchases.customerEmail}))
         )`,
       ),
     )

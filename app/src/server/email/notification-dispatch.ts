@@ -14,6 +14,7 @@ import {
 } from "@/server/repositories/notification-dispatch.repository"
 import { deliverAndLogEmail } from "./email-delivery"
 import { buildEmailForType } from "./email-templates"
+import type { BuiltEmail } from "./email-types"
 
 const logger = getLogger()
 
@@ -276,6 +277,17 @@ export type DispatchRunResult = {
   error: string | null
 }
 
+/**
+ * Records which purchases a consolidated email covered, so the ledger explains why
+ * those purchases never get an individual notification of their own.
+ */
+function withConsolidatedAudit(built: BuiltEmail, purchaseIds: Array<number>): BuiltEmail {
+  return {
+    ...built,
+    metadata: { ...built.metadata, consolidated_purchase_ids: purchaseIds },
+  }
+}
+
 export type DispatchRunSummary = {
   raffleId: number
   confirmRequired: boolean
@@ -372,7 +384,7 @@ export async function runNotificationDispatch(params: {
 
     const delivery = await deliverAndLogEmail({
       to: recipient.email,
-      built,
+      built: withConsolidatedAudit(built, recipient.purchaseIds),
       purchaseId: recipient.referencePurchaseId,
       idempotencyKey: `status_update:consolidated:${params.raffleId}:${recipient.referencePurchaseId}`,
     })
