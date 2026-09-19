@@ -1,7 +1,7 @@
 import { EMAIL_LOG_EXPORT_MAX } from "@raffle/shared/admin/email-list-filters"
 import { emailLogs, purchases } from "@raffle/shared/db"
 import type { EmailType } from "@raffle/shared/validators"
-import { and, asc, desc, eq, inArray, isNotNull, like, not, or, sql } from "drizzle-orm"
+import { and, asc, desc, eq, gte, inArray, isNotNull, like, not, or, sql } from "drizzle-orm"
 import { getDb } from "@/lib/db.server"
 
 export type EmailLogStatus = "pending" | "sent" | "failed" | "error" | "blocked"
@@ -393,4 +393,67 @@ export async function getEmailLogMetadata(id: number): Promise<Record<string, un
   } catch {
     return null
   }
+}
+
+/**
+ * Messages actually delivered since a moment. This is the send budget's source of
+ * truth: pacing reads the ledger it already writes instead of keeping parallel state
+ * that a restart could lose.
+ */
+export async function countSentSince(params: {
+  since: Date
+  emailType?: EmailType
+}): Promise<number> {
+  const conditions = [eq(emailLogs.status, "sent"), gte(emailLogs.createdAt, params.since)]
+  if (params.emailType) conditions.push(eq(emailLogs.emailType, params.emailType))
+
+  const [row] = await getDb()
+    .select({ total: sql<number>`count(*)` })
+    .from(emailLogs)
+    .where(and(...conditions))
+
+  return Number(row?.total ?? 0)
+}
+
+/** Timestamp of the oldest delivery inside a window — used to predict when budget frees up. */
+export async function getOldestSentAtSince(since: Date): Promise<Date | null> {
+  const [row] = await getDb()
+    .select({ oldest: sql<number | null>`min(${emailLogs.createdAt})` })
+    .from(emailLogs)
+    .where(and(eq(emailLogs.status, "sent"), gte(emailLogs.createdAt, since)))
+
+  return row?.oldest == null ? null : new Date(Number(row.oldest))
+}
+
+/** Timestamp of the last delivery, so pacing can enforce a minimum gap. */
+export async function getLastSentAt(): Promise<Date | null> {
+  const [row] = await getDb()
+    .select({ latest: sql<number | null>`max(${emailLogs.createdAt})` })
+    .from(emailLogs)
+    .where(eq(emailLogs.status, "sent"))
+
+  return row?.latest == null ? null : new Date(Number(row.latest))
+}
+
+/**
+ * Provider-side refusals since a moment. MailBaby rejects spam-classified submissions
+ * with a marker in error_message, and that is the circuit breaker's signal: the
+ * message never reached any remote server, so it is not a bounce.
+ */
+export async function countProviderRejectionsSince(params: {
+  since: Date
+  marker: string
+}): Promise<number> {
+  const [row] = await getDb()
+    .select({ total: sql<number>`count(*)` })
+    .from(emailLogs)
+    .where(
+      and(
+        inArray(emailLogs.status, ["failed", "error"]),
+        gte(emailLogs.createdAt, params.since),
+        like(emailLogs.errorMessage, `%${params.marker}%`),
+      ),
+    )
+
+  return Number(row?.total ?? 0)
 }

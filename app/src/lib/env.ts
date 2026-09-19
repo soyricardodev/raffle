@@ -35,6 +35,30 @@ const envSchema = z
     EMAIL_FROM: z.string().email().optional(),
     EMAIL_FROM_NAME: z.string().min(1).max(100).optional(),
     EMAIL_REPLY_TO: z.string().email().optional(),
+    /**
+     * Pacing for the pending-notification catch-up. Off by default so a deploy can
+     * never start a bulk run on its own; enabling it is a deliberate config change.
+     */
+    EMAIL_DISPATCH_ENABLED: z
+      .string()
+      .optional()
+      .transform((value) => value === "true" || value === "1"),
+    EMAIL_DISPATCH_HOURLY_LIMIT: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(1).max(500).default(20),
+    ),
+    EMAIL_DISPATCH_DAILY_LIMIT: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(1).max(5_000).default(150),
+    ),
+    EMAIL_DISPATCH_MIN_GAP_SECONDS: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(0).max(3_600).default(30),
+    ),
+    EMAIL_DISPATCH_BREAKER_WINDOW_MINUTES: z.preprocess(
+      blankToUndefined,
+      z.coerce.number().int().min(0).max(1_440).default(60),
+    ),
     BREVO_API_KEY: z.string().optional(),
     RESEND_API_KEY: z.string().optional(),
     /**
