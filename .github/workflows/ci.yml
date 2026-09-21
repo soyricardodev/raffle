@@ -6,6 +6,43 @@ on:
   pull_request:
 
 jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Este repo es público: un .env versionado es una fuga inmediata.
+      # .gitignore lo previene; esto lo verifica.
+      - name: Fallar si hay un .env versionado
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.example$' || true)"
+          if [[ -n "$tracked" ]]; then
+            echo "::error::Hay archivos .env versionados (nunca deben commitearse):"
+            echo "$tracked"
+            exit 1
+          fi
+          echo "OK: ningún .env versionado"
+
+      # Escaneo del ÁRBOL ACTUAL (--no-git), no del historial: una credencial ya
+      # revocada que quedó en commits viejos no debe bloquear el trabajo nuevo.
+      - name: Instalar gitleaks (versión fijada)
+        run: |
+          set -euo pipefail
+          VERSION=8.28.0
+          SHA256=a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+          curl -sSL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks version
+
+      - name: Escanear secretos
+        run: |
+          set -euo pipefail
+          /tmp/gitleaks detect --no-git --source . \
+            --config .gitleaks.toml --redact --no-banner --exit-code 1
+
   docker:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')

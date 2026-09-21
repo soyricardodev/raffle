@@ -1,0 +1,36 @@
+# Configuración de escaneo de secretos (gitleaks).
+#
+# El escaneo corre sobre el ÁRBOL ACTUAL (`gitleaks detect --no-git`), no sobre
+# el historial completo: una credencial ya revocada que quedó en commits viejos
+# no debe bloquear el trabajo nuevo. El historial se auditó aparte.
+#
+# Regla para el allowlist: debe ser lo más específico posible. Permitir un
+# archivo entero hace que un secreto real pegado ahí pase desapercibido.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Valores ficticios de tests y placeholders de plantillas públicas"
+
+# Fixtures de tests: claves inventadas, nunca credenciales reales.
+regexes = [
+  # app/src/server/email/resend.adapter.test.ts
+  '''re_test_key_[A-Za-z0-9_]*''',
+  # EMAIL_VALIDATION_SECRET de prueba (env.test.ts, recipient-verifier.test.ts)
+  '''0123456789abcdef''',
+  # PEM falso del test de DKIM. En el fuente son dos backslashes + n, así que
+  # esto NO habilita un PEM real (con saltos de línea reales o \n simple).
+  '''-----BEGIN RSA PRIVATE KEY-----\\\\nkey\\\\n-----END RSA PRIVATE KEY-----''',
+  # Placeholder del crontab de ejemplo.
+  '''TU_CRON_SECRET''',
+]
+
+# Archivos .env: son de runtime, están en .gitignore y nunca se commitean.
+# El caso "alguien los fuerza con git add -f" lo cubre un check explícito en
+# .github/workflows/ci.yml, que falla si hay un .env trackeado.
+paths = [
+  '''(^|/)\.env$''',
+  '''(^|/)\.env\.[^/]+$''',
+  '''deploy/env\.yoiberifas\.example''',
+]
