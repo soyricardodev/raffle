@@ -128,17 +128,107 @@ release_health_check() {
   return 1
 }
 
+# Verifica el checksum del artefacto descargado.
+#   release_verify_checksum <archivo> <archivo.sha256>
+release_verify_checksum() {
+  local archive="${1:?}"
+  local checksum_file="${2:?}"
+  local expected actual
+  [[ -f "$checksum_file" ]] || return 1
+  expected="$(tr -d '\n\r ' < "$checksum_file")"
+  [[ -n "$expected" ]] || return 1
+  actual="$(sha256sum "$archive" | awk '{print $1}')"
+  [[ "$actual" == "$expected" ]]
+}
+
+# Lee un campo string del MANIFEST.json sin depender de jq.
+release_manifest_field() {
+  local manifest="${1:?}"
+  local field="${2:?}"
+  grep -o "\"${field}\"[[:space:]]*:[[:space:]]*\"[^\"]*\"" "$manifest" 2>/dev/null \
+    | head -1 | sed 's/.*"\([^"]*\)"$/\1/'
+}
+
+# Valida que el bundle esté completo y, si se pasa un SHA esperado, que el
+# artefacto sea el commit que se cree estar desplegando.
+#   release_validate_manifest <release_dir> [expected_short_sha]
+release_validate_manifest() {
+  local dir="${1:?}"
+  local expected_sha="${2:-}"
+  local manifest="$dir/MANIFEST.json"
+
+  release_validate_bundle "$dir" || return 1
+  [[ -f "$manifest" ]] || { echo "[release] MANIFEST.json ausente" >&2; return 1; }
+
+  local short_sha entry
+  short_sha="$(release_manifest_field "$manifest" shortSha)"
+  [[ -n "$short_sha" ]] || { echo "[release] MANIFEST sin shortSha" >&2; return 1; }
+
+  if [[ -n "$expected_sha" && "$short_sha" != "$expected_sha" ]]; then
+    echo "[release] El manifiesto dice ${short_sha} pero se esperaba ${expected_sha}" >&2
+    return 1
+  fi
+
+  entry="$(release_manifest_field "$manifest" entrypoint)"
+  [[ -n "$entry" && -f "$dir/$entry" ]] || {
+    echo "[release] entrypoint del manifiesto ausente: ${entry:-<vacío>}" >&2
+    return 1
+  }
+  return 0
+}
+
+# Snapshot previo a migrar. Best-effort: si no se puede, no bloquea el deploy.
+release_snapshot_db() {
+  local env_file="${1:?}"
+  # shellcheck disable=SC1090
+  set -a && source "$env_file" && set +a
+
+  local url="${DATABASE_URL:-}"
+  if [[ "$url" != file:* ]]; then
+    echo "[migrate] DB remota (${url%%:*}): sin snapshot local"
+    return 0
+  fi
+
+  local db_path="${url#file:}"
+  [[ -f "$db_path" ]] || { echo "[migrate] WARN: no existe $db_path"; return 0; }
+  command -v sqlite3 >/dev/null 2>&1 || { echo "[migrate] WARN: sqlite3 ausente"; return 0; }
+
+  local snap="${db_path}.pre-migrate-$(date -u +%Y%m%dT%H%M%SZ)"
+  if sqlite3 "$db_path" ".backup '$snap'"; then
+    echo "[migrate] Snapshot previo: $snap"
+  else
+    echo "[migrate] WARN: el snapshot falló; revisá el disco antes de migrar"
+  fi
+}
+
+# Aplica las migraciones DEL RELEASE desplegado, no las del clone git.
+#
+# El clone es solo el entorno de ejecución (pnpm + drizzle-kit): puede estar
+# desactualizado, y antes eso hacía que un `--migrate` aplicara migraciones
+# viejas contra un esquema nuevo. El artefacto es la única fuente de verdad.
+#   release_run_migrate <repo_dir> <env_file> [release_dir]
 release_run_migrate() {
   local repo_dir="${1:?}"
   local env_file="${2:?}"
+  local release_dir="${3:-}"
+
+  command -v pnpm >/dev/null 2>&1 || return 1
+
+  local migrations_dir="$repo_dir/packages/shared/drizzle-sqlite"
+  if [[ -n "$release_dir" && -f "$release_dir/packages/shared/drizzle-sqlite/meta/_journal.json" ]]; then
+    migrations_dir="$release_dir/packages/shared/drizzle-sqlite"
+  fi
+  echo "[migrate] Migraciones desde: $migrations_dir"
+
+  release_snapshot_db "$env_file"
 
   # shellcheck disable=SC1090
   set -a && source "$env_file" && set +a
-  command -v pnpm >/dev/null 2>&1 || return 1
   (
     cd "$repo_dir"
     export DATABASE_URL
     export DATABASE_AUTH_TOKEN="${DATABASE_AUTH_TOKEN:-}"
+    export DRIZZLE_MIGRATIONS_DIR="$migrations_dir"
     pnpm db:migrate
   )
 }

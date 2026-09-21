@@ -48,6 +48,7 @@ done
 
 release_layout_init "$RAFFLE_ROOT"
 DOWNLOAD_URL="https://github.com/${RELEASE_REPO}/releases/download/${RELEASE_TAG}/raffle-release.tar.gz"
+CHECKSUM_URL="${DOWNLOAD_URL}.sha256"
 
 log() { echo "[fast] $*"; }
 die() { echo "[fast] ERROR: $*" >&2; exit 1; }
@@ -69,6 +70,7 @@ TIMESTAMP="$(date +%Y%m%d_%H%M%S)"
 WORK_DIR="$RELEASES_DIR/.work_${TIMESTAMP}"
 STAGING_DIR="$RELEASES_DIR/${TIMESTAMP}"
 ARCHIVE="$WORK_DIR/raffle-release.tar.gz"
+CHECKSUM_FILE="$WORK_DIR/raffle-release.tar.gz.sha256"
 
 log "Descargando $DOWNLOAD_URL"
 mkdir -p "$WORK_DIR"
@@ -76,13 +78,34 @@ if ! curl -fL --retry 3 --retry-delay 5 -o "$ARCHIVE" "$DOWNLOAD_URL"; then
   die "No pude descargar el release. ¿Existe el tag ${RELEASE_TAG}? Ejecuta el workflow Release Yoiberifas en GitHub."
 fi
 
+# El tag `yoiberifas-latest` es mutable: puede cambiar de contenido sin cambiar
+# de nombre. Por eso se prefiere `yoiberifas-<sha>`, que es inmutable.
+EXPECTED_SHA=""
+if [[ "$RELEASE_TAG" == yoiberifas-* && "$RELEASE_TAG" != "yoiberifas-latest" ]]; then
+  EXPECTED_SHA="${RELEASE_TAG#yoiberifas-}"
+else
+  log "WARN: '$RELEASE_TAG' es un tag mutable. Preferí '--tag yoiberifas-<sha>'."
+fi
+
+if curl -fL --retry 2 --retry-delay 3 -o "$CHECKSUM_FILE" "$CHECKSUM_URL" 2>/dev/null; then
+  if release_verify_checksum "$ARCHIVE" "$CHECKSUM_FILE"; then
+    log "Checksum OK: $(cat "$CHECKSUM_FILE")"
+  else
+    die "Checksum inválido — el artefacto descargado no coincide con ${CHECKSUM_URL}"
+  fi
+else
+  log "WARN: el release no publica .sha256 (artefacto antiguo); sin verificación de integridad."
+fi
+
 log "Extrayendo → $STAGING_DIR"
 mkdir -p "$STAGING_DIR"
 tar -xzf "$ARCHIVE" -C "$STAGING_DIR"
 rm -rf "$WORK_DIR"
 
-release_validate_bundle "$STAGING_DIR" \
-  || die "Artefacto inválido: falta app/.output/server/index.mjs"
+if ! release_validate_manifest "$STAGING_DIR" "$EXPECTED_SHA"; then
+  die "Artefacto inválido (bundle incompleto, manifiesto ausente o SHA distinto al del tag)"
+fi
+log "Manifiesto OK: $(release_manifest_field "$STAGING_DIR/MANIFEST.json" shortSha) (migraciones: $(release_manifest_field "$STAGING_DIR/MANIFEST.json" migrationLatest))"
 
 TARGET_DIR="$STAGING_DIR"
 if [[ -f "$STAGING_DIR/RELEASE_SHA" ]]; then
@@ -93,8 +116,8 @@ if [[ -f "$STAGING_DIR/RELEASE_SHA" ]]; then
 fi
 
 if [[ "$RUN_MIGRATE" == "1" ]]; then
-  log "Migraciones SQLite"
-  if release_run_migrate "$RAFFLE_ROOT" "$ENV_FILE"; then
+  log "Migraciones SQLite (desde el release desplegado)"
+  if release_run_migrate "$RAFFLE_ROOT" "$ENV_FILE" "$TARGET_DIR"; then
     :
   else
     log "WARN: pnpm no encontrado — omite migraciones o instala Node+corepack"
