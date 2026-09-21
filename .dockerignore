@@ -6,3 +6,24 @@ node_modules
 .env
 .env.*
 !.env.example
+
+# Artefactos de runtime del deploy: nunca deben entrar a la imagen.
+# `data/` trae la base con PII, `secrets/` claves privadas (DKIM) y
+# `releases/` binarios de builds previos.
+data/
+logs/
+releases/
+backups/
+secrets/
+current
+
+# Legacy: es referencia de comportamiento, no se construye ni se publica.
+backend-legacy/
+frontend-legacy/
+
+# Salidas de test y exports con PII.
+app/test-results/
+app/playwright-report/
+app/blob-report/
+app/test-raffle.db*
+exports/
