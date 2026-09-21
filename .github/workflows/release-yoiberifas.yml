@@ -9,7 +9,42 @@ permissions:
   contents: write
 
 jobs:
+  guard:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # El repo es público: un .env versionado es una fuga inmediata.
+      - name: Fallar si hay un .env versionado
+        run: |
+          set -euo pipefail
+          tracked="$(git ls-files | grep -E '(^|/)\.env($|\.)' | grep -v '\.example$' || true)"
+          if [[ -n "$tracked" ]]; then
+            echo "::error::Hay archivos .env versionados (nunca deben commitearse):"
+            echo "$tracked"
+            exit 1
+          fi
+          echo "OK: ningún .env versionado"
+
+      - name: Instalar gitleaks (versión fijada)
+        run: |
+          set -euo pipefail
+          VERSION=8.28.0
+          SHA256=a65b5253807a68ac0cafa4414031fd740aeb55f54fb7e55f386acb52e6a840eb
+          curl -sSL -o /tmp/gitleaks.tar.gz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${VERSION}/gitleaks_${VERSION}_linux_x64.tar.gz"
+          echo "${SHA256}  /tmp/gitleaks.tar.gz" | sha256sum -c -
+          tar -xzf /tmp/gitleaks.tar.gz -C /tmp gitleaks
+          /tmp/gitleaks version
+
+      - name: Escanear secretos
+        run: |
+          set -euo pipefail
+          /tmp/gitleaks detect --no-git --source . \
+            --config .gitleaks.toml --redact --no-banner --exit-code 1
+
   release:
+    needs: guard
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,30 +67,80 @@ jobs:
           NODE_ENV: production
           NODE_OPTIONS: --max-old-space-size=4096
 
+      # El bundle de Nitro es autocontenido: trae sus dependencias externas en
+      # app/.output/server/node_modules. Empaquetar el node_modules de la raíz
+      # agregaba 768 MB (96% del artefacto) que el runtime nunca lee.
+      # Verificado levantando el release sin node_modules contra una copia de la
+      # base real: /api/health/db responde {"ok":true,"db":true}.
       - name: Package runtime bundle
         run: |
           set -euo pipefail
           SHA="$(git rev-parse --short HEAD)"
           FULL_SHA="$(git rev-parse HEAD)"
+          BUILT_AT="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           STAGING="release-staging"
           rm -rf "$STAGING"
           mkdir -p "$STAGING/app"
 
-          cp package.json pnpm-workspace.yaml "$STAGING/"
           cp app/package.json "$STAGING/app/"
           cp -a app/.output "$STAGING/app/.output"
-          cp -a packages "$STAGING/packages"
-          cp -a node_modules "$STAGING/node_modules"
-          if [[ -d app/node_modules ]]; then
-            cp -a app/node_modules "$STAGING/app/node_modules"
-          fi
+
+          # Migraciones dentro del artefacto: el deploy migra con ESTAS, no con
+          # las del clone git, que puede estar desactualizado.
+          mkdir -p "$STAGING/packages/shared"
+          cp -a packages/shared/drizzle-sqlite "$STAGING/packages/shared/drizzle-sqlite"
 
           printf '%s\n' "$SHA" > "$STAGING/RELEASE_SHA"
           printf '%s\n' "$FULL_SHA" > "$STAGING/RELEASE_FULL_SHA"
 
+          MIGRATION_COUNT="$(python3 -c "import json;print(len(json.load(open('packages/shared/drizzle-sqlite/meta/_journal.json'))['entries']))")"
+          MIGRATION_LATEST="$(python3 -c "import json;print(json.load(open('packages/shared/drizzle-sqlite/meta/_journal.json'))['entries'][-1]['tag'])")"
+          NODE_VERSION="$(node -v | sed 's/^v//')"
+
+          python3 - "$STAGING/MANIFEST.json" <<PY
+          import json, sys, hashlib, pathlib
+
+          entry = pathlib.Path("$STAGING/app/.output/server/index.mjs")
+          manifest = {
+              "repository": "${{ github.repository }}",
+              "commit": "$FULL_SHA",
+              "shortSha": "$SHA",
+              "builtAt": "$BUILT_AT",
+              "node": "$NODE_VERSION",
+              "packageManager": "pnpm@10.12.1",
+              "migrationCount": int("$MIGRATION_COUNT"),
+              "migrationLatest": "$MIGRATION_LATEST",
+              "entrypoint": "app/.output/server/index.mjs",
+              "entrypointSha256": hashlib.sha256(entry.read_bytes()).hexdigest(),
+          }
+          pathlib.Path(sys.argv[1]).write_text(json.dumps(manifest, indent=2) + "\n")
+          PY
+
           tar -czf raffle-release.tar.gz -C "$STAGING" .
+          sha256sum raffle-release.tar.gz | awk '{print $1}' > raffle-release.tar.gz.sha256
           echo "Bundle size: $(du -h raffle-release.tar.gz | cut -f1)"
           echo "SHA=$SHA" >> "$GITHUB_ENV"
+          echo "FULL_SHA=$FULL_SHA" >> "$GITHUB_ENV"
+          echo "MIGRATION_LATEST=$MIGRATION_LATEST" >> "$GITHUB_ENV"
+
+      # Release inmutable: nombre único por commit, nunca se reescribe.
+      - name: Publish immutable release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: yoiberifas-${{ env.SHA }}
+          name: yoiberifas-${{ env.SHA }}
+          body: |
+            Artefacto de producción identificable por commit.
+            Commit: ${{ env.FULL_SHA }}
+            Short SHA: ${{ env.SHA }}
+            Migración más reciente: ${{ env.MIGRATION_LATEST }}
+
+            Los despliegues deben usar este tag (`yoiberifas-${{ env.SHA }}`),
+            no el alias mutable `yoiberifas-latest`.
+          files: |
+            raffle-release.tar.gz
+            raffle-release.tar.gz.sha256
+          make_latest: false
 
       - name: Remove previous yoiberifas-latest release
         continue-on-error: true
@@ -65,14 +150,20 @@ jobs:
           gh release delete yoiberifas-latest --yes 2>/dev/null || true
           git push origin :refs/tags/yoiberifas-latest 2>/dev/null || true
 
-      - name: Publish GitHub Release
+      # Alias mutable por compatibilidad: sigue apuntando al mismo artefacto que
+      # el tag inmutable, para que el deploy viejo no se rompa durante la transición.
+      - name: Publish mutable alias (compatibilidad)
         uses: softprops/action-gh-release@v2
         with:
           tag_name: yoiberifas-latest
           name: yoiberifas-latest
           body: |
-            Production bundle for yoiberifas VPS fast deploy.
-            Commit: ${{ github.sha }}
+            Alias mutable del bundle de producción de yoiberifas.
+            Apunta al mismo artefacto que `yoiberifas-${{ env.SHA }}`.
+            Preferí el tag inmutable para desplegar.
+            Commit: ${{ env.FULL_SHA }}
             Short SHA: ${{ env.SHA }}
-          files: raffle-release.tar.gz
+          files: |
+            raffle-release.tar.gz
+            raffle-release.tar.gz.sha256
           make_latest: true
