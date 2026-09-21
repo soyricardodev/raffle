@@ -15,8 +15,14 @@ const authToken = process.env.DATABASE_AUTH_TOKEN
 // Sin la variable se mantiene el comportamiento local de siempre.
 const out = process.env.DRIZZLE_MIGRATIONS_DIR ?? "./drizzle-sqlite"
 
+// libSQL remoto (sqld de Dokploy, Turso) lleva dialecto `turso`, no `sqlite`.
+// Con `http(s)://` el check anterior caía en `sqlite` y drizzle-kit trataba la
+// base remota como archivo local. Los esquemas aceptados coinciden con
+// isLibsqlDatabaseUrl() de database-url.ts.
+const isRemoteLibsql = /^(libsql|https?|wss?):/.test(url)
+
 export default defineConfig({
-  dialect: url.startsWith("libsql:") || url.includes("turso") ? "turso" : "sqlite",
+  dialect: isRemoteLibsql || url.includes("turso") ? "turso" : "sqlite",
   schema: "./src/db/sqlite/schema/index.ts",
   out,
   dbCredentials: authToken && !url.startsWith("file:") ? { url, authToken } : { url },
