@@ -16,15 +16,10 @@ services:
       - ${UPLOAD_HOST_PATH:-./uploads}:/app/uploads
     restart: unless-stopped
 
-  inngest:
-    build: .
-    image: ghcr.io/OWNER/raffle-v2:latest
-    command: ["node", "inngest/start.mjs"]
-    env_file:
-      - .env
-    restart: unless-stopped
-    profiles:
-      - jobs
+  # El servicio `inngest` se eliminó: era scaffolding sin uso. El envío de
+  # correos se resuelve con /api/cron/email-dispatch + un timer/cron externo,
+  # y en todo app/src había una sola referencia a inngest (un test). Dejarlo
+  # acá lo hacía aparecer como servicio fantasma al migrar a un orquestador.
 
   # ─── MySQL solo para desarrollo local / pruebas de migración ─────
   db:
