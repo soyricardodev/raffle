@@ -1,10 +1,14 @@
 const { Resend } = require("resend");
 const db = require("../config/database");
 
-// API key
-const resend = new Resend(
-  process.env.RESEND_API_KEY || "re_3cMtTZPv_JmNGM4nv8bAhrcAxmumK1B2C"
-);
+// API key — solo desde el entorno. Nunca hardcodear credenciales acá: este
+// repositorio es público y cualquier valor commiteado queda en el historial.
+if (!process.env.RESEND_API_KEY) {
+  throw new Error(
+    "RESEND_API_KEY no está definida. Configúrala en el .env del runtime (fuera del repo)."
+  );
+}
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // obtener la configuración del sitio
 const getSiteConfig = async () => {
