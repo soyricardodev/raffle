@@ -42,19 +42,6 @@ jobs:
           set -euo pipefail
           /tmp/gitleaks detect --no-git --source . \
             --config .gitleaks.toml --redact --no-banner --exit-code 1
-
-  docker:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master')
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Build Docker image
-        run: docker build -t raffle-v2:ci .
-
-      # Descomentar cuando exista el remoto GHCR (D-03):
-      # - name: Push to GHCR
-      #   run: |
-      #     echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-      #     docker tag raffle-v2:ci ghcr.io/${{ github.repository }}:latest
-      #     docker push ghcr.io/${{ github.repository }}:latest
+  # El build+publicación de la imagen se movió a docker-publish.yml, que también
+  # la ARRANCA antes de publicarla (este job solo compilaba, así que una imagen
+  # que no arrancaba pasaba en verde). El push a GHCR pendiente (D-03) ya está hecho ahí.
