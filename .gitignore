@@ -4,6 +4,18 @@
 .env.*
 !.env.example
 
+# Deploy runtime artifacts (git-clone-as-deploy-root)
+# El clone del VPS vive en la misma carpeta que estos directorios. Ninguno
+# debe versionarse jamás: `releases/` trae binarios, `data/` la base con PII,
+# `secrets/` claves privadas (DKIM) y `logs/` el puntero de rollback.
+secrets/
+releases/
+current
+data/
+logs/
+backups/
+.work_*/
+
 # Dependencies
 node_modules/
 
