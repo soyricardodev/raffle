@@ -19,6 +19,8 @@
     "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts",
     "db:repair:payment-accounts": "bun run scripts/repair-payment-accounts.ts",
     "db:validate:migration": "bun run scripts/validate-migration.ts",
+    "libsql:snapshot": "bun run scripts/libsql-snapshot.ts",
+    "libsql:verify": "bun run scripts/libsql-verify.ts",
     "export:google-contacts": "bun run scripts/export-customers-google-contacts.ts",
     "env:sync-email": "bun run scripts/sync-email-env.ts",
     "test:scripts": "bun test ./scripts/lib/email-env.test.ts ./scripts/lib/google-contacts-sanitize.test.ts",
