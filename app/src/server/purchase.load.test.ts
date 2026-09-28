@@ -70,7 +70,7 @@ describe("purchase load", () => {
       customerCi: `V${String(20_000_000 + seq).slice(-8)}`,
       customerEmail: `load${seq}@test.local`,
       rafflePaymentMethodId,
-      paymentReference: `load-ref-${seq}-${Date.now()}`,
+      paymentReference: `${Date.now()}${String(seq).padStart(4, "0")}`,
       ticketQuantity: TICKETS_PER_BUYER,
     })
   }
