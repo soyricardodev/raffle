@@ -40,6 +40,7 @@ const migrationSql = [
   readMigration("0024_staff_display_name.sql"),
   readMigration("0025_operator_purchase_scope.sql"),
   readMigration("0026_verifier_ticket_permissions.sql"),
+  readMigration("0027_verifier_purchase_reversal.sql"),
 ].join("\n--> statement-breakpoint\n")
 
 /** Base SQLite en archivo temporal aislado por suite de tests. */
