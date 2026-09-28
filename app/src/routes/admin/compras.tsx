@@ -3,8 +3,8 @@ import { AdminPurchasesView } from "@/features/admin/AdminPurchasesView"
 import { adminNavRouteHead } from "@/features/admin/admin-page-title"
 import { adminPurchasesAccessQueryOptions } from "@/features/admin/purchases/admin-purchases-access-queries"
 import {
-  adminPurchasesDashboardQueryOptions,
   adminPurchasesInfiniteQueryOptions,
+  adminPurchasesRaffleScopeQueryOptions,
   getDefaultAdminPurchasesRaffleId,
   normalizeAdminPurchaseFilters,
 } from "@/features/admin/purchases/admin-purchases-queries"
@@ -43,11 +43,11 @@ export const Route = createFileRoute("/admin/compras")({
       .catch(() => null)
     if (access?.required && !access.unlocked) return
 
-    const dashboard = await queryClient
-      .ensureQueryData(adminPurchasesDashboardQueryOptions())
+    const raffleScope = await queryClient
+      .ensureQueryData(adminPurchasesRaffleScopeQueryOptions())
       .catch(() => null)
     const filters = normalizeAdminPurchaseFilters(deps, {
-      defaultRaffleId: getDefaultAdminPurchasesRaffleId(dashboard),
+      defaultRaffleId: getDefaultAdminPurchasesRaffleId(raffleScope),
     })
     await queryClient
       .prefetchInfiniteQuery({

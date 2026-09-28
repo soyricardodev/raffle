@@ -12,6 +12,7 @@ import {
   Ticket,
   Users,
 } from "lucide-react"
+import type { Permission } from "@/lib/workforce-policy"
 
 export type AdminNavItem = {
   name: string
@@ -19,12 +20,12 @@ export type AdminNavItem = {
   href: string
   icon: LucideIcon
   description: string
-  permission?: string
+  permission: Permission
 }
 
 export const ADMIN_ACCOUNT_PAGE_TITLE = "Mi cuenta"
 
-export const adminNavItems: Array<AdminNavItem> = [
+export const adminNavItems = [
   {
     name: "Dashboard",
     shortName: "Inicio",
@@ -113,7 +114,20 @@ export const adminNavItems: Array<AdminNavItem> = [
     icon: Bell,
     description: "Push a teléfonos",
   },
-]
+] satisfies Array<AdminNavItem>
+
+/** Shared by the sidebar and the route guard; hiding a link is not authorization. */
+export function permissionForAdminPage(pathname: string): Permission | null {
+  if (pathname === "/admin/cuenta") return null
+  if (pathname.startsWith("/admin/edit/")) return "raffles.edit"
+  return adminNavItems.find((item) => isAdminNavActive(pathname, item.href))?.permission ?? null
+}
+
+export function firstAccessibleAdminPage(permissions: readonly string[]) {
+  return (
+    adminNavItems.find((item) => permissions.includes(item.permission))?.href ?? "/admin/cuenta"
+  )
+}
 
 export function isAdminNavActive(pathname: string, href: string) {
   if (href === "/admin") return pathname === "/admin"

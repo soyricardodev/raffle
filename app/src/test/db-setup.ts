@@ -38,6 +38,7 @@ const migrationSql = [
   readMigration("0022_auth_rate_limits.sql"),
   readMigration("0023_user_last_login.sql"),
   readMigration("0024_staff_display_name.sql"),
+  readMigration("0025_operator_purchase_scope.sql"),
 ].join("\n--> statement-breakpoint\n")
 
 /** Base SQLite en archivo temporal aislado por suite de tests. */
@@ -61,7 +62,14 @@ export async function setupIsolatedTestDatabase(): Promise<void> {
   }
   await client.execute({
     sql: "INSERT INTO users (id, username, display_name, email, email_verified, role, status, created_at, updated_at) VALUES (?, ?, ?, ?, 1, 'super_admin', 'active', ?, ?)",
-    args: ["test-admin", "Test Admin", "Test Admin", "test-admin@example.test", Date.now(), Date.now()],
+    args: [
+      "test-admin",
+      "Test Admin",
+      "Test Admin",
+      "test-admin@example.test",
+      Date.now(),
+      Date.now(),
+    ],
   })
   await client.close()
 }

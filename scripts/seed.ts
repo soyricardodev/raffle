@@ -81,8 +81,6 @@ async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
       id: "operator",
       name: "Operador de compras",
       permissions: JSON.stringify([
-        "dashboard.read",
-        "raffles.read",
         "purchases.read",
         "purchases.approve",
         "purchases.reject",
@@ -120,7 +118,9 @@ async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
     providerId: "credential",
     password: await hashPassword(OWNER_PASSWORD),
   })
-  console.log("👤 2 cuentas administrativas de desarrollo creadas; configura SEED_*_PASSWORD para fijar sus claves")
+  console.log(
+    "👤 2 cuentas administrativas de desarrollo creadas; configura SEED_*_PASSWORD para fijar sus claves",
+  )
   return userId
 }
 

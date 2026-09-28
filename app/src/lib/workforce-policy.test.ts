@@ -6,6 +6,7 @@ describe("workforce policy", () => {
     expect(permissionForAdminRequest("POST", "/api/admin/new-unsafe-route")).toBeNull()
   })
   it("splits purchase changes into distinct actions", () => {
+    expect(permissionForAdminRequest("GET", "/api/admin/me/preferences")).toBe("purchases.read")
     expect(permissionForAdminRequest("PUT", "/api/admin/purchases/5/tickets/add")).toBe(
       "purchases.tickets.add",
     )
@@ -18,6 +19,17 @@ describe("workforce policy", () => {
     expect(permissionForAdminRequest("POST", "/api/admin/purchases/5/emails/send")).toBe(
       "emails.manage",
     )
+  })
+  it("keeps the built-in operator inside purchase capabilities despite stale grants", () => {
+    const input = {
+      role: "operator",
+      rolePermissions: ["dashboard.read", "raffles.read", "purchases.read"],
+      grants: [{ permission: "settings.read", raffleId: null }],
+    }
+    expect(hasGrant({ ...input, permission: "purchases.read" })).toBe(true)
+    expect(hasGrant({ ...input, permission: "dashboard.read" })).toBe(false)
+    expect(hasGrant({ ...input, permission: "raffles.read" })).toBe(false)
+    expect(hasGrant({ ...input, permission: "settings.read" })).toBe(false)
   })
   it("respects raffle-scoped grants without broadening them", () => {
     const input = {

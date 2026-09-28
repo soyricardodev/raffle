@@ -27,10 +27,18 @@ export const PERMISSIONS = [
 export type Permission = (typeof PERMISSIONS)[number]
 export const PERMISSION_SET = new Set<string>(PERMISSIONS)
 
+/** The built-in operator is intentionally limited to purchase work. Use a custom role for more. */
+export function permissionAllowedForRole(
+  role: string | null | undefined,
+  permission: string,
+): boolean {
+  return role !== "operator" || permission.startsWith("purchases.")
+}
+
 /** Pure, fail-closed mapping for every administrative HTTP endpoint. */
 export function permissionForAdminRequest(method: string, pathname: string): Permission | null {
   const write = method !== "GET" && method !== "HEAD"
-  if (pathname === "/api/admin/me/preferences") return "dashboard.read"
+  if (pathname === "/api/admin/me/preferences") return "purchases.read"
   if (pathname.startsWith("/api/admin/workforce"))
     return write ? "workforce.manage" : "workforce.read"
   if (pathname.startsWith("/api/admin/dashboard")) return "dashboard.read"
@@ -72,6 +80,7 @@ export function hasGrant(input: {
 }): boolean {
   if (input.role === "super_admin") return true
   if (input.role === "admin" && input.permission !== "workforce.manage") return true
+  if (!permissionAllowedForRole(input.role, input.permission)) return false
   if (input.rolePermissions.includes(input.permission)) return true
   return input.grants.some(
     (grant) =>

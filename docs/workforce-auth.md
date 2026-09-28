@@ -21,6 +21,8 @@ Cada trabajador usa su propio correo y contraseña. El propietario y el desarrol
 | Recurso | Las mutaciones de compras y rifas resuelven su rifa antes de autorizar. Los listados requieren lectura general para evitar filtrar datos por error. Las rutas no catalogadas se deniegan a trabajadores. |
 | Baja | Desactivar la cuenta borra sus sesiones. Better Auth comprueba el estado al crear sesión y las APIs lo verifican de nuevo en cada petición. No hay caché de sesión en cookie. |
 
+El rol integrado **Operador de compras** solo abre **Compras** y **Buscar boleto** (además de **Mi cuenta** para cambiar su clave). Puede aprobar, rechazar, revertir y ajustar boletos según sus permisos de compras, pero nunca recibe acceso a Inicio, Rifas, Análisis, Configuración ni Equipo, incluso si un permiso antiguo o adicional quedó guardado. Para ampliar el trabajo de alguien a otras secciones, crea otro rol. La migración `0025` retira de este rol los permisos ajenos a compras en las instalaciones existentes; no cambia los otros roles.
+
 Las cuentas creadas por Better Auth reciben el rol `customer` por defecto, incluso sobre bases antiguas cuyo valor SQL predeterminado era `admin`. Hoy el registro está deshabilitado; esta defensa evita que una futura activación del registro público conceda accesos administrativos accidentalmente.
 El nombre visible es independiente del `username` único legado: dos trabajadores pueden compartir nombre, pero nunca correo.
 
@@ -43,6 +45,8 @@ No se implementan cuentas de compradores ni envío automático de invitaciones e
 ## Vista móvil
 
 Capturas del panel a 390 px, con cuentas y actividad de demostración en una base local aislada:
+
+![Navegación del operador: solo Compras y Buscar boleto](screenshots/operator-mobile.png)
 
 ![Personas, sesiones e invitación](screenshots/workforce-mobile.png)
 

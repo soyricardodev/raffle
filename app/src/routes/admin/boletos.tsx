@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router"
 import { AdminTicketLookup } from "@/features/admin/AdminTicketLookup"
 import { adminNavRouteHead } from "@/features/admin/admin-page-title"
-import { adminPurchasesDashboardQueryOptions } from "@/features/admin/purchases/admin-purchases-queries"
+import { adminPurchasesRaffleScopeQueryOptions } from "@/features/admin/purchases/admin-purchases-queries"
 import {
   getDefaultAdminTicketLookupRaffleId,
   normalizeAdminTicketLookupFilters,
@@ -19,11 +19,11 @@ export const Route = createFileRoute("/admin/boletos")({
   }),
   loaderDeps: ({ search }) => search,
   loader: async ({ context: { queryClient }, deps }) => {
-    const dashboard = await queryClient
-      .ensureQueryData(adminPurchasesDashboardQueryOptions())
+    const raffleScope = await queryClient
+      .ensureQueryData(adminPurchasesRaffleScopeQueryOptions())
       .catch(() => null)
     normalizeAdminTicketLookupFilters(deps, {
-      defaultRaffleId: getDefaultAdminTicketLookupRaffleId(dashboard),
+      defaultRaffleId: getDefaultAdminTicketLookupRaffleId(raffleScope),
     })
   },
   head: ({ matches }) => adminNavRouteHead(matches, "/admin/boletos"),

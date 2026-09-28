@@ -1,8 +1,43 @@
 import { purchases, staffGrants, staffRoles } from "@raffle/shared/db"
 import { ForbiddenError } from "@raffle/shared/errors"
-import { eq } from "drizzle-orm"
+import { and, eq, isNull } from "drizzle-orm"
 import { getDb } from "./db.server"
-import { hasGrant, type Permission } from "./workforce-policy"
+import {
+  hasGrant,
+  PERMISSION_SET,
+  PERMISSIONS,
+  type Permission,
+  permissionAllowedForRole,
+} from "./workforce-policy"
+
+/** Only global grants can open a module whose list is not raffle-scoped. */
+export async function navigationPermissionsForUser(user: {
+  id: string | number
+  role?: string | null
+}): Promise<Permission[]> {
+  if (user.role === "super_admin") return [...PERMISSIONS]
+  if (user.role === "admin") return PERMISSIONS.filter((p) => p !== "workforce.manage")
+  const [template] = await getDb()
+    .select({ permissions: staffRoles.permissions })
+    .from(staffRoles)
+    .where(eq(staffRoles.id, user.role ?? ""))
+    .limit(1)
+  const grants = await getDb()
+    .select({ permission: staffGrants.permission })
+    .from(staffGrants)
+    .where(and(eq(staffGrants.userId, String(user.id)), isNull(staffGrants.raffleId)))
+  return [
+    ...new Set(
+      [
+        ...(template ? (JSON.parse(template.permissions) as string[]) : []),
+        ...grants.map((g) => g.permission),
+      ].filter(
+        (permission): permission is Permission =>
+          PERMISSION_SET.has(permission) && permissionAllowedForRole(user.role, permission),
+      ),
+    ),
+  ]
+}
 
 export async function assertPermission(
   user: { id: string | number; role?: string | null },

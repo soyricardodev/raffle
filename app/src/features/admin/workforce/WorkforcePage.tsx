@@ -4,7 +4,7 @@ import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { PERMISSIONS, type Permission } from "@/lib/workforce-policy"
+import { PERMISSIONS, type Permission, permissionAllowedForRole } from "@/lib/workforce-policy"
 
 type Grant = { id?: string; permission: string; raffleId: number | null }
 type Session = {
@@ -190,10 +190,12 @@ function GrantEditor({
   grants,
   onChange,
   raffles,
+  allowedPermissions,
 }: {
   grants: Grant[]
   onChange: (value: Grant[]) => void
   raffles: Raffle[]
+  allowedPermissions: readonly Permission[]
 }) {
   return (
     <div className="space-y-3">
@@ -228,7 +230,7 @@ function GrantEditor({
               onChange(grants.map((g, i) => (i === index ? { ...g, permission } : g)))
             }
           >
-            {PERMISSIONS.map((permission) => (
+            {allowedPermissions.map((permission) => (
               <option key={permission} value={permission}>
                 {labels[permission]}
               </option>
@@ -345,12 +347,18 @@ export function WorkforcePage() {
     setEditing(person.id)
     setEditRole(person.role)
     setEditStatus(person.status as "active" | "disabled" | "invited")
-    setEditGrants(person.grants.map((g) => ({ permission: g.permission, raffleId: g.raffleId })))
+    setEditGrants(
+      person.grants
+        .filter((grant) => permissionAllowedForRole(person.role, grant.permission))
+        .map((grant) => ({ permission: grant.permission, raffleId: grant.raffleId })),
+    )
   }
   function startRole(role: Role) {
     setEditingRole(role.id)
     setRoleName(role.name)
-    setRolePermissions(role.permissions)
+    setRolePermissions(
+      role.permissions.filter((permission) => permissionAllowedForRole(role.id, permission)),
+    )
   }
   if (loading)
     return <div className="text-muted-foreground py-16 text-center">Cargando equipo…</div>
@@ -505,7 +513,14 @@ export function WorkforcePage() {
                       <NativeSelect
                         label="Rol de la persona"
                         value={editRole}
-                        onChange={setEditRole}
+                        onChange={(role) => {
+                          setEditRole(role)
+                          setEditGrants((grants) =>
+                            grants.filter((grant) =>
+                              permissionAllowedForRole(role, grant.permission),
+                            ),
+                          )
+                        }}
                       >
                         {data.roles.map((role) => (
                           <option key={role.id} value={role.id}>
@@ -530,7 +545,14 @@ export function WorkforcePage() {
                         <option value="disabled">Desactivada, cerrar todas las sesiones</option>
                       </NativeSelect>
                     </Field>
-                    <GrantEditor grants={editGrants} onChange={setEditGrants} raffles={raffles} />
+                    <GrantEditor
+                      grants={editGrants}
+                      onChange={setEditGrants}
+                      raffles={raffles}
+                      allowedPermissions={PERMISSIONS.filter((permission) =>
+                        permissionAllowedForRole(editRole, permission),
+                      )}
+                    />
                     <Button
                       disabled={busy}
                       onClick={() =>
@@ -597,7 +619,16 @@ export function WorkforcePage() {
                 />
               </Field>
               <Field title="Rol">
-                <NativeSelect label="Rol inicial" value={inviteRole} onChange={setInviteRole}>
+                <NativeSelect
+                  label="Rol inicial"
+                  value={inviteRole}
+                  onChange={(role) => {
+                    setInviteRole(role)
+                    setInviteGrants((grants) =>
+                      grants.filter((grant) => permissionAllowedForRole(role, grant.permission)),
+                    )
+                  }}
+                >
                   {data.roles.map((role) => (
                     <option key={role.id} value={role.id}>
                       {role.name}
@@ -605,7 +636,14 @@ export function WorkforcePage() {
                   ))}
                 </NativeSelect>
               </Field>
-              <GrantEditor grants={inviteGrants} onChange={setInviteGrants} raffles={raffles} />
+              <GrantEditor
+                grants={inviteGrants}
+                onChange={setInviteGrants}
+                raffles={raffles}
+                allowedPermissions={PERMISSIONS.filter((permission) =>
+                  permissionAllowedForRole(inviteRole, permission),
+                )}
+              />
               <Button type="submit" disabled={busy || !inviteRole} className="w-full">
                 <Plus className="size-4" /> Crear invitación
               </Button>
@@ -686,7 +724,15 @@ export function WorkforcePage() {
                 />
               </Field>
               <div className="max-h-80 space-y-1 overflow-auto rounded-2xl border p-2">
-                {PERMISSIONS.map((permission) => (
+                {editingRole === "operator" ? (
+                  <p className="text-muted-foreground px-3 py-2 text-xs">
+                    Este rol solo puede usar Compras y Buscar boleto. Para otras secciones, crea
+                    otro rol.
+                  </p>
+                ) : null}
+                {PERMISSIONS.filter((permission) =>
+                  permissionAllowedForRole(editingRole, permission),
+                ).map((permission) => (
                   <label
                     key={permission}
                     className="flex min-h-11 cursor-pointer items-center gap-3 rounded-xl px-3 text-sm hover:bg-muted"

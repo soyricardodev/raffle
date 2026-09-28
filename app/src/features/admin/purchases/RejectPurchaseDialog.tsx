@@ -16,7 +16,7 @@ import {
 import { Field, FieldDescription, FieldGroup, FieldLabel } from "@/components/ui/field"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Textarea } from "@/components/ui/textarea"
-import { adminFetch } from "@/lib/admin-fetch"
+import { fetchPurchaseRejectReasons } from "@/features/admin/purchases/admin-purchases-queries"
 
 export { DUPLICATE_PAYMENT_REASON }
 
@@ -44,15 +44,13 @@ export function RejectPurchaseDialog({
   const [notes, setNotes] = useState("")
 
   const configQuery = useQuery({
-    queryKey: ["admin", "config"],
-    queryFn: () => adminFetch<Record<string, unknown>>("/api/admin/config"),
+    queryKey: ["admin", "purchases", "reject-reasons"],
+    queryFn: () => fetchPurchaseRejectReasons(),
     enabled: open,
     staleTime: 60_000,
   })
 
-  const quickReasons = normalizePurchaseRejectReasons(
-    configQuery.isError ? undefined : configQuery.data?.purchase_reject_reasons,
-  )
+  const quickReasons = normalizePurchaseRejectReasons(configQuery.data)
 
   useEffect(() => {
     if (!open) setNotes("")
@@ -72,11 +70,11 @@ export function RejectPurchaseDialog({
         <DialogHeader>
           <DialogTitle>Rechazar compra</DialogTitle>
           <DialogDescription>
-            {customerName
-              ? `Compra #${purchaseId} de ${customerName}.`
-              : `Compra #${purchaseId}.`}{" "}
+            {customerName ? `Compra #${purchaseId} de ${customerName}.` : `Compra #${purchaseId}.`}{" "}
             Los boletos quedarán liberados
-            {pending ? " (aún no vendidos definitivamente)." : " y dejarán de contar como vendidos."}
+            {pending
+              ? " (aún no vendidos definitivamente)."
+              : " y dejarán de contar como vendidos."}
           </DialogDescription>
         </DialogHeader>
 
@@ -101,8 +99,8 @@ export function RejectPurchaseDialog({
             <p className="text-sm font-medium">Motivos rápidos</p>
             {configQuery.isLoading ? (
               <div className="flex flex-wrap gap-2">
-                {Array.from({ length: 3 }).map((_, i) => (
-                  <Skeleton key={i} className="h-9 w-36 rounded-md" />
+                {["one", "two", "three"].map((key) => (
+                  <Skeleton key={key} className="h-9 w-36 rounded-md" />
                 ))}
               </div>
             ) : (

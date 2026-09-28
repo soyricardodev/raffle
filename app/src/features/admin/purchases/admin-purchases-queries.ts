@@ -1,17 +1,21 @@
+import { raffles } from "@raffle/shared/db"
 import { PaymentMethod } from "@raffle/shared/payment-methods"
+import { normalizePurchaseRejectReasons } from "@raffle/shared/site-config"
 import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
+import { desc } from "drizzle-orm"
 import { z } from "zod"
 import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import {
   getDefaultAdminRaffleId,
   resolveAdminRaffleScopeFromSearch,
 } from "@/features/admin/shared/admin-raffle-scope"
+import { getDb } from "@/lib/db.server"
 import { requirePurchasesModuleAccess } from "@/lib/purchases-access.server"
 import { decodeAdminPurchaseCursor } from "@/server/admin-purchases-cursor"
 import { listAdminPurchases } from "@/server/purchase.service"
-import { getDashboardStats } from "@/server/raffle.service"
+import { getSiteConfigMap } from "@/server/site-config.service"
 
 export const ADMIN_PURCHASES_PAGE_SIZE = 50
 
@@ -42,7 +46,9 @@ export function parseAdminPurchasesListFilters(value: unknown): AdminPurchaseLis
   const parsed = AdminPurchasesListFiltersInput.safeParse(value)
   return parsed.success ? parsed.data : null
 }
-export type AdminDashboardStats = Awaited<ReturnType<typeof getDashboardStats>>
+export type AdminPurchaseRaffleScope = {
+  filter_raffles: Array<{ id: number; name: string; status: string }>
+}
 export type AdminPurchasesResult = Awaited<ReturnType<typeof listAdminPurchases>>
 export type AdminPurchasesInfinitePage = AdminPurchasesResult
 
@@ -59,12 +65,12 @@ export type AdminPurchaseSearchParams = {
 }
 
 export const adminPurchasesQueryKeys = {
-  dashboard: ["admin", "dashboard", "purchases"] as const,
+  raffleScope: ["admin", "purchases", "raffle-scope"] as const,
   list: (filters: AdminPurchaseListFilters) => ["admin", "purchases", filters] as const,
 }
 
-export function getDefaultAdminPurchasesRaffleId(dashboard?: AdminDashboardStats | null) {
-  return getDefaultAdminRaffleId(dashboard)
+export function getDefaultAdminPurchasesRaffleId(scope?: AdminPurchaseRaffleScope | null) {
+  return getDefaultAdminRaffleId(scope)
 }
 
 export function flattenAdminPurchasesPages(
@@ -73,10 +79,23 @@ export function flattenAdminPurchasesPages(
   return pages?.flatMap((page) => page.data) ?? []
 }
 
-export const fetchAdminPurchasesDashboard = createServerFn({ method: "GET" })
+export const fetchAdminPurchasesRaffleScope = createServerFn({ method: "GET" })
   .middleware([adminPermissionMiddleware("purchases.read")])
   .handler(async () => {
-    return getDashboardStats()
+    return {
+      filter_raffles: await getDb()
+        .select({ id: raffles.id, name: raffles.name, status: raffles.status })
+        .from(raffles)
+        .orderBy(desc(raffles.createdAt)),
+    }
+  })
+
+/** Purchase-only config needed by the rejection dialog, without exposing all settings. */
+export const fetchPurchaseRejectReasons = createServerFn({ method: "GET" })
+  .middleware([adminPermissionMiddleware("purchases.reject")])
+  .handler(async () => {
+    const config = await getSiteConfigMap()
+    return normalizePurchaseRejectReasons(config.purchase_reject_reasons)
   })
 
 export const fetchAdminPurchases = createServerFn({ method: "POST" })
@@ -117,10 +136,10 @@ export function normalizeAdminPurchaseFilters(
   })
 }
 
-export function adminPurchasesDashboardQueryOptions() {
+export function adminPurchasesRaffleScopeQueryOptions() {
   return queryOptions({
-    queryKey: adminPurchasesQueryKeys.dashboard,
-    queryFn: () => fetchAdminPurchasesDashboard(),
+    queryKey: adminPurchasesQueryKeys.raffleScope,
+    queryFn: () => fetchAdminPurchasesRaffleScope(),
     staleTime: 30_000,
   })
 }

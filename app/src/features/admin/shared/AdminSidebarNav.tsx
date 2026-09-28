@@ -43,7 +43,7 @@ type AdminSidebarNavProps = {
   siteName: string
   pathname: string
   onLogout: () => void
-  permissions?: string[]
+  permissions: string[]
 }
 
 const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof SunIcon }> = [
@@ -55,7 +55,7 @@ const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof SunIco
 function userInitials(username: string) {
   const parts = username.trim().split(/\s+/).filter(Boolean)
   if (parts.length >= 2) {
-    return `${parts[0]![0] ?? ""}${parts[1]![0] ?? ""}`.toUpperCase()
+    return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase()
   }
   return username.slice(0, 2).toUpperCase()
 }
@@ -198,10 +198,7 @@ export function AdminSidebarNav({
           <SidebarGroupContent>
             <SidebarMenu>
               {adminNavItems
-                .filter(
-                  (item) =>
-                    !permissions || !item.permission || permissions.includes(item.permission),
-                )
+                .filter((item) => permissions.includes(item.permission))
                 .map((item) => {
                   const Icon = item.icon
                   const active = isAdminNavActive(pathname, item.href)

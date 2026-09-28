@@ -36,7 +36,7 @@ export default defineConfig({
     },
     {
       name: "admin",
-      testMatch: /admin\.(purchases|change-password|workforce)\.spec\.ts/,
+      testMatch: /admin\.(purchases|change-password|workforce|operator)\.spec\.ts/,
       dependencies: ["setup"],
       use: { ...devices["Pixel 5"], storageState: e2eEnv.adminStoragePath },
     },
