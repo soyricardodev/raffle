@@ -50,7 +50,7 @@ describe("admin purchase customer contact update", () => {
         customerPhone: wrongPhone,
         customerCi: "V87654321",
         rafflePaymentMethodId,
-        paymentReference: "admin-customer-contact-ref",
+        paymentReference: "1122334455",
         ticketQuantity: 1,
       }),
     )
@@ -94,7 +94,7 @@ describe("admin purchase customer contact update", () => {
         customerPhone: "04143333333",
         customerCi: "V11111111",
         rafflePaymentMethodId,
-        paymentReference: "admin-customer-ci-ref",
+        paymentReference: "1122334466",
         ticketQuantity: 1,
       }),
     )

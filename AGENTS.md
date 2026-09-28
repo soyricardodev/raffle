@@ -39,16 +39,12 @@ local antes de pushear: el CI usa `pnpm build` y ahí revienta.
 
 ### TypeScript: cómo correr el typecheck
 
-`tsgo` **no existe en npm** (`npx tsgo` devuelve 404). El binario vive en el
-paquete `@typescript/native-preview`, así que mientras no se agregue como
-devDependency el typecheck real es:
+`tsgo` **no existe en npm** (`npx tsgo` devuelve 404). El binario vive en
+`@typescript/native-preview`. El script de `app` usa el TypeScript instalado:
 
 ```bash
-pnpm --filter app exec tsc --noEmit
+pnpm typecheck
 ```
-
-Hay un error preexistente en `app/src/features/raffle/purchase-form/PurchaseForm.tsx`
-(`ticketNumbers` readonly vs `string[]`), ajeno a los cambios nuevos.
 
 ### Estructura
 

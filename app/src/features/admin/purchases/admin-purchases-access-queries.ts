@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
-import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import {
   getPurchasesAccessStatus,
   purchasesAccessRequest,
@@ -15,20 +15,20 @@ export type { PurchasesAccessStatus }
 export const adminPurchasesAccessQueryKey = ["admin", "purchases-access"] as const
 
 export const fetchPurchasesAccessStatus = createServerFn({ method: "GET" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("purchases.read")])
   .handler(async () => {
     return getPurchasesAccessStatus(purchasesAccessRequest())
   })
 
 export const unlockPurchasesAccessFn = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("purchases.read")])
   .inputValidator(z.object({ key: z.string().max(80) }))
   .handler(async ({ data }) => {
     return unlockPurchasesAccess(purchasesAccessRequest(), data.key)
   })
 
 export const updatePurchasesAccessKeyFn = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("purchases.read")])
   .inputValidator(
     z.object({
       key: z.union([z.string().max(80), z.null()]),

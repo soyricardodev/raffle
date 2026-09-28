@@ -17,6 +17,7 @@ import { Route as UploadsSplatRouteImport } from './routes/uploads/$'
 import { Route as ApiConfigRouteImport } from './routes/api/config'
 import { Route as AdminRifasRouteImport } from './routes/admin/rifas'
 import { Route as AdminMetodosPagoRouteImport } from './routes/admin/metodos-pago'
+import { Route as AdminEquipoRouteImport } from './routes/admin/equipo'
 import { Route as AdminEmailsRouteImport } from './routes/admin/emails'
 import { Route as AdminCuentaRouteImport } from './routes/admin/cuenta'
 import { Route as AdminCrearRouteImport } from './routes/admin/crear'
@@ -27,6 +28,7 @@ import { Route as AdminAvisosRouteImport } from './routes/admin/avisos'
 import { Route as AdminAnalyticsRouteImport } from './routes/admin/analytics'
 import { Route as PublicVerificarRouteImport } from './routes/_public/verificar'
 import { Route as PublicLoginRouteImport } from './routes/_public/login'
+import { Route as PublicInviteRouteImport } from './routes/_public/invite'
 import { Route as ApiRafflesIndexRouteImport } from './routes/api/raffles/index'
 import { Route as ApiPurchasesIndexRouteImport } from './routes/api/purchases/index'
 import { Route as AdminRifasIndexRouteImport } from './routes/admin/rifas/index'
@@ -39,6 +41,8 @@ import { Route as ApiPushInboxRouteImport } from './routes/api/push/inbox'
 import { Route as ApiPushConfigRouteImport } from './routes/api/push/config'
 import { Route as ApiPurchasesTopClientsRouteImport } from './routes/api/purchases.top-clients'
 import { Route as ApiPurchaseSuccessAnalyticsRouteImport } from './routes/api/purchase-success/analytics'
+import { Route as ApiInvitationsInspectRouteImport } from './routes/api/invitations/inspect'
+import { Route as ApiInvitationsAcceptRouteImport } from './routes/api/invitations/accept'
 import { Route as ApiHealthDbRouteImport } from './routes/api/health/db'
 import { Route as ApiCronMaintenanceRouteImport } from './routes/api/cron/maintenance'
 import { Route as ApiCronEmailDispatchRouteImport } from './routes/api/cron/email-dispatch'
@@ -53,10 +57,17 @@ import { Route as ApiAdminAnalyticsRouteImport } from './routes/api/admin/analyt
 import { Route as AdminRifasIdRouteImport } from './routes/admin/rifas/$id'
 import { Route as AdminEditIdRouteImport } from './routes/admin/edit/$id'
 import { Route as PublicRifaIdRouteImport } from './routes/_public/rifa/$id'
+import { Route as ApiAdminWorkforceIndexRouteImport } from './routes/api/admin/workforce/index'
 import { Route as ApiAdminRafflesIndexRouteImport } from './routes/api/admin/raffles/index'
 import { Route as ApiAdminPurchasesIndexRouteImport } from './routes/api/admin/purchases/index'
 import { Route as ApiAdminPaymentAccountsIndexRouteImport } from './routes/api/admin/payment-accounts/index'
 import { Route as ApiRafflesIdPauseInfoRouteImport } from './routes/api/raffles/$id.pause-info'
+import { Route as ApiAdminWorkforceRolesRouteImport } from './routes/api/admin/workforce/roles'
+import { Route as ApiAdminWorkforcePerformanceRouteImport } from './routes/api/admin/workforce/performance'
+import { Route as ApiAdminWorkforceMeRouteImport } from './routes/api/admin/workforce/me'
+import { Route as ApiAdminWorkforceHeartbeatRouteImport } from './routes/api/admin/workforce/heartbeat'
+import { Route as ApiAdminWorkforceAuditRouteImport } from './routes/api/admin/workforce/audit'
+import { Route as ApiAdminWorkforceIdRouteImport } from './routes/api/admin/workforce/$id'
 import { Route as ApiAdminRafflesIdRouteImport } from './routes/api/admin/raffles/$id'
 import { Route as ApiAdminPushAlertsRouteImport } from './routes/api/admin/push/alerts'
 import { Route as ApiAdminPurchasesIdRouteImport } from './routes/api/admin/purchases/$id'
@@ -68,6 +79,9 @@ import { Route as ApiAdminEmailsDispatchRouteImport } from './routes/api/admin/e
 import { Route as ApiAdminEmailsBulkResendRouteImport } from './routes/api/admin/emails.bulk-resend'
 import { Route as ApiAdminEmailsLogIdRouteImport } from './routes/api/admin/emails.$logId'
 import { Route as ApiAdminAnalyticsSummaryRouteImport } from './routes/api/admin/analytics.summary'
+import { Route as ApiAdminWorkforceSessionsIdRouteImport } from './routes/api/admin/workforce/sessions.$id'
+import { Route as ApiAdminWorkforceRolesIdRouteImport } from './routes/api/admin/workforce/roles.$id'
+import { Route as ApiAdminWorkforceIdInvitationRouteImport } from './routes/api/admin/workforce/$id.invitation'
 import { Route as ApiAdminRafflesIdUnpauseRouteImport } from './routes/api/admin/raffles/$id.unpause'
 import { Route as ApiAdminRafflesIdStatusRouteImport } from './routes/api/admin/raffles/$id.status'
 import { Route as ApiAdminRafflesIdPublishRouteImport } from './routes/api/admin/raffles/$id.publish'
@@ -126,6 +140,11 @@ const AdminMetodosPagoRoute = AdminMetodosPagoRouteImport.update({
   path: '/metodos-pago',
   getParentRoute: () => AdminRouteRoute,
 } as any)
+const AdminEquipoRoute = AdminEquipoRouteImport.update({
+  id: '/equipo',
+  path: '/equipo',
+  getParentRoute: () => AdminRouteRoute,
+} as any)
 const AdminEmailsRoute = AdminEmailsRouteImport.update({
   id: '/emails',
   path: '/emails',
@@ -174,6 +193,11 @@ const PublicVerificarRoute = PublicVerificarRouteImport.update({
 const PublicLoginRoute = PublicLoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => PublicRouteRoute,
+} as any)
+const PublicInviteRoute = PublicInviteRouteImport.update({
+  id: '/invite',
+  path: '/invite',
   getParentRoute: () => PublicRouteRoute,
 } as any)
 const ApiRafflesIndexRoute = ApiRafflesIndexRouteImport.update({
@@ -237,6 +261,16 @@ const ApiPurchaseSuccessAnalyticsRoute =
     path: '/api/purchase-success/analytics',
     getParentRoute: () => rootRouteImport,
   } as any)
+const ApiInvitationsInspectRoute = ApiInvitationsInspectRouteImport.update({
+  id: '/api/invitations/inspect',
+  path: '/api/invitations/inspect',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiInvitationsAcceptRoute = ApiInvitationsAcceptRouteImport.update({
+  id: '/api/invitations/accept',
+  path: '/api/invitations/accept',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiHealthDbRoute = ApiHealthDbRouteImport.update({
   id: '/api/health/db',
   path: '/api/health/db',
@@ -307,6 +341,11 @@ const PublicRifaIdRoute = PublicRifaIdRouteImport.update({
   path: '/rifa/$id',
   getParentRoute: () => PublicRouteRoute,
 } as any)
+const ApiAdminWorkforceIndexRoute = ApiAdminWorkforceIndexRouteImport.update({
+  id: '/api/admin/workforce/',
+  path: '/api/admin/workforce/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiAdminRafflesIndexRoute = ApiAdminRafflesIndexRouteImport.update({
   id: '/api/admin/raffles/',
   path: '/api/admin/raffles/',
@@ -327,6 +366,38 @@ const ApiRafflesIdPauseInfoRoute = ApiRafflesIdPauseInfoRouteImport.update({
   id: '/pause-info',
   path: '/pause-info',
   getParentRoute: () => ApiRafflesIdRoute,
+} as any)
+const ApiAdminWorkforceRolesRoute = ApiAdminWorkforceRolesRouteImport.update({
+  id: '/api/admin/workforce/roles',
+  path: '/api/admin/workforce/roles',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminWorkforcePerformanceRoute =
+  ApiAdminWorkforcePerformanceRouteImport.update({
+    id: '/api/admin/workforce/performance',
+    path: '/api/admin/workforce/performance',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminWorkforceMeRoute = ApiAdminWorkforceMeRouteImport.update({
+  id: '/api/admin/workforce/me',
+  path: '/api/admin/workforce/me',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminWorkforceHeartbeatRoute =
+  ApiAdminWorkforceHeartbeatRouteImport.update({
+    id: '/api/admin/workforce/heartbeat',
+    path: '/api/admin/workforce/heartbeat',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminWorkforceAuditRoute = ApiAdminWorkforceAuditRouteImport.update({
+  id: '/api/admin/workforce/audit',
+  path: '/api/admin/workforce/audit',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiAdminWorkforceIdRoute = ApiAdminWorkforceIdRouteImport.update({
+  id: '/api/admin/workforce/$id',
+  path: '/api/admin/workforce/$id',
+  getParentRoute: () => rootRouteImport,
 } as any)
 const ApiAdminRafflesIdRoute = ApiAdminRafflesIdRouteImport.update({
   id: '/api/admin/raffles/$id',
@@ -385,6 +456,24 @@ const ApiAdminAnalyticsSummaryRoute =
     id: '/summary',
     path: '/summary',
     getParentRoute: () => ApiAdminAnalyticsRoute,
+  } as any)
+const ApiAdminWorkforceSessionsIdRoute =
+  ApiAdminWorkforceSessionsIdRouteImport.update({
+    id: '/api/admin/workforce/sessions/$id',
+    path: '/api/admin/workforce/sessions/$id',
+    getParentRoute: () => rootRouteImport,
+  } as any)
+const ApiAdminWorkforceRolesIdRoute =
+  ApiAdminWorkforceRolesIdRouteImport.update({
+    id: '/$id',
+    path: '/$id',
+    getParentRoute: () => ApiAdminWorkforceRolesRoute,
+  } as any)
+const ApiAdminWorkforceIdInvitationRoute =
+  ApiAdminWorkforceIdInvitationRouteImport.update({
+    id: '/invitation',
+    path: '/invitation',
+    getParentRoute: () => ApiAdminWorkforceIdRoute,
   } as any)
 const ApiAdminRafflesIdUnpauseRoute =
   ApiAdminRafflesIdUnpauseRouteImport.update({
@@ -495,6 +584,7 @@ const ApiAdminPurchasesIdEmailsSendRoute =
 export interface FileRoutesByFullPath {
   '/': typeof PublicIndexRoute
   '/admin': typeof AdminRouteRouteWithChildren
+  '/invite': typeof PublicInviteRoute
   '/login': typeof PublicLoginRoute
   '/verificar': typeof PublicVerificarRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -505,6 +595,7 @@ export interface FileRoutesByFullPath {
   '/admin/crear': typeof AdminCrearRoute
   '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/equipo': typeof AdminEquipoRoute
   '/admin/metodos-pago': typeof AdminMetodosPagoRoute
   '/admin/rifas': typeof AdminRifasRouteWithChildren
   '/api/config': typeof ApiConfigRoute
@@ -524,6 +615,8 @@ export interface FileRoutesByFullPath {
   '/api/cron/email-dispatch': typeof ApiCronEmailDispatchRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
+  '/api/invitations/inspect': typeof ApiInvitationsInspectRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/push/config': typeof ApiPushConfigRoute
@@ -547,10 +640,17 @@ export interface FileRoutesByFullPath {
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/push/alerts': typeof ApiAdminPushAlertsRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
+  '/api/admin/workforce/$id': typeof ApiAdminWorkforceIdRouteWithChildren
+  '/api/admin/workforce/audit': typeof ApiAdminWorkforceAuditRoute
+  '/api/admin/workforce/heartbeat': typeof ApiAdminWorkforceHeartbeatRoute
+  '/api/admin/workforce/me': typeof ApiAdminWorkforceMeRoute
+  '/api/admin/workforce/performance': typeof ApiAdminWorkforcePerformanceRoute
+  '/api/admin/workforce/roles': typeof ApiAdminWorkforceRolesRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts/': typeof ApiAdminPaymentAccountsIndexRoute
   '/api/admin/purchases/': typeof ApiAdminPurchasesIndexRoute
   '/api/admin/raffles/': typeof ApiAdminRafflesIndexRoute
+  '/api/admin/workforce/': typeof ApiAdminWorkforceIndexRoute
   '/api/admin/emails/$logId/resend': typeof ApiAdminEmailsLogIdResendRoute
   '/api/admin/payment-accounts/$id/usage': typeof ApiAdminPaymentAccountsIdUsageRoute
   '/api/admin/purchases/$id/customer': typeof ApiAdminPurchasesIdCustomerRoute
@@ -564,6 +664,9 @@ export interface FileRoutesByFullPath {
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
+  '/api/admin/workforce/$id/invitation': typeof ApiAdminWorkforceIdInvitationRoute
+  '/api/admin/workforce/roles/$id': typeof ApiAdminWorkforceRolesIdRoute
+  '/api/admin/workforce/sessions/$id': typeof ApiAdminWorkforceSessionsIdRoute
   '/api/admin/purchases/$id/emails/send': typeof ApiAdminPurchasesIdEmailsSendRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
@@ -571,6 +674,7 @@ export interface FileRoutesByFullPath {
   '/api/admin/raffles/$id/promotions/$promotionId': typeof ApiAdminRafflesIdPromotionsPromotionIdRoute
 }
 export interface FileRoutesByTo {
+  '/invite': typeof PublicInviteRoute
   '/login': typeof PublicLoginRoute
   '/verificar': typeof PublicVerificarRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -581,6 +685,7 @@ export interface FileRoutesByTo {
   '/admin/crear': typeof AdminCrearRoute
   '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/equipo': typeof AdminEquipoRoute
   '/admin/metodos-pago': typeof AdminMetodosPagoRoute
   '/api/config': typeof ApiConfigRoute
   '/uploads/$': typeof UploadsSplatRoute
@@ -600,6 +705,8 @@ export interface FileRoutesByTo {
   '/api/cron/email-dispatch': typeof ApiCronEmailDispatchRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
+  '/api/invitations/inspect': typeof ApiInvitationsInspectRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/push/config': typeof ApiPushConfigRoute
@@ -623,10 +730,17 @@ export interface FileRoutesByTo {
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/push/alerts': typeof ApiAdminPushAlertsRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
+  '/api/admin/workforce/$id': typeof ApiAdminWorkforceIdRouteWithChildren
+  '/api/admin/workforce/audit': typeof ApiAdminWorkforceAuditRoute
+  '/api/admin/workforce/heartbeat': typeof ApiAdminWorkforceHeartbeatRoute
+  '/api/admin/workforce/me': typeof ApiAdminWorkforceMeRoute
+  '/api/admin/workforce/performance': typeof ApiAdminWorkforcePerformanceRoute
+  '/api/admin/workforce/roles': typeof ApiAdminWorkforceRolesRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts': typeof ApiAdminPaymentAccountsIndexRoute
   '/api/admin/purchases': typeof ApiAdminPurchasesIndexRoute
   '/api/admin/raffles': typeof ApiAdminRafflesIndexRoute
+  '/api/admin/workforce': typeof ApiAdminWorkforceIndexRoute
   '/api/admin/emails/$logId/resend': typeof ApiAdminEmailsLogIdResendRoute
   '/api/admin/payment-accounts/$id/usage': typeof ApiAdminPaymentAccountsIdUsageRoute
   '/api/admin/purchases/$id/customer': typeof ApiAdminPurchasesIdCustomerRoute
@@ -640,6 +754,9 @@ export interface FileRoutesByTo {
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
+  '/api/admin/workforce/$id/invitation': typeof ApiAdminWorkforceIdInvitationRoute
+  '/api/admin/workforce/roles/$id': typeof ApiAdminWorkforceRolesIdRoute
+  '/api/admin/workforce/sessions/$id': typeof ApiAdminWorkforceSessionsIdRoute
   '/api/admin/purchases/$id/emails/send': typeof ApiAdminPurchasesIdEmailsSendRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
@@ -650,6 +767,7 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/_public': typeof PublicRouteRouteWithChildren
   '/admin': typeof AdminRouteRouteWithChildren
+  '/_public/invite': typeof PublicInviteRoute
   '/_public/login': typeof PublicLoginRoute
   '/_public/verificar': typeof PublicVerificarRoute
   '/admin/analytics': typeof AdminAnalyticsRoute
@@ -660,6 +778,7 @@ export interface FileRoutesById {
   '/admin/crear': typeof AdminCrearRoute
   '/admin/cuenta': typeof AdminCuentaRoute
   '/admin/emails': typeof AdminEmailsRoute
+  '/admin/equipo': typeof AdminEquipoRoute
   '/admin/metodos-pago': typeof AdminMetodosPagoRoute
   '/admin/rifas': typeof AdminRifasRouteWithChildren
   '/api/config': typeof ApiConfigRoute
@@ -680,6 +799,8 @@ export interface FileRoutesById {
   '/api/cron/email-dispatch': typeof ApiCronEmailDispatchRoute
   '/api/cron/maintenance': typeof ApiCronMaintenanceRoute
   '/api/health/db': typeof ApiHealthDbRoute
+  '/api/invitations/accept': typeof ApiInvitationsAcceptRoute
+  '/api/invitations/inspect': typeof ApiInvitationsInspectRoute
   '/api/purchase-success/analytics': typeof ApiPurchaseSuccessAnalyticsRoute
   '/api/purchases/top-clients': typeof ApiPurchasesTopClientsRoute
   '/api/push/config': typeof ApiPushConfigRoute
@@ -703,10 +824,17 @@ export interface FileRoutesById {
   '/api/admin/purchases/$id': typeof ApiAdminPurchasesIdRouteWithChildren
   '/api/admin/push/alerts': typeof ApiAdminPushAlertsRouteWithChildren
   '/api/admin/raffles/$id': typeof ApiAdminRafflesIdRouteWithChildren
+  '/api/admin/workforce/$id': typeof ApiAdminWorkforceIdRouteWithChildren
+  '/api/admin/workforce/audit': typeof ApiAdminWorkforceAuditRoute
+  '/api/admin/workforce/heartbeat': typeof ApiAdminWorkforceHeartbeatRoute
+  '/api/admin/workforce/me': typeof ApiAdminWorkforceMeRoute
+  '/api/admin/workforce/performance': typeof ApiAdminWorkforcePerformanceRoute
+  '/api/admin/workforce/roles': typeof ApiAdminWorkforceRolesRouteWithChildren
   '/api/raffles/$id/pause-info': typeof ApiRafflesIdPauseInfoRoute
   '/api/admin/payment-accounts/': typeof ApiAdminPaymentAccountsIndexRoute
   '/api/admin/purchases/': typeof ApiAdminPurchasesIndexRoute
   '/api/admin/raffles/': typeof ApiAdminRafflesIndexRoute
+  '/api/admin/workforce/': typeof ApiAdminWorkforceIndexRoute
   '/api/admin/emails/$logId/resend': typeof ApiAdminEmailsLogIdResendRoute
   '/api/admin/payment-accounts/$id/usage': typeof ApiAdminPaymentAccountsIdUsageRoute
   '/api/admin/purchases/$id/customer': typeof ApiAdminPurchasesIdCustomerRoute
@@ -720,6 +848,9 @@ export interface FileRoutesById {
   '/api/admin/raffles/$id/publish': typeof ApiAdminRafflesIdPublishRoute
   '/api/admin/raffles/$id/status': typeof ApiAdminRafflesIdStatusRoute
   '/api/admin/raffles/$id/unpause': typeof ApiAdminRafflesIdUnpauseRoute
+  '/api/admin/workforce/$id/invitation': typeof ApiAdminWorkforceIdInvitationRoute
+  '/api/admin/workforce/roles/$id': typeof ApiAdminWorkforceRolesIdRoute
+  '/api/admin/workforce/sessions/$id': typeof ApiAdminWorkforceSessionsIdRoute
   '/api/admin/purchases/$id/emails/send': typeof ApiAdminPurchasesIdEmailsSendRoute
   '/api/admin/purchases/$id/tickets/add': typeof ApiAdminPurchasesIdTicketsAddRoute
   '/api/admin/purchases/$id/tickets/reassign': typeof ApiAdminPurchasesIdTicketsReassignRoute
@@ -731,6 +862,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/admin'
+    | '/invite'
     | '/login'
     | '/verificar'
     | '/admin/analytics'
@@ -741,6 +873,7 @@ export interface FileRouteTypes {
     | '/admin/crear'
     | '/admin/cuenta'
     | '/admin/emails'
+    | '/admin/equipo'
     | '/admin/metodos-pago'
     | '/admin/rifas'
     | '/api/config'
@@ -760,6 +893,8 @@ export interface FileRouteTypes {
     | '/api/cron/email-dispatch'
     | '/api/cron/maintenance'
     | '/api/health/db'
+    | '/api/invitations/accept'
+    | '/api/invitations/inspect'
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/push/config'
@@ -783,10 +918,17 @@ export interface FileRouteTypes {
     | '/api/admin/purchases/$id'
     | '/api/admin/push/alerts'
     | '/api/admin/raffles/$id'
+    | '/api/admin/workforce/$id'
+    | '/api/admin/workforce/audit'
+    | '/api/admin/workforce/heartbeat'
+    | '/api/admin/workforce/me'
+    | '/api/admin/workforce/performance'
+    | '/api/admin/workforce/roles'
     | '/api/raffles/$id/pause-info'
     | '/api/admin/payment-accounts/'
     | '/api/admin/purchases/'
     | '/api/admin/raffles/'
+    | '/api/admin/workforce/'
     | '/api/admin/emails/$logId/resend'
     | '/api/admin/payment-accounts/$id/usage'
     | '/api/admin/purchases/$id/customer'
@@ -800,6 +942,9 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
+    | '/api/admin/workforce/$id/invitation'
+    | '/api/admin/workforce/roles/$id'
+    | '/api/admin/workforce/sessions/$id'
     | '/api/admin/purchases/$id/emails/send'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
@@ -807,6 +952,7 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/promotions/$promotionId'
   fileRoutesByTo: FileRoutesByTo
   to:
+    | '/invite'
     | '/login'
     | '/verificar'
     | '/admin/analytics'
@@ -817,6 +963,7 @@ export interface FileRouteTypes {
     | '/admin/crear'
     | '/admin/cuenta'
     | '/admin/emails'
+    | '/admin/equipo'
     | '/admin/metodos-pago'
     | '/api/config'
     | '/uploads/$'
@@ -836,6 +983,8 @@ export interface FileRouteTypes {
     | '/api/cron/email-dispatch'
     | '/api/cron/maintenance'
     | '/api/health/db'
+    | '/api/invitations/accept'
+    | '/api/invitations/inspect'
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/push/config'
@@ -859,10 +1008,17 @@ export interface FileRouteTypes {
     | '/api/admin/purchases/$id'
     | '/api/admin/push/alerts'
     | '/api/admin/raffles/$id'
+    | '/api/admin/workforce/$id'
+    | '/api/admin/workforce/audit'
+    | '/api/admin/workforce/heartbeat'
+    | '/api/admin/workforce/me'
+    | '/api/admin/workforce/performance'
+    | '/api/admin/workforce/roles'
     | '/api/raffles/$id/pause-info'
     | '/api/admin/payment-accounts'
     | '/api/admin/purchases'
     | '/api/admin/raffles'
+    | '/api/admin/workforce'
     | '/api/admin/emails/$logId/resend'
     | '/api/admin/payment-accounts/$id/usage'
     | '/api/admin/purchases/$id/customer'
@@ -876,6 +1032,9 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
+    | '/api/admin/workforce/$id/invitation'
+    | '/api/admin/workforce/roles/$id'
+    | '/api/admin/workforce/sessions/$id'
     | '/api/admin/purchases/$id/emails/send'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
@@ -885,6 +1044,7 @@ export interface FileRouteTypes {
     | '__root__'
     | '/_public'
     | '/admin'
+    | '/_public/invite'
     | '/_public/login'
     | '/_public/verificar'
     | '/admin/analytics'
@@ -895,6 +1055,7 @@ export interface FileRouteTypes {
     | '/admin/crear'
     | '/admin/cuenta'
     | '/admin/emails'
+    | '/admin/equipo'
     | '/admin/metodos-pago'
     | '/admin/rifas'
     | '/api/config'
@@ -915,6 +1076,8 @@ export interface FileRouteTypes {
     | '/api/cron/email-dispatch'
     | '/api/cron/maintenance'
     | '/api/health/db'
+    | '/api/invitations/accept'
+    | '/api/invitations/inspect'
     | '/api/purchase-success/analytics'
     | '/api/purchases/top-clients'
     | '/api/push/config'
@@ -938,10 +1101,17 @@ export interface FileRouteTypes {
     | '/api/admin/purchases/$id'
     | '/api/admin/push/alerts'
     | '/api/admin/raffles/$id'
+    | '/api/admin/workforce/$id'
+    | '/api/admin/workforce/audit'
+    | '/api/admin/workforce/heartbeat'
+    | '/api/admin/workforce/me'
+    | '/api/admin/workforce/performance'
+    | '/api/admin/workforce/roles'
     | '/api/raffles/$id/pause-info'
     | '/api/admin/payment-accounts/'
     | '/api/admin/purchases/'
     | '/api/admin/raffles/'
+    | '/api/admin/workforce/'
     | '/api/admin/emails/$logId/resend'
     | '/api/admin/payment-accounts/$id/usage'
     | '/api/admin/purchases/$id/customer'
@@ -955,6 +1125,9 @@ export interface FileRouteTypes {
     | '/api/admin/raffles/$id/publish'
     | '/api/admin/raffles/$id/status'
     | '/api/admin/raffles/$id/unpause'
+    | '/api/admin/workforce/$id/invitation'
+    | '/api/admin/workforce/roles/$id'
+    | '/api/admin/workforce/sessions/$id'
     | '/api/admin/purchases/$id/emails/send'
     | '/api/admin/purchases/$id/tickets/add'
     | '/api/admin/purchases/$id/tickets/reassign'
@@ -978,6 +1151,8 @@ export interface RootRouteChildren {
   ApiCronEmailDispatchRoute: typeof ApiCronEmailDispatchRoute
   ApiCronMaintenanceRoute: typeof ApiCronMaintenanceRoute
   ApiHealthDbRoute: typeof ApiHealthDbRoute
+  ApiInvitationsAcceptRoute: typeof ApiInvitationsAcceptRoute
+  ApiInvitationsInspectRoute: typeof ApiInvitationsInspectRoute
   ApiPurchaseSuccessAnalyticsRoute: typeof ApiPurchaseSuccessAnalyticsRoute
   ApiPurchasesTopClientsRoute: typeof ApiPurchasesTopClientsRoute
   ApiPushConfigRoute: typeof ApiPushConfigRoute
@@ -993,9 +1168,17 @@ export interface RootRouteChildren {
   ApiAdminPaymentAccountsIdRoute: typeof ApiAdminPaymentAccountsIdRouteWithChildren
   ApiAdminPurchasesIdRoute: typeof ApiAdminPurchasesIdRouteWithChildren
   ApiAdminRafflesIdRoute: typeof ApiAdminRafflesIdRouteWithChildren
+  ApiAdminWorkforceIdRoute: typeof ApiAdminWorkforceIdRouteWithChildren
+  ApiAdminWorkforceAuditRoute: typeof ApiAdminWorkforceAuditRoute
+  ApiAdminWorkforceHeartbeatRoute: typeof ApiAdminWorkforceHeartbeatRoute
+  ApiAdminWorkforceMeRoute: typeof ApiAdminWorkforceMeRoute
+  ApiAdminWorkforcePerformanceRoute: typeof ApiAdminWorkforcePerformanceRoute
+  ApiAdminWorkforceRolesRoute: typeof ApiAdminWorkforceRolesRouteWithChildren
   ApiAdminPaymentAccountsIndexRoute: typeof ApiAdminPaymentAccountsIndexRoute
   ApiAdminPurchasesIndexRoute: typeof ApiAdminPurchasesIndexRoute
   ApiAdminRafflesIndexRoute: typeof ApiAdminRafflesIndexRoute
+  ApiAdminWorkforceIndexRoute: typeof ApiAdminWorkforceIndexRoute
+  ApiAdminWorkforceSessionsIdRoute: typeof ApiAdminWorkforceSessionsIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -1054,6 +1237,13 @@ declare module '@tanstack/react-router' {
       path: '/metodos-pago'
       fullPath: '/admin/metodos-pago'
       preLoaderRoute: typeof AdminMetodosPagoRouteImport
+      parentRoute: typeof AdminRouteRoute
+    }
+    '/admin/equipo': {
+      id: '/admin/equipo'
+      path: '/equipo'
+      fullPath: '/admin/equipo'
+      preLoaderRoute: typeof AdminEquipoRouteImport
       parentRoute: typeof AdminRouteRoute
     }
     '/admin/emails': {
@@ -1124,6 +1314,13 @@ declare module '@tanstack/react-router' {
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof PublicLoginRouteImport
+      parentRoute: typeof PublicRouteRoute
+    }
+    '/_public/invite': {
+      id: '/_public/invite'
+      path: '/invite'
+      fullPath: '/invite'
+      preLoaderRoute: typeof PublicInviteRouteImport
       parentRoute: typeof PublicRouteRoute
     }
     '/api/raffles/': {
@@ -1208,6 +1405,20 @@ declare module '@tanstack/react-router' {
       path: '/api/purchase-success/analytics'
       fullPath: '/api/purchase-success/analytics'
       preLoaderRoute: typeof ApiPurchaseSuccessAnalyticsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/invitations/inspect': {
+      id: '/api/invitations/inspect'
+      path: '/api/invitations/inspect'
+      fullPath: '/api/invitations/inspect'
+      preLoaderRoute: typeof ApiInvitationsInspectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/invitations/accept': {
+      id: '/api/invitations/accept'
+      path: '/api/invitations/accept'
+      fullPath: '/api/invitations/accept'
+      preLoaderRoute: typeof ApiInvitationsAcceptRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/api/health/db': {
@@ -1308,6 +1519,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof PublicRifaIdRouteImport
       parentRoute: typeof PublicRouteRoute
     }
+    '/api/admin/workforce/': {
+      id: '/api/admin/workforce/'
+      path: '/api/admin/workforce'
+      fullPath: '/api/admin/workforce/'
+      preLoaderRoute: typeof ApiAdminWorkforceIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/admin/raffles/': {
       id: '/api/admin/raffles/'
       path: '/api/admin/raffles'
@@ -1335,6 +1553,48 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/raffles/$id/pause-info'
       preLoaderRoute: typeof ApiRafflesIdPauseInfoRouteImport
       parentRoute: typeof ApiRafflesIdRoute
+    }
+    '/api/admin/workforce/roles': {
+      id: '/api/admin/workforce/roles'
+      path: '/api/admin/workforce/roles'
+      fullPath: '/api/admin/workforce/roles'
+      preLoaderRoute: typeof ApiAdminWorkforceRolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/workforce/performance': {
+      id: '/api/admin/workforce/performance'
+      path: '/api/admin/workforce/performance'
+      fullPath: '/api/admin/workforce/performance'
+      preLoaderRoute: typeof ApiAdminWorkforcePerformanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/workforce/me': {
+      id: '/api/admin/workforce/me'
+      path: '/api/admin/workforce/me'
+      fullPath: '/api/admin/workforce/me'
+      preLoaderRoute: typeof ApiAdminWorkforceMeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/workforce/heartbeat': {
+      id: '/api/admin/workforce/heartbeat'
+      path: '/api/admin/workforce/heartbeat'
+      fullPath: '/api/admin/workforce/heartbeat'
+      preLoaderRoute: typeof ApiAdminWorkforceHeartbeatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/workforce/audit': {
+      id: '/api/admin/workforce/audit'
+      path: '/api/admin/workforce/audit'
+      fullPath: '/api/admin/workforce/audit'
+      preLoaderRoute: typeof ApiAdminWorkforceAuditRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/workforce/$id': {
+      id: '/api/admin/workforce/$id'
+      path: '/api/admin/workforce/$id'
+      fullPath: '/api/admin/workforce/$id'
+      preLoaderRoute: typeof ApiAdminWorkforceIdRouteImport
+      parentRoute: typeof rootRouteImport
     }
     '/api/admin/raffles/$id': {
       id: '/api/admin/raffles/$id'
@@ -1412,6 +1672,27 @@ declare module '@tanstack/react-router' {
       fullPath: '/api/admin/analytics/summary'
       preLoaderRoute: typeof ApiAdminAnalyticsSummaryRouteImport
       parentRoute: typeof ApiAdminAnalyticsRoute
+    }
+    '/api/admin/workforce/sessions/$id': {
+      id: '/api/admin/workforce/sessions/$id'
+      path: '/api/admin/workforce/sessions/$id'
+      fullPath: '/api/admin/workforce/sessions/$id'
+      preLoaderRoute: typeof ApiAdminWorkforceSessionsIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/admin/workforce/roles/$id': {
+      id: '/api/admin/workforce/roles/$id'
+      path: '/$id'
+      fullPath: '/api/admin/workforce/roles/$id'
+      preLoaderRoute: typeof ApiAdminWorkforceRolesIdRouteImport
+      parentRoute: typeof ApiAdminWorkforceRolesRoute
+    }
+    '/api/admin/workforce/$id/invitation': {
+      id: '/api/admin/workforce/$id/invitation'
+      path: '/invitation'
+      fullPath: '/api/admin/workforce/$id/invitation'
+      preLoaderRoute: typeof ApiAdminWorkforceIdInvitationRouteImport
+      parentRoute: typeof ApiAdminWorkforceIdRoute
     }
     '/api/admin/raffles/$id/unpause': {
       id: '/api/admin/raffles/$id/unpause'
@@ -1543,6 +1824,7 @@ declare module '@tanstack/react-router' {
 }
 
 interface PublicRouteRouteChildren {
+  PublicInviteRoute: typeof PublicInviteRoute
   PublicLoginRoute: typeof PublicLoginRoute
   PublicVerificarRoute: typeof PublicVerificarRoute
   PublicIndexRoute: typeof PublicIndexRoute
@@ -1550,6 +1832,7 @@ interface PublicRouteRouteChildren {
 }
 
 const PublicRouteRouteChildren: PublicRouteRouteChildren = {
+  PublicInviteRoute: PublicInviteRoute,
   PublicLoginRoute: PublicLoginRoute,
   PublicVerificarRoute: PublicVerificarRoute,
   PublicIndexRoute: PublicIndexRoute,
@@ -1583,6 +1866,7 @@ interface AdminRouteRouteChildren {
   AdminCrearRoute: typeof AdminCrearRoute
   AdminCuentaRoute: typeof AdminCuentaRoute
   AdminEmailsRoute: typeof AdminEmailsRoute
+  AdminEquipoRoute: typeof AdminEquipoRoute
   AdminMetodosPagoRoute: typeof AdminMetodosPagoRoute
   AdminRifasRoute: typeof AdminRifasRouteWithChildren
   AdminIndexRoute: typeof AdminIndexRoute
@@ -1598,6 +1882,7 @@ const AdminRouteRouteChildren: AdminRouteRouteChildren = {
   AdminCrearRoute: AdminCrearRoute,
   AdminCuentaRoute: AdminCuentaRoute,
   AdminEmailsRoute: AdminEmailsRoute,
+  AdminEquipoRoute: AdminEquipoRoute,
   AdminMetodosPagoRoute: AdminMetodosPagoRoute,
   AdminRifasRoute: AdminRifasRouteWithChildren,
   AdminIndexRoute: AdminIndexRoute,
@@ -1774,6 +2059,31 @@ const ApiAdminRafflesIdRouteChildren: ApiAdminRafflesIdRouteChildren = {
 const ApiAdminRafflesIdRouteWithChildren =
   ApiAdminRafflesIdRoute._addFileChildren(ApiAdminRafflesIdRouteChildren)
 
+interface ApiAdminWorkforceIdRouteChildren {
+  ApiAdminWorkforceIdInvitationRoute: typeof ApiAdminWorkforceIdInvitationRoute
+}
+
+const ApiAdminWorkforceIdRouteChildren: ApiAdminWorkforceIdRouteChildren = {
+  ApiAdminWorkforceIdInvitationRoute: ApiAdminWorkforceIdInvitationRoute,
+}
+
+const ApiAdminWorkforceIdRouteWithChildren =
+  ApiAdminWorkforceIdRoute._addFileChildren(ApiAdminWorkforceIdRouteChildren)
+
+interface ApiAdminWorkforceRolesRouteChildren {
+  ApiAdminWorkforceRolesIdRoute: typeof ApiAdminWorkforceRolesIdRoute
+}
+
+const ApiAdminWorkforceRolesRouteChildren: ApiAdminWorkforceRolesRouteChildren =
+  {
+    ApiAdminWorkforceRolesIdRoute: ApiAdminWorkforceRolesIdRoute,
+  }
+
+const ApiAdminWorkforceRolesRouteWithChildren =
+  ApiAdminWorkforceRolesRoute._addFileChildren(
+    ApiAdminWorkforceRolesRouteChildren,
+  )
+
 const rootRouteChildren: RootRouteChildren = {
   PublicRouteRoute: PublicRouteRouteWithChildren,
   AdminRouteRoute: AdminRouteRouteWithChildren,
@@ -1790,6 +2100,8 @@ const rootRouteChildren: RootRouteChildren = {
   ApiCronEmailDispatchRoute: ApiCronEmailDispatchRoute,
   ApiCronMaintenanceRoute: ApiCronMaintenanceRoute,
   ApiHealthDbRoute: ApiHealthDbRoute,
+  ApiInvitationsAcceptRoute: ApiInvitationsAcceptRoute,
+  ApiInvitationsInspectRoute: ApiInvitationsInspectRoute,
   ApiPurchaseSuccessAnalyticsRoute: ApiPurchaseSuccessAnalyticsRoute,
   ApiPurchasesTopClientsRoute: ApiPurchasesTopClientsRoute,
   ApiPushConfigRoute: ApiPushConfigRoute,
@@ -1805,9 +2117,17 @@ const rootRouteChildren: RootRouteChildren = {
   ApiAdminPaymentAccountsIdRoute: ApiAdminPaymentAccountsIdRouteWithChildren,
   ApiAdminPurchasesIdRoute: ApiAdminPurchasesIdRouteWithChildren,
   ApiAdminRafflesIdRoute: ApiAdminRafflesIdRouteWithChildren,
+  ApiAdminWorkforceIdRoute: ApiAdminWorkforceIdRouteWithChildren,
+  ApiAdminWorkforceAuditRoute: ApiAdminWorkforceAuditRoute,
+  ApiAdminWorkforceHeartbeatRoute: ApiAdminWorkforceHeartbeatRoute,
+  ApiAdminWorkforceMeRoute: ApiAdminWorkforceMeRoute,
+  ApiAdminWorkforcePerformanceRoute: ApiAdminWorkforcePerformanceRoute,
+  ApiAdminWorkforceRolesRoute: ApiAdminWorkforceRolesRouteWithChildren,
   ApiAdminPaymentAccountsIndexRoute: ApiAdminPaymentAccountsIndexRoute,
   ApiAdminPurchasesIndexRoute: ApiAdminPurchasesIndexRoute,
   ApiAdminRafflesIndexRoute: ApiAdminRafflesIndexRoute,
+  ApiAdminWorkforceIndexRoute: ApiAdminWorkforceIndexRoute,
+  ApiAdminWorkforceSessionsIdRoute: ApiAdminWorkforceSessionsIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

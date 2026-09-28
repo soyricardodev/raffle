@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
-import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import { listAdminRaffles } from "@/server/raffle.service"
 
 export const ADMIN_RAFFLES_PAGE_SIZE = 50
@@ -31,7 +31,7 @@ export const adminRafflesQueryKeys = {
 }
 
 export const fetchAdminRaffles = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("raffles.read")])
   .inputValidator(AdminRafflesInput)
   .handler(async ({ data }) => {
     return listAdminRaffles({

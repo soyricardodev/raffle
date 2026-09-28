@@ -1,7 +1,7 @@
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
-import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import {
   getDefaultAdminRaffleId,
   resolveAdminRaffleScopeFromSearch,
@@ -48,7 +48,7 @@ export function normalizeAdminTicketLookupFilters(
 }
 
 export const fetchAdminTicketLookup = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("purchases.read")])
   .inputValidator(AdminTicketLookupInput)
   .handler(async ({ data }) => {
     return lookupAdminTicketByNumber(data.ticket, data.raffleId ?? null)

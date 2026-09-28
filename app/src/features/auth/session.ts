@@ -16,12 +16,12 @@ type BetterAuthSession = {
 export function mapAuthSession(session: BetterAuthSession | null | undefined): AuthSession | null {
   if (!session?.user) return null
 
-  const role = (session.user.role ?? "admin") as UserRole
+  const role = (session.user.role ?? "customer") as UserRole
 
   return {
     user: {
-      id: Number(session.user.id) || 0,
-      username: session.user.username ?? session.user.name ?? session.user.email,
+      id: String(session.user.id),
+      username: session.user.name ?? session.user.username ?? session.user.email,
       role,
     },
   }

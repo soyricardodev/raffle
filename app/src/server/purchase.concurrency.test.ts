@@ -57,7 +57,7 @@ describe("purchase concurrency", () => {
       customerCi: `V${String(10000000 + seq).slice(-8)}`,
       customerEmail: `buyer${seq}@test.local`,
       rafflePaymentMethodId,
-      paymentReference: `ref-concurrent-${seq}-${Date.now()}`,
+      paymentReference: `${Date.now()}${String(seq).padStart(4, "0")}`,
       ticketQuantity: quantity,
     })
   }
@@ -89,7 +89,7 @@ describe("purchase concurrency", () => {
 
   it("rejects duplicate payment references", async () => {
     await new Promise((r) => setTimeout(r, 50))
-    const ref = `ref-dup-${Date.now()}`
+    const ref = `${Date.now()}9999`
     const params1 = { ...buyer(50, 1), paymentReference: ref }
     const params2 = { ...buyer(51, 1), paymentReference: ref }
 

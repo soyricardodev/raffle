@@ -212,6 +212,7 @@ export function PurchaseForm({
     if (!import.meta.env.DEV || !previewSuccess) return
     setSuccessResult({
       ...SUCCESS_PREVIEW_RESULT,
+      ticketNumbers: [...SUCCESS_PREVIEW_RESULT.ticketNumbers],
       raffleName: raffle.name,
     })
   }, [previewSuccess, raffle.name])

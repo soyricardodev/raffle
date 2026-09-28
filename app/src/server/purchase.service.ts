@@ -1,3 +1,5 @@
+import { parseCustomerLocation } from "@raffle/shared/analytics"
+import { normalizePhone } from "@raffle/shared/db"
 import {
   ConcurrentPurchaseError,
   InsufficientTicketsError,
@@ -8,14 +10,12 @@ import {
   RaffleNotFoundError,
   ValidationError,
 } from "@raffle/shared/errors"
-import { parseCustomerLocation } from "@raffle/shared/analytics"
 import { resolveEffectiveUnitPrice } from "@raffle/shared/promotions"
 import {
   isPaymentMethodMinWaived,
   isRaffleMinWaived,
 } from "@raffle/shared/purchase/quantity-policy"
 import type { CustomerLocationType, PurchaseStatus } from "@raffle/shared/validators"
-import { normalizePhone } from "@raffle/shared/db"
 import {
   formatCustomerCi,
   parseCustomerCi,
@@ -28,19 +28,20 @@ import {
 import { type WithRetryTransactionOptions, withRetryTransaction } from "@/lib/db.server"
 import { getLogger } from "@/lib/logger"
 import { recordPurchaseMetric } from "@/lib/purchase-metrics.server"
-import { logPurchaseAudit } from "./purchase-audit.server"
+import * as pauseService from "./pause.service"
 import type { PurchaseAdminAudit } from "./purchase-admin.types"
+import { logPurchaseAudit } from "./purchase-audit.server"
 import {
   assertRaffleOpenForAdminTicketChanges,
   assertRaffleOpenForPublicPurchase,
 } from "./raffle-sales-policy"
-import * as pauseService from "./pause.service"
 import * as customersRepo from "./repositories/customers.repository"
 import * as purchasesRepo from "./repositories/purchases.repository"
 import * as rafflePaymentMethodsRepo from "./repositories/raffle-payment-methods.repository"
 import * as rafflePromotionsRepo from "./repositories/raffle-promotions.repository"
 import * as rafflesRepo from "./repositories/raffles.repository"
 import * as ticketsRepo from "./repositories/tickets.repository"
+import { recordAdminEvent } from "./workforce-audit.server"
 
 const logger = getLogger()
 
@@ -120,10 +121,7 @@ export async function createPurchase(params: CreatePurchaseParams) {
       throw new ValidationError(referenceError)
     }
 
-    const payerNameError = paymentPayerNameValidationMessage(
-      paymentMethod,
-      params.paymentPayerName,
-    )
+    const payerNameError = paymentPayerNameValidationMessage(paymentMethod, params.paymentPayerName)
     if (payerNameError) {
       throw new ValidationError(payerNameError)
     }
@@ -269,6 +267,19 @@ export async function updatePurchaseStatus(
       await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, raffleId)
     }
 
+    await recordAdminEvent(tx, {
+      actorUserId: audit.adminUserId,
+      action:
+        status === "approved"
+          ? "purchases.approved"
+          : status === "rejected"
+            ? "purchases.rejected"
+            : "purchases.reversed",
+      purchaseId,
+      raffleId,
+      payload: { from: currentStatus, to: status },
+    })
+
     return {
       message: `Compra actualizada: ${currentStatus} → ${status}`,
       status,
@@ -343,6 +354,13 @@ export async function addTicketsToPurchase(
     await purchasesRepo.updatePurchaseTotals(tx, purchaseId, updatedQty, newTotal)
     await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, purchase.raffleId)
 
+    await recordAdminEvent(tx, {
+      actorUserId: audit.adminUserId,
+      action: "purchases.tickets_added",
+      purchaseId,
+      raffleId: purchase.raffleId,
+      payload: { quantity: added.length },
+    })
     return {
       addedTickets: added,
       newQuantity: updatedQty,
@@ -410,6 +428,13 @@ export async function removeTicketsFromPurchase(
     )
     await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, purchase.raffleId)
 
+    await recordAdminEvent(tx, {
+      actorUserId: audit.adminUserId,
+      action: "purchases.tickets_removed",
+      purchaseId,
+      raffleId: purchase.raffleId,
+      payload: { quantity: ticketNumbers.length },
+    })
     return {
       removedTickets: ticketNumbers,
       newQuantity: newQty,
@@ -510,6 +535,12 @@ export async function updatePurchaseCustomerContact(
       customerId,
     })
 
+    await recordAdminEvent(tx, {
+      actorUserId: audit.adminUserId,
+      action: "purchases.customer_updated",
+      purchaseId,
+      raffleId: purchase.raffleId,
+    })
     return {
       noChange: false as const,
       raffleId: purchase.raffleId,
@@ -533,15 +564,15 @@ export async function updatePurchaseCustomerContact(
     adminUserId: audit.adminUserId,
     fieldsChanged: outcome.fieldsChanged,
   })
-  logger.info({ purchaseId, fieldsChanged: outcome.fieldsChanged }, "purchase:customer_contact_updated")
+  logger.info(
+    { purchaseId, fieldsChanged: outcome.fieldsChanged },
+    "purchase:customer_contact_updated",
+  )
 
   return { message: "Datos del comprador actualizados" }
 }
 
-export async function reassignTicketsToPurchase(
-  purchaseId: number,
-  audit: PurchaseAdminAudit,
-) {
+export async function reassignTicketsToPurchase(purchaseId: number, audit: PurchaseAdminAudit) {
   const result = await withRetryTransaction(async (tx) => {
     const purchase = await purchasesRepo.findPurchaseForUpdate(tx, purchaseId)
     if (!purchase || purchase.status !== "rejected") {
@@ -573,6 +604,13 @@ export async function reassignTicketsToPurchase(
     await purchasesRepo.updatePurchaseStatusRow(tx, purchaseId, "pending")
     await rafflesRepo.reconcileRaffleAvailabilityStatus(tx, purchase.raffleId)
 
+    await recordAdminEvent(tx, {
+      actorUserId: audit.adminUserId,
+      action: "purchases.tickets_reassigned",
+      purchaseId,
+      raffleId: purchase.raffleId,
+      payload: { quantity: ticketNumbers.length },
+    })
     return {
       purchaseId,
       ticketNumbers,

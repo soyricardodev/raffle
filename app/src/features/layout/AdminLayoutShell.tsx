@@ -1,5 +1,5 @@
 import { useMatches, useRouterState } from "@tanstack/react-router"
-import { useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 import { SidebarInset, SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar"
 import { raffleNameFromMatches, resolveAdminPageTitle } from "@/features/admin/admin-page-title"
 import { AdminSidebarNav } from "@/features/admin/shared/AdminSidebarNav"
@@ -13,6 +13,8 @@ type AdminLayoutShellProps = {
 }
 
 export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
+  const [permissions, setPermissions] = useState<string[]>()
+  const lastInteraction = useRef(Date.now())
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const search = useRouterState({ select: (s) => s.location.search })
   const matches = useMatches()
@@ -40,6 +42,55 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
       .catch(() => {})
   }, [loaded, setFromApi])
 
+  useEffect(() => {
+    let cancelled = false
+    void fetch("/api/admin/workforce/me")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.permissions) setPermissions(data.permissions)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  useEffect(() => {
+    const markActive = () => {
+      lastInteraction.current = Date.now()
+    }
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        markActive()
+        beat()
+      }
+    }
+    const beat = () => {
+      if (
+        document.visibilityState !== "visible" ||
+        Date.now() - lastInteraction.current > 5 * 60_000
+      )
+        return
+      void fetch("/api/admin/workforce/heartbeat", { method: "POST" })
+        .then((response) => {
+          if (response.status === 401) window.location.href = "/login"
+        })
+        .catch(() => {})
+    }
+    beat()
+    const timer = window.setInterval(beat, 60_000)
+    document.addEventListener("visibilitychange", onVisible)
+    document.addEventListener("pointerdown", markActive, { passive: true })
+    document.addEventListener("keydown", markActive)
+    document.addEventListener("scroll", markActive, { passive: true })
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener("visibilitychange", onVisible)
+      document.removeEventListener("pointerdown", markActive)
+      document.removeEventListener("keydown", markActive)
+      document.removeEventListener("scroll", markActive)
+    }
+  }, [])
+
   async function handleLogout() {
     await signOut()
     window.location.href = "/login"
@@ -49,6 +100,7 @@ export function AdminLayoutShell({ session, children }: AdminLayoutShellProps) {
     <SidebarProvider defaultOpen>
       <AdminSidebarNav
         session={session}
+        permissions={permissions}
         siteName={siteName}
         pathname={pathname}
         onLogout={() => void handleLogout()}

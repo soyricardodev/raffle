@@ -14,7 +14,7 @@
     "db:migrate": "pnpm --filter @raffle/shared db:migrate",
     "db:generate": "pnpm --filter @raffle/shared db:generate",
     "db:studio": "pnpm --filter @raffle/shared db:studio",
-    "db:seed": "pnpm db:migrate && bun run scripts/seed.ts",
+    "db:seed": "pnpm db:migrate && pnpm exec tsx scripts/seed.ts",
     "admin:reset-password": "bun run scripts/reset-admin-password.ts",
     "db:migrate:mysql": "bun run scripts/migrate-mysql-to-libsql.ts",
     "db:repair:payment-accounts": "bun run scripts/repair-payment-accounts.ts",
@@ -25,7 +25,8 @@
     "env:sync-email": "bun run scripts/sync-email-env.ts",
     "test:scripts": "bun test ./scripts/lib/email-env.test.ts ./scripts/lib/google-contacts-sanitize.test.ts",
     "deploy:yoiberifas": "bash deploy/vps-yoiberifas-full.sh",
-    "deploy:fast": "bash deploy/vps-fast-deploy.sh"
+    "deploy:fast": "bash deploy/vps-fast-deploy.sh",
+    "admin:bootstrap-staff": "pnpm exec tsx scripts/bootstrap-staff.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.3.14",
@@ -34,6 +35,7 @@
     "better-auth": "^1.6.11",
     "drizzle-orm": "^0.45.2",
     "mysql2": "^3.22.3",
+    "tsx": "^4.23.15",
     "typescript": "^5.9.3"
   },
   "packageManager": "pnpm@10.12.1"

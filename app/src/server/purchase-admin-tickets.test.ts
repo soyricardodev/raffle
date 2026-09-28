@@ -1,4 +1,4 @@
-import { purchases, purchaseTickets, raffles } from "@raffle/shared/db"
+import { auditEvents, purchases, purchaseTickets, raffles } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
 import { beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
@@ -59,6 +59,16 @@ describe("admin purchase ticket adjustments", () => {
 
     expect(result.addedTickets).toHaveLength(10)
     expect(result.newQuantity).toBe(15)
+    const [audit] = await db
+      .select()
+      .from(auditEvents)
+      .where(eq(auditEvents.purchaseId, purchase.purchaseId))
+    expect(audit).toMatchObject({
+      actorUserId: "test-admin",
+      raffleId,
+      action: "purchases.tickets_added",
+    })
+    expect(JSON.parse(audit?.payload ?? "{}")).toEqual({ quantity: 10 })
 
     const [updatedPurchase] = await db
       .select({ ticketQuantity: purchases.ticketQuantity })

@@ -1,7 +1,7 @@
-export type UserRole = "admin" | "super_admin"
+export type UserRole = "admin" | "super_admin" | (string & {})
 
 export type AuthUser = {
-  id: number
+  id: string
   username: string
   role: UserRole
 }

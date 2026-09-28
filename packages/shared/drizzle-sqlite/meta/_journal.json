@@ -148,6 +148,34 @@
       "when": 1789750800000,
       "tag": "0020_email_recipient_safety",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "6",
+      "when": 1789950000000,
+      "tag": "0021_workforce_auth",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "6",
+      "when": 1789950010000,
+      "tag": "0022_auth_rate_limits",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "6",
+      "when": 1789950020000,
+      "tag": "0023_user_last_login",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "6",
+      "when": 1789950030000,
+      "tag": "0024_staff_display_name",
+      "breakpoints": true
     }
   ]
 }
