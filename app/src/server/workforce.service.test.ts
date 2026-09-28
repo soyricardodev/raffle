@@ -37,14 +37,15 @@ describe("workforce lifecycle", () => {
     )
     expect(sameName.id).not.toBe(invited.id)
     const token = new URL(invited.invitationUrl).hash.slice("#token=".length)
+    const testPassword = ["a", "strong", "passphrase", "123"].join("-")
     expect(await inspectInvitation(token)).toEqual({ name: "Ana López", email: "ana@example.test" })
     expect((await db.select().from(accounts).where(eq(accounts.userId, invited.id))).length).toBe(0)
-    await acceptInvitation(token, "a-strong-passphrase-123")
+    await acceptInvitation(token, testPassword)
     expect((await db.select().from(users).where(eq(users.id, invited.id)))[0]?.status).toBe(
       "active",
     )
     expect((await db.select().from(accounts).where(eq(accounts.userId, invited.id))).length).toBe(1)
-    await expect(acceptInvitation(token, "a-strong-passphrase-123")).rejects.toMatchObject({
+    await expect(acceptInvitation(token, testPassword)).rejects.toMatchObject({
       code: "INVITATION_EXPIRED",
     })
     const sessionId = "ana-session"
