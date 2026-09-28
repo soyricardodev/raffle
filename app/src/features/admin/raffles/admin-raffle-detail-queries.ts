@@ -2,7 +2,7 @@ import { RaffleNotFoundError } from "@raffle/shared/errors"
 import { queryOptions, useQuery } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { z } from "zod"
-import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import { type EnrichedRaffle, getRaffleById } from "@/server/raffle.service"
 
 const AdminRaffleIdInput = z.object({
@@ -22,7 +22,7 @@ function parseRaffleId(raw: string): number | null {
 }
 
 export const fetchAdminRaffleById = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("raffles.read")])
   .inputValidator(AdminRaffleIdInput)
   .handler(async ({ data }): Promise<AdminRaffleDetail | null> => {
     const id = parseRaffleId(data.id)

@@ -55,7 +55,7 @@ export type PurchaseStatus = z.infer<typeof PurchaseStatus>
 export const TicketStatus = z.enum(["available", "reserved", "sold"])
 export type TicketStatus = z.infer<typeof TicketStatus>
 
-export const UserRole = z.enum(["admin", "super_admin"])
+export const UserRole = z.enum(["customer", "admin", "super_admin"])
 export type UserRole = z.infer<typeof UserRole>
 
 export const PauseReason = z.enum(["manual", "auto_full", "auto_insufficient", "auto_timeout"])
@@ -601,7 +601,7 @@ export const CreateUserInput = z.object({
   username: z.string().min(3).max(50),
   email: z.string().email().max(100),
   password: passwordSchema,
-  role: UserRole.default("admin"),
+  role: z.literal("customer").default("customer"),
 })
 export type CreateUserInput = z.infer<typeof CreateUserInput>
 

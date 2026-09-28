@@ -7,7 +7,7 @@ import {
 } from "@raffle/shared/admin/email-list-filters"
 import { queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
-import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import type { EmailLogDetail, EmailLogStats, EmailProviderHealth } from "@/features/admin/emails/types"
 import {
   getEmailLogStats,
@@ -38,12 +38,12 @@ function statsFilterSlice(filters: AdminEmailFilters) {
 }
 
 export const fetchAdminEmails = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("emails.read")])
   .inputValidator(AdminEmailListInput)
   .handler(async ({ data }) => listEmailLogs(data))
 
 export const fetchAdminEmailStats = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("emails.read")])
   .inputValidator(AdminEmailListInput)
   .handler(async ({ data }) => getEmailLogStats(statsFilterSlice(data)))
 

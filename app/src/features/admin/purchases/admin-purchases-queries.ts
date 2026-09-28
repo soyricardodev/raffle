@@ -3,7 +3,7 @@ import { infiniteQueryOptions, queryOptions } from "@tanstack/react-query"
 import { createServerFn } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
 import { z } from "zod"
-import { requireAdminMiddleware } from "@/features/admin/shared/admin-auth-middleware"
+import { adminPermissionMiddleware } from "@/features/admin/shared/admin-auth-middleware"
 import {
   getDefaultAdminRaffleId,
   resolveAdminRaffleScopeFromSearch,
@@ -74,13 +74,13 @@ export function flattenAdminPurchasesPages(
 }
 
 export const fetchAdminPurchasesDashboard = createServerFn({ method: "GET" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("purchases.read")])
   .handler(async () => {
     return getDashboardStats()
   })
 
 export const fetchAdminPurchases = createServerFn({ method: "POST" })
-  .middleware([requireAdminMiddleware])
+  .middleware([adminPermissionMiddleware("purchases.read")])
   .inputValidator(AdminPurchasesFetchInput)
   .handler(async ({ data }) => {
     await requirePurchasesModuleAccess(getRequest())

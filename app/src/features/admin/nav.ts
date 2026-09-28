@@ -10,6 +10,7 @@ import {
   Receipt,
   Settings,
   Ticket,
+  Users,
 } from "lucide-react"
 
 export type AdminNavItem = {
@@ -18,6 +19,7 @@ export type AdminNavItem = {
   href: string
   icon: LucideIcon
   description: string
+  permission?: string
 }
 
 export const ADMIN_ACCOUNT_PAGE_TITLE = "Mi cuenta"
@@ -27,6 +29,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Dashboard",
     shortName: "Inicio",
     href: "/admin",
+    permission: "dashboard.read",
     icon: LayoutDashboard,
     description: "Resumen general",
   },
@@ -34,6 +37,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Mis Rifas",
     shortName: "Rifas",
     href: "/admin/rifas",
+    permission: "raffles.read",
     icon: Calendar,
     description: "Gestionar rifas",
   },
@@ -41,6 +45,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Compras",
     shortName: "Compras",
     href: "/admin/compras",
+    permission: "purchases.read",
     icon: Receipt,
     description: "Ventas y aprobaciones",
   },
@@ -48,6 +53,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Análisis",
     shortName: "Stats",
     href: "/admin/analytics",
+    permission: "analytics.read",
     icon: BarChart3,
     description: "Estadísticas",
   },
@@ -55,6 +61,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Buscar boleto",
     shortName: "Boleto",
     href: "/admin/boletos",
+    permission: "purchases.read",
     icon: Ticket,
     description: "Dueño por número",
   },
@@ -62,6 +69,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Métodos de pago",
     shortName: "Pagos",
     href: "/admin/metodos-pago",
+    permission: "payments.read",
     icon: CreditCard,
     description: "Cuentas globales",
   },
@@ -69,6 +77,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Nueva Rifa",
     shortName: "Nueva",
     href: "/admin/crear",
+    permission: "raffles.create",
     icon: Plus,
     description: "Crear rifa",
   },
@@ -76,6 +85,7 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Configuración",
     shortName: "Config",
     href: "/admin/config",
+    permission: "settings.read",
     icon: Settings,
     description: "Sitio y email",
   },
@@ -83,13 +93,23 @@ export const adminNavItems: Array<AdminNavItem> = [
     name: "Emails",
     shortName: "Emails",
     href: "/admin/emails",
+    permission: "emails.read",
     icon: Mail,
     description: "Logs y pruebas",
+  },
+  {
+    name: "Equipo",
+    shortName: "Equipo",
+    href: "/admin/equipo",
+    icon: Users,
+    description: "Personas y actividad",
+    permission: "workforce.read",
   },
   {
     name: "Avisos",
     shortName: "Avisos",
     href: "/admin/avisos",
+    permission: "push.read",
     icon: Bell,
     description: "Push a teléfonos",
   },

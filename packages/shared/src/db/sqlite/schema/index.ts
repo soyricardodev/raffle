@@ -34,3 +34,10 @@ export {
   verificationRelations,
 } from "./relations"
 export { users } from "./users"
+export {
+  authRateLimits,
+  staffActivityDays,
+  staffGrants,
+  staffInvitations,
+  staffRoles,
+} from "./workforce"

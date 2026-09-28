@@ -1,5 +1,5 @@
 import { getRequest, setCookie } from "@tanstack/react-start/server"
-import { requireAdmin } from "@/lib/auth-utils.server"
+import { requirePermission } from "@/lib/auth-utils.server"
 import { getEnv } from "@/lib/env"
 import { getLogger } from "@/lib/logger"
 import { assertSameOriginMutation } from "@/lib/origin-guard.server"
@@ -34,7 +34,7 @@ export function readPurchasesAccessCookie(request: Request): string | undefined 
 }
 
 export async function getPurchasesAccessStatus(request: Request): Promise<PurchasesAccessStatus> {
-  const admin = await requireAdmin(request)
+  const admin = await requirePermission(request, "purchases.read")
   const settings = await settingsRepo.getAppSettings()
   return resolvePurchasesAccessStatus({
     keyHash: readPurchasesAccessHash(settings),
@@ -54,7 +54,7 @@ export async function unlockPurchasesAccess(
   key: string,
 ): Promise<PurchasesAccessStatus> {
   assertSameOriginMutation(request)
-  const admin = await requireAdmin(request)
+  const admin = await requirePermission(request, "purchases.read")
   await rateLimit(request, { windowMs: 5 * 60_000, maxRequests: 8, keyPrefix: "purchases-access" })
   const settings = await settingsRepo.getAppSettings()
   const keyHash = readPurchasesAccessHash(settings)
@@ -92,7 +92,7 @@ export async function updatePurchasesAccessKey(
   rawKey: string | null,
 ): Promise<{ configured: boolean }> {
   assertSameOriginMutation(request)
-  await requireAdmin(request)
+  await requirePermission(request, "settings.manage")
 
   const trimmed = rawKey?.trim() ?? ""
   if (!trimmed) {

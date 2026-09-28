@@ -1,10 +1,11 @@
 import { createMiddleware } from "@tanstack/react-start"
 import { getRequest } from "@tanstack/react-start/server"
-import { requireAdmin } from "@/lib/auth-utils.server"
+import { requirePermission } from "@/lib/auth-utils.server"
+import type { Permission } from "@/lib/workforce-policy"
 
-export const requireAdminMiddleware = createMiddleware({
-  type: "function",
-}).server(async ({ next }) => {
-  await requireAdmin(getRequest())
-  return next()
-})
+export function adminPermissionMiddleware(permission: Permission) {
+  return createMiddleware({ type: "function" }).server(async ({ next }) => {
+    await requirePermission(getRequest(), permission)
+    return next()
+  })
+}

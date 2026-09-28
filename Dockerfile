@@ -17,23 +17,15 @@ RUN pnpm install --frozen-lockfile
 
 COPY . .
 
-# NODE_ENV=production es OBLIGATORIO para este build, no cosmético: sin él el
-# bundle queda roto y el server no arranca. Vite genera, para la dependencia
-# opcional `bufferutil` de `ws`, un shim que LANZA al importarse:
-#   Could not resolve "bufferutil" imported by "ws". Is it installed?
-# Con NODE_ENV=production el shim es un objeto vacío inofensivo. Verificado:
-# sin la variable el archivo pesa 120763 bytes y tira 12 errores; con ella
-# pesa 120587 y arranca (idéntico al artefacto que publica el workflow de release).
+# NODE_ENV=production alinea el SSR JSX con el runtime React de producción.
+# También evita importar variantes de desarrollo de dependencias opcionales.
 # Va inline y no como ENV para que la instalación sí traiga devDependencies.
 RUN NODE_ENV=production pnpm --filter app build
 
 # ─── Runtime ─────────────────────────────────────────────────────────────────
-# Bun, no Node: es el runtime con el que corre producción y con el que el
-# bundle está verificado. Con `node` el server no arranca — falla al cargar
-# `ws`, que importa `bufferutil` (dependencia opcional no instalada):
-#   Could not resolve "bufferutil" imported by "ws"
-# El Dockerfile anterior usaba `node` y nunca se ejecutó en producción (allá
-# corre el tarball con bun), así que el bug quedó latente.
+# Bun es el runtime actual de producción. `bufferutil` y `utf-8-validate`
+# ya están declarados en app para que Nitro pueda resolver `ws` también al
+# previsualizar el artefacto con Node durante las pruebas locales.
 FROM oven/bun:1.3.14-alpine AS runner
 WORKDIR /app
 

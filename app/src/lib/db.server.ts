@@ -43,7 +43,7 @@ export function getDb(): DrizzleDB {
         env.LOG_LEVEL === "debug"
           ? {
               logQuery(query: string, params: unknown[]) {
-                getLogger().debug({ query, params }, "db:query")
+                getLogger().debug({ query, parameterCount: params.length }, "db:query")
               },
             }
           : undefined,

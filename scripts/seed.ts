@@ -8,7 +8,7 @@
  * Requiere migraciones aplicadas: pnpm db:migrate
  */
 
-import { randomUUID } from "node:crypto"
+import { randomBytes, randomUUID } from "node:crypto"
 import {
   accounts,
   appSettings,
@@ -18,6 +18,7 @@ import {
   purchaseTickets,
   rafflePaymentMethods,
   raffles,
+  staffRoles,
   users,
 } from "@raffle/shared/db"
 import { hashPassword } from "better-auth/crypto"
@@ -27,6 +28,8 @@ const ADMIN_EMAIL = process.env.SEED_ADMIN_EMAIL ?? "admin@rifas.com"
 const ADMIN_USERNAME = process.env.SEED_ADMIN_USERNAME ?? "admin"
 const ADMIN_PASSWORD = process.env.SEED_ADMIN_PASSWORD ?? "admin123"
 const FORCE = process.env.SEED_FORCE === "1"
+const OWNER_EMAIL = process.env.SEED_OWNER_EMAIL ?? "yoiber@yoiberifas.com"
+const OWNER_PASSWORD = process.env.SEED_OWNER_PASSWORD ?? randomBytes(18).toString("base64url")
 
 async function clearBusinessData(db: ReturnType<typeof createScriptDb>) {
   await db.delete(purchaseTickets)
@@ -38,6 +41,7 @@ async function clearBusinessData(db: ReturnType<typeof createScriptDb>) {
   await db.delete(appSettings)
   await db.delete(accounts)
   await db.delete(users)
+  await db.delete(staffRoles)
 }
 
 async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
@@ -47,6 +51,7 @@ async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
   await db.insert(users).values({
     id: userId,
     username: ADMIN_USERNAME,
+    displayName: ADMIN_USERNAME,
     email: ADMIN_EMAIL,
     emailVerified: true,
     role: "super_admin",
@@ -60,7 +65,62 @@ async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
     password: credentialHash,
   })
 
-  console.log(`👤 Admin: ${ADMIN_USERNAME} / ${ADMIN_PASSWORD} (${ADMIN_EMAIL})`)
+  await db.insert(staffRoles).values([
+    {
+      id: "verifier",
+      name: "Verificador de pagos",
+      permissions: JSON.stringify([
+        "dashboard.read",
+        "raffles.read",
+        "purchases.read",
+        "purchases.approve",
+        "purchases.reject",
+      ]),
+    },
+    {
+      id: "operator",
+      name: "Operador de compras",
+      permissions: JSON.stringify([
+        "dashboard.read",
+        "raffles.read",
+        "purchases.read",
+        "purchases.approve",
+        "purchases.reject",
+        "purchases.reverse",
+        "purchases.tickets.add",
+        "purchases.tickets.remove",
+        "purchases.tickets.reassign",
+        "purchases.customer.edit",
+      ]),
+    },
+    {
+      id: "analyst",
+      name: "Analista",
+      permissions: JSON.stringify([
+        "dashboard.read",
+        "raffles.read",
+        "purchases.read",
+        "analytics.read",
+      ]),
+    },
+  ])
+  const ownerId = randomUUID()
+  await db.insert(users).values({
+    id: ownerId,
+    username: "Yoiber",
+    displayName: "Yoiber",
+    email: OWNER_EMAIL,
+    emailVerified: true,
+    role: "super_admin",
+  })
+  await db.insert(accounts).values({
+    id: randomUUID(),
+    userId: ownerId,
+    accountId: ownerId,
+    providerId: "credential",
+    password: await hashPassword(OWNER_PASSWORD),
+  })
+  console.log("👤 2 cuentas administrativas de desarrollo creadas; configura SEED_*_PASSWORD para fijar sus claves")
   return userId
 }
 

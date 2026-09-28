@@ -12,6 +12,7 @@ export const sessions = sqliteTable(
     expiresAt: integer("expires_at", { mode: "timestamp_ms" }).notNull(),
     ipAddress: text("ip_address"),
     userAgent: text("user_agent"),
+    lastSeenAt: integer("last_seen_at", { mode: "timestamp_ms" }),
     createdAt: integer("created_at", { mode: "timestamp_ms" })
       .notNull()
       .$defaultFn(() => new Date()),

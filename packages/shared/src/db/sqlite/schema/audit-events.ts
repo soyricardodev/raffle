@@ -18,6 +18,7 @@ export const auditEvents = sqliteTable(
   },
   (t) => [
     index("audit_events_raffle_idx").on(t.raffleId),
+    index("audit_events_actor_created_idx").on(t.actorUserId, t.createdAt),
     index("audit_events_purchase_idx").on(t.purchaseId),
     index("audit_events_created_idx").on(t.createdAt),
   ],

@@ -94,6 +94,7 @@ async function main() {
     await db.insert(schema.users).values({
       id: userId,
       username: String(u.username),
+      displayName: String(u.username),
       email: String(u.email),
       emailVerified: Boolean(u.email_verified ?? false),
       image: (u.image as string) ?? null,

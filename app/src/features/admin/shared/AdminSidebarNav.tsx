@@ -43,6 +43,7 @@ type AdminSidebarNavProps = {
   siteName: string
   pathname: string
   onLogout: () => void
+  permissions?: string[]
 }
 
 const themeOptions: Array<{ value: ThemeMode; label: string; icon: typeof SunIcon }> = [
@@ -65,6 +66,8 @@ function roleLabel(role: UserRole) {
       return "Super admin"
     case "admin":
       return "Administrador"
+    default:
+      return "Equipo"
   }
 }
 
@@ -158,7 +161,13 @@ function AdminSidebarUserMenu({
   )
 }
 
-export function AdminSidebarNav({ session, siteName, pathname, onLogout }: AdminSidebarNavProps) {
+export function AdminSidebarNav({
+  session,
+  siteName,
+  pathname,
+  onLogout,
+  permissions,
+}: AdminSidebarNavProps) {
   const { setOpenMobile, isMobile } = useSidebar()
 
   function handleNavigate() {
@@ -188,20 +197,25 @@ export function AdminSidebarNav({ session, siteName, pathname, onLogout }: Admin
           <SidebarGroupLabel>Navegación</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {adminNavItems.map((item) => {
-                const Icon = item.icon
-                const active = isAdminNavActive(pathname, item.href)
-                return (
-                  <SidebarMenuItem key={item.href}>
-                    <SidebarMenuButton asChild isActive={active} tooltip={item.name}>
-                      <Link to={item.href} onClick={handleNavigate}>
-                        <Icon />
-                        <span>{item.name}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+              {adminNavItems
+                .filter(
+                  (item) =>
+                    !permissions || !item.permission || permissions.includes(item.permission),
                 )
-              })}
+                .map((item) => {
+                  const Icon = item.icon
+                  const active = isAdminNavActive(pathname, item.href)
+                  return (
+                    <SidebarMenuItem key={item.href}>
+                      <SidebarMenuButton asChild isActive={active} tooltip={item.name}>
+                        <Link to={item.href} onClick={handleNavigate}>
+                          <Icon />
+                          <span>{item.name}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  )
+                })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
