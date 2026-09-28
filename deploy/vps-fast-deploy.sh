@@ -117,11 +117,8 @@ fi
 
 if [[ "$RUN_MIGRATE" == "1" ]]; then
   log "Migraciones SQLite (desde el release desplegado)"
-  if release_run_migrate "$RAFFLE_ROOT" "$ENV_FILE" "$TARGET_DIR"; then
-    :
-  else
-    log "WARN: pnpm no encontrado — omite migraciones o instala Node+corepack"
-  fi
+  release_run_migrate "$RAFFLE_ROOT" "$ENV_FILE" "$TARGET_DIR" ||
+    die "La migración falló; el release no fue activado"
 fi
 
 log "Activando release: $TARGET_DIR"
