@@ -190,6 +190,13 @@
       "when": 1790626200000,
       "tag": "0026_verifier_ticket_permissions",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "6",
+      "when": 1790633200000,
+      "tag": "0027_verifier_purchase_reversal",
+      "breakpoints": true
     }
   ]
 }

@@ -75,6 +75,7 @@ async function seedAdmin(db: ReturnType<typeof createScriptDb>) {
         "purchases.read",
         "purchases.approve",
         "purchases.reject",
+        "purchases.reverse",
         "purchases.tickets.add",
         "purchases.tickets.remove",
       ]),

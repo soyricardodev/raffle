@@ -32,6 +32,7 @@ async function main() {
         "purchases.read",
         "purchases.approve",
         "purchases.reject",
+        "purchases.reverse",
         "purchases.tickets.add",
         "purchases.tickets.remove",
       ],
