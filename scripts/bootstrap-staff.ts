@@ -38,8 +38,6 @@ async function main() {
       id: "operator",
       name: "Operador de compras",
       permissions: [
-        "dashboard.read",
-        "raffles.read",
         "purchases.read",
         "purchases.approve",
         "purchases.reject",
@@ -95,7 +93,9 @@ async function main() {
           password: passwordHash,
         })
       await db.delete(sessions).where(eq(sessions.userId, existing.id))
-      process.stdout.write("Updated credentials and revoked sessions for an administrative account\n")
+      process.stdout.write(
+        "Updated credentials and revoked sessions for an administrative account\n",
+      )
       continue
     }
     const id = randomUUID()

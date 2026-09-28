@@ -1,7 +1,8 @@
-import { accounts, auditEvents, sessions, users } from "@raffle/shared/db"
+import { accounts, auditEvents, sessions, staffGrants, staffRoles, users } from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
 import { beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
+import { assertPermission, navigationPermissionsForUser } from "@/lib/workforce-access.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import {
   acceptInvitation,
@@ -10,12 +11,49 @@ import {
   inspectInvitation,
   inviteWorker,
   listWorkforce,
+  updateStaffRole,
   updateWorker,
   workforcePerformance,
 } from "./workforce.service"
 
 describe("workforce lifecycle", () => {
   beforeAll(setupIsolatedTestDatabase)
+  it("keeps operator navigation purchase-only despite stale broad role and grant data", async () => {
+    const db = getDb()
+    await db.insert(staffRoles).values({
+      id: "operator",
+      name: "Operador de compras",
+      permissions: JSON.stringify(["dashboard.read", "purchases.read"]),
+    })
+    await db.insert(users).values({
+      id: "test-operator",
+      username: "Test Operator",
+      email: "operator@example.test",
+      role: "operator",
+    })
+    await db.insert(staffGrants).values({
+      id: "operator-extra-grant",
+      userId: "test-operator",
+      permission: "settings.read",
+      raffleId: null,
+    })
+    const operator = { id: "test-operator", role: "operator" }
+    expect(await navigationPermissionsForUser(operator)).toEqual(["purchases.read"])
+    await expect(assertPermission(operator, "dashboard.read")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    })
+    await expect(assertPermission(operator, "settings.read")).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    })
+    await expect(assertPermission(operator, "purchases.read")).resolves.toBeUndefined()
+    await expect(
+      updateStaffRole(
+        "operator",
+        { name: "Operador de compras", permissions: ["raffles.read"] },
+        "test-admin",
+      ),
+    ).rejects.toMatchObject({ code: "WORKFORCE_INVALID_INPUT" })
+  })
   it("enforces one-use invitation and revokes disabled worker sessions", async () => {
     const db = getDb()
     const { id: role } = await createStaffRole(

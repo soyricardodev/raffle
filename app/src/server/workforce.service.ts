@@ -15,7 +15,7 @@ import { hashPassword } from "better-auth/crypto"
 import { and, desc, eq, gt, inArray, like, ne, or, sql } from "drizzle-orm"
 import { getDb, withImmediateTransaction } from "@/lib/db.server"
 import { getEnv } from "@/lib/env"
-import { PERMISSION_SET, type Permission } from "@/lib/workforce-policy"
+import { PERMISSION_SET, type Permission, permissionAllowedForRole } from "@/lib/workforce-policy"
 
 const badInput = (message: string) => new AppError(message, 400, "WORKFORCE_INVALID_INPUT")
 const hashToken = (token: string) => createHash("sha256").update(token).digest("hex")
@@ -45,6 +45,11 @@ function validatedGrants(input: { permission: string; raffleId: number | null }[
       grants.map((grant) => [`${grant.permission}:${grant.raffleId ?? "all"}`, grant]),
     ).values(),
   ]
+}
+
+function assertRolePermissions(role: string, permissions: readonly { permission: string }[]) {
+  if (permissions.some((grant) => !permissionAllowedForRole(role, grant.permission)))
+    throw badInput("El operador de compras solo puede recibir permisos de compras")
 }
 
 export function validatePermissions(permissions: string[]): Permission[] {
@@ -129,12 +134,17 @@ export async function updateStaffRole(
   actorId: string,
 ) {
   if (input.name.trim().length < 3) throw badInput("Nombre de rol inválido")
+  const permissions = validatePermissions(input.permissions)
+  assertRolePermissions(
+    id,
+    permissions.map((permission) => ({ permission })),
+  )
   await withImmediateTransaction(async (tx) => {
     const changed = await tx
       .update(staffRoles)
       .set({
         name: input.name.trim(),
-        permissions: JSON.stringify(validatePermissions(input.permissions)),
+        permissions: JSON.stringify(permissions),
       })
       .where(eq(staffRoles.id, id))
       .returning({ id: staffRoles.id })
@@ -161,6 +171,7 @@ export async function inviteWorker(
   if (name.length < 2 || name.length > 100 || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))
     throw badInput("Nombre o correo inválido")
   const grants = validatedGrants(input.grants)
+  assertRolePermissions(input.role, grants)
   const token = randomBytes(32).toString("base64url")
   const userId = randomUUID()
   const inviteId = randomUUID()
@@ -281,6 +292,7 @@ export async function updateWorker(
 ) {
   if (id === actorId) throw badInput("No puedes cambiar tu propio acceso")
   const permissions = validatedGrants(input.grants)
+  assertRolePermissions(input.role, permissions)
   await withImmediateTransaction(async (tx) => {
     const [target] = await tx
       .select({ id: users.id, role: users.role, status: users.status })

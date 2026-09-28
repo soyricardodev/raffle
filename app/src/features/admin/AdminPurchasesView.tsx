@@ -28,8 +28,8 @@ import {
 import { adminNavTitle } from "@/features/admin/nav"
 import { adminPurchasesAccessQueryOptions } from "@/features/admin/purchases/admin-purchases-access-queries"
 import {
-  adminPurchasesDashboardQueryOptions,
   adminPurchasesInfiniteQueryOptions,
+  adminPurchasesRaffleScopeQueryOptions,
   adminPurchasesRefetchInterval,
   flattenAdminPurchasesPages,
   getDefaultAdminPurchasesRaffleId,
@@ -84,12 +84,12 @@ function AdminPurchasesContent() {
     routeSearch.purchase != null && routeSearch.purchase > 0 ? routeSearch.purchase : null
 
   const [selectedPurchaseId, setSelectedPurchaseId] = useState<number | null>(purchaseFromUrl)
-  const dashboardQuery = useQuery({
-    ...adminPurchasesDashboardQueryOptions(),
+  const raffleScopeQuery = useQuery({
+    ...adminPurchasesRaffleScopeQueryOptions(),
     refetchOnMount: false,
   })
-  const filterRaffles = dashboardQuery.data?.filter_raffles ?? []
-  const defaultRaffleId = getDefaultAdminPurchasesRaffleId(dashboardQuery.data)
+  const filterRaffles = raffleScopeQuery.data?.filter_raffles ?? []
+  const defaultRaffleId = getDefaultAdminPurchasesRaffleId(raffleScopeQuery.data)
   const filters = useMemo(
     () => normalizeAdminPurchaseFilters(routeSearch, { defaultRaffleId }),
     [defaultRaffleId, routeSearch],
@@ -321,7 +321,7 @@ function AdminPurchasesContent() {
                     raffle_id: value === "all" ? "all" : value,
                   })
                 }
-                disabled={dashboardQuery.isLoading || filterRaffles.length === 0}
+                disabled={raffleScopeQuery.isLoading || filterRaffles.length === 0}
                 size="sm"
                 triggerClassName="w-[200px] max-w-full"
               />

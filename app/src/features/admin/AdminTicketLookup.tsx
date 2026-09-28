@@ -3,6 +3,7 @@ import { ticketNumberToString } from "@raffle/shared/db/ticket-number"
 import { useQuery } from "@tanstack/react-query"
 import { getRouteApi, Link, useNavigate } from "@tanstack/react-router"
 import { useEffect, useMemo, useState } from "react"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import {
@@ -11,15 +12,15 @@ import {
   InputGroupButton,
   InputGroupInput,
 } from "@/components/ui/input-group"
-import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
-import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import { adminNavTitle } from "@/features/admin/nav"
+import { adminPurchasesRaffleScopeQueryOptions } from "@/features/admin/purchases/admin-purchases-queries"
+import { PurchaseStatusBadge } from "@/features/admin/purchases/PurchaseStatusBadge"
 import { raffleStatusLabel } from "@/features/admin/raffle-labels"
+import { RaffleStatusBadge } from "@/features/admin/raffles/RaffleStatusBadge"
 import { AdminPageHeader } from "@/features/admin/shared/AdminPageHeader"
 import { AdminRaffleScopeSelect } from "@/features/admin/shared/AdminRaffleScopeSelect"
 import { adminRaffleScopeSearchParam } from "@/features/admin/shared/admin-raffle-scope"
 import { useSanitizeAdminRaffleUrlParam } from "@/features/admin/shared/use-admin-raffle-url-scope"
-import { adminPurchasesDashboardQueryOptions } from "@/features/admin/purchases/admin-purchases-queries"
 import {
   ADMIN_TICKET_LOOKUP_PATTERN,
   type AdminTicketLookupResult,
@@ -31,7 +32,6 @@ import {
   featuredTicketBadgeClassName,
   featuredTicketSectionClassName,
 } from "@/features/tickets/ticket-badge-styles"
-import { Badge } from "@/components/ui/badge"
 import { formatDate, formatDateTime, getStatusLabel } from "@/lib/format"
 import { cn } from "@/lib/utils"
 
@@ -45,12 +45,12 @@ export function AdminTicketLookup() {
   const routeSearch = routeApi.useSearch()
   const navigate = useNavigate({ from: "/admin/boletos" })
 
-  const dashboardQuery = useQuery({
-    ...adminPurchasesDashboardQueryOptions(),
+  const raffleScopeQuery = useQuery({
+    ...adminPurchasesRaffleScopeQueryOptions(),
     refetchOnMount: false,
   })
-  const filterRaffles = dashboardQuery.data?.filter_raffles ?? []
-  const defaultRaffleId = getDefaultAdminTicketLookupRaffleId(dashboardQuery.data)
+  const filterRaffles = raffleScopeQuery.data?.filter_raffles ?? []
+  const defaultRaffleId = getDefaultAdminTicketLookupRaffleId(raffleScopeQuery.data)
   const filters = useMemo(
     () => normalizeAdminTicketLookupFilters(routeSearch, { defaultRaffleId }),
     [defaultRaffleId, routeSearch],
@@ -134,7 +134,7 @@ export function AdminTicketLookup() {
               raffles={filterRaffles}
               value={filters.raffleId}
               onValueChange={updateRaffleScope}
-              disabled={dashboardQuery.isLoading || filterRaffles.length === 0}
+              disabled={raffleScopeQuery.isLoading || filterRaffles.length === 0}
               triggerClassName="min-h-11 w-full"
               placeholder="Rifa actual"
             />

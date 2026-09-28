@@ -1,4 +1,4 @@
-import type { AdminDashboardStats } from "@/features/admin/purchases/admin-purchases-queries"
+import type { AdminPurchaseRaffleScope } from "@/features/admin/purchases/admin-purchases-queries"
 
 export function resolveAdminRaffleScopeFromSearch(
   raffleIdParam: string | undefined,
@@ -9,7 +9,7 @@ export function resolveAdminRaffleScopeFromSearch(
 }
 
 export function getDefaultAdminRaffleId(
-  dashboard?: AdminDashboardStats | null,
+  dashboard?: AdminPurchaseRaffleScope | null,
   options?: { includePausedFallback?: boolean },
 ): string | null {
   const activeRaffle = dashboard?.filter_raffles.find((raffle) => raffle.status === "active")
