@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input"
 import { useAdminUserPreferences } from "@/features/admin/preferences/use-admin-user-preferences"
 import { ConfirmAction } from "@/features/admin/purchases/ConfirmAction"
 import { requestPurchaseTicketAction } from "@/features/admin/purchases/purchase-action-guard"
-import { useAdminPurchaseTicketAdjustments } from "@/features/admin/purchases/use-admin-purchase-ticket-adjustments"
 import type { PurchaseDetail } from "@/features/admin/purchases/types"
+import { useAdminPurchaseTicketAdjustments } from "@/features/admin/purchases/use-admin-purchase-ticket-adjustments"
 import { cn } from "@/lib/utils"
 
 type PurchaseTicketManagerProps = {
@@ -23,6 +23,8 @@ function TicketOperationControls({
   canStep,
   canSubmitAdd,
   canSubmitRemove,
+  allowAdd,
+  allowRemove,
   pending,
   validationMessage,
   commitDraft,
@@ -36,6 +38,8 @@ function TicketOperationControls({
   canStep: boolean
   canSubmitAdd: boolean
   canSubmitRemove: boolean
+  allowAdd: boolean
+  allowRemove: boolean
   pending: boolean
   validationMessage: string | null
   commitDraft: () => void
@@ -44,18 +48,16 @@ function TicketOperationControls({
   compact?: boolean
 }) {
   const qtyDisplay = operationDraft.trim() !== "" ? operationDraft : "1"
-  const numberSlotClassName =
-    "inline-block w-10 shrink-0 overflow-hidden text-center tabular-nums"
+  const numberSlotClassName = "inline-block w-10 shrink-0 overflow-hidden text-center tabular-nums"
 
   return (
-    <div
+    <fieldset
       className={cn(
-        "flex items-center gap-1 rounded-lg border bg-muted/25 p-0.5",
+        "flex min-w-0 items-center gap-1 rounded-lg border bg-muted/25 p-0.5",
         compact ? "w-full" : "shrink-0 flex-nowrap",
       )}
-      role="group"
-      aria-label="Ajustar cantidad de boletos"
     >
+      <legend className="sr-only">Ajustar cantidad de boletos</legend>
       <Button
         type="button"
         className={cn(
@@ -64,7 +66,7 @@ function TicketOperationControls({
         )}
         size="sm"
         variant="outline"
-        disabled={pending || !canSubmitRemove}
+        disabled={pending || !allowRemove || !canSubmitRemove}
         onClick={() => requestOperation("remove")}
       >
         <span className="shrink-0">Quitar</span>
@@ -130,13 +132,13 @@ function TicketOperationControls({
           compact ? "min-h-9 flex-1" : "h-7 w-[7rem] shrink-0",
         )}
         size="sm"
-        disabled={pending || !canSubmitAdd}
+        disabled={pending || !allowAdd || !canSubmitAdd}
         onClick={() => requestOperation("add")}
       >
         <span className="shrink-0">Agregar</span>
         <span className={numberSlotClassName}>{qtyDisplay}</span>
       </Button>
-    </div>
+    </fieldset>
   )
 }
 
@@ -168,12 +170,17 @@ export function PurchaseTicketManager({
     operationQuantity,
   } = useAdminPurchaseTicketAdjustments({ purchase, stockLoaded, onUpdated })
 
-  if (!canAdjust && !canReassign) return null
+  const allowAdd = purchase.allowed_ticket_actions?.includes("purchases.tickets.add") ?? false
+  const allowRemove = purchase.allowed_ticket_actions?.includes("purchases.tickets.remove") ?? false
+  const allowReassign =
+    purchase.allowed_ticket_actions?.includes("purchases.tickets.reassign") ?? false
 
-  const canStep =
-    resolution != null && resolution.parsed != null && resolution.message == null
+  if ((!canAdjust && !canReassign) || !stockLoaded) return null
+
+  const canStep = resolution != null && resolution.parsed != null && resolution.message == null
 
   function requestOperation(operation: "add" | "remove") {
+    if (operation === "add" ? !allowAdd : !allowRemove) return
     requestPurchaseTicketAction({
       skipConfirm: skipTicketAdjustConfirm,
       onAction: () => submitOperation(operation),
@@ -190,6 +197,8 @@ export function PurchaseTicketManager({
         canStep={canStep}
         canSubmitAdd={canSubmitAdd}
         canSubmitRemove={canSubmitRemove}
+        allowAdd={allowAdd}
+        allowRemove={allowRemove}
         pending={pending}
         validationMessage={validationMessage}
         commitDraft={commitDraft}
@@ -201,24 +210,25 @@ export function PurchaseTicketManager({
       <span className="text-muted-foreground shrink-0 text-[10px]">…</span>
     ) : null
 
-  const reassignControl = canReassign ? (
-    <Button
-      className="h-7 shrink-0 px-2 text-xs"
-      variant="secondary"
-      size="sm"
-      disabled={pending}
-      onClick={() =>
-        requestPurchaseTicketAction({
-          skipConfirm: skipTicketAdjustConfirm,
-          onAction: () => reassignMutation.mutate(),
-          openConfirm: () => setConfirm("reassign"),
-        })
-      }
-    >
-      <RefreshCw className="mr-1 size-3" />
-      Reasignar
-    </Button>
-  ) : null
+  const reassignControl =
+    canReassign && allowReassign ? (
+      <Button
+        className="h-7 shrink-0 px-2 text-xs"
+        variant="secondary"
+        size="sm"
+        disabled={pending}
+        onClick={() =>
+          requestPurchaseTicketAction({
+            skipConfirm: skipTicketAdjustConfirm,
+            onAction: () => reassignMutation.mutate(),
+            openConfirm: () => setConfirm("reassign"),
+          })
+        }
+      >
+        <RefreshCw className="mr-1 size-3" />
+        Reasignar
+      </Button>
+    ) : null
 
   const confirmDialogs = (
     <>
@@ -262,6 +272,12 @@ export function PurchaseTicketManager({
           {adjustControls}
           {reassignControl}
         </div>
+        {canAdjust && (!allowAdd || !allowRemove) ? (
+          <p className="text-muted-foreground text-[10px] leading-snug">
+            {allowAdd ? "Quitar" : allowRemove ? "Agregar" : "Ajustar"} boletos requiere permiso
+            para esta rifa.
+          </p>
+        ) : null}
         {validationMessage ? (
           <p className="text-destructive text-[10px] leading-snug">{validationMessage}</p>
         ) : null}
@@ -273,7 +289,9 @@ export function PurchaseTicketManager({
   return (
     <div
       className={cn(
-        embedded ? "flex flex-col gap-2 border-t pt-2" : "space-y-2 rounded-lg border bg-muted/20 p-2",
+        embedded
+          ? "flex flex-col gap-2 border-t pt-2"
+          : "space-y-2 rounded-lg border bg-muted/20 p-2",
       )}
     >
       {!embedded && (
@@ -293,6 +311,12 @@ export function PurchaseTicketManager({
 
       {canAdjust && (
         <div className="flex flex-col gap-1.5">
+          {!allowAdd || !allowRemove ? (
+            <p className="text-muted-foreground text-[10px] leading-snug">
+              {allowAdd ? "Quitar" : allowRemove ? "Agregar" : "Ajustar"} boletos requiere permiso
+              para esta rifa.
+            </p>
+          ) : null}
           {!stockLoaded ? (
             <p className="text-muted-foreground text-[10px] leading-snug">
               Cargando detalle de la compra…

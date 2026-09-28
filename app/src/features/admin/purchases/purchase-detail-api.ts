@@ -20,6 +20,9 @@ export type PurchaseDetailApi = {
   raffle_name: string
   raffle_tickets_available: number
   ticketNumbers: Array<string>
+  allowed_ticket_actions: Array<
+    "purchases.tickets.add" | "purchases.tickets.remove" | "purchases.tickets.reassign"
+  >
 }
 
 export function mapPurchaseDetailApiToDetail(data: PurchaseDetailApi): PurchaseDetail {
@@ -46,6 +49,7 @@ export function mapPurchaseDetailApiToDetail(data: PurchaseDetailApi): PurchaseD
     payment_proof_url: data.payment_proof_url,
     ticket_numbers: data.ticketNumbers.join(", "),
     ticketNumbers: data.ticketNumbers,
+    allowed_ticket_actions: data.allowed_ticket_actions,
   }
 }
 

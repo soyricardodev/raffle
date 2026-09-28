@@ -1,14 +1,14 @@
 import { QueryClient } from "@tanstack/react-query"
 import { describe, expect, it } from "vitest"
 import {
-  adminPurchasesQueryKeys,
   type AdminPurchasesInfinitePage,
+  adminPurchasesQueryKeys,
 } from "@/features/admin/purchases/admin-purchases-queries"
-import type { PurchaseRow } from "@/features/admin/purchases/types"
 import {
   patchAdminPurchasePages,
   patchAdminPurchaseStatusInCache,
 } from "@/features/admin/purchases/patch-admin-purchases-cache"
+import type { PurchaseRow } from "@/features/admin/purchases/types"
 
 function makePage(rows: PurchaseRow[], total = rows.length): AdminPurchasesInfinitePage {
   return {
@@ -69,9 +69,52 @@ describe("patchAdminPurchasePages", () => {
     expect(updated[0]?.data.map((row) => row.id)).toEqual([11])
     expect(updated[0]?.total).toBe(1)
   })
+
+  it("updates the total when the changed purchase is on a later page", () => {
+    const pages = [makePage([{ ...sampleRow, id: 11 }], 2), makePage([sampleRow], 2)]
+    const updated = patchAdminPurchasePages(pages, 10, "approved", {
+      limit: 1,
+      status: "pending",
+      paymentMethod: "all",
+      raffleId: null,
+      search: null,
+      searchType: "all",
+      start: null,
+      end: null,
+      sort: "newest",
+    })
+
+    expect(updated[0]?.total).toBe(1)
+    expect(updated[1]?.data).toEqual([])
+  })
 })
 
 describe("patchAdminPurchaseStatusInCache", () => {
+  it("ignores raffle-scope data while updating the list after approval", () => {
+    const queryClient = new QueryClient()
+    const listKey = adminPurchasesQueryKeys.list({
+      limit: 50,
+      status: "all",
+      paymentMethod: "all",
+      raffleId: null,
+      search: null,
+      searchType: "all",
+      start: null,
+      end: null,
+      sort: "newest",
+    })
+    const scope = { filter_raffles: [{ id: 1, name: "Rifa", status: "active" }] }
+    queryClient.setQueryData(adminPurchasesQueryKeys.raffleScope, scope)
+    queryClient.setQueryData(listKey, { pages: [makePage([sampleRow])], pageParams: [null] })
+
+    expect(() => patchAdminPurchaseStatusInCache(queryClient, 10, "approved")).not.toThrow()
+    expect(queryClient.getQueryData(adminPurchasesQueryKeys.raffleScope)).toEqual(scope)
+    expect(
+      queryClient.getQueryData<{ pages: AdminPurchasesInfinitePage[] }>(listKey)?.pages[0]?.data[0]
+        ?.status,
+    ).toBe("approved")
+  })
+
   it("updates status in place for all-status lists", () => {
     const queryClient = new QueryClient()
     const filters = adminPurchasesQueryKeys.list({
