@@ -183,6 +183,13 @@
       "when": 1789950040000,
       "tag": "0025_operator_purchase_scope",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "6",
+      "when": 1790626200000,
+      "tag": "0026_verifier_ticket_permissions",
+      "breakpoints": true
     }
   ]
 }

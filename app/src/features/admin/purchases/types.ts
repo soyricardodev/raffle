@@ -34,4 +34,7 @@ export type PurchaseDetail = PurchaseRow & {
   ticketNumbers?: Array<string>
   /** Stock disponible en la rifa (solo tras cargar detalle admin) */
   raffle_tickets_available?: number
+  allowed_ticket_actions?: Array<
+    "purchases.tickets.add" | "purchases.tickets.remove" | "purchases.tickets.reassign"
+  >
 }

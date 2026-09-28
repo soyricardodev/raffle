@@ -60,6 +60,34 @@ export async function assertPermission(
     throw new ForbiddenError([permission])
 }
 
+/** Effective ticket permissions for one purchase, including raffle-scoped grants. */
+export async function purchaseTicketPermissionsForUser(
+  user: { id: string | number; role?: string | null },
+  raffleId: number,
+) {
+  const permissions = [
+    "purchases.tickets.add",
+    "purchases.tickets.remove",
+    "purchases.tickets.reassign",
+  ] as const
+  const role = user.role ?? ""
+  if (role === "super_admin" || role === "admin") return [...permissions]
+  const db = getDb()
+  const [template] = await db
+    .select({ permissions: staffRoles.permissions })
+    .from(staffRoles)
+    .where(eq(staffRoles.id, role))
+    .limit(1)
+  const grants = await db
+    .select({ permission: staffGrants.permission, raffleId: staffGrants.raffleId })
+    .from(staffGrants)
+    .where(eq(staffGrants.userId, String(user.id)))
+  const rolePermissions = template ? (JSON.parse(template.permissions) as string[]) : []
+  return permissions.filter((permission) =>
+    hasGrant({ role, rolePermissions, grants, permission, raffleId }),
+  )
+}
+
 export async function raffleIdForAdminPath(pathname: string): Promise<number | undefined> {
   const purchaseMatch = /^\/api\/admin\/purchases\/(\d+)(?:\/|$)/.exec(pathname)
   if (purchaseMatch) {

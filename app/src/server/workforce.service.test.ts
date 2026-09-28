@@ -1,8 +1,20 @@
-import { accounts, auditEvents, sessions, staffGrants, staffRoles, users } from "@raffle/shared/db"
+import {
+  accounts,
+  auditEvents,
+  raffles,
+  sessions,
+  staffGrants,
+  staffRoles,
+  users,
+} from "@raffle/shared/db"
 import { eq } from "drizzle-orm"
 import { beforeAll, describe, expect, it } from "vitest"
 import { getDb } from "@/lib/db.server"
-import { assertPermission, navigationPermissionsForUser } from "@/lib/workforce-access.server"
+import {
+  assertPermission,
+  navigationPermissionsForUser,
+  purchaseTicketPermissionsForUser,
+} from "@/lib/workforce-access.server"
 import { setupIsolatedTestDatabase } from "@/test/db-setup"
 import {
   acceptInvitation,
@@ -53,6 +65,63 @@ describe("workforce lifecycle", () => {
         "test-admin",
       ),
     ).rejects.toMatchObject({ code: "WORKFORCE_INVALID_INPUT" })
+  })
+  it("honors a ticket-add grant only for its assigned raffle", async () => {
+    const db = getDb()
+    const raffleIds = await db
+      .insert(raffles)
+      .values(
+        ["Allowed", "Other"].map((name) => ({
+          name: `TEST-${name}-TicketGrant`,
+          description: "Scoped ticket permission test",
+          totalTickets: 10,
+          priceBsCents: 1000,
+          priceUsdCents: 100,
+          minPurchase: 1,
+          maxPurchase: 5,
+          drawDate: new Date(Date.now() + 86400_000),
+          status: "active" as const,
+          autoPauseEnabled: false,
+          ticketsAvailable: 10,
+          ticketsReserved: 0,
+          ticketsSold: 0,
+        })),
+      )
+      .returning({ id: raffles.id })
+    const [allowedRaffle, otherRaffle] = raffleIds
+    if (!allowedRaffle || !otherRaffle) throw new Error("Test raffles were not created")
+    const allowedRaffleId = allowedRaffle.id
+    const otherRaffleId = otherRaffle.id
+    await db.insert(staffRoles).values({
+      id: "ticket-operator",
+      name: "Ticket operator",
+      permissions: JSON.stringify(["purchases.read"]),
+    })
+    await db.insert(users).values({
+      id: "ticket-operator-user",
+      username: "Ticket Operator",
+      email: "ticket-operator@example.test",
+      role: "ticket-operator",
+    })
+    await db.insert(staffGrants).values({
+      id: "ticket-add-grant",
+      userId: "ticket-operator-user",
+      permission: "purchases.tickets.add",
+      raffleId: allowedRaffleId,
+    })
+    const user = { id: "ticket-operator-user", role: "ticket-operator" }
+    expect(await purchaseTicketPermissionsForUser(user, allowedRaffleId)).toEqual([
+      "purchases.tickets.add",
+    ])
+    expect(await purchaseTicketPermissionsForUser(user, otherRaffleId)).toEqual([])
+    await expect(
+      assertPermission(user, "purchases.tickets.add", allowedRaffleId),
+    ).resolves.toBeUndefined()
+    await expect(
+      assertPermission(user, "purchases.tickets.add", otherRaffleId),
+    ).rejects.toMatchObject({
+      code: "FORBIDDEN",
+    })
   })
   it("enforces one-use invitation and revokes disabled worker sessions", async () => {
     const db = getDb()
