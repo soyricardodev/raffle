@@ -1,14 +1,4 @@
-import type { ReactNode } from "react"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
+import { useEffect, useRef, type ReactNode } from "react"
 
 type ConfirmActionProps = {
   open: boolean
@@ -22,38 +12,21 @@ type ConfirmActionProps = {
   destructive?: boolean
 }
 
-export function ConfirmAction({
-  open,
-  onOpenChange,
-  title,
-  description,
-  confirmLabel = "Confirmar",
-  cancelLabel = "Cancelar",
-  onConfirm,
-  pending = false,
-  destructive = false,
-}: ConfirmActionProps) {
-  return (
-    <AlertDialog open={open} onOpenChange={onOpenChange}>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle>{title}</AlertDialogTitle>
-          <AlertDialogDescription>{description}</AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={pending}>{cancelLabel}</AlertDialogCancel>
-          <AlertDialogAction
-            variant={destructive ? "destructive" : "default"}
-            disabled={pending}
-            onClick={(event) => {
-              event.preventDefault()
-              onConfirm()
-            }}
-          >
-            {confirmLabel}
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
-  )
+/** Compatibility wrapper: administrative mutations run immediately, without a confirmation dialog. */
+export function ConfirmAction({ open, onOpenChange, onConfirm }: ConfirmActionProps) {
+  const handled = useRef(false)
+
+  useEffect(() => {
+    if (!open) {
+      handled.current = false
+      return
+    }
+    if (handled.current) return
+
+    handled.current = true
+    onConfirm()
+    onOpenChange(false)
+  }, [open, onConfirm, onOpenChange])
+
+  return null
 }
