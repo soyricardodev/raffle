@@ -126,6 +126,7 @@ export function PurchasesDataTable({
   const table = useReactTable({
     data: purchases,
     columns,
+    getRowId: (purchase) => String(purchase.id),
     getCoreRowModel: getCoreRowModel(),
   })
 

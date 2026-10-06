@@ -36,7 +36,17 @@ export const Route = createFileRoute("/admin/compras")({
       ? Math.max(1, Number(search.purchase))
       : undefined,
   }),
-  loaderDeps: ({ search }) => search,
+  // Opening a detail is not a new list: keep the same loader/cache identity.
+  loaderDeps: ({ search }) => ({
+    status: search.status,
+    payment_method: search.payment_method,
+    raffle_id: search.raffle_id,
+    q: search.q,
+    start: search.start,
+    end: search.end,
+    sort: search.sort,
+    limit: search.limit,
+  }),
   loader: async ({ context: { queryClient }, deps }) => {
     const access = await queryClient
       .ensureQueryData(adminPurchasesAccessQueryOptions())
@@ -50,8 +60,10 @@ export const Route = createFileRoute("/admin/compras")({
       defaultRaffleId: getDefaultAdminPurchasesRaffleId(raffleScope),
     })
     await queryClient
-      .prefetchInfiniteQuery({
+      .ensureInfiniteQueryData({
         ...adminPurchasesInfiniteQueryOptions(filters),
+        // Only seed a cold cache. Re-prefetching two pages truncates longer lists.
+        // The mounted query handles stale/background refreshes of all loaded pages.
         pages: 2,
       })
       .catch(() => null)

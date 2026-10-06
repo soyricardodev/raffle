@@ -99,6 +99,7 @@ function AdminPurchasesContent() {
     (nextSearch: string) => {
       void navigate({
         replace: true,
+        resetScroll: false,
         search: (previous) => ({
           ...previous,
           q: nextSearch || undefined,
@@ -126,7 +127,7 @@ function AdminPurchasesContent() {
     ...adminPurchasesInfiniteQueryOptions(filters),
     placeholderData: keepPreviousData,
     refetchInterval: adminPurchasesRefetchInterval,
-    refetchOnMount: false,
+    refetchOnMount: true,
   })
 
   const isSearchBusy =
@@ -170,6 +171,7 @@ function AdminPurchasesContent() {
     setSelectedPurchaseId(row.id)
     void navigate({
       replace: true,
+      resetScroll: false,
       search: (previous) => ({
         ...previous,
         purchase: row.id,
@@ -181,6 +183,7 @@ function AdminPurchasesContent() {
     setSelectedPurchaseId(null)
     void navigate({
       replace: true,
+      resetScroll: false,
       search: (previous) => ({
         ...previous,
         purchase: undefined,
@@ -191,6 +194,7 @@ function AdminPurchasesContent() {
   function updateSearch(patch: Partial<typeof routeSearch>) {
     void navigate({
       replace: true,
+      resetScroll: false,
       search: (previous) => ({
         ...previous,
         ...patch,
