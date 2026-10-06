@@ -21,6 +21,7 @@ export function useSanitizeAdminRaffleUrlParam({
 
     void navigate({
       replace: true,
+      resetScroll: false,
       search: (previous) => ({
         ...previous,
         raffle_id: undefined,
